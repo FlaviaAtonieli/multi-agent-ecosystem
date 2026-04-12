@@ -1,66 +1,16 @@
-# Multi-Agent Ecosystem
+# React + Vite
 
-## 🧠 Visão Geral
-Este projeto propõe uma abordagem arquitetural para integração de agentes de IA especialistas em ambientes corporativos de desenvolvimento de software.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Em vez de utilizar um único assistente genérico, o sistema é concebido como um **ecossistema multiagente**, onde cada agente representa um domínio específico de conhecimento (ex: regras de negócio, sistemas legados, arquitetura, interface) e colabora de forma estruturada.
+Currently, two official plugins are available:
 
-Este projeto faz parte do Trabalho de Conclusão de Curso (TCC) em Engenharia de Software.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
----
+## React Compiler
 
-## 🚨 Problema
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-Em ambientes corporativos complexos (como sistemas ERP), o desenvolvimento de software não é apenas um problema técnico, mas um problema de **integração de conhecimento**.
+## Expanding the ESLint configuration
 
-Principais desafios:
-
-- conhecimento distribuído entre diferentes especialistas
-- dependência de pessoas específicas
-- dificuldade em manter o contexto entre etapas
-- retrabalho por falhas de comunicação
-- complexidade na integração entre sistemas legados e modernos
-
----
-
-## 💡 Solução Proposta
-
-O projeto propõe um **ecossistema multiagente**, no qual:
-
-- cada agente atua como especialista em um domínio específico
-- os agentes colaboram entre si
-- a comunicação é estruturada por contratos e protocolos
-- um orquestrador gerencia o fluxo de interação
-
----
-
-## 🏗 Visão de Arquitetura
-
-O sistema é baseado em conceitos de:
-
-- Sistemas Multiagentes
-- Arquitetura de Software
-- Sistemas Distribuídos
-- Integração de Sistemas
-
-### Componentes principais:
-
-- **Agentes Especialistas**
-  - Agente de Negócio
-  - Agente de Código Legado
-  - Agente de Arquitetura
-  - Agente de Interface
-
-- **Orquestrador**
-  - Coordena a interação entre agentes
-  - Controla o fluxo de execução
-
-- **Camada de Comunicação**
-  - Mensagens estruturadas
-  - Integração entre agentes
-
-- **Observabilidade**
-  - Logs de execução
-  - Rastreabilidade das decisões
-
----
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
