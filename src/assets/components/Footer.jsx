@@ -1,27 +1,23 @@
 export default function Footer() {
   return (
-    <footer className="relative z-20 border-t border-white/10 bg-black/35 backdrop-blur-md">
-      <div className="mx-auto grid max-w-7xl gap-6 px-6 py-6 md:grid-cols-[180px_1fr_1fr] md:px-10">
-        <div className="flex min-h-24 items-center justify-center ">
-         <img src="" alt="" />
-        </div>
-
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-white/45">Projeto</p>
-          <p className="mt-2 text-sm text-white/70">
-            Arquitetura de Integração de Agentes 
-            Especialistas em Ambientes Corporativos 
+    <footer className="relative z-20 border-t border-white/10 bg-gradient-to-b from-transparent via-black/18 to-black/28 backdrop-blur-sm">
+      <div className="mx-auto flex max-w-7xl flex-col gap-5 px-6 py-6 md:flex-row md:items-end md:justify-between md:px-10">
+        <div className="max-w-md">
+          <p className="text-[10px] uppercase tracking-[0.32em] text-white/38">
+            Projeto
+          </p>
+          <p className="mt-2 text-[15px] font-light leading-7 tracking-[0.01em] text-white/68">
+            Arquitetura de Integração de Agentes em Ambientes
+            Corporativos 
           </p>
         </div>
 
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-white/45">
+        <div className="max-w-md text-left md:text-right">
+          <p className="text-[10px] uppercase tracking-[0.32em] text-white/38">
             Informações do TCC
           </p>
-          <p className="mt-2 text-sm text-white/70">
-            · Autora: Flavia Antonieli de Souza  
-            · Graduação: Engenharia de Software  
-            · 2026
+          <p className="mt-2 text-[15px] font-light leading-7 tracking-[0.01em] text-white/68">
+            Flavia Antonieli de Souza · Engenharia de Software · 2026
           </p>
         </div>
       </div>

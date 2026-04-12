@@ -12,7 +12,7 @@ export default function Header() {
         </div>
 
         <div className="text-[10px] uppercase tracking-[0.4em] text-white/60 md:text-xs">
-          TCC · Multi-Agent Ecosystem
+          TCC · CATÓLICA DE SANTA CATARINA 
         </div>
       </div>
     </header>
