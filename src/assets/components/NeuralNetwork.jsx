@@ -6,6 +6,7 @@ const COLORS = [
   '#3b82f6',
   '#60a5fa',
   '#38bdf8',
+  '#a78bfa',
   '#ff4fa3',
   '#ff8a3d',
   '#b7ff3c',
@@ -62,39 +63,39 @@ export default function NeuralNetwork() {
   })
 
   const mouseRef = useRef({
-    x: window.innerWidth / 2,
-    y: window.innerHeight / 2,
+    x: 0,
+    y: 0,
     active: false
   })
 
   const nodes = useMemo(() => {
     const base = [
-      { x: 0.10, y: 0.20, color: COLORS[1], radius: 4.5 },
-      { x: 0.16, y: 0.36, color: COLORS[5], radius: 5 },
-      { x: 0.14, y: 0.58, color: COLORS[0], radius: 4.5 },
-      { x: 0.12, y: 0.78, color: COLORS[7], radius: 4.5 },
+      { x: 0.09, y: 0.22, color: COLORS[1], radius: 5.5 },
+      { x: 0.15, y: 0.40, color: COLORS[6], radius: 4.8 },
+      { x: 0.13, y: 0.67, color: COLORS[0], radius: 4.7 },
+      { x: 0.12, y: 0.90, color: COLORS[8], radius: 4.6 },
 
-      { x: 0.26, y: 0.16, color: COLORS[2], radius: 5 },
-      { x: 0.28, y: 0.32, color: COLORS[6], radius: 5.5 },
-      { x: 0.26, y: 0.48, color: COLORS[3], radius: 5 },
-      { x: 0.24, y: 0.68, color: COLORS[1], radius: 5.5 },
-      { x: 0.28, y: 0.84, color: COLORS[7], radius: 5 },
+      { x: 0.28, y: 0.20, color: COLORS[2], radius: 5.1 },
+      { x: 0.30, y: 0.38, color: COLORS[7], radius: 5.8 },
+      { x: 0.27, y: 0.56, color: COLORS[3], radius: 5.2 },
+      { x: 0.24, y: 0.76, color: COLORS[1], radius: 5.4 },
+      { x: 0.28, y: 0.94, color: COLORS[8], radius: 4.8 },
 
-      { x: 0.42, y: 0.12, color: COLORS[4], radius: 5 },
-      { x: 0.44, y: 0.28, color: COLORS[0], radius: 5.5 },
-      { x: 0.50, y: 0.42, color: COLORS[2], radius: 8 },
-      { x: 0.46, y: 0.58, color: COLORS[5], radius: 6 },
-      { x: 0.42, y: 0.78, color: COLORS[3], radius: 5 },
+      { x: 0.44, y: 0.13, color: COLORS[4], radius: 5.2 },
+      { x: 0.47, y: 0.33, color: COLORS[0], radius: 5.7 },
+      { x: 0.54, y: 0.50, color: COLORS[2], radius: 8.5 },
+      { x: 0.50, y: 0.67, color: COLORS[6], radius: 6.0 },
+      { x: 0.45, y: 0.87, color: COLORS[5], radius: 5.4 },
 
-      { x: 0.62, y: 0.16, color: COLORS[6], radius: 5 },
-      { x: 0.66, y: 0.34, color: COLORS[1], radius: 5.5 },
-      { x: 0.64, y: 0.52, color: COLORS[0], radius: 5 },
-      { x: 0.66, y: 0.72, color: COLORS[4], radius: 5.5 },
+      { x: 0.64, y: 0.16, color: COLORS[7], radius: 5.2 },
+      { x: 0.69, y: 0.36, color: COLORS[1], radius: 5.6 },
+      { x: 0.67, y: 0.59, color: COLORS[0], radius: 5.0 },
+      { x: 0.69, y: 0.82, color: COLORS[4], radius: 5.2 },
 
-      { x: 0.80, y: 0.22, color: COLORS[2], radius: 5 },
-      { x: 0.84, y: 0.42, color: COLORS[5], radius: 5 },
-      { x: 0.82, y: 0.62, color: COLORS[7], radius: 5 },
-      { x: 0.86, y: 0.80, color: COLORS[3], radius: 5 },
+      { x: 0.87, y: 0.25, color: COLORS[2], radius: 5.0 },
+      { x: 0.91, y: 0.50, color: COLORS[6], radius: 5.2 },
+      { x: 0.87, y: 0.75, color: COLORS[8], radius: 5.3 },
+      { x: 0.91, y: 0.88, color: COLORS[3], radius: 5.1 },
     ]
 
     return base.map((node, index) => ({
@@ -108,78 +109,16 @@ export default function NeuralNetwork() {
 
   const connections = useMemo(
     () => [
-      [0, 1],
-      [1, 2],
-      [2, 3],
-
-      [0, 4],
-      [1, 5],
-      [1, 6],
-      [2, 6],
-      [2, 7],
-      [3, 7],
-      [3, 8],
-
-      [4, 5],
-      [5, 6],
-      [6, 7],
-      [7, 8],
-
-      [4, 9],
-      [4, 10],
-      [5, 10],
-      [5, 11],
-      [6, 10],
-      [6, 11],
-      [6, 12],
-      [7, 11],
-      [7, 12],
-      [7, 13],
-      [8, 13],
-
-      [9, 10],
-      [10, 11],
-      [11, 12],
-      [12, 13],
-
-      [9, 14],
-      [10, 14],
-      [10, 15],
-      [11, 15],
-      [11, 16],
-      [12, 16],
-      [12, 17],
-      [13, 17],
-
-      [14, 15],
-      [15, 16],
-      [16, 17],
-
-      [14, 18],
-      [15, 18],
-      [15, 19],
-      [16, 19],
-      [16, 20],
-      [17, 20],
-      [17, 21],
-
-      [18, 19],
-      [19, 20],
-      [20, 21],
-
-      [5, 9],
-      [7, 13],
-      [10, 16],
-      [11, 17],
-      [6, 12],
-      [15, 20],
-      [11, 14],
-      [12, 15],
-      [12, 18],
-      [8, 12],
-      [2, 7],
-      [0, 5],
-      [3, 6],
+      [0, 1], [1, 2], [2, 3],
+      [0, 4], [1, 5], [1, 6], [2, 6], [2, 7], [3, 7], [3, 8],
+      [4, 5], [5, 6], [6, 7], [7, 8],
+      [4, 9], [4, 10], [5, 10], [5, 11], [6, 10], [6, 11], [6, 12], [7, 11], [7, 12], [7, 13], [8, 13],
+      [9, 10], [10, 11], [11, 12], [12, 13],
+      [9, 14], [10, 14], [10, 15], [11, 15], [11, 16], [12, 16], [12, 17], [13, 17],
+      [14, 15], [15, 16], [16, 17],
+      [14, 18], [15, 18], [15, 19], [16, 19], [16, 20], [17, 20], [17, 21],
+      [18, 19], [19, 20], [20, 21],
+      [0, 5], [1, 4], [2, 8], [5, 9], [7, 13], [10, 16], [11, 17], [6, 12], [15, 20], [11, 14], [12, 15], [12, 18], [8, 12], [3, 6]
     ],
     []
   )
@@ -202,6 +141,7 @@ export default function NeuralNetwork() {
       mouseRef.current.active = false
     }
 
+    handleResize()
     window.addEventListener('resize', handleResize)
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('mouseleave', handleMouseLeave)
@@ -240,9 +180,9 @@ export default function NeuralNetwork() {
         size.height / 2,
         Math.max(size.width, size.height) * 0.7
       )
-      bg.addColorStop(0, 'rgba(8, 20, 45, 0.34)')
-      bg.addColorStop(0.35, 'rgba(8, 10, 25, 0.22)')
-      bg.addColorStop(0.7, 'rgba(5, 5, 10, 0.16)')
+      bg.addColorStop(0, 'rgba(8, 20, 45, 0.30)')
+      bg.addColorStop(0.35, 'rgba(8, 10, 25, 0.18)')
+      bg.addColorStop(0.7, 'rgba(5, 5, 10, 0.12)')
       bg.addColorStop(1, 'rgba(0, 0, 0, 1)')
       ctx.fillStyle = bg
       ctx.fillRect(0, 0, size.width, size.height)
@@ -265,7 +205,7 @@ export default function NeuralNetwork() {
           const maxDistance = 240
 
           if (dist < maxDistance) {
-            const force = (1 - dist / maxDistance) * 24
+            const force = (1 - dist / maxDistance) * 18
             offsetX = (dx / (dist || 1)) * force
             offsetY = (dy / (dist || 1)) * force
           }
@@ -278,6 +218,34 @@ export default function NeuralNetwork() {
         }
       })
 
+      if (mouse.active) {
+        const outerGlow = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 260)
+        outerGlow.addColorStop(0, 'rgba(255,255,255,0.08)')
+        outerGlow.addColorStop(0.16, 'rgba(110,231,255,0.16)')
+        outerGlow.addColorStop(0.34, 'rgba(59,130,246,0.14)')
+        outerGlow.addColorStop(0.54, 'rgba(255,79,163,0.11)')
+        outerGlow.addColorStop(0.72, 'rgba(167,139,250,0.09)')
+        outerGlow.addColorStop(0.86, 'rgba(183,255,60,0.06)')
+        outerGlow.addColorStop(1, 'rgba(0,0,0,0)')
+
+        ctx.beginPath()
+        ctx.arc(mouse.x, mouse.y, 260, 0, Math.PI * 2)
+        ctx.fillStyle = outerGlow
+        ctx.fill()
+
+        const innerCore = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 110)
+        innerCore.addColorStop(0, 'rgba(255,255,255,0.15)')
+        innerCore.addColorStop(0.22, 'rgba(110,231,255,0.18)')
+        innerCore.addColorStop(0.48, 'rgba(255,79,163,0.10)')
+        innerCore.addColorStop(0.78, 'rgba(59,130,246,0.05)')
+        innerCore.addColorStop(1, 'rgba(0,0,0,0)')
+
+        ctx.beginPath()
+        ctx.arc(mouse.x, mouse.y, 110, 0, Math.PI * 2)
+        ctx.fillStyle = innerCore
+        ctx.fill()
+      }
+
       for (const [aIndex, bIndex] of connections) {
         const a = animatedNodes[aIndex]
         const b = animatedNodes[bIndex]
@@ -287,7 +255,7 @@ export default function NeuralNetwork() {
 
         const lineGradient = ctx.createLinearGradient(a.px, a.py, b.px, b.py)
         lineGradient.addColorStop(0, `${a.color}18`)
-        lineGradient.addColorStop(0.45, `${blend}dd`)
+        lineGradient.addColorStop(0.45, `${blend}cc`)
         lineGradient.addColorStop(1, `${b.color}18`)
 
         ctx.beginPath()
@@ -300,10 +268,42 @@ export default function NeuralNetwork() {
 
         ctx.quadraticCurveTo(controlX, controlY, b.px, b.py)
         ctx.strokeStyle = lineGradient
-        ctx.lineWidth = 1 + pulse * 1.8
-        ctx.shadowBlur = 18 + pulse * 16
+        ctx.lineWidth = 1 + pulse * 1.7
+        ctx.shadowBlur = 16 + pulse * 14
         ctx.shadowColor = blend
         ctx.stroke()
+
+        const tracerCount = 2
+
+        for (let i = 0; i < tracerCount; i++) {
+          const offset = i * 0.45
+          const tracerT =
+            (elapsed * (0.16 + i * 0.03) + (a.id + b.id) * 0.021 + offset) % 1
+
+          const tx =
+            (1 - tracerT) * (1 - tracerT) * a.px +
+            2 * (1 - tracerT) * tracerT * controlX +
+            tracerT * tracerT * b.px
+
+          const ty =
+            (1 - tracerT) * (1 - tracerT) * a.py +
+            2 * (1 - tracerT) * tracerT * controlY +
+            tracerT * tracerT * b.py
+
+          const tracerColor = mixColors(a.color, b.color, tracerT)
+
+          const tracerGlow = ctx.createRadialGradient(tx, ty, 0, tx, ty, 12)
+          tracerGlow.addColorStop(0, `${tracerColor}ff`)
+          tracerGlow.addColorStop(0.35, `${tracerColor}cc`)
+          tracerGlow.addColorStop(1, `${tracerColor}00`)
+
+          ctx.beginPath()
+          ctx.arc(tx, ty, 2.4 + i * 0.4, 0, Math.PI * 2)
+          ctx.fillStyle = tracerGlow
+          ctx.shadowBlur = 18
+          ctx.shadowColor = tracerColor
+          ctx.fill()
+        }
       }
 
       if (mouse.active) {
@@ -311,18 +311,19 @@ export default function NeuralNetwork() {
           const d = distance(mouse.x, mouse.y, node.px, node.py)
 
           if (d < 220) {
-            const activeBlend = mixColors(node.color, '#ffffff', 0.45)
-            const alphaHex = Math.floor((1 - d / 220) * 140)
+            const alpha = 1 - d / 220
+            const glowColor = mixColors(node.color, '#6ee7ff', 0.35)
+            const alphaHex = Math.max(0, Math.min(255, Math.round(alpha * 150)))
               .toString(16)
               .padStart(2, '0')
 
             ctx.beginPath()
             ctx.moveTo(mouse.x, mouse.y)
             ctx.lineTo(node.px, node.py)
-            ctx.strokeStyle = `${activeBlend}${alphaHex}`
-            ctx.lineWidth = 0.8 + (1 - d / 220) * 1.8
-            ctx.shadowBlur = 18
-            ctx.shadowColor = activeBlend
+            ctx.strokeStyle = `${glowColor}${alphaHex}`
+            ctx.lineWidth = 0.8 + alpha * 1.6
+            ctx.shadowBlur = 16
+            ctx.shadowColor = glowColor
             ctx.stroke()
           }
         }
@@ -331,14 +332,7 @@ export default function NeuralNetwork() {
       for (const node of animatedNodes) {
         const halo = 12 + Math.sin(elapsed * 2 + node.phase) * 4
 
-        const radial = ctx.createRadialGradient(
-          node.px,
-          node.py,
-          1,
-          node.px,
-          node.py,
-          halo
-        )
+        const radial = ctx.createRadialGradient(node.px, node.py, 1, node.px, node.py, halo)
         radial.addColorStop(0, `${node.color}ff`)
         radial.addColorStop(0.45, `${node.color}66`)
         radial.addColorStop(1, `${node.color}00`)
@@ -357,38 +351,15 @@ export default function NeuralNetwork() {
           Math.PI * 2
         )
         ctx.fillStyle = node.color
-        ctx.shadowBlur = 24
+        ctx.shadowBlur = 22
         ctx.shadowColor = node.color
-        ctx.fill()
-      }
-
-      if (mouse.active) {
-        const mouseGradient = ctx.createRadialGradient(
-          mouse.x,
-          mouse.y,
-          0,
-          mouse.x,
-          mouse.y,
-          220
-        )
-
-        mouseGradient.addColorStop(0, 'rgba(255,255,255,0.10)')
-        mouseGradient.addColorStop(0.20, 'rgba(110,231,255,0.12)')
-        mouseGradient.addColorStop(0.45, 'rgba(59,130,246,0.10)')
-        mouseGradient.addColorStop(0.68, 'rgba(255,79,163,0.08)')
-        mouseGradient.addColorStop(0.85, 'rgba(183,255,60,0.05)')
-        mouseGradient.addColorStop(1, 'rgba(0,0,0,0)')
-
-        ctx.beginPath()
-        ctx.arc(mouse.x, mouse.y, 220, 0, Math.PI * 2)
-        ctx.fillStyle = mouseGradient
         ctx.fill()
       }
 
       for (let i = 0; i < 70; i++) {
         const x = ((i * 173) % size.width) + Math.sin(elapsed * 0.25 + i) * 14
         const y = ((i * 113) % size.height) + Math.cos(elapsed * 0.22 + i) * 14
-        const alpha = 0.03 + ((Math.sin(elapsed + i) + 1) / 2) * 0.07
+        const alpha = 0.025 + ((Math.sin(elapsed + i) + 1) / 2) * 0.05
 
         ctx.beginPath()
         ctx.arc(x, y, 1 + (i % 3) * 0.35, 0, Math.PI * 2)
