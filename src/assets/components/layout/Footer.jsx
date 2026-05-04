@@ -7,8 +7,8 @@ export default function Footer() {
             Projeto
           </p>
           <p className="mt-2 text-[15px] font-light leading-7 tracking-[0.01em] text-white/68">
-            Arquitetura de Integração de Agentes em Ambientes
-            Corporativos 
+            Arquitetura de Integração de Agentes Especialistas em Ambientes
+            Corporativos Complexos
           </p>
         </div>
 
@@ -17,7 +17,7 @@ export default function Footer() {
             Informações do TCC
           </p>
           <p className="mt-2 text-[15px] font-light leading-7 tracking-[0.01em] text-white/68">
-            Flavia Antonieli de Souza · Engenharia de Software · 2026
+            Flavia Antonioli de Souza · Engenharia de Software · 2026
           </p>
         </div>
       </div>
