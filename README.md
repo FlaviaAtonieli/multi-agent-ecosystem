@@ -1,17 +1,16 @@
 <h1 align="center">multi-agent ecosystem</h1>
 
 <p align="center">
-  <strong>Arquitetura de Integração de Agentes Especialistas em Ambientes Corporativos Complexos</strong>
+  <strong>Arquitetura de Integração de Agentes Especialistas em Ambientes Corporativos</strong>
 </p>
 
 <p align="center">
-  TCC · Católica de Santa Catarina · Engenharia de Software · 2026
+  TCC · Engenharia de Software · Centro Universitário Católica de Santa Catarina · 2026
 </p>
-
 
 <p align="center">
   <sub>
-    ecossistema conectado · agentes especialistas · arquitetura corporativa · pesquisa aplicada
+    ecossistema multiagente · agentes especialistas · arquitetura corporativa · rastreabilidade · pesquisa aplicada
   </sub>
 </p>
 
@@ -19,64 +18,156 @@
 
 ## Visão Geral
 
-Este projeto investiga a construção de uma arquitetura de integração de agentes especialistas voltada a ambientes corporativos complexos, nos quais o conhecimento técnico e funcional costuma estar fragmentado entre sistemas, tecnologias, especialistas e domínios de negócio.
+O **multi-agent ecosystem** é um projeto acadêmico de conclusão de curso que propõe uma arquitetura para integração e orquestração de agentes especialistas em ambientes corporativos complexos.
 
-A proposta parte da seguinte questão central:
+A proposta parte do problema da **fragmentação do conhecimento** em ecossistemas de software de grande porte, especialmente em contextos onde coexistem sistemas legados, arquiteturas modernas, integrações distribuídas e múltiplos domínios de negócio.
+
+O objetivo do projeto é estruturar um ecossistema em que agentes artificiais especializados atuem como componentes de software integrados, capazes de colaborar entre si por meio de contratos técnicos, fluxos de orquestração, validação cruzada e rastreabilidade.
+
+---
+
+## Problema
+
+Em ambientes corporativos, a evolução de sistemas geralmente depende da integração de diferentes tipos de conhecimento:
+
+- regras de negócio espalhadas entre áreas e sistemas;
+- código legado de difícil interpretação;
+- integrações entre aplicações antigas e modernas;
+- dependência de especialistas humanos específicos;
+- perda de contexto entre etapas do desenvolvimento;
+- aumento do lead time e do retrabalho técnico.
+
+Esse cenário cria gargalos de comunicação, dificulta a análise de impacto e torna o processo de manutenção mais dependente de pessoas específicas.
+
+---
+
+## Proposta
+
+A proposta deste projeto é definir uma arquitetura modular e extensível para um **Ecossistema de Integração de Agentes Especialistas**.
+
+Nesse ecossistema, cada agente representa uma capacidade específica, chamada de **Agent Skill**, voltada a um domínio técnico ou funcional.
+
+Exemplos de Agent Skills previstas:
+
+- análise de código legado;
+- interpretação de regras de negócio;
+- avaliação de impacto arquitetural;
+- análise de integrações e contratos de APIs;
+- validação técnica de respostas;
+- consolidação de recomendações.
+
+Esses agentes não atuam de forma isolada. Eles são coordenados por um componente central de orquestração, responsável por interpretar a solicitação do usuário, decompor o problema, acionar os especialistas corretos, validar as respostas e consolidar uma saída final rastreável.
+
+---
+
+## Questão de Pesquisa
 
 > Como reduzir a dependência de transferências manuais de contexto em ecossistemas corporativos de software, utilizando agentes especializados capazes de colaborar entre si de forma estruturada?
-
-Como resultado, busca-se definir um modelo arquitetural em que agentes de software atuem como componentes especializados, colaborando por meio de contratos técnicos, protocolos de comunicação e mecanismos de orquestração.
-
----
-
-## Contexto do Problema
-
-Em ambientes corporativos de grande porte, o desenvolvimento de software raramente depende apenas de implementação técnica. Na prática, ele exige interpretação de regras de negócio distribuídas, leitura de sistemas legados, integração entre arquiteturas antigas e modernas e comunicação constante entre diferentes especialistas.
-
-Esse cenário tende a gerar efeitos recorrentes, como aumento do lead time, perda de contexto entre etapas do processo, dependência de profissionais específicos, retrabalho por falhas de comunicação e maior dificuldade de manutenção e evolução.
-
----
-
-## Proposta do Trabalho
-
-A proposta deste TCC é definir uma **arquitetura de integração de agentes especialistas** para apoiar tarefas complexas em ambientes corporativos.
-
-Cada agente representa um domínio específico de conhecimento, como:
-
-- regras de negócio  
-- código legado  
-- arquitetura de software  
-- interface e experiência  
-- integração entre sistemas  
-
-Esses agentes não atuam de forma isolada. Eles colaboram em um ecossistema orquestrado, com foco em integração estruturada, comunicação entre domínios, rastreabilidade, governança e apoio à tomada de decisão técnica.
-
----
-
-## Relação com o RFC
-
-Este repositório também acompanha o documento de especificação do projeto no formato **RFC (Request for Comments)**, que organiza a proposta de maneira mais completa em torno de visão de produto, requisitos, arquitetura e planejamento.
 
 ---
 
 ## Objetivo Geral
 
-Propor e validar uma arquitetura estruturada de integração de agentes especialistas para orquestrar a colaboração entre múltiplos agentes de inteligência artificial no desenvolvimento e manutenção de aplicações em ambientes corporativos complexos.
+Definir e validar um modelo arquitetural escalável, modular e plug-and-play para integração e orquestração de especialistas artificiais, fundamentado em contratos técnicos, rastreabilidade e governança, visando apoiar a resolução de tarefas complexas em ambientes corporativos heterogêneos.
 
 ---
 
-## Diferencial do Projeto
+## Objetivos Específicos
 
-Diferentemente de soluções focadas apenas em automação ou execução de tarefas isoladas, este trabalho busca tratar agentes especialistas como **componentes de software integrados**, com papéis definidos, contratos técnicos, colaboração estruturada, observabilidade, rastreabilidade e foco em cenários corporativos reais.
+- Especificar contratos de comunicação para troca estruturada de contexto entre agentes.
+- Modelar um motor de orquestração responsável por decompor solicitações técnicas e coordenar especialistas artificiais.
+- Estruturar uma camada de validação cruzada para mitigar inconsistências e respostas de baixa confiança.
+- Projetar uma prova de conceito aplicada à análise de código legado e documentação técnica.
+- Avaliar a solução com base em critérios como tempo de resposta, rastreabilidade e qualidade da resposta consolidada.
 
 ---
 
-### Status
+## Arquitetura Proposta
 
-**Em desenvolvimento**
+A arquitetura é organizada em camadas e componentes especializados:
 
-### Autoria
+| Camada | Responsabilidade |
+|---|---|
+| Interface Web | Entrada de solicitações técnicas, acompanhamento da orquestração e consulta ao histórico |
+| API de Orquestração | Coordenação do fluxo, geração de Trace ID, roteamento de agentes e consolidação de respostas |
+| Project Manager | Interpretação da demanda, decomposição do problema e definição da estratégia de execução |
+| Agent Skills | Agentes especialistas responsáveis por análises específicas |
+| Advisory Agent | Validação cruzada, controle de qualidade e mitigação de inconsistências |
+| Banco de Dados | Persistência de solicitações, contextos, respostas, validações e logs |
+| Observabilidade | Registro de Trace ID, eventos, decisões e evidências de auditoria |
 
-**Flavia Antonioli de Souza**  
-Engenharia de Software · Centro universitário Católica de Santa Catarina  
-2026
+---
+
+## Principais Conceitos
+
+### Agent Skills
+
+São capacidades modulares acopláveis ao ecossistema. Cada skill representa um especialista artificial com domínio delimitado.
+
+Exemplos:
+
+- `Agent Skill de Código Legado`
+- `Agent Skill de Regras de Negócio`
+- `Agent Skill de Arquitetura`
+- `Agent Skill de Integração`
+
+### Orquestração
+
+O orquestrador interpreta a solicitação técnica, estrutura o contexto, define quais agentes devem atuar e controla o fluxo de colaboração entre eles.
+
+### Contratos Técnicos
+
+A comunicação entre componentes é baseada em contratos estruturados, como JSON Schemas e conceitos associados ao Model Context Protocol (MCP).
+
+### Rastreabilidade
+
+Cada solicitação recebe um identificador único, chamado de **Trace ID**, permitindo auditar:
+
+- qual solicitação foi enviada;
+- quais agentes foram acionados;
+- quais respostas foram produzidas;
+- quais validações foram realizadas;
+- qual resposta final foi consolidada.
+
+### Quality Gate
+
+O **Advisory Agent** atua como mecanismo de validação, revisando as respostas parciais antes da entrega final ao usuário.
+
+---
+
+## Prova de Conceito
+
+A prova de conceito será aplicada a um cenário controlado de análise de uma funcionalidade legada.
+
+Fluxo principal previsto:
+
+1. Usuário submete código legado e contexto de negócio.
+2. O Project Manager gera o Trace ID e estrutura a solicitação.
+3. Agent Skills especializadas são acionadas.
+4. As respostas parciais são enviadas ao Advisory Agent.
+5. O sistema valida, consolida e entrega uma resposta final.
+6. Toda a execução é registrada para rastreabilidade.
+
+---
+
+## Stack Tecnológica Prevista
+
+| Camada | Tecnologia |
+|---|---|
+| Frontend | React.js / TypeScript |
+| Backend | Python / FastAPI |
+| Banco de Dados | PostgreSQL |
+| Comunicação | HTTP/REST e contratos estruturados |
+| Orquestração | Camada própria em Python com apoio de bibliotecas de LLM |
+| Documentação Arquitetural | C4 Model, PlantUML, Structurizr e DBML |
+
+---
+
+## Documentação
+
+A documentação principal do projeto está organizada no formato **RFC (Request for Comments)**.
+
+Arquivo recomendado no repositório:
+
+```text
+/docs/RFC_Arquitetura_Agentes_Especialistas.md
