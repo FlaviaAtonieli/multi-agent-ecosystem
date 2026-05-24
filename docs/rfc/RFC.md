@@ -1,436 +1,386 @@
-# RFC: Request for Comments — Projeto de Portfólio
+# RFC: Request for Comments - Projeto de Portfólio
 
-**Engenharia de Software – Católica SC**
+## Arquitetura de Integração de Agentes Especialistas em Ambientes Corporativos
 
----
-
-# Identificação
-
-- **Título do Projeto:**  
-  Arquitetura de Integração de Agentes Especialistas em Ambientes Corporativos Complexos
-
-- **Linha do Projeto (Direction):**  
-  Inteligência Artificial / Arquitetura de Software / Sistemas Distribuídos
-
-- **Autor:**  
-  Flavia Antonioli de Souza
-
-- **Data da Proposta:**  
-  <!-- preencher -->
-
-- **Versão:**  
-  1.0
+**Linha do Projeto:** Inteligência Artificial / Arquitetura de Software / Sistemas Distribuídos  
+**Autor:** Flavia Antonioli de Souza  
+**Data da proposta:** 25/05/2026  
+**Versão:** 3.0  
+**Local:** Joinville, 2026
 
 ---
 
-Joinville  
-2026
+# 1. Visão de Produto e Impactos (O Problema)
 
----
+O desenvolvimento de software em ecossistemas corporativos de grande dimensão, como plataformas de gestão empresarial (ERP), enfrenta um desafio crítico: a fragmentação do conhecimento. Em ambientes onde coexistem sistemas legados, arquiteturas modernas e múltiplos domínios de negócio, a execução de tarefas complexas deixa de ser um desafio estritamente técnico e torna-se um gargalo de orquestração e integração de saberes.
 
-# 1. Visão do Produto e Impacto (O Problema)
+Para preencher esta lacuna estrutural, este documento propõe o desenvolvimento de um **Ecossistema de Integração de Agentes Especialistas**, concebido sob uma arquitetura modular e **plug & play**. Mais do que a simples automação de tarefas, a solução estabelece uma linha de trabalho dinâmica e extensível.
 
-Este cenário investiga um desafio crítico em ambientes corporativos de software: a fragmentação do conhecimento entre diferentes especialistas, tecnologias e domínios de negócio durante a execução de tarefas complexas. Essa dificuldade é acentuada em ecossistemas de grande porte, como os de plataformas de gestão empresarial (ERP), nos quais coexistem sistemas legados, arquiteturas modernas e diversas linguagens e frameworks.
-
-Nessa situação, o desenvolvimento de funcionalidades deixa de ser uma tarefa puramente técnica para se tornar um desafio de integração. O gargalo central, portanto, não reside apenas na implementação do código, mas na necessidade de orquestrar conhecimentos distribuídos entre desenvolvedores, de diferentes gerações tecnológicas.
-
-Como consequência direta dessa fragmentação, observam-se impactos negativos recorrentes, tais como o aumento no tempo de entrega (*lead time*), a dependência excessiva de especialistas isolados, a perda de contexto operacional e o retrabalho gerado por falhas de comunicação.
-
-Neste contexto, propõe-se o desenvolvimento de uma arquitetura baseada em agentes especialistas. A solução consiste em agentes de software que representam domínios de conhecimento distintos e colaboram entre si via contratos técnicos e protocolos de comunicação, visando reduzir a dispersão de informações e otimizar a produtividade em ambientes corporativos complexos.
-
----
+A principal proposta de valor reside na sua arquitetura preparada para o crescimento contínuo. Por meio de um Orquestrador de Processos central, o ecossistema é capaz de receber dinamicamente novos agentes artificiais e integrar novas **Agent Skills** (capacidades modulares). Esta visão garante que o ambiente não seja estático; pelo contrário, permite que a organização acople novos especialistas e integre conhecimentos distribuídos para responder a novas necessidades tecnológicas, mitigando a dependência excessiva de recursos humanos isolados e reduzindo substancialmente o lead time operacional.
 
 ## 1.1 Contexto e Problema
 
-O desenvolvimento de software em organizações de grande porte opera sob o paradigma de ecossistemas heterogêneos. Nesses cenários, a evolução tecnológica não ocorre de forma uniforme, resultando em um ambiente composto por sistemas legados monolíticos, microserviços modernos, regras de negócio ricas, porém distribuídas, e silos de especialização técnica.
+A evolução tecnológica em grandes organizações não ocorre de forma uniforme. A execução de tarefas críticas, como a modernização de funcionalidades, exige a síntese de domínios variados. Atualmente, a integração desses ecossistemas depende de processos humanos manuais e síncronos, o que gera ambientes rígidos e difíceis de escalar.
 
-A execução de tarefas críticas, como a modernização de funcionalidades ou a integração de fluxos complexos, exige uma síntese de domínios. Atualmente, para implementar uma única funcionalidade, é necessário orquestrar conhecimentos que variam da interpretação de lógica em linguagens legadas à arquitetura de interfaces contemporâneas, passando por validações funcionais rigorosas.
+As limitações severas incluem:
 
-### O Gargalo da Integração Humana
-
-Atualmente, a integração desses domínios depende quase exclusivamente de processos manuais e síncronos, os quais apresentam limitações significativas no contexto de ambientes corporativos complexos. Essas limitações podem ser observadas, principalmente, nos seguintes aspectos:
-
-- **Consultas específicas:** dependência crítica de especialistas detentores de conhecimento especializado, gerando gargalos de disponibilidade.
-- **Transferências de Contexto Ineficientes (*Hand-offs*):** a transferência de contexto entre analistas, arquitetos e desenvolvedores resulta em uma degradação progressiva da informação, caracterizando o efeito "telefone sem fio".
-- **Análise de Impacto Difusa:** a falta de uma visão unificada sobre o impacto de mudanças em sistemas interdependentes eleva o risco de regressões e retrabalho.
-
-### A Lacuna Estrutural
-
-O problema central não é a falta de conhecimento, mas a sua fragmentação. Em projetos de modernização, o custo de "redescobrir" a regra de negócio embutida no legado frequentemente supera o custo da nova implementação. A ausência de um mecanismo que capture, interprete e integre esses fragmentos de forma estruturada cria um ambiente de alta carga cognitiva e baixa previsibilidade.
-
-Dessa forma, identifica-se a necessidade de uma solução que transcenda a simples busca de informações, atuando na orquestração autônoma do conhecimento especializado para garantir a consistência funcional e arquitetural ao longo de todo o ciclo de vida do desenvolvimento de software.
-
-O conceito de agentes de software é amplamente discutido na literatura de Inteligência Artificial e Sistemas Distribuídos. Segundo Russell e Norvig (2020), na obra *Artificial Intelligence: A Modern Approach*, agentes são entidades capazes de perceber o ambiente, tomar decisões e executar ações com o objetivo de atingir determinados resultados.
-
-De acordo com Stuart Russell e Peter Norvig, um agente pode ser definido como qualquer entidade que percebe seu ambiente por meio de sensores e atua sobre esse ambiente por meio de atuadores, buscando maximizar a realização de seus objetivos (RUSSELL; NORVIG, 2020).
-
-No contexto dos sistemas multiagentes, Michael Wooldridge (2009) os define como sistemas compostos por múltiplas entidades autônomas que interagem entre si, podendo cooperar ou competir, com o objetivo de resolver problemas complexos demais para serem tratados por um único agente.
-
-Aplicando esses conceitos ao contexto deste trabalho, os agentes especialistas podem ser compreendidos como entidades de software que representam domínios específicos de conhecimento, como regras de negócio, código legado ou arquitetura, e, quando integrados, formam um sistema multiagente capaz de colaborar para resolver tarefas complexas em ambientes corporativos.
-
----
+- **Gargalos de Disponibilidade e Rigidez:** dependência crítica de poucos especialistas, criando pontos únicos de falha. Quando uma nova tecnologia é introduzida, o gargalo aumenta, pois não há uma forma estruturada de acoplar esse novo conhecimento ao fluxo de trabalho.
+- **Degradação de Contexto:** perda progressiva de informações vitais durante hand-offs manuais entre analistas, arquitetos e desenvolvedores.
+- **Análise de Impacto Difusa:** ausência de uma visão unificada, elevando o risco de regressões, retrabalho e inconsistências arquitetônicas em sistemas interdependentes.
 
 ## 1.2 Origem da Demanda e Evidências
 
-O desenvolvimento deste projeto não surge apenas de interesse acadêmico, mas a partir da observação de problemas reais relacionados ao desenvolvimento de software em ambientes corporativos complexos. Para fundamentar a relevância prática do problema investigado, nesta seção é apresentada a origem da demanda e as evidências coletadas que justificam a realização deste trabalho.
+A demanda originou-se da análise de uma empresa brasileira de grande porte do setor de desenvolvimento de software ERP. Observou-se que a fragmentação do conhecimento não é apenas uma percepção, mas uma inconsistência estrutural da rede de desenvolvimento.
 
-Com o objetivo de preservar o sigilo organizacional, os dados apresentados foram anonimizados e sintetizados, mantendo apenas as informações necessárias para a caracterização do problema e sua análise sob a perspectiva acadêmica.
+A análise detalhada da matriz de competências do time de produto permitiu identificar a severidade dessa fragmentação por meio de indicadores de lacuna (GAPs). A tabela abaixo categoriza os riscos operacionais identificados, servindo como justificativa direta para a necessidade de um ecossistema extensível de agentes.
 
-### 1.2.1 Demanda Externa
-
-#### Organização
-
-O projeto foi contextualizado a partir da análise de uma empresa brasileira de grande porte do setor de desenvolvimento de software de gestão empresarial, que possui um ecossistema tecnológico composto por diversos sistemas, aplicações modernas e diferentes módulos de negócio integrados.
-
-#### Contexto da Demanda
-
-No ambiente analisado, são frequentes atividades relacionadas à manutenção de sistemas legados, modernização tecnológica, conversão de interfaces, integração entre backend e frontend e validações funcionais e técnicas em múltiplas etapas do processo.
-
-Essas atividades exigem conhecimento distribuído entre diferentes especialistas, como desenvolvedores de tecnologias legadas e modernas, analistas de negócio e arquitetos de software.
-
-#### Problema Relatado
-
-A demanda identificada pode ser sintetizada nos seguintes pontos:
-
-- Fragmentação de conhecimento entre especialistas
-- Dependência de profissionais específicos para determinadas tecnologias
-- Dificuldade na interpretação de regras de negócio implícitas em sistemas legados
-- Perda de contexto entre etapas do desenvolvimento
-- Retrabalho decorrente de desalinhamentos técnicos
-- Aumento do tempo de desenvolvimento
-
-### 1.2.2 Pesquisa com Usuários
-
-#### Metodologia
-
-A evidência empírica foi obtida por meio de análise documental qualitativa de uma matriz de competências de um time de produto, com o objetivo de compreender como o conhecimento técnico e de negócio está distribuído dentro da equipe.
-
-#### Resultados Observados
-
-A análise da matriz de competências revelou os seguintes padrões:
-
-| Evidência Observada | Descrição |
-|---|---|
-| Concentração de conhecimento | Tecnologias críticas dominadas por poucos profissionais |
-| Separação entre tecnologias | Baixa sobreposição entre tecnologias legadas e modernas |
-| Conhecimento de negócio | Regras de negócio dominadas por poucos especialistas |
-| Fragmentação entre áreas | Nenhum profissional domina negócios, processos e tecnologias de legado e modernas ao mesmo tempo |
-
-Esses padrões indicam dependência de especialistas e necessidade constante de comunicação para integração de conhecimento.
-
-### 1.2.3 Evidência Concreta do Problema
-
-A análise da matriz de competências demonstra que a fragmentação do conhecimento é uma característica estrutural da equipe, e não apenas uma percepção subjetiva. A execução de tarefas complexas exige integração constante e transferência manual de contexto, o que demanda um contínuo realinhamento de expectativas e normas entre os envolvidos. Como consequência, observa-se um elevado esforço de coordenação, maior risco de interpretações divergentes e potenciais inconsistências na execução das atividades.
-
-#### 1.2.3.1 Detalhamento da Matriz de Competências e Riscos Operacionais
-
-A análise detalhada da matriz de competências do time de produto permitiu identificar a severidade da fragmentação do conhecimento por meio de indicadores de lacuna (*gaps*). A tabela abaixo categoriza os riscos identificados, servindo como base para a definição das responsabilidades dos agentes especialistas na arquitetura proposta:
-
-| Categoria de Evidência | Status Identificado (2026) | Impacto no Ciclo de Desenvolvimento | Necessidade da Solução |
+| Categoria de Evidência | Status Identificado (Cenário Atual) | Impacto no Ciclo de Desenvolvimento | Necessidade da Solução |
 |---|---|---|---|
-| Gargalo em Especialistas (Experts) | Competências críticas dominadas por apenas um indivíduo (ponto único de falha) | Interrupção de fluxos e aumento do *lead time* devido à indisponibilidade de especialistas | Agentes capazes de emular o conhecimento do expert para consultas de baixa e média complexidade |
-| Gaps de Prática (Praticantes) | Ausência de profissionais com nível inicial e intermediário em tecnologias específicas | Sobrecarga dos especialistas e falta de redundância técnica no time | Agentes atuando como tutores ou validadores técnicos para desenvolvedores em transição |
-| Isolamento de Domínio | Baixa sobreposição entre conhecimentos de negócio, processos e tecnologias | Erros de implementação por falta de contexto funcional ou técnico cruzado | Orquestração de agentes que garantam o cumprimento de contratos técnicos entre domínios distintos |
+| Concentração de Conhecimento (GAPs nos Experts) | Competências críticas dominadas por apenas um indivíduo, caracterizando ponto único de falha. | Interrupção de fluxos e aumento do lead time devido à indisponibilidade do especialista. | Acoplar agentes que emulem o conhecimento do expert para responder a consultas de baixa e média complexidade. |
+| Lacuna de Prática (GAPs nos Praticantes) | Ausência de profissionais com nível inicial/intermediário em tecnologias específicas. | Sobrecarga dos especialistas e ausência de redundância técnica no time. | Agentes atuando na linha de trabalho como validadores de código para desenvolvedores em transição. |
+| Isolamento de Domínio | Baixa sobreposição entre conhecimentos de negócio, processos e tecnologias legadas/modernas. | Erros de implementação e retrabalho por falta de contexto funcional ou técnico cruzado. | Orquestração dinâmica por um Project Manager artificial que coordene agentes de diferentes domínios e garanta o cumprimento de contratos técnicos. |
 
-#### Análise dos GAPs Estruturais
+O detalhamento metodológico desta análise encontra-se no [Apêndice A](#apêndice-a--evidências-do-problema-detalhamento-da-matriz-de-competências-e-riscos-operacionais).
 
-A análise documental revelou que a organização apresenta um cenário de "GAPs nos Experts" em áreas fundamentais, o que significa que o conhecimento mais profundo sobre o sistema não está apenas fragmentado, mas em risco de perda ou inacessibilidade. Além disso, a recorrência de "GAPs nos Praticantes" indica uma barreira de entrada alta para novos desenvolvedores em domínios legados ou complexos.
-
-Esse cenário ratifica que a integração humana manual, através de reuniões e consultas a especialistas, é insuficiente para sustentar a escala de um ERP complexo. A arquitetura de agentes proposta surge, portanto, como uma camada de resiliência cognitiva, em que os agentes de IA especialistas reduzem a dependência direta dos experts humanos, permitindo que estes se concentrem em tarefas de alta complexidade enquanto a IA orquestra o conhecimento distribuído.
-
-### 1.2.4 Evidência de Interesse
-
-A relevância prática da solução foi reforçada por:
-
-- Interesse de profissionais na proposta de agentes especialistas
-- Reconhecimento da dificuldade em tarefas de modernização tecnológica
-- Validação conceitual inicial da proposta
-
----
+Além da análise documental da matriz de competências, a relevância prática da proposta também foi reforçada pelo interesse observado entre profissionais envolvidos em atividades de desenvolvimento, manutenção e modernização tecnológica. Esse interesse decorre, principalmente, do reconhecimento das dificuldades recorrentes associadas à interpretação de sistemas legados, à dependência de especialistas humanos específicos e à perda de contexto entre etapas do desenvolvimento.
 
 ## 1.3 Análise de Soluções Existentes (Benchmark)
 
-Com o avanço dos modelos de linguagem e da inteligência artificial generativa, surgiram diversas plataformas e frameworks voltados para a criação de agentes inteligentes e sistemas multiagentes. Essas soluções buscam permitir que executem tarefas, utilizem ferramentas externas, acessem bases de conhecimento e, em alguns casos, colaborem entre si para resolver problemas mais complexos.
+Embora o mercado ofereça frameworks robustos para IA generativa, a maioria foca em automação de tarefas isoladas ou pipelines, carecendo de governança e contratos formais exigidos por ambientes corporativos.
 
-Embora essas soluções permitam a criação de agentes e até mesmo a comunicação entre eles, dentro de um mesmo ecossistema, muitas delas não foram projetadas com foco em ambientes corporativos complexos, nos quais são necessários requisitos adicionais, como integração estruturada, contratos técnicos, governança, segurança, rastreabilidade e entendimento referente a sistemas legados.
-
-A seguir são apresentadas algumas das principais soluções existentes relacionadas a agentes e sistemas multiagente.
-
-### 1.3.1 LangChain
-
-- **Nome do produto:** LangChain
-- **Link:** https://www.langchain.com/
-- **Público-alvo:** Desenvolvedores de aplicações baseadas em LLM, chatbots, sistemas de automação, aplicações com Retrieval Augmented Generation (RAG) e sistemas que utilizam modelos de linguagem integrados a ferramentas externas.
-
-**Funcionalidades principais:**
-
-- Criação de agentes baseados em modelos de linguagem
-- Integração com ferramentas externas (*tools*), APIs e bancos de dados
-- Implementação de RAG (*Retrieval Augmented Generation*)
-- Memória de conversação
-- Criação de fluxos e pipelines de processamento com LLM
-- Orquestração de chamadas para modelos de linguagem
-
-**Limitações:**
-
-- Foco maior em pipelines de execução do que em colaboração estruturada entre múltiplos agentes especialistas
-- Comunicação entre agentes baseada em troca de mensagens, sem contratos técnicos formais
-- Pouco foco em governança, segurança e isolamento entre agentes
-- Não é uma arquitetura pensada especificamente para ambientes corporativos complexos
-
-### 1.3.2 AutoGPT
-
-- **Nome do produto:** AutoGPT
-- **Link:** https://github.com/Significant-Gravitas/AutoGPT
-- **Público-alvo:** Pesquisadores, desenvolvedores e entusiastas de agentes autônomos e automação baseada em IA.
-
-**Funcionalidades principais:**
-
-- Execução autônoma de tarefas a partir de um objetivo
-- Planejamento automático de ações
-- Uso de ferramentas externas
-- Memória de longo prazo
-- Execução contínua baseada em objetivos
-
-**Limitações:**
-
-- Foco em um agente autônomo, e não em múltiplos agentes especialistas
-- Dificuldade de controle e previsibilidade das ações
-- Pouco controle de fluxo e governança
-- Não possui foco em integração entre agentes especialistas com papéis bem definidos
-- Não foi projetado para ambientes corporativos com requisitos de segurança e rastreabilidade
-
-### 1.3.3 CrewAI
-
-- **Nome do produto:** CrewAI
-- **Link:** https://www.crewai.com/
-- **Público-alvo:** Desenvolvedores que desejam criar sistemas multiagentes com papéis definidos, simulando equipes de trabalho compostas por agentes.
-
-**Funcionalidades principais:**
-
-- Definição de papéis para agentes
-- Execução de tarefas em sequência ou de forma colaborativa
-- Compartilhamento de contexto entre agentes
-- Simulação de equipes de trabalho compostas por agentes
-- Coordenação de tarefas entre múltiplos agentes
-
-**Limitações:**
-
-- Comunicação entre agentes baseada principalmente em troca de mensagens e contexto textual
-- Falta de contratos técnicos formais entre agentes
-- Pouco foco em governança, segurança e isolamento entre agentes
-- Não define uma arquitetura corporativa de integração entre agentes
-- Pouco foco em observabilidade e rastreabilidade das ações dos agentes
-
-### 1.3.4 Microsoft AutoGen
-
-- **Nome do produto:** Microsoft AutoGen
-- **Link:** https://github.com/microsoft/autogen
-- **Público-alvo:** Pesquisadores e desenvolvedores que desejam construir sistemas multiagentes colaborativos baseados em modelos de linguagem.
-
-**Funcionalidades principais:**
-
-- Comunicação entre múltiplos agentes
-- Definição de diferentes papéis para agentes
-- Execução colaborativa de tarefas
-- Integração com ferramentas externas e execução de código
-- Simulação de conversas entre agentes para resolução de problemas
-
-**Limitações:**
-
-- Foco maior em pesquisa e experimentação
-- Comunicação baseada principalmente em mensagens, não em APIs ou contratos formais
-- Não aborda profundamente questões de governança, segurança e observabilidade
-- Não define claramente uma arquitetura corporativa para integração de agentes
-
-### 1.3.5 Comparação das Soluções
-
-| Solução | Pontos Fortes | Limitações |
+| Solução | Pontos fortes | Limitações no contexto deste projeto |
 |---|---|---|
-| LangChain | Integração com ferramentas, RAG, memória | Não foca em colaboração estruturada entre agentes |
-| AutoGPT | Autonomia e planejamento | Pouco controle e foco em agente único |
-| CrewAI | Multiagente com papéis definidos | Falta de contratos técnicos e governança |
-| AutoGen | Comunicação entre agentes | Foco mais acadêmico e experimental |
+| LangChain | Integrações, RAG e tools. | Foco maior em pipelines sequenciais do que em colaboração estruturada entre múltiplos agentes autônomos. |
+| AutoGPT | Autonomia orientada a objetivos genéricos. | Baixo controle de fluxo, baixa previsibilidade e pouca adequação a ecossistemas corporativos seguros. |
+| CrewAI | Simulação de equipes com papéis definidos. | Comunicação baseada em texto livre, sem contratos técnicos formais rígidos. |
+| Microsoft AutoGen | Colaboração entre agentes e execução de código. | Foco acadêmico/experimental e pouca ênfase em observabilidade corporativa. |
+| Gemini Code Assist / Assistentes de IDE | Aceleração do desenvolvimento individual. | Atuação como copilots individuais, não como ecossistema de orquestração de conhecimento distribuído. |
 
-### Lacuna não resolvida pelas soluções existentes
+### O Diferencial da Proposta
 
-A partir do benchmark realizado, observa-se que as soluções existentes apresentam algumas limitações quando analisadas sob a perspectiva de arquitetura de software e integração corporativa. Entre as principais lacunas identificadas, destacam-se:
-
-- Ausência de contratos técnicos formais entre agentes
-- Comunicação entre agentes baseada principalmente em mensagens textuais, e não em interfaces bem definidas
-- Falta de uma arquitetura de integração voltada para ambientes corporativos
-- Pouca abordagem sobre governança, segurança e isolamento entre agentes
-- Ausência de mecanismos formais de observabilidade e rastreabilidade das decisões dos agentes
-- Foco maior em automação de tarefas e não em integração de conhecimento entre especialistas
-
-Dessa forma, identifica-se uma lacuna relacionada à arquitetura de integração e orquestração de agentes especialistas, especialmente em cenários que envolvem múltiplos domínios de conhecimento, sistemas legados e arquiteturas corporativas complexas.
-
-### 1.3.6 Diferencial do Projeto
-
-A análise das soluções disponíveis demonstra que já existem diversas ferramentas e frameworks que permitem a criação de agentes baseados em modelos de linguagem, capazes de utilizar aplicações externas e até mesmo estabelecer comunicação entre si. No entanto, essas soluções foram desenvolvidas, em sua maioria, com foco na automação de tarefas, na construção de assistentes inteligentes ou em contextos de experimentação acadêmica, não sendo projetadas especificamente para a integração estruturada de agentes especialistas em ambientes corporativos complexos.
-
-Nesse contexto, observa-se que a principal lacuna não está na ausência de tecnologias para criação de agentes, mas na inexistência de uma arquitetura que trate agentes especialistas como componentes de software integrados, com definição clara de comunicação, contratos técnicos, governança e rastreabilidade.
-
-Em ambientes corporativos complexos, o desafio central não se limita à execução de tarefas isoladas, mas envolve a necessidade de integrar conhecimentos distribuídos entre diferentes domínios, manter o contexto técnico ao longo do processo e garantir a colaboração estruturada entre especialistas, sejam eles humanos ou artificiais.
-
-Dessa forma, o objetivo deste projeto não é propor um novo framework de agentes, mas sim um modelo arquitetural que possibilite a integração estruturada de agentes especialistas, com definição clara de papéis, responsabilidades, contratos de comunicação e mecanismos de orquestração, aproximando o comportamento desses agentes ao funcionamento de equipes de especialistas em ambientes corporativos.
-
-O sistema proposto está voltado ao apoio de tarefas técnicas complexas em ambientes corporativos de desenvolvimento de software, especialmente em cenários que envolvem integração entre sistemas legados e modernos, conversão de funcionalidades entre diferentes tecnologias, interpretação de regras de negócio existentes, apoio à tomada de decisão técnica e arquitetural e integração de conhecimento entre diferentes áreas especializadas.
-
-Assim, o diferencial deste projeto reside na proposição de uma arquitetura de integração de agentes especialistas orientada a ambientes corporativos, na qual os agentes são tratados como componentes especializados que colaboram entre si por meio de contratos técnicos e mecanismos de orquestração, com foco na integração de conhecimento e não apenas na execução de tarefas isoladas.
-
----
+A lacuna identificada não reside na falta de Inteligência Artificial, mas na ausência de uma arquitetura de integração robusta. Este projeto estrutura os agentes como componentes de software interoperáveis, via Arquitetura Orientada a Serviços e contratos, assegurando rastreabilidade, validação de resultados e governança técnica.
 
 ## 1.4 Público-Alvo
 
-O sistema proposto neste projeto é voltado para profissionais que atuam em ambientes corporativos de desenvolvimento de software de alta complexidade. O foco reside em ecossistemas que envolvem múltiplas tecnologias, sistemas legados e a necessidade de integração entre diferentes áreas técnicas.
+A solução destina-se a equipes técnicas de nível intermediário a avançado que atuam na manutenção e evolução de ecossistemas organizacionais heterogêneos.
 
-Diferentemente de sistemas voltados ao público geral, este ecossistema multiagente tem como alvo equipes técnicas que lidam com tarefas nas quais o conhecimento é distribuído, exigindo constante transferência de contexto e alinhamento entre especialistas.
+- **Desenvolvedores de Software:** utilizam o ecossistema para acionar especialistas artificiais, como agentes de código legado, contribuindo para reduzir o esforço cognitivo e o tempo de espera na busca por contexto de regras de negócio embutidas em sistemas antigos.
+- **Analistas de Sistemas:** apoiam-se na orquestração dos agentes para mitigar interpretações divergentes, validando regras funcionais e apoiando o mapeamento de processos técnicos com maior precisão.
+- **Arquitetos de Software:** utilizam a visão integrada do ecossistema para apoiar decisões estruturais e análise de impacto entre sistemas interdependentes. Também atuam de forma estratégica na extensão da plataforma, definindo quais novos agentes e skills devem ser acoplados.
 
-### Perfil dos Usuários
+O sistema não é direcionado a usuários leigos, mas a profissionais com nível técnico intermediário ou avançado. Espera-se familiaridade com conceitos como APIs, integração de sistemas, leitura de código-fonte, documentação técnica, arquitetura de software e análise de impacto.
 
-Os principais usuários do sistema são:
-
-- **Desenvolvedores de Software:** profissionais responsáveis pela implementação e manutenção de sistemas. Frequentemente enfrentam dificuldades para analisar rapidamente lógicas elaboradas ou códigos legados e dependem da integração com outros profissionais para concluir tarefas. O sistema auxilia na redução do esforço manual de busca por contexto técnico.
-- **Analistas de Sistemas:** responsáveis por mapear processos e documentar funcionalidades. Atuam na intersecção entre o negócio e a técnica, sendo diretamente impactados pela fragmentação das informações. O sistema apoia a mitigação de interpretações divergentes e ajuda no realinhamento de expectativas sobre as regras de negócio.
-- **Arquitetos de Software:** responsáveis por decisões estruturais e evolução das plataformas. Lidam com o desafio de integrar sistemas de diferentes gerações e podem se beneficiar de agentes especialistas para análise de impacto e definição de padrões, reduzindo inconsistências na execução das diretrizes arquiteturais.
-
-### Nível de Conhecimento Técnico Esperado
-
-O sistema não é voltado para usuários leigos. O público-alvo possui conhecimento técnico intermediário ou avançado, o que permite que a interface e as funcionalidades assumam familiaridade com conceitos como:
-
-- APIs e integração de sistemas
-- Arquiteturas de banco de dados
-- Leitura e interpretação de código-fonte
-- Documentação técnica e diagramação
-
-O sistema atua, portanto, como uma ferramenta de apoio técnico e integração de conhecimento, visando diminuir o custo de coordenação entre esses diferentes perfis em ambientes corporativos.
-
----
-
-## 1.5 Objetivos do Projeto
+## 1.5 Objetivos e Hipóteses
 
 ### 1.5.1 Objetivo Geral
 
-Propor e validar uma arquitetura estruturada de integração de agentes especialistas, baseada nos princípios de *Spec-Driven Development* (SDD), para orquestrar a colaboração entre múltiplos agentes de inteligência artificial no desenvolvimento e manutenção de aplicações em ambientes corporativos complexos, considerando a coordenação entre papéis especializados, diferentes domínios de conhecimento e diretrizes de engenharia de software.
+Definir e validar um modelo arquitetural escalável, modular e plug-and-play para integração e orquestração de especialistas artificiais, fundamentado em **Spec-Driven Development (SDD)**, visando estabelecer uma linha de trabalho completa e contínua para a resolução de tarefas complexas em ambientes corporativos heterogêneos.
 
 ### 1.5.2 Objetivos Específicos
 
-Para atingir o objetivo geral, foram definidos os seguintes objetivos específicos:
-
-1. **Estudar e consolidar a base teórica sobre arquitetura de software e a integração de sistemas multiagentes.**  
-   Este objetivo visa construir a fundamentação teórica do projeto, relacionando conceitos de sistemas multiagente, sistemas distribuídos, arquitetura orientada a serviços e agentes baseados em modelos de linguagem.
-
-2. **Analisar soluções existentes relacionadas a agentes e sistemas multiagente, identificando suas limitações em ambientes corporativos.**  
-   Este objetivo corresponde ao benchmark do projeto, no qual serão analisadas plataformas e frameworks existentes, como LangChain, AutoGen e CrewAI, com o objetivo de identificar lacunas relacionadas à integração estruturada entre agentes.
-
-3. **Definir uma arquitetura de integração de agentes especialistas, incluindo comunicação, contratos, orquestração e governança.**  
-   Este é um dos principais objetivos técnicos do projeto, no qual será proposta uma arquitetura que trate agentes como componentes de software especializados, capazes de se comunicar por meio de interfaces e contratos bem definidos.
-
-4. **Desenvolver uma prova de conceito (PoC) do ecossistema multiagente aplicada a um cenário de desenvolvimento de software corporativo.**  
-   A prova de conceito terá como objetivo demonstrar, na prática, o funcionamento da arquitetura proposta, por meio da simulação de agentes especialistas colaborando para resolver uma tarefa técnica complexa.
-
-5. **Avaliar os benefícios e limitações da arquitetura proposta no apoio a tarefas complexas em ambientes corporativos.**  
-   Este objetivo visa analisar os resultados da prova de conceito, avaliando aspectos como colaboração entre agentes, organização do fluxo de trabalho, reaproveitamento de conhecimento e viabilidade da solução em ambientes corporativos.
-
-6. **Avaliar como os GAPs de conhecimento do squad foram encadeados ao decorrer da utilização da aplicação.**  
-   Este objetivo visa analisar os resultados comparativos referentes ao desenvolvimento do time com base no apoio que a aplicação terá, avaliando aspectos como a rápida associação da tarefa com ajuda da rede de agentes.
+1. **Especificar os Contratos de Comunicação:** mapear e padronizar interfaces de comunicação, baseadas em protocolos como MCP, para viabilizar o acoplamento dinâmico de novas Agent Skills sem dependência de fornecedores.
+2. **Modelar o Motor de Orquestração:** desenvolver a lógica do componente central (Project Manager) responsável por interpretar solicitações complexas, decompor o problema em subtarefas e gerenciar a linha de trabalho dos agentes.
+3. **Estruturar a Camada de Validação:** desenhar o mecanismo de validação cruzada (Software Architect e Advisory Agent) para garantir consistência técnica e qualidade das respostas parciais.
+4. **Implementar e Avaliar a PoC:** construir um protótipo funcional aplicado a um cenário de análise de sistemas legados corporativos para medir o desempenho do ecossistema frente aos KPIs estabelecidos.
 
 ### 1.5.3 Hipóteses de Pesquisa
 
-Baseando-se no problema identificado e na proposta de solução, são definidas as seguintes hipóteses de pesquisa:
-
-- **H1 — Redução do tempo de execução**  
-  A utilização de uma arquitetura baseada em agentes especialistas reduz o tempo necessário para execução de tarefas complexas em ambientes corporativos, quando comparado ao modelo tradicional baseado em comunicação manual entre especialistas.
-
-- **H2 — Redução da dependência de especialistas**  
-  A integração de agentes especialistas permite reduzir a dependência direta de profissionais específicos, ao disponibilizar conhecimento estruturado e acessível de forma automatizada.
-
-- **H3 — Melhoria na qualidade técnica das soluções**  
-  A orquestração de múltiplos agentes especializados contribui para a melhoria da qualidade técnica das soluções propostas, ao permitir a validação cruzada entre diferentes domínios de conhecimento.
-
-Para sustentar as hipóteses apresentadas, fundamenta-se a proposta nos princípios de integração de sistemas e arquiteturas distribuídas.
-
-A integração de sistemas é um dos pilares fundamentais em ambientes corporativos de grande porte, especialmente em cenários que envolvem múltiplas tecnologias, sistemas legados e arquiteturas distribuídas.
-
-Segundo o paradigma de *Service-Oriented Architecture* (SOA), sistemas devem ser estruturados como serviços independentes que se comunicam por meio de interfaces bem definidas, permitindo maior flexibilidade, reutilização e escalabilidade.
-
-Nesse contexto, o uso de *Application Programming Interface* (APIs) torna-se essencial para a comunicação entre componentes, permitindo que diferentes sistemas e módulos troquem informações de forma padronizada.
-
-Além disso, a definição de contratos de comunicação, como *schemas* de dados e interfaces formais, é fundamental para garantir a interoperabilidade entre sistemas, reduzindo ambiguidades e assegurando consistência na troca de informações.
-
-No contexto deste projeto, esses conceitos são aplicados à integração entre agentes especialistas, que passam a se comportar como serviços independentes dentro de uma arquitetura distribuída, comunicando-se por meio de contratos técnicos bem definidos e orquestrados por um componente central.
-
----
+- **H1 - Eficiência Temporal:** a orquestração estruturada de agentes especialistas em uma linha de trabalho contínua contribui para reduzir o tempo de análise de processos técnicos complexos.
+- **H2 - Resiliência Cognitiva:** a disponibilização e descentralização do conhecimento especializado por Agent Skills modulares e acopláveis mitiga a dependência direta de especialistas humanos isolados.
+- **H3 - Qualidade e Precisão:** a validação técnica cruzada e iterativa entre diferentes domínios de especialistas artificiais amplia a precisão, completude e qualidade das recomendações analíticas consolidadas.
+- **H4 - Extensibilidade e Governança:** a adoção de contratos formais rígidos e orquestração centralizada viabiliza a inclusão de novos agentes sem refatoração do núcleo, buscando assegurar rastreabilidade integral das interações e decisões registradas.
 
 ## 1.6 Métricas de Sucesso (KPIs)
 
-Para avaliar o sucesso do projeto, foram definidos indicadores que medem tanto o desempenho técnico da arquitetura proposta quanto o impacto da utilização de agentes no apoio a tarefas complexas em ambientes corporativos.
-
-As métricas foram definidas com o objetivo de avaliar se a utilização de um ecossistema multiagente organizado, por meio de uma arquitetura de integração estruturada, pode melhorar a execução de tarefas que envolvem múltiplos domínios de conhecimento.
-
-### 1.6.1 Redução do Tempo de Execução de Tarefas Complexas
-
-Uma das principais hipóteses do projeto é que a utilização de agentes especialistas colaborando entre si pode reduzir o tempo necessário para executar tarefas que exigem conhecimento distribuído entre diferentes áreas.
-
-Dessa forma, será medida a diferença entre:
-
-- O tempo estimado para execução de uma tarefa complexa de forma tradicional
-- O tempo estimado para execução da mesma tarefa com apoio do ecossistema multiagente
-
-**Meta:** redução de pelo menos 30% no tempo de execução da tarefa.
-
-### 1.6.2 Tempo de Resposta do Sistema
-
-O tempo de resposta corresponde ao tempo estimado para que o sistema receba uma solicitação, orquestre os agentes necessários e retorne uma resposta consolidada ao usuário.
-
-**Meta:** tempo médio de resposta inferior a 10 segundos para tarefas que envolvam múltiplos agentes.
-
-### 1.6.3 Taxa de Sucesso na Execução de Tarefas
-
-Essa métrica avalia se o sistema consegue completar corretamente o fluxo de execução entre agentes, desde a solicitação inicial até a geração da resposta final.
-
-Será medida a porcentagem de execuções em que:
-
-- O fluxo entre agentes foi concluído
-- Os agentes conseguiram se comunicar corretamente
-- A resposta final foi gerada
-
-**Meta:** taxa de sucesso superior a 80% das execuções.
-
-### 1.6.4 Capacidade de Integração entre Agentes Especialistas
-
-Essa métrica avalia a capacidade da arquitetura de integrar múltiplos agentes especialistas em um único fluxo de execução.
-
-Será medida a quantidade de agentes diferentes que conseguem participar de um fluxo orquestrado, como por exemplo:
-
-- Agente de regras de negócio
-- Agente de código legado
-- Agente de interface
-- Agente de arquitetura
-
-**Meta:** integração de pelo menos 3 agentes especialistas em um fluxo completo de execução.
-
-### 1.6.5 Rastreabilidade e Registro das Interações
-
-Uma das propostas da arquitetura é permitir rastreabilidade das decisões e interações entre agentes. Dessa forma, será avaliado se o sistema consegue registrar:
-
-- Qual agente foi acionado
-- Qual tarefa foi executada
-- Qual foi o resultado
-- Qual agente utilizou a resposta de outro agente
-
-**Meta:** 100% das interações entre agentes registradas.
-
-### 1.6.6 Resumo dos KPIs
-
 | KPI | Descrição | Meta |
 |---|---|---|
-| Redução do tempo de execução | Comparação entre processo tradicional e com agentes | ≥ 30% |
-| Tempo de resposta | Tempo para orquestrar agentes e retornar resposta | ≤ 10 s |
-| Taxa de sucesso | Execuções concluídas com sucesso | ≥ 80% |
-| Integração entre agentes | Número de agentes no fluxo | ≥ 3 agentes |
-| Rastreabilidade | Registro das interações | 100% |
+| Redução do Tempo de Análise | Comparação do lead time analítico tradicional vs. fluxo com agentes. | Redução >= 30% |
+| Tempo de Resposta | Tempo médio de resposta nos cenários controlados da PoC, considerando fluxos sintéticos e número limitado de especialistas. | <= 10 segundos |
+| Taxa de Sucesso (End-to-End) | Percentual de fluxos concluídos com respostas válidas, aprovadas pelo mecanismo de validação e sem inconsistências críticas. | >= 80% |
+| Articulação de Domínios | Capacidade de integrar agentes diferentes no mesmo fluxo. | Mínimo de 3 agentes |
+| Rastreabilidade | Capacidade de auditar qual agente tomou qual decisão técnica. | 100% de logs registrados |
+
+---
+
+# 2. Engenharia de Requisitos
+
+Esta seção define o comportamento esperado do ecossistema de especialistas artificiais, conectando o problema da fragmentação do conhecimento às funcionalidades e restrições arquiteturais da solução.
+
+## 2.1 Personas e Casos de Uso
+
+| Persona | Contexto e Dificuldades | Casos de Uso Principais |
+|---|---|---|
+| Aragorn (Desenvolvedor) | Lida com código legado e integrações. Sofre com a perda de contexto e dependência de experts. | Submeter solicitação técnica; analisar funcionalidade legada; interpretar regra de negócio. |
+| Galadriel (Analista) | Traduz requisitos de negócio. Sofre com ambiguidades e informações dispersas. | Interpretar regra de negócio; avaliar impacto de alteração. |
+| Elrond (Arquiteto) | Define padrões arquiteturais. Sofre com falta de visão consolidada e dificuldade de análise de impacto global. | Solicitar recomendação arquitetural; avaliar impacto de alteração; visualizar fluxo de colaboração e rastreabilidade. |
+
+Para ilustrar como essas interações disparam a orquestração interna entre as capacidades do sistema e as skills dos agentes, o diagrama abaixo detalha os limites do ecossistema e as relações de uso.
+
+![Figura 1 - Diagrama de casos de uso do sistema proposto](docs/assets/figura-1-casos-de-uso.png)
+
+**Figura 1 - Diagrama de casos de uso do sistema proposto**  
+Fonte: Elaborado pela autora (2026).
+
+## 2.2 Requisitos Funcionais (RF)
+
+| ID | Descrição do Requisito Funcional |
+|---|---|
+| RF01 | O sistema deve permitir que o usuário submeta uma solicitação técnica contendo o contexto do problema, artefatos e restrições. |
+| RF02 | O sistema deve interpretar a demanda, decompor o problema e coordenar dinamicamente múltiplos especialistas artificiais para resolver a solicitação. |
+| RF03 | O sistema deve realizar análises técnicas delegando a execução para agentes modulares especializados. |
+| RF04 | O sistema deve possuir uma interface ou registro que permita acoplar novas capacidades ou especialistas artificiais sem refatorar o núcleo de orquestração. |
+| RF05 | O sistema deve permitir a visualização em tempo real do fluxo de orquestração, evidenciando quais especialistas foram acionados e como colaboraram. |
+| RF06 | O sistema deve registrar e disponibilizar o histórico completo de interações, decisões e outputs gerados durante o processo. |
+| RF07 | O sistema deve permitir integração contínua com plataformas externas de governança de agentes, utilizando contratos técnicos e protocolos padronizados, como MCP. |
+
+## 2.3 Requisitos Não Funcionais (RNF)
+
+| ID | Descrição do Requisito Não Funcional |
+|---|---|
+| RNF01 | O sistema deve ser modular, permitindo inclusão de novos especialistas, conectores, fontes de contexto e plataformas externas sem reestruturação do núcleo. |
+| RNF02 | A integração com fontes de dados, sistemas externos e novos agentes deve ocorrer via interfaces formais e protocolos estruturados, como MCP. |
+| RNF03 | A arquitetura deve suportar a adição contínua de novas Agent Skills sem degradação significativa no desempenho global. |
+| RNF04 | O ecossistema deve registrar 100% das interações, validações cruzadas e decisões tomadas durante o processamento. |
+| RNF05 | O tempo médio de resposta deve ser inferior a 10 segundos em fluxos analíticos com múltiplos especialistas. |
+| RNF06 | O sistema deve garantir autenticação, controle de acesso e segurança no tráfego de contexto técnico sensível. |
+| RNF07 | A plataforma deve manter disponibilidade adequada durante os cenários de demonstração e fornecer interface estruturada e intuitiva. |
+
+## 2.4 Regras de Negócio
+
+| ID | Regra de Negócio |
+|---|---|
+| RN01 | O ecossistema não possui permissão para executar alterações diretas em código-fonte, banco de dados ou pipelines de CI/CD. A atuação dos agentes é analítica e recomendatória. |
+| RN02 | Todas as respostas e recomendações arquiteturais geradas devem referenciar catálogos e padrões técnicos pré-aprovados, acompanhadas de justificativas. |
+| RN03 | O Advisory Agent detém autoridade arquitetural final e deve rejeitar respostas que violem diretrizes de negócio ou padrões de segurança. |
+| RN04 | Artefatos com dados sensíveis, PII ou credenciais devem ser anonimizados ou mascarados antes do processamento, especialmente no roteamento para skills externas. |
+| RN05 | A delegação de tarefas entre agentes deve respeitar um limite máximo de iterações; caso o limite seja atingido, o Orquestrador deve suspender o processamento e reportar erro. |
+| RN06 | O acoplamento de novas Agent Skills ou a comunicação com plataformas externas deve ocorrer por contratos estruturados, como MCP, reduzindo vendor lock-in. |
+
+## 2.5 Fora do Escopo
+
+- Substituição da autoridade humana.
+- Automação de CI/CD, deploys, aprovação automática de Pull Requests ou alterações ativas em produção.
+- Garantia de zero alucinação nativa.
+- Cobertura universal de tecnologias na PoC.
+
+---
+
+# 3. Arquitetura da Solução
+
+A arquitetura proposta foi desenhada para transformar a análise técnica de ecossistemas complexos em uma linha de trabalho contínua, integrada e auditável. A solução estrutura-se como um ambiente descentralizado de microsserviços cognitivos orientados a contratos.
+
+## 3.1 Visão Geral e Fundamentos
+
+O ecossistema fundamenta-se na coordenação estruturada de agentes especialistas artificiais que operam sobre domínios de conhecimento historicamente fragmentados, como código legado, arquitetura corporativa e regras de negócio.
+
+A arquitetura extensível é sustentada por quatro pilares:
+
+1. **Engenharia de Contexto Estruturada:** o contexto deixa de ser texto livre e passa a ser tratado como ativo estruturado, via JSON Schemas.
+2. **Orquestração Inteligente:** o componente central interpreta a demanda, decompõe o problema em subtarefas e coordena a colaboração entre papéis.
+3. **Capacidades Modulares:** diretrizes de comportamento e integrações com tools são encapsuladas como módulos reutilizáveis e independentes.
+4. **Extensibilidade Externa e Desacoplamento:** interfaces padronizadas e adaptadores agnósticos reduzem vendor lock-in.
+
+![Figura 2 - Diagrama de contexto da arquitetura proposta (C4 - Nível 1)](docs/assets/figura-2-c4-contexto.png)
+
+**Figura 2 - Diagrama de contexto da arquitetura proposta (C4 - Nível 1)**  
+Fonte: Elaborado pela autora (2026).
+
+## 3.2 Estrutura Arquitetural e Papéis
+
+A arquitetura organiza o ecossistema separando coordenação operacional, execução analítica especializada e validação de qualidade.
+
+| Camada | Papel / Componente | Responsabilidade Principal |
+|---|---|---|
+| Orquestração | Project Manager | Recebe a demanda técnica, interpreta a intenção do usuário, decompõe o problema e gerencia a estratégia de roteamento dinâmico. |
+| Orquestração | Software Architect | Consolida análises parciais, avalia impactos estruturais e garante coerência arquitetural da entrega final. |
+| Validação | Advisory Agent | Atua como Quality Gate, revisando lógicas, mitigando alucinações e emitindo parecer de aprovação ou rejeição. |
+| Especialistas | Agent Skills de Negócio | Interpretam fluxos funcionais, documentações corporativas e regras de negócio tácitas ou explícitas. |
+| Especialistas | Agent Skills de Legado | Mapeiam dependências, fluxos de controle e lógicas obscuras em sistemas antigos. |
+| Especialistas | Agent Skills de Integração | Analisam contratos de APIs, payloads e compatibilidade de fluxos entre aplicações. |
+| Integração Externa | Adaptador de Plataforma | Interface desacoplada e agnóstica para consumir novos agentes e capacidades externas. |
+
+![Figura 3 - Diagrama de contêineres da arquitetura proposta (C4 - Nível 2)](docs/assets/figura-3-c4-conteineres.png)
+
+**Figura 3 - Diagrama de contêineres da arquitetura proposta (C4 - Nível 2)**  
+Fonte: Elaborado pela autora (2026).
+
+## 3.3 Fluxo Cognitivo e Operacional
+
+A dinâmica interna do sistema afasta-se de pipelines lineares e baseia-se no paradigma agêntico estruturado **ReAct (Reason + Act)**, combinado com ciclos de autoavaliação iterativa (**Self-Reflection**).
+
+![Figura 4 - Diagrama de componentes da API de orquestração (C4 - Nível 3)](docs/assets/figura-4-c4-componentes-api.png)
+
+**Figura 4 - Diagrama de componentes da API de orquestração (C4 - Nível 3)**  
+Fonte: Elaborado pela autora (2026).
+
+A Figura 5 ilustra o fluxo principal de processamento da solicitação técnica. A partir da entrada do usuário, o sistema estrutura o contexto, define a estratégia de orquestração, aciona os agentes especialistas, encaminha as respostas para validação transversal e consolida o resultado.
+
+![Figura 5 - Fluxo principal de processamento](docs/assets/figura-5-fluxo-principal.png)
+
+**Figura 5 - Fluxo principal de processamento**  
+Fonte: Elaborado pela autora (2026).
+
+### 3.3.1 Tratamento de Exceções e Fluxos Alternativos
+
+| Situação de Risco | Descrição | Tratamento e Recuperação |
+|---|---|---|
+| Contexto Insuficiente | Prompt original não possui artefatos ou clareza mínima. | Orquestrador solicita refinamento do contexto ao usuário. |
+| Respostas Divergentes | Especialistas geram recomendações conflitantes. | Acionamento automático do Conselheiro para desempate lógico ou escalonamento humano. |
+| Falha de Contrato | Mensagem via MCP devolvida fora do contrato JSON exigido. | Rejeição imediata, log de erro estrutural e retentativa orientada. |
+| Baixa Confiança | Incerteza cognitiva do agente ao inferir lógicas obscuras. | Flag de baixa confiabilidade na resposta final e indicação de revisão humana. |
+
+## 3.4 Princípios e Alinhamento ao Spec-Driven Development (SDD)
+
+O comportamento dos nós do ecossistema é orientado e limitado por especificações contratuais preestabelecidas, como schemas de API e contratos MCP.
+
+- A demanda técnica é tratada como uma especificação.
+- Os agentes operam por fronteiras explícitas, encapsulados por System Prompts limitadores.
+- A base contratual viabiliza a escalabilidade do ecossistema e a inclusão futura de novos domínios tecnológicos.
+
+---
+
+# 4. Mockups e Experiência do Usuário (UX)
+
+## 4.1 Visão Geral e Fluxo de Navegação
+
+A interface do usuário atua como painel de controle do ecossistema de especialistas. Considerando que o sistema é voltado a um público técnico, a UI prioriza clareza, objetividade e transparência das informações.
+
+![Figura 6 - Diagrama unificado de fluxo de navegação do usuário](docs/assets/figura-6-fluxo-navegacao.png)
+
+**Figura 6 - Diagrama unificado de fluxo de navegação do usuário**  
+Fonte: Elaborado pela autora (2026).
+
+## 4.2 Estrutura das Interfaces (Wireframes)
+
+| Tela | Objetivo na Jornada do Usuário | Ações Principais |
+|---|---|---|
+| Login | Garantir acesso restrito ao ambiente. | Autenticação via SSO ou credenciais. |
+| Dashboard | Prover visão centralizada da operação e saúde do ecossistema. | Visualizar status de análises, métricas e Agent Skills online/acopladas. |
+| Nova Solicitação Técnica | Ponto de entrada do contexto. | Inserir problema, contexto, artefatos técnicos e escopo analítico. |
+| Acompanhamento | Prover transparência sobre o fluxo dinâmico dos agentes. | Visualizar linha do tempo, especialistas acionados e validações. |
+| Resposta Consolidada | Apresentar síntese estruturada aprovada pelo Quality Gate. | Consultar recomendações, riscos e copiar a saída consolidada. |
+| Histórico e Rastreabilidade | Permitir auditoria técnica e reaproveitamento do conhecimento. | Filtrar solicitações e auditar decisões. |
+
+As Figuras E.1 a E.7, que representam os mockups detalhados, encontram-se no [Apêndice E](#apêndice-e--protótipos-e-telas-complementares-uiux).
+
+## 4.3 Fluxo de Interação do Usuário
+
+O fluxo de interação descreve como as telas se articulam durante a utilização da aplicação, desde o acesso inicial até a consulta posterior da rastreabilidade. O cenário principal considera um usuário técnico submetendo uma solicitação relacionada à análise de uma funcionalidade existente em sistema legado.
+
+A interação inicia-se na autenticação, segue para o dashboard, avança para a tela de nova solicitação técnica, passa pelo acompanhamento da orquestração, chega à resposta consolidada e permanece disponível no histórico e rastreabilidade.
+
+## 4.4 Feedback Inicial de Usuários
+
+Após a elaboração dos wireframes e do fluxo de interação, foi realizada uma avaliação inicial qualitativa com usuários representativos. O objetivo foi verificar se a experiência proposta estava coerente com as necessidades do público-alvo e se as telas permitiam compreender o funcionamento do ecossistema.
+
+Os participantes reconheceram valor na possibilidade de acompanhar o processo de orquestração, em vez de receber apenas uma resposta final sem explicação do caminho percorrido. Também foi destacada a importância da tela de histórico e rastreabilidade em cenários corporativos nos quais decisões técnicas precisam ser auditadas, reaproveitadas ou justificadas posteriormente.
+
+---
+
+# 5. Modelagem Técnica e Implementação da PoC
+
+Esta seção delimita como os fundamentos arquiteturais serão implementados em ambiente controlado por meio de uma Prova de Conceito (PoC).
+
+## 5.1 Escopo da Prova de Conceito
+
+A PoC focará em um caminho feliz representativo: análise de impacto e documentação de uma funcionalidade em ecossistema legado.
+
+| Etapa do Fluxo | Componente / Agente Acionado | Ação Esperada na PoC |
+|---|---|---|
+| Entrada | Interface Web | Submissão de código legado e contexto de negócio em formato estruturado. |
+| Orquestração | Project Manager | Geração do Trace ID, decomposição da intenção e roteamento via contratos MCP. |
+| Análise 1 | Agent Skill de Código Legado | Identificação de lógicas obscuras e dependências no código. |
+| Análise 2 | Agent Skill de Regras de Negócio | Extração e tradução de regras funcionais implícitas. |
+| Análise 3 | Agent Skill de Arquitetura | Avaliação de impacto e recomendação de estratégias de modernização. |
+| Validação | Advisory Agent | Revisão cruzada em busca de alucinações, conflitos lógicos ou quebras de contrato. |
+| Saída | Consolidador de Respostas | Entrega de artefato final em JSON/Markdown, unificado e auditável. |
+
+## 5.2 Conjunto Tecnológico (Stack)
+
+| Camada | Tecnologia Escolhida | Justificativa |
+|---|---|---|
+| Frontend / UX | React.js / TypeScript | SPA reativa para observabilidade em tempo real. |
+| Backend / API | Python / FastAPI | Ecossistema nativo para IA e processamento assíncrono. |
+| Motor de Orquestração | Camada própria em Python | Implementação do fluxo de orquestração com validação por contratos e regras próprias. |
+| Banco de Dados | PostgreSQL | Persistência relacional para integridade entre requests, logs e contextos. |
+| Comunicação e Contratos | HTTP/REST e MCP | Comunicação padronizada entre frontend, backend, agentes e contratos estruturados. |
+
+## 5.3 Modelo de Dados
+
+Como a governança é um pilar estrutural da solução, o banco de dados relacional foi modelado para assegurar que a resposta final nunca perca o vínculo de rastreabilidade com o prompt inicial e com os logs transicionais.
+
+O detalhamento do modelo conceitual encontra-se na Figura D.1 no [Apêndice D](#apêndice-d--modelagem-de-dados-e-arquitetura-de-componentes).
+
+Entidades centrais:
+
+- **Solicitação Técnica:** tabela agregadora que gera o Trace ID único para a sessão.
+- **Contexto:** armazena o payload inicial e as camadas de enriquecimento.
+- **Interação (Logs):** registra cada passo atômico do roteamento.
+- **Resposta Parcial e Validação:** isola outputs individuais de cada agente e armazena o parecer técnico do Conselheiro.
+
+## 5.4 Critérios de Avaliação e Limitações
+
+A avaliação técnica do sucesso da PoC será baseada no alcance das metas definidas pelos KPIs, focando em redução de tempo de análise, taxa de sucesso e rastreabilidade.
+
+Delimitações:
+
+1. Atuação read-only.
+2. LLMs mockados ou modelos menores para reduzir custo de inferência.
+3. Ambiente de teste sintético com bases de dados sintéticas ou códigos open-source.
+
+---
+
+# 6. Segurança, Governança e Privacidade
+
+A adoção de especialistas artificiais em ambientes corporativos exige controle rigoroso sobre o fluxo de informações. O ecossistema trata segurança e governança como requisitos transversais de design.
+
+## 6.1 Segurança da Arquitetura
+
+| Princípio de Controle | Aplicação na Arquitetura | Mitigação de Risco |
+|---|---|---|
+| Autenticação e Acesso | Login obrigatório, tokens e isolamento por usuário. | Prevenção contra acesso não autorizado. |
+| Restrição de Domínio | Contratos rígidos; agentes atuam exclusivamente em seu escopo. | Evita sobreposição de papéis e decisões fora da especialidade. |
+| Validação Cruzada | Advisory Agent como Quality Gate obrigatório. | Mitigação de inconsistências e respostas contraditórias. |
+| Proteção de Contexto | Fragmentação inteligente do payload. | Reduz exposição desnecessária de dados aos modelos. |
+| Ação Read-Only | Bloqueio para ações autônomas destrutivas. | Garante human-in-the-loop em decisões críticas. |
+
+## 6.2 Observabilidade e Rastreabilidade (Auditoria)
+
+- **Trace ID Único:** toda solicitação recebe um identificador global que transita por toda a cadeia de delegação.
+- **Logs Estruturados e Contratos:** registro obrigatório de timestamps, contratos de entrada/saída, quebras de schema e status de confiança.
+- **Isolamento de Falhas:** se um agente externo falhar, o Orquestrador isola a requisição, registra a anomalia e devolve erro controlado.
+
+## 6.3 Privacidade de Dados e Conformidade (LGPD)
+
+| Categoria do Dado | Exemplo | Finalidade e Base Legal Conceitual |
+|---|---|---|
+| Dados de Usuário | Nome, e-mail corporativo, credenciais. | Autenticação, gestão de acessos e rastreabilidade individual. |
+| Dados Técnicos | Regras de negócio, snippets de código-fonte, arquitetura. | Insumo para análise cognitiva; anonimização obrigatória de PII embutida. |
+| Metadados (Logs) | IP, timestamps, rotas, latência. | Auditoria, observabilidade, prevenção de fraudes e manutenção preditiva. |
+
+---
+
+# 7. Planejamento do Projeto
+
+O desenvolvimento metodológico apoia-se em abordagem incremental fundamentada em metodologias ágeis. A gestão do escopo, rastreamento das tarefas e governança documental são conduzidos através de quadros Kanban no Jira.
+
+## 7.1 Estratégia de Planejamento e Gestão
+
+![Figura 7 - Roadmap do projeto e evolução das etapas do TCC](docs/assets/figura-7-roadmap.png)
+
+**Figura 7 - Roadmap do projeto e evolução das etapas do TCC**  
+Fonte: Elaborado pela autora (2026).
+
+| Marco | Etapa do Projeto | Descrição Estratégica | Entregáveis Principais |
+|---|---|---|---|
+| M1 | Fundamentação e Visão do Produto | Consolidação do problema, benchmark, objetivos e KPIs. | Problema validado, benchmark, objetivos e hipóteses. |
+| M2 | Engenharia de Requisitos | Mapeamento das interações dos usuários e definição de RFs, RNFs e regras. | Personas, casos de uso, RFs/RNFs e regras consolidadas. |
+| M3 | Concepção Arquitetural | Modelagem do ecossistema distribuído e adoção do MCP. | Diagramas C4, fundamentos técnicos e design system. |
+| M4 | UX e Prototipação | Fluxo de observabilidade, wireframes e avaliação inicial. | Fluxograma, wireframes e feedback inicial. |
+| M5 | Modelagem Técnica da PoC | Delimitação do Happy Path, stack e modelo de dados. | Escopo de validação, stack e MER/DER. |
+| M6 | Implementação da PoC | Codificação do motor de orquestração, skills e Quality Gate. | Protótipo funcional, APIs e banco instanciado. |
+| M7 | Validação e Avaliação | Execução de testes e medição dos KPIs. | Evidências de execução, métricas e análise de viabilidade. |
+| M8 | Consolidação Acadêmica | Revisão final, apêndices e preparação da defesa. | RFC final, slides de defesa e repositórios. |
 
 ---
 
@@ -440,26 +390,287 @@ Uma das propostas da arquitetura é permitir rastreabilidade das decisões e int
 
 RUSSELL, Stuart J.; NORVIG, Peter. *Artificial intelligence: a modern approach*. 4. ed. Upper Saddle River: Pearson, 2020.
 
-TAULLI, Tom; DESHMUKH, Gaurav. CrewAI. In: TAULLI, Tom; DESHMUKH, Gaurav. *Building Generative AI Agents: Using LangGraph, AutoGen, and CrewAI*. Berkeley, CA: Apress, 2025. p. 103-145.
-
 WOOLDRIDGE, Michael. *An introduction to multiagent systems*. 2. ed. Chichester: John Wiley & Sons, 2009.
+
+ERL, Thomas. *Service-Oriented Architecture: Concepts, Technology, and Design*. Upper Saddle River: Prentice Hall, 2005.
+
+TAULLI, Tom; DESHMUKH, Gaurav. CrewAI. In: TAULLI, Tom; DESHMUKH, Gaurav. *Building Generative AI Agents: Using LangGraph, AutoGen, and CrewAI*. Berkeley, CA: Apress, 2025. p. 103-145.
 
 ## Teses e Dissertações
 
-NASCIMENTO, Arthur Henrique Casals do. *Engenharia de SMA: integrando sistemas distribuídos e avanços em Inteligência Artificial*. 2024. Tese (Doutorado em Engenharia de Computação) – Escola Politécnica, Universidade de São Paulo, São Paulo, 2024.
+NASCIMENTO, Arthur Henrique Casals do. *Engenharia de SMA: integrando sistemas distribuídos e avanços em Inteligência Artificial*. 2024. Tese (Doutorado em Engenharia de Computação) - Escola Politécnica, Universidade de São Paulo, São Paulo, 2024.
 
-QUESADA, Christian Jhulian Braga. *Inteligência artificial: a relevância para a arquitetura*. 2024. Tese (Doutorado em Arquitetura e Urbanismo) – Faculdade de Arquitetura e Urbanismo, Universidade de São Paulo, São Paulo, 2024.
+QUESADA, Christian Jhulian Braga. *Inteligência artificial: a relevância para a arquitetura*. 2024. Tese (Doutorado em Arquitetura e Urbanismo) - Faculdade de Arquitetura e Urbanismo, Universidade de São Paulo, São Paulo, 2024.
 
 ## Artigos e Trabalhos Acadêmicos
 
-IABAGATA, Tatiana Yukari Sekiya et al. *Aplicação de Ferramentas Baseadas em Inteligência Artificial para Minimização de Desafios e Otimização de Processos na Engenharia de Software*. [S. l.: s. n.], 2025.
+IABAGATA, Tatiana Yukari Sekiya et al. Aplicação de ferramentas baseadas em inteligência artificial para minimização de desafios e otimização de processos na engenharia de software. [S. l.: s. n.], 2025.
 
-SILVA, Rui. *Interoperabilidade em Sistemas multiagente: Princípios Éticos e Morais na Inteligência Artificial*. [S. l.: s. n.], 2024.
+SILVA, Rui. Interoperabilidade em sistemas multiagentes: princípios éticos e morais na inteligência artificial. [S. l.: s. n.], 2024.
 
-WALKER, Clinton et al. Forensic Analysis of Artifacts from Microsoft's Multi-Agent LLM Platform AutoGen. In: *INTERNATIONAL CONFERENCE ON AVAILABILITY, RELIABILITY AND SECURITY*, 19th., 2024. *Proceedings...* [S. l.]: ACM, 2024. p. 1-9.
+WALKER, Clinton et al. Forensic Analysis of Artifacts from Microsoft’s Multi-Agent LLM Platform AutoGen. In: INTERNATIONAL CONFERENCE ON AVAILABILITY, RELIABILITY AND SECURITY, 19., 2024. Proceedings [...]. [S. l.]: ACM, 2024. p. 1-9.
 
-YANG, Hui; YUE, Sifu; HE, Yunzhong. Auto-gpt for online decision making: Benchmarks and additional opinions. *arXiv preprint arXiv:2306.02224*, 2023.
+YANG, Hui; YUE, Sifu; HE, Yunzhong. Auto-GPT for online decision making: benchmarks and additional opinions. *arXiv preprint arXiv:2306.02224*, 2023.
+
+BRITO, Erick Roberto Furst. Projeto e implantação de agentes de inteligência artificial plug-and-play utilizando arquiteturas serverless. *Lumen et Virtus*, v. 17, n. 56, p. e11798-e11798, 2026.
+
+PAPAZOGLOU, Mike P.; GEORGAKOPOULOS, Dimitrios. Service-oriented computing. *Communications of the ACM*, 2003.
+
+PERREY, Randall; LYCETT, Mark. Service-oriented architecture. In: SYMPOSIUM ON APPLICATIONS AND THE INTERNET WORKSHOPS, 2003. Proceedings [...]. IEEE, 2003. p. 116-119.
+
+## Leis e Normas
+
+BRASIL. Lei nº 13.709, de 14 de agosto de 2018. Lei Geral de Proteção de Dados Pessoais (LGPD). Brasília, DF: Presidência da República, 2018. Disponível em: https://www.planalto.gov.br/ccivil_03/_Ato2015-2018/2018/Lei/L13709.htm. Acesso em: 23 maio 2026.
 
 ## Documentação Técnica e Sites
 
-MAVROUDIS, Vasilios. LangChain. [S. l.]: LangChain, 2024. Disponível em: <https://www.langchain.com/>. Acesso em: 8 abr. 2026.
+LANGCHAIN. LangChain Documentation. [S. l.]: LangChain, 2026. Disponível em: https://docs.langchain.com/. Acesso em: 23 maio 2026.
+
+MODEL CONTEXT PROTOCOL. What is the Model Context Protocol (MCP)? 2026. Disponível em: https://modelcontextprotocol.io/docs/getting-started/intro. Acesso em: 23 maio 2026.
+
+MICROSOFT. AutoGen Documentation. 2024. Disponível em: https://microsoft.github.io/autogen/stable/. Acesso em: 23 maio 2026.
+
+CREWAI. CrewAI Documentation. 2026. Disponível em: https://docs.crewai.com/. Acesso em: 23 maio 2026.
+
+SIGNIFICANT GRAVITAS. AutoGPT: Build, Deploy, and Run AI Agents. GitHub, 2026. Disponível em: https://github.com/Significant-Gravitas/AutoGPT. Acesso em: 23 maio 2026.
+
+GOOGLE CLOUD. Gemini Code Assist Standard and Enterprise overview. Google Cloud Documentation, 2026. Disponível em: https://docs.cloud.google.com/gemini/docs/codeassist/overview. Acesso em: 23 maio 2026.
+
+FASTAPI. FastAPI Documentation. 2026. Disponível em: https://fastapi.tiangolo.com/. Acesso em: 23 maio 2026.
+
+POSTGRESQL GLOBAL DEVELOPMENT GROUP. PostgreSQL Documentation. 2026. Disponível em: https://www.postgresql.org/docs/. Acesso em: 23 maio 2026.
+
+REACT. React Documentation. 2026. Disponível em: https://react.dev/. Acesso em: 23 maio 2026.
+
+MICROSOFT. TypeScript Documentation. 2026. Disponível em: https://www.typescriptlang.org/docs/. Acesso em: 23 maio 2026.
+
+OPENAI. ChatGPT. 2026. Disponível em: https://chatgpt.com/. Acesso em: 23 maio 2026.
+
+---
+
+# 9. Apêndices e Materiais Complementares
+
+Os apêndices reúnem artefatos visuais, detalhamentos teóricos e evidências práticas que fundamentam as decisões arquiteturais apresentadas no corpo deste RFC.
+
+## Apêndice A - Evidências do Problema: Detalhamento da Matriz de Competências e Riscos Operacionais
+
+A evidência empírica que originou este projeto foi obtida por meio da análise documental qualitativa de uma matriz de competências de um time de produto atuante no desenvolvimento de um sistema ERP corporativo.
+
+![Figura A.1 - Matriz de competência anonimizada](docs/assets/figura-a1-matriz-competencia.png)
+
+**Figura A.1 - Matriz de competência anonimizada**  
+Fonte: Elaborado pela autora (2026).
+
+## Apêndice B - Estudo Aprofundado de Ferramentas Multiagentes (Benchmark)
+
+A concepção da arquitetura exigiu a avaliação crítica das soluções de inteligência generativa disponíveis no mercado. A lacuna metodológica identificada não está na falta de modelos de linguagem inteligentes, mas na ausência de um padrão arquitetural que aplique princípios de Governança e Arquitetura Orientada a Serviços ao roteamento de agentes.
+
+## Apêndice C - Contratos de Comunicação e Especificações Técnicas (MCP)
+
+Este apêndice documenta schemas JSON e especificações dos contratos baseados no paradigma do Model Context Protocol.
+
+![Figura C.1 - Diagrama de comunicação via MCP e contratos técnicos](docs/assets/figura-c1-mcp-contratos.png)
+
+**Figura C.1 - Diagrama de comunicação via MCP e contratos técnicos**  
+Fonte: Elaborado pela autora (2026).
+
+### Schema de Entrada: `solicitacao_analise_schema.json`
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SolicitacaoAnaliseTecnica",
+  "description": "Contrato rígido para submissão de demandas de análise técnica no ecossistema.",
+  "type": "object",
+  "properties": {
+    "trace_id": {
+      "description": "Identificador único global da sessão para fins de rastreabilidade (UUID v4).",
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "usuario_id": { "type": "string" },
+        "timestamp_criacao": { "type": "string", "format": "date-time" },
+        "sistema_origem": { "type": "string", "example": "ERP-Financeiro" }
+      },
+      "required": ["usuario_id", "timestamp_criacao"]
+    },
+    "contexto_negocio": {
+      "description": "Detalhamento funcional da regra de negócio ou processo técnico associado.",
+      "type": "string",
+      "minLength": 10
+    },
+    "artefatos": {
+      "description": "Lista de componentes técnicos, códigos ou documentações submetidos para varredura.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "nome_arquivo": { "type": "string", "example": "stateSon.js" },
+          "tipo_artefato": { "type": "string", "enum": ["codigo_fonte", "documentacao_api", "requisito_funcional"] },
+          "conteudo": { "type": "string", "description": "Conteúdo bruto ou trecho de código isolado." },
+          "linguagem": { "type": "string", "example": "javascript" }
+        },
+        "required": ["nome_arquivo", "tipo_artefato", "conteudo"]
+      }
+    },
+    "escopo_analise": {
+      "type": "object",
+      "properties": {
+        "analises_requeridas": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["legado", "negocio", "arquitetura", "impacto"] }
+        },
+        "profundidade": { "type": "string", "enum": ["superficial", "detalhada"], "default": "detalhada" }
+      },
+      "required": ["analises_requeridas"]
+    }
+  },
+  "required": ["trace_id", "metadata", "contexto_negocio", "artefatos", "escopo_analise"],
+  "additionalProperties": false
+}
+```
+
+### Schema de Saída Intermediária/Final: `resposta_especialista_schema.json`
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RespostaEspecialistaArtificil",
+  "description": "Contrato de saída estruturada para tráfego via MCP entre especialistas e orquestradores.",
+  "type": "object",
+  "properties": {
+    "trace_id": { "type": "string" },
+    "agente_emissor": {
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string", "example": "Agent-Skill-Codigo-Legado" },
+        "versao_prompt": { "type": "string", "example": "v1.4.2" },
+        "dominio": { "type": "string", "enum": ["codigo_legado", "regras_negocio", "arquitetura_software"] }
+      },
+      "required": ["nome", "dominio"]
+    },
+    "analise_estruturada": {
+      "type": "object",
+      "properties": {
+        "resumo_executivo": { "type": "string" },
+        "descobertas_tecnicas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "item_identificado": { "type": "string" },
+              "descricao_detalhada": { "type": "string" },
+              "trecho_referenciado": { "type": "string", "description": "Snippet de código ou texto associado à descoberta." }
+            },
+            "required": ["item_identificado", "descricao_detalhada"]
+          }
+        },
+        "impactos_mapeados": {
+          "type": "array",
+          "items": { "type": "string", "description": "Riscos de regressão ou acoplamentos identificados." }
+        }
+      },
+      "required": ["resumo_executivo", "descobertas_tecnicas", "impactos_mapeados"]
+    },
+    "governanca": {
+      "type": "object",
+      "properties": {
+        "nivel_confianca": { "type": "string", "enum": ["ALTO", "MEDIO", "BAIXO"] },
+        "justificativa_confianca": { "type": "string" },
+        "referencias_catalogo": {
+          "type": "array",
+          "items": { "type": "string", "description": "Padrões arquiteturais oficiais referenciados." }
+        }
+      },
+      "required": ["nivel_confianca", "justificativa_confianca"]
+    }
+  },
+  "required": ["trace_id", "agente_emissor", "analise_estruturada", "governanca"],
+  "additionalProperties": false
+}
+```
+
+## Apêndice D - Modelagem de Dados e Arquitetura de Componentes
+
+Apresenta-se a visão de persistência relacional e a topologia de classes/componentes da solução.
+
+![Figura D.1 - Modelo conceitual de dados da prova de conceito (MER/DER)](docs/assets/figura-d1-mer-der.png)
+
+**Figura D.1 - Modelo conceitual de dados da prova de conceito (MER/DER)**  
+Fonte: Elaborado pela autora (2026).
+
+## Apêndice E - Protótipos e Telas Complementares (UI/UX)
+
+Conforme referenciado na Seção 4.2, este espaço destina-se ao registro visual dos protótipos de média/alta fidelidade.
+
+![Figura E.1 - Wireframe da tela inicial](docs/assets/figura-e1-tela-inicial.png)
+
+**Figura E.1 - Wireframe da tela inicial**  
+Fonte: Elaborado pela autora (2026).
+
+![Figura E.2 - Wireframe da tela de Login](docs/assets/figura-e2-login.png)
+
+**Figura E.2 - Wireframe da tela de Login**  
+Fonte: Elaborado pela autora (2026).
+
+![Figura E.3 - Wireframe do Dashboard](docs/assets/figura-e3-dashboard.png)
+
+**Figura E.3 - Wireframe do Dashboard**  
+Fonte: Elaborado pela autora (2026).
+
+![Figura E.4 - Wireframe da tela de Nova Solicitação Técnica](docs/assets/figura-e4-nova-solicitacao.png)
+
+**Figura E.4 - Wireframe da tela de Nova Solicitação Técnica**  
+Fonte: Elaborado pela autora (2026).
+
+![Figura E.5 - Wireframe da tela de Acompanhamento da Orquestração](docs/assets/figura-e5-acompanhamento.png)
+
+**Figura E.5 - Wireframe da tela de Acompanhamento da Orquestração**  
+Fonte: Elaborado pela autora (2026).
+
+![Figura E.6 - Wireframe da tela de Resposta Consolidada](docs/assets/figura-e6-resposta-consolidada.png)
+
+**Figura E.6 - Wireframe da tela de Resposta Consolidada**  
+Fonte: Elaborado pela autora (2026).
+
+![Figura E.7 - Wireframe da tela de Histórico e Rastreabilidade](docs/assets/figura-e7-historico-rastreabilidade.png)
+
+**Figura E.7 - Wireframe da tela de Histórico e Rastreabilidade**  
+Fonte: Elaborado pela autora (2026).
+
+## Apêndice F - Gestão Ágil e Rastreabilidade do Projeto
+
+Em conformidade com a Seção 7, constam abaixo evidências extraídas da ferramenta de gestão Jira.
+
+![Figura F.1 - Quadro Kanban utilizado para gestão ágil do projeto](docs/assets/figura-f1-kanban-jira.png)
+
+**Figura F.1 - Quadro Kanban utilizado para gestão ágil do projeto**  
+Fonte: Elaborado pela autora (2026).
+
+---
+
+# 10. Parecer do Comitê de Avaliação
+
+## Avaliador 1
+
+**Status:** [ ] Aprovado [ ] Ajustar  
+**Observações:**
+
+---
+
+## Avaliador 2
+
+**Status:** [ ] Aprovado [ ] Ajustar  
+**Observações:**
+
+---
+
+## Avaliador 3
+
+**Status:** [ ] Aprovado [ ] Ajustar  
+**Observações:**
+
