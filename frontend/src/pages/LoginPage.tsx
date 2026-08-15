@@ -69,7 +69,7 @@ export function LoginPage() {
             )}
 
             <button className="primary-button" type="submit" disabled={submitting}>
-              {submitting ? 'Validando acesso…' : 'Entrar com segurança'}
+              {submitting ? 'Validando acesso…' : 'Entrar'}
             </button>
           </form>
 
