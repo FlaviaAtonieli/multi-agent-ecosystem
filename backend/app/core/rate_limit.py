@@ -26,6 +26,10 @@ class InMemoryRateLimiter:
                 )
             entries.append(now)
 
+    def clear(self) -> None:
+        with self._lock:
+            self._requests.clear()
+
 
 limiter = InMemoryRateLimiter()
 
