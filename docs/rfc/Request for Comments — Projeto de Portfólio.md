@@ -250,7 +250,7 @@ técnicos e metodológicos:
   núcleo (*core*) do sistema, buscando assegurar rastreabilidade
   integral das interações e decisões registradas.
 
-**<span class="mark">1.6 Métricas de Sucesso (KPIs)</span>**
+## 1.6 Métricas de Sucesso (KPIs)
 
 <span class="mark">Para mensurar a viabilidade técnica e o impacto
 operacional da Prova de Conceito (PoC), foram definidos indicadores
@@ -537,7 +537,13 @@ de governança e preservação da coerência do fluxo até a resposta final.
 de linguagem, o sistema adota um fluxo multi-agente estruturado. O
 Orquestrador interpreta a demanda qualificada, decompõe o problema em
 subtarefas, seleciona as Agent Skills adequadas, coordena a execução e
-encaminha respostas parciais para consolidação e validação.
+encaminha respostas parciais para consolidação e validação. Cada Agent
+Skill de análise opera sobre um pipeline de **Recuperação Aumentada de
+Geração (RAG)**: antes de acionar o modelo de linguagem, o sistema
+recupera trechos relevantes de uma base de conhecimento indexada (código
+legado, documentação, regras de negócio), de modo que a geração da
+resposta seja fundamentada em evidência recuperada e não em um prompt
+cru sem contexto verificável (detalhado na Seção 3.3.2).
 
 **4. Capacidades Modulares:** os agentes especialistas são encapsulados
 como módulos independentes e reutilizáveis. Cada Agent Skill possui uma
@@ -724,6 +730,47 @@ Tabela 5: Mapeamento de Exceções e Resiliência
 
 A representação visual dos fluxos alternativos, demonstrando os desvios
 arquiteturais em cenários de falha, encontra-se detalhada no Apêndice D.
+
+**3.3.2 Pipeline de Inteligência Artificial (Extração, Recuperação e Geração)**
+
+Para que o uso de modelos de linguagem não se reduza ao envio de um
+prompt isolado sem tratamento — o que comprometeria tanto a qualidade
+técnica quanto o enquadramento do projeto na linha de Inteligência
+Artificial —, cada Agent Skill de análise formaliza um pipeline de IA
+com quatro etapas, aplicado antes e depois de qualquer chamada ao
+modelo:
+
+**1. Extração/geração de dados:** os artefatos submetidos pelo usuário
+técnico (via `artefatos[]`, Apêndice C) são combinados com uma base de
+conhecimento própria, indexada previamente a partir de um sistema legado
+sintético representativo (código-fonte, documentação de arquitetura e
+regras de negócio parcialmente desatualizada).
+
+**2. Pré-processamento:** o conteúdo é sanitizado (mascaramento de
+credenciais, tokens e dados pessoais, já previsto na Seção 6), segmentado
+em trechos (*chunking*) de tamanho controlado, e cada trecho é convertido
+em um vetor de embedding, indexado para recuperação por similaridade.
+
+**3. Modelo:** dado o problema e o objetivo da solicitação, o sistema
+recupera os trechos mais relevantes da base de conhecimento (*retrieval*)
+e os utiliza para compor um prompt aumentado, que é então enviado ao
+modelo de linguagem configurado no Model Gateway — geração condicionada
+à evidência recuperada (*augmented generation*), e não a um prompt sem
+lastro documental.
+
+**4. Pós-processamento:** a resposta do modelo é validada contra o
+schema estruturado de saída (`resposta_especialista_schema.json`,
+Apêndice C), recebe um nível de confiança (`ALTO`/`MEDIO`/`BAIXO`) e é
+submetida ao Advisory Agent/Quality Gate (Seção 3.3, etapa 6) antes da
+consolidação final.
+
+Esse pipeline é executado tanto com o provedor de modelo real (Model
+Gateway configurado, preferencialmente via OpenRouter — Seção 5.2) quanto
+com o provedor simulado (*mock*) usado em desenvolvimento e testes: nesse
+segundo caso, a etapa de recuperação continua ocorrendo sobre dados reais
+indexados, e apenas a geração do modelo é determinística/simulada,
+preservando a possibilidade de validar a arquitetura sem custo
+computacional externo (alinhado à delimitação de escopo da Seção 5.5).
 
 ## 
 
@@ -1004,7 +1051,39 @@ Com essas diretrizes, a experiência visual permanece coerente com a
 identidade do projeto, mas passa a favorecer uma navegação mais simples,
 clara e orientada ao fluxo principal da arquitetura.
 
-**4.5 Feedback Inicial de Usuários**
+## 4.5 Acessibilidade e Conformidade WCAG 2.1
+
+A interface adota como referência conceitual as diretrizes **WCAG 2.1,
+nível AA**, seguindo a norma "Core" de acessibilidade aplicável a todo
+projeto do Portfólio. Essa referência é tratada como critério de design
+a ser observado durante a implementação da PoC, no mesmo espírito
+conceitual (não uma certificação formal) adotado para a conformidade com
+a LGPD na Seção 6.3.
+
+Os pontos de atenção identificados para esta arquitetura são:
+
+- **Contraste mínimo (4.5:1):** a estética escura, com cards
+  translúcidos e gradientes sutis descrita na Seção 4.4, é um risco real
+  de contraste insuficiente entre texto e fundo; a paleta final deve ser
+  validada com ferramenta de contraste antes da implementação das telas.
+
+- **Navegação por teclado:** os fluxos críticos — criação/importação de
+  Agent Skill, submissão de solicitação técnica e acompanhamento da
+  orquestração — devem ser inteiramente operáveis via teclado, sem
+  dependência exclusiva de interações por mouse.
+
+- **Semântica e ARIA labels:** os indicadores de status (pendente, em
+  validação, aprovado, rejeitado, ativo, suspenso, concluído) hoje
+  descritos apenas como cor e texto (Seção 4.4) devem utilizar HTML
+  semântico e atributos ARIA, para que sejam compreensíveis por leitores
+  de tela e não dependam apenas de percepção visual da cor.
+
+- **Textos alternativos:** os diagramas de fluxo de orquestração e os
+  mockups apresentados nas Figuras 7 e 8 devem possuir descrições
+  textuais alternativas equivalentes, para usuários que não conseguem
+  interpretar a representação visual.
+
+## 4.6 Feedback Inicial de Usuários
 
 Após a elaboração dos wireframes e do fluxo de interação, foi realizada
 uma avaliação inicial qualitativa com usuários representativos dos
@@ -1158,8 +1237,10 @@ Tabela 8: Decisões de Stack Tecnológica
 | **Motor de Orquestração** | Camada própria em Python | Implementa a lógica de decomposição da demanda, seleção de Agent Skills, controle de etapas, tratamento de falhas, consolidação de respostas e aplicação dos contratos da arquitetura. |
 | **Orientador de Interação** | Serviço lógico no backend | Responsável por validar o contexto inicial, solicitar complementos, normalizar demandas e impedir que solicitações incompletas sejam encaminhadas diretamente aos agentes. |
 | **Agent Skills** | Módulos independentes em Python | Representam especialistas artificiais acopláveis, cada um com contrato, domínio de atuação e formato de resposta específico. Na PoC, podem operar com LLMs, prompts controlados, respostas simuladas ou regras fixas. |
-| **Banco de Dados** | PostgreSQL | Garante armazenamento relacional robusto para usuários, agentes, versões, contratos, manifestos, logs, respostas parciais, validações e respostas finais. |
-| **Comunicação e Contratos** | HTTP/REST, JSON Schemas e contratos inspirados em MCP | Padroniza a comunicação entre frontend, backend, Orquestrador, Agent Skills e camada de validação, reduzindo acoplamento e permitindo evolução plug-and-play. |
+| **Camada de Retrieval** | Serviço próprio em Python (`app/rag/`) | Responsável por indexar artefatos de código legado/documentação em trechos (*chunks*) com embedding, recuperar os trechos mais relevantes para cada solicitação e compor o prompt aumentado enviado ao modelo, formalizando as etapas de pré-processamento e recuperação do pipeline de IA (Seção 3.3.2). |
+| **Model Gateway** | OpenRouter (primário) + adaptador direto OpenAI (opcional) | Camada própria (`app/llm/`) que abstrai o provedor de inferência. OpenRouter permite comparar múltiplos modelos/fabricantes por trás de uma única credencial, sem acoplar a arquitetura a um fornecedor específico; o adaptador OpenAI é mantido como integração direta alternativa, provando que o `LLMProvider` é de fato plugável. |
+| **Banco de Dados** | PostgreSQL | Garante armazenamento relacional robusto para usuários, agentes, versões, contratos, manifestos, logs, respostas parciais, validações, respostas finais e trechos indexados para retrieval. O vetor de embedding é armazenado como JSON e a similaridade calculada em memória nesta fase da PoC; `pgvector` é avaliado como evolução futura quando o volume de dados justificar um índice vetorial nativo. |
+| **Comunicação e Contratos** | HTTP/REST (frontend/backend) e MCP real via SDK oficial `mcp` (Orquestrador ↔ Agent Skills, transporte `stdio`/em memória) | Padroniza a comunicação entre frontend, backend, Orquestrador, Agent Skills e camada de validação, reduzindo acoplamento e permitindo evolução plug-and-play; os schemas de entrada/saída são os mesmos do Apêndice C, derivados automaticamente dos modelos Pydantic. |
 | **Observabilidade** | Logs estruturados e painel de acompanhamento | Permite registrar tempo de execução, agentes acionados, falhas, validações, status do fluxo e eventos relevantes para auditoria técnica. |
 
 A escolha por uma camada própria de orquestração permite que a PoC
@@ -1226,10 +1307,18 @@ As principais entidades previstas são:
   agente, falha de contrato, validação, rejeição, retentativa,
   consolidação e entrega final.
 
+- **Base de Conhecimento / Chunk Indexado:** representa os fragmentos de
+  artefatos de código legado ou documentação indexados para recuperação
+  pelo pipeline RAG (Seção 3.3.2), contendo identificador do artefato de
+  origem, conteúdo do trecho, metadados (linguagem, posição no artefato)
+  e vetor de embedding associado. Cada resposta gerada por modelo
+  registra quais trechos foram efetivamente recuperados e usados como
+  evidência, preservando a rastreabilidade entre resposta e fonte.
+
 O detalhamento do modelo conceitual poderá ser apresentado em diagrama
 no apêndice correspondente, demonstrando a relação entre solicitação,
-contexto, Agent Skills, contratos, logs, respostas parciais, validações
-e resposta final.
+contexto, Agent Skills, contratos, base de conhecimento indexada, logs,
+respostas parciais, validações e resposta final.
 
 ## 
 
@@ -1257,7 +1346,11 @@ Skills e selecionar quais agentes deverão participar do fluxo.
 Na quarta etapa, serão implementadas as primeiras Agent Skills da PoC:
 Código Legado, Regras de Negócio e Arquitetura. Cada skill deverá
 possuir contrato próprio de entrada e saída, permitindo validar a
-comunicação estruturada entre os componentes.
+comunicação estruturada entre os componentes. A Agent Skill de Código
+Legado é a primeira a operar sobre o pipeline RAG completo descrito na
+Seção 3.3.2 (recuperação sobre a base de conhecimento indexada seguida
+de geração aumentada), servindo de referência de contrato e de padrão de
+implementação para as demais skills.
 
 Na quinta etapa, será implementada a camada de validação, representada
 pelo Advisory Agent ou mecanismo de quality gate. Essa camada deverá
@@ -1394,7 +1487,7 @@ Tabela 9: Matriz de Segurança e Governança
 | **Controle de Acoplamento de Novas Skills** | Novas Agent Skills só são registradas mediante manifesto válido, contrato, domínio de atuação, versão e critérios mínimos de validação. | Evita entrada de agentes não governados, incompatíveis ou sem responsabilidade claramente definida. |
 | **Auditoria Obrigatória** | Toda solicitação, decisão, agente criado/importado, contrato utilizado, validação e resposta final deve ser registrada. | Permite investigação posterior, rastreabilidade de decisões e conformidade com práticas de governança corporativa. |
 
-**6.2 Observabilidade e Rastreabilidade (Auditoria)**
+## 6.2 Observabilidade e Rastreabilidade (Auditoria)
 
 Em um ecossistema multi-agente, falhas silenciosas podem ser difíceis de
 identificar sem rastreabilidade ponta a ponta. Por isso, a arquitetura
@@ -1562,7 +1655,7 @@ Rastreabilidade do Projeto)*.*
 
 ## 
 
-## 7.1 Estratégia de Planejamento e Gestão
+## 7.1 Abordagem Ágil e Ferramentas de Gestão
 
 O desenvolvimento metodológico e a construção arquitetural deste
 trabalho apoiam-se em uma abordagem incremental, orientada por entregas
@@ -1586,7 +1679,7 @@ agentes, validar sua estrutura, registrar suas capacidades e permitir
 que eles atuem em conjunto com outros agentes já existentes no
 ecossistema.
 
-**7.2 Estratégia de Planejamento e Gestão**
+## 7.2 Princípios de Planejamento e Marcos Evolutivos
 
 A estratégia de planejamento adota uma divisão em marcos evolutivos,
 permitindo que cada etapa do projeto entregue um artefato verificável.
@@ -1637,21 +1730,24 @@ Fonte: Elaborado pela autora (2026).
 
 A Tabela 11 detalha o planejamento executivo de cada marco,
 especificando o esforço técnico exigido e o alinhamento com as entregas
-formais do cronograma acadêmico:
+formais do cronograma acadêmico. O marco **M8** deve estar concluído até
+**30/11/2026 (segunda-feira)**, data final do semestre letivo da
+Disciplina de Portfólio, que funciona como restrição rígida (*hard
+deadline*) para o planejamento reverso dos marcos anteriores.
 
 Tabela 11: Roadmap do Projeto e Marcos de Entrega
 
-|  |  |  |  |
-|:--:|:--:|:--:|:--:|
-| **Marco** | **Etapa do Projeto** | **Descrição Estratégica** | **Entregáveis Principais** |
-| **M1** | Fundamentação e Visão do Produto | Consolidação do problema de pesquisa, com foco na fragmentação do conhecimento, na dependência de especialistas e na ausência de uma arquitetura para criação/importação de agentes especialistas. | Problema validado, benchmark, objetivos, hipóteses e KPIs revisados. |
-| **M2** | Engenharia de Requisitos | Definição das personas, requisitos funcionais, requisitos não funcionais e regras de negócio, priorizando o fluxo de criação/importação de agentes e sua integração ao ecossistema. | Personas, casos de uso, RFs/RNFs, regras de negócio e fora de escopo. |
-| **M3** | Concepção Arquitetural | Modelagem dos componentes centrais: Interface Técnica, Agent Builder, Importador de Agentes, Validador de modelo.md, Registro de Agent Skills, Orquestrador, Advisory Agent e camada de contratos. | Diagramas C4, matriz de responsabilidades, fluxo operacional e tratamento de exceções. |
-| **M4** | UX e Prototipação | Desenho das telas principais da plataforma, com foco no fluxo de criação/importação de agentes, catálogo de Agent Skills, validação de contrato, teste de integração e acompanhamento da colaboração entre agentes. | Fluxo de navegação, wireframes, mapeamento de telas e feedback inicial. |
-| **M5** | Modelagem Técnica da PoC | Definição do modelo de dados, stack tecnológica, contrato modelo.md, entidades de rastreabilidade e estratégia de implementação da PoC. | Stack definida, modelo conceitual, contrato do agente e estratégia de implementação. |
-| **M6** | Implementação da PoC | Desenvolvimento dos componentes mínimos para validar a arquitetura: criação/importação de agente, validação do manifesto, registro da skill, orquestração com agentes existentes e logs do fluxo. | Protótipo funcional, APIs principais, banco de dados e fluxo plug-and-play executável. |
-| **M7** | Validação e Avaliação | Execução dos cenários de teste, medição dos KPIs arquiteturais, validação da integração de um novo agente e análise de rastreabilidade. | Evidências de execução, logs, métricas, resultados da PoC e análise de viabilidade. |
-| **M8** | Consolidação Acadêmica | Revisão textual, padronização dos artefatos, organização dos apêndices, ajustes finais e preparação da apresentação. | RFC final, apêndices, slides de defesa e repositório do projeto. |
+|  |  |  |  |  |
+|:--:|:--:|:--:|:--:|:--:|
+| **Marco** | **Etapa do Projeto** | **Descrição Estratégica** | **Entregáveis Principais** | **Janela Prevista** |
+| **M1** | Fundamentação e Visão do Produto | Consolidação do problema de pesquisa, com foco na fragmentação do conhecimento, na dependência de especialistas e na ausência de uma arquitetura para criação/importação de agentes especialistas. | Problema validado, benchmark, objetivos, hipóteses e KPIs revisados. | Concluído (v3.0, 27/06/2026) |
+| **M2** | Engenharia de Requisitos | Definição das personas, requisitos funcionais, requisitos não funcionais e regras de negócio, priorizando o fluxo de criação/importação de agentes e sua integração ao ecossistema. | Personas, casos de uso, RFs/RNFs, regras de negócio e fora de escopo. | Concluído (v3.0, 27/06/2026) |
+| **M3** | Concepção Arquitetural | Modelagem dos componentes centrais: Interface Técnica, Agent Builder, Importador de Agentes, Validador de modelo.md, Registro de Agent Skills, Orquestrador, Advisory Agent e camada de contratos. | Diagramas C4, matriz de responsabilidades, fluxo operacional e tratamento de exceções. | Concluído (v3.0, 27/06/2026) |
+| **M4** | UX e Prototipação | Desenho das telas principais da plataforma, com foco no fluxo de criação/importação de agentes, catálogo de Agent Skills, validação de contrato, teste de integração e acompanhamento da colaboração entre agentes. | Fluxo de navegação, wireframes, mapeamento de telas e feedback inicial. | Concluído (v3.0, 27/06/2026) |
+| **M5** | Modelagem Técnica da PoC | Definição do modelo de dados, stack tecnológica (incluindo pipeline RAG e Model Gateway via OpenRouter), contrato modelo.md, entidades de rastreabilidade e estratégia de implementação da PoC. | Stack definida, modelo conceitual, contrato do agente e estratégia de implementação. | até 30/08/2026 (domingo) |
+| **M6** | Implementação da PoC | Desenvolvimento dos componentes mínimos para validar a arquitetura: pipeline de retrieval e geração aumentada, integração com Model Gateway, criação/importação de agente, validação do manifesto, registro da skill, orquestração com agentes existentes e logs do fluxo. | Protótipo funcional, APIs principais, banco de dados e fluxo plug-and-play executável. | até 30/09/2026 (quarta-feira) |
+| **M7** | Validação e Avaliação | Execução dos cenários de teste, medição dos KPIs arquiteturais, validação da integração de um novo agente e análise de rastreabilidade. | Evidências de execução, logs, métricas, resultados da PoC e análise de viabilidade. | até 30/10/2026 (sexta-feira) |
+| **M8** | Consolidação Acadêmica | Revisão textual, padronização dos artefatos, organização dos apêndices, ajustes finais e preparação da apresentação. | RFC final, apêndices, slides de defesa e repositório do projeto. | até 30/11/2026 (segunda-feira) — prazo final |
 
 ## 
 
@@ -1678,7 +1774,7 @@ Tabela 12: Épicos e Histórias de Usuário
 
 # 8. Referências
 
-**9. Apêndices e Materiais Complementares**
+# 9. Apêndices e Materiais Complementares
 
 Os apêndices a seguir reúnem os artefatos visuais, os detalhamentos
 teóricos e as evidências práticas que fundamentam as decisões
