@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.roles import LLM_EXECUTION_ROLES, ROLE_ADMIN
 from app.core.security import ensure_utc, hash_token, secure_compare, utc_now
 from app.models import AuthSession, User
 from app.services.session_service import clear_auth_cookies, find_valid_session, revoke_session
@@ -72,9 +73,18 @@ def get_current_user(auth_session: AuthSession = Depends(get_current_session)) -
 
 
 def require_admin(user: User = Depends(get_current_user)) -> User:
-    if user.role != "ADMIN":
+    if user.role != ROLE_ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Ação permitida apenas para administradores.",
+        )
+    return user
+
+
+def require_technician(user: User = Depends(get_current_user)) -> User:
+    if user.role not in LLM_EXECUTION_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Ação permitida apenas para técnicos autorizados.",
         )
     return user
