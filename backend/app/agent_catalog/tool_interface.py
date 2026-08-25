@@ -191,3 +191,173 @@ class LegacyCodeSkillExecutor(SkillExecutor):
                 referencias_catalogo=[],
             ),
         )
+
+
+class BusinessRulesSkillExecutor(SkillExecutor):
+    """Reference PoC executor for the "Regras de Negócio" Agent Skill.
+
+    Same retrieval+generation pipeline as LegacyCodeSkillExecutor (reuses
+    app.services.llm_service instead of duplicating it), reframed around
+    business-rule evidence rather than raw code/dependency evidence — the
+    distinction between skills in this PoC is domain framing and contract
+    metadata, not separate infrastructure.
+    """
+
+    def execute(
+        self,
+        db: Session,
+        *,
+        skill: AgentSkill,
+        technical_request: TechnicalRequest,
+        user: User,
+        tool_call: SkillToolCall,
+    ) -> SkillToolResult:
+        plan_response = generate_technical_plan(db, technical_request=technical_request, user=user)
+
+        retrieved_chunks: list[KnowledgeChunk] = []
+        llm_invocation = db.scalar(
+            select(LLMInvocation).where(LLMInvocation.llm_call_id == plan_response.llm_call_id)
+        )
+        if llm_invocation and llm_invocation.retrieved_chunk_ids:
+            retrieved_chunks = list(
+                db.scalars(
+                    select(KnowledgeChunk).where(
+                        KnowledgeChunk.id.in_(llm_invocation.retrieved_chunk_ids)
+                    )
+                )
+            )
+
+        findings = [
+            AchadoTecnico(
+                item_identificado=chunk.artifact_name,
+                descricao_detalhada=(
+                    "Trecho recuperado da base de conhecimento como evidência de regra de "
+                    "negócio potencialmente impactada pela mudança solicitada."
+                ),
+                trecho_referenciado=chunk.content[:500],
+            )
+            for chunk in retrieved_chunks
+        ]
+
+        missing = plan_response.plan.missing_information
+        if not missing and findings:
+            confidence: ConfidenceLevel = "ALTO"
+            justification = (
+                f"{len(findings)} trecho(s) de regra de negócio recuperados e nenhuma lacuna "
+                "de informação identificada pelo planejador técnico."
+            )
+        elif findings:
+            confidence = "MEDIO"
+            justification = (
+                f"{len(findings)} trecho(s) de regra de negócio recuperados, mas o planejador "
+                f"técnico identificou {len(missing)} lacuna(s) de informação."
+            )
+        else:
+            confidence = "BAIXO"
+            justification = (
+                "Nenhum trecho relevante foi recuperado da base de conhecimento; a análise de "
+                "regras de negócio carece de evidência documental direta."
+            )
+
+        return SkillToolResult(
+            trace_id=technical_request.trace_id,
+            agente_emissor=AgenteEmissor(
+                nome=skill.name,
+                versao_prompt=skill.version,
+                dominio=skill.domain,
+            ),
+            analise_estruturada=AnaliseEstruturada(
+                resumo_executivo=plan_response.plan.summary,
+                descobertas_tecnicas=findings,
+                impactos_mapeados=plan_response.plan.risks,
+            ),
+            governanca=Governanca(
+                nivel_confianca=confidence,
+                justificativa_confianca=justification,
+                referencias_catalogo=[],
+            ),
+        )
+
+
+class ArchitectureSkillExecutor(SkillExecutor):
+    """Reference PoC executor for the "Arquitetura de Software" Agent Skill.
+
+    Same retrieval+generation pipeline as LegacyCodeSkillExecutor, reframed
+    around architectural impact evidence (coupling, boundaries, structural
+    risk) instead of raw code/dependency evidence.
+    """
+
+    def execute(
+        self,
+        db: Session,
+        *,
+        skill: AgentSkill,
+        technical_request: TechnicalRequest,
+        user: User,
+        tool_call: SkillToolCall,
+    ) -> SkillToolResult:
+        plan_response = generate_technical_plan(db, technical_request=technical_request, user=user)
+
+        retrieved_chunks: list[KnowledgeChunk] = []
+        llm_invocation = db.scalar(
+            select(LLMInvocation).where(LLMInvocation.llm_call_id == plan_response.llm_call_id)
+        )
+        if llm_invocation and llm_invocation.retrieved_chunk_ids:
+            retrieved_chunks = list(
+                db.scalars(
+                    select(KnowledgeChunk).where(
+                        KnowledgeChunk.id.in_(llm_invocation.retrieved_chunk_ids)
+                    )
+                )
+            )
+
+        findings = [
+            AchadoTecnico(
+                item_identificado=chunk.artifact_name,
+                descricao_detalhada=(
+                    "Trecho recuperado da base de conhecimento como evidência de impacto "
+                    "arquitetural (acoplamento, limites de módulo ou risco estrutural)."
+                ),
+                trecho_referenciado=chunk.content[:500],
+            )
+            for chunk in retrieved_chunks
+        ]
+
+        missing = plan_response.plan.missing_information
+        if not missing and findings:
+            confidence: ConfidenceLevel = "ALTO"
+            justification = (
+                f"{len(findings)} trecho(s) de evidência arquitetural recuperados e nenhuma "
+                "lacuna de informação identificada pelo planejador técnico."
+            )
+        elif findings:
+            confidence = "MEDIO"
+            justification = (
+                f"{len(findings)} trecho(s) de evidência arquitetural recuperados, mas o "
+                f"planejador técnico identificou {len(missing)} lacuna(s) de informação."
+            )
+        else:
+            confidence = "BAIXO"
+            justification = (
+                "Nenhum trecho relevante foi recuperado da base de conhecimento; a análise "
+                "arquitetural carece de evidência documental direta."
+            )
+
+        return SkillToolResult(
+            trace_id=technical_request.trace_id,
+            agente_emissor=AgenteEmissor(
+                nome=skill.name,
+                versao_prompt=skill.version,
+                dominio=skill.domain,
+            ),
+            analise_estruturada=AnaliseEstruturada(
+                resumo_executivo=plan_response.plan.summary,
+                descobertas_tecnicas=findings,
+                impactos_mapeados=plan_response.plan.risks,
+            ),
+            governanca=Governanca(
+                nivel_confianca=confidence,
+                justificativa_confianca=justification,
+                referencias_catalogo=[],
+            ),
+        )

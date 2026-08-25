@@ -12,13 +12,10 @@ from app.rag.ingestion import ingest_artifact
 from app.rag.providers.mock_embedding_provider import MockEmbeddingProvider
 from tests.conftest import csrf_headers
 
-FIXTURE_MANIFEST = (
-    Path(__file__).resolve().parent.parent
-    / "app"
-    / "agent_manifest"
-    / "fixtures"
-    / "legacy-code-skill.md"
-).read_text(encoding="utf-8")
+FIXTURES_DIR = Path(__file__).resolve().parent.parent / "app" / "agent_manifest" / "fixtures"
+FIXTURE_MANIFEST = (FIXTURES_DIR / "legacy-code-skill.md").read_text(encoding="utf-8")
+BUSINESS_RULES_FIXTURE_MANIFEST = (FIXTURES_DIR / "business-rules-skill.md").read_text(encoding="utf-8")
+ARCHITECTURE_FIXTURE_MANIFEST = (FIXTURES_DIR / "architecture-skill.md").read_text(encoding="utf-8")
 
 TECHNICIAN = {
     "name": "Tecnica Skills",
@@ -227,6 +224,71 @@ def test_execute_orchestration_step_runs_skill_and_quality_gate(client: TestClie
     dashboard_response = client.get("/api/v1/dashboard/summary")
     assert dashboard_response.status_code == 200
     assert dashboard_response.json()["registered_agent_skills"] == 1
+
+    detail_response = client.get(f"/api/v1/requests/{technical_request['id']}")
+    assert detail_response.json()["status"] in {"COMPLETED", "VALIDATING"}
+
+
+def test_execute_orchestration_step_runs_three_skills_in_one_analysis(
+    client: TestClient, monkeypatch
+) -> None:
+    """Proves RFC 5.5's minimum success criterion: at least three Agent Skills
+    acting on the same analysis, each with its own invocation, result and
+    Quality Gate evaluation — not three separate requests."""
+    from app.core.config import settings
+
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="CreditLimitService.java",
+            content=(
+                "O limite de credito hoje eh sempre R$ 5000,00 fixo, sem considerar "
+                "o segmento do cliente (varejo, atacado, corporativo)."
+            ),
+            language="java",
+            embedding_provider=MockEmbeddingProvider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    for manifest in (FIXTURE_MANIFEST, BUSINESS_RULES_FIXTURE_MANIFEST, ARCHITECTURE_FIXTURE_MANIFEST):
+        import_response = client.post(
+            "/api/v1/agent-skills/import",
+            json={"manifest_markdown": manifest},
+            headers=authenticated_csrf_headers(client),
+        )
+        assert import_response.status_code == 201
+
+    technical_request = create_qualified_request(
+        client,
+        requested_domains=["codigo_legado", "regras_negocio", "arquitetura_software"],
+    )
+
+    monkeypatch.setattr(settings, "llm_enabled", True)
+    monkeypatch.setattr(settings, "llm_provider", "mock")
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 3
+    assert len(payload["results"]) == 3
+    assert {result["agente_emissor"]["dominio"] for result in payload["results"]} == {
+        "codigo_legado",
+        "regras_negocio",
+        "arquitetura_software",
+    }
+
+    events_response = client.get(f"/api/v1/orchestrations/{technical_request['trace_id']}/events")
+    event_types = [event["event_type"] for event in events_response.json()]
+    assert event_types.count("AGENT_SKILL_INVOCATION_COMPLETED") == 3
+    assert "QUALITY_GATE_EVALUATED" in event_types
 
     detail_response = client.get(f"/api/v1/requests/{technical_request['id']}")
     assert detail_response.json()["status"] in {"COMPLETED", "VALIDATING"}
