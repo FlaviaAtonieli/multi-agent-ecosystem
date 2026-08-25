@@ -2,6 +2,17 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-25 - Fechamento do Marco M5 (Modelagem Técnica da PoC)
+
+### Adicionado
+
+- RFC (v3.1): Marco M5 marcado como concluído no roadmap (Tabela 11).
+
+### Contexto
+
+- stack tecnológica, modelo de dados, contrato do agente (modelo.md) e estratégia de implementação já estavam definidos na Seção 5 da RFC e refletidos na implementação (base, orientação, orquestração, RAG, provedores LLM, catálogo de Agent Skills e Quality Gate);
+- este marco formaliza o fechamento documental, sem mudança de escopo técnico.
+
 ## 2026-07-31 - Fundação de provedores de modelo
 
 ### Adicionado
