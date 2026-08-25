@@ -2,6 +2,21 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-25 - Perfil REVIEWER e revisão humana de solicitações
+
+### Adicionado
+
+- perfil `REVIEWER` (`app/core/roles.py`, `HUMAN_REVIEW_ROLES`);
+- endpoint `POST /api/v1/requests/{id}/review` (decisão `approve`/`reject` com observações), restrito a `REVIEWER` ou `ADMIN`, não restrito ao dono da solicitação;
+- status `REJECTED` para solicitações rejeitadas na revisão humana;
+- eventos `HUMAN_REVIEW_APPROVED` / `HUMAN_REVIEW_REJECTED` na timeline de rastreabilidade;
+- 5 testes cobrindo aprovação, rejeição, controle de acesso por papel, tentativa fora do status `VALIDATING` e revisão de solicitação de outro usuário.
+
+### Contexto
+
+- o perfil `REVIEWER` não está definido na RFC (a especificação principal do projeto); vem de `docs/Documento_de_referencia.md`, um documento à parte com escopo mais amplo (Agentic Control Plane). Implementado mesmo assim por decisão explícita, fora do escopo formal da RFC v3.1;
+- fecha a lacuna de "revisão humana" citada em `docs/integrations/model-provider.md` e no princípio de humano no loop (RFC, Seção 6).
+
 ## 2026-08-25 - Agent Skills de Regras de Negócio e Arquitetura
 
 ### Adicionado

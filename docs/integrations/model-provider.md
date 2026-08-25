@@ -133,7 +133,6 @@ LLM_REDACT_SENSITIVE_DATA=true
 
 ## Limitações atuais
 
-- O perfil `REVIEWER` previsto no desenho acadêmico ainda não foi implementado.
 - A seleção de Agent Skills por domínio já existe (`app/agent_catalog/`), mas é por correspondência exata de domínio (sem roteamento semântico) — decisão deliberada de escopo para uma PoC de desenvolvedora única.
 - O plano não executa tools.
 - O resultado não é publicado automaticamente.

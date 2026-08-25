@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.security import utc_now
-from app.models import OrchestrationEvent, OrchestrationRun, TechnicalRequest
+from app.models import OrchestrationEvent, OrchestrationRun, TechnicalRequest, User
 from app.schemas.orchestration import TechnicalRequestCreate
 
 CONTEXT_MIN_LENGTH = 40
@@ -19,6 +19,7 @@ class RequestStatus:
     RUNNING = "RUNNING"
     VALIDATING = "VALIDATING"
     COMPLETED = "COMPLETED"
+    REJECTED = "REJECTED"
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
 
@@ -141,6 +142,56 @@ def create_technical_request(
             ),
             payload={"minimum_context_characters": CONTEXT_MIN_LENGTH},
         )
+
+    db.flush()
+    return technical_request
+
+
+class RequestNotAwaitingReviewError(ValueError):
+    pass
+
+
+def record_human_review(
+    db: Session,
+    *,
+    technical_request: TechnicalRequest,
+    reviewer: User,
+    decision: str,
+    notes: str | None = None,
+) -> TechnicalRequest:
+    """Applies a REVIEWER/ADMIN decision to a request pending human review (RF11,
+    RFC §5.3 "Validação": aprovação ou rejeição com justificativa).
+
+    Only requests the Quality Gate actually flagged (status VALIDATING) can be
+    reviewed — this is the "humano no loop" checkpoint, not a way to short-circuit
+    the automated pipeline before it runs.
+    """
+    if technical_request.status != RequestStatus.VALIDATING:
+        raise RequestNotAwaitingReviewError(
+            f"A solicitação está em status '{technical_request.status}' e não aguarda revisão humana."
+        )
+
+    approved = decision == "approve"
+    next_status = RequestStatus.COMPLETED if approved else RequestStatus.REJECTED
+    technical_request.status = next_status
+
+    run = technical_request.orchestration_run
+    if run:
+        run.status = next_status
+        run.current_stage = "VALIDATION"
+        run.completed_at = utc_now()
+
+    append_event(
+        db,
+        technical_request,
+        event_type="HUMAN_REVIEW_APPROVED" if approved else "HUMAN_REVIEW_REJECTED",
+        actor="REVIEWER",
+        title="Solicitação aprovada por revisão humana" if approved else "Solicitação rejeitada por revisão humana",
+        message=notes or (
+            "Aprovada sem observações adicionais." if approved else "Rejeitada sem observações adicionais."
+        ),
+        payload={"reviewer_id": reviewer.id, "decision": decision, "notes": notes},
+    )
 
     db.flush()
     return technical_request

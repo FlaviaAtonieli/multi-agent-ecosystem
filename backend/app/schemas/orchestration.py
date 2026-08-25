@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -65,6 +66,19 @@ class TechnicalRequestRead(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+
+
+class TechnicalRequestReview(BaseModel):
+    decision: Literal["approve", "reject"]
+    notes: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("notes")
+    @classmethod
+    def normalize_notes(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
 
 
 class OrchestrationRunRead(BaseModel):

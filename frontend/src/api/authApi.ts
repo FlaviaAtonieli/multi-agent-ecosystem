@@ -4,7 +4,7 @@ export type User = {
   id: string
   name: string
   email: string
-  role: 'USER' | 'TECHNICIAN' | 'ADMIN'
+  role: 'USER' | 'TECHNICIAN' | 'REVIEWER' | 'ADMIN'
   is_active: boolean
   created_at: string
 }

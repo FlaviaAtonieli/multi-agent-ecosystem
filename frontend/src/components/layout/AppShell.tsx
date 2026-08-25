@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import type { User } from '../../api/authApi'
 import { Brand } from '../Brand'
 import '../../styles/workspace.css'
 
@@ -9,6 +10,13 @@ const navigation = [
   { to: '/orchestrations', label: 'Orquestrações', symbol: '◎' },
   { to: '/agent-skills', label: 'Agent Skills', symbol: '◇' },
 ]
+
+const roleLabels: Record<User['role'], string> = {
+  USER: 'Usuário',
+  TECHNICIAN: 'Usuário técnico',
+  REVIEWER: 'Revisor',
+  ADMIN: 'Administrador',
+}
 
 export function AppShell() {
   const navigate = useNavigate()
@@ -63,7 +71,7 @@ export function AppShell() {
             </div>
             <div>
               <strong>{user?.name}</strong>
-              <small>{user?.role === 'ADMIN' ? 'Administrador' : 'Usuário técnico'}</small>
+              <small>{user ? roleLabels[user.role] : 'Usuário técnico'}</small>
             </div>
             <button className="workspace-logout" type="button" onClick={handleLogout}>Sair</button>
           </div>

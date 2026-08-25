@@ -46,4 +46,4 @@ class UserStatusUpdate(BaseModel):
 
 
 class UserRoleUpdate(BaseModel):
-    role: Literal["USER", "TECHNICIAN", "ADMIN"]
+    role: Literal["USER", "TECHNICIAN", "REVIEWER", "ADMIN"]

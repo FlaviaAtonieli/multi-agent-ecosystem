@@ -13,7 +13,7 @@ A base implementa:
 - PostgreSQL e migrations Alembic;
 - autenticação por sessão opaca em cookie `HttpOnly`;
 - proteção CSRF, rate limiting e auditoria;
-- perfis `USER`, `TECHNICIAN` e `ADMIN`;
+- perfis `USER`, `TECHNICIAN`, `REVIEWER` e `ADMIN`;
 - criação de solicitações técnicas;
 - qualificação inicial do contexto;
 - geração de `Trace ID`;
@@ -25,13 +25,15 @@ A base implementa:
 - ingestão e recuperação de contexto (RAG) sobre uma base de conhecimento indexada;
 - catálogo funcional de Agent Skills, com importação do manifesto `modelo.md` e aprovação humana obrigatória;
 - execução de Agent Skills via MCP e avaliação por Quality Gate;
-- três Agent Skills com executor real (Código Legado, Regras de Negócio e Arquitetura de Software), acionáveis em conjunto numa mesma análise.
+- três Agent Skills com executor real (Código Legado, Regras de Negócio e Arquitetura de Software), acionáveis em conjunto numa mesma análise;
+- revisão humana de solicitações sinalizadas pelo Quality Gate (perfil `REVIEWER` ou `ADMIN`, aprovação ou rejeição com justificativa, `POST /api/v1/requests/{id}/review`).
 
 Ainda não fazem parte desta base:
 
 - seleção dinâmica de skills (hoje o roteamento é por correspondência exata de domínio — decisão deliberada de escopo);
-- perfil separado de revisor;
 - publicação automática de artefatos.
+
+> O perfil `REVIEWER` não está definido na RFC (a especificação principal do projeto); ele vem de `docs/Documento_de_referencia.md`, um documento à parte com uma visão arquitetural mais ampla. Foi implementado por decisão explícita, fora do escopo formal da RFC v3.1.
 
 ## Estrutura
 
