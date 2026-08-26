@@ -19,7 +19,7 @@ Esta é a primeira medição real dos KPIs da RFC, feita rodando 5 cenários de 
 | Extensibilidade Plug-and-Play | 1 skill integrada | **1 skill (Segurança da Informação)** acoplada sem alterar o núcleo do Orquestrador | ✅ Atingido (evidência anterior) |
 | Taxa de Sucesso End-to-End | ≥ 80% | **100%** das execuções técnicas (8/8 invocações de Agent Skill e de LLM concluídas sem falha) — mas **0/5** solicitações chegaram a `COMPLETED` sem exigir revisão humana | ⚠️ **Ambíguo — ver limitação abaixo** |
 | Qualidade do Manifesto | ≥ 80% válidos | **100% de classificação correta** do validador (10/10) — ver nota metodológica abaixo antes de ler isso como "80%" | ⚠️ **Ver nota metodológica** |
-| Redução do Tempo de Análise | ≥ 30% | não medido — falta uma linha de base de tempo manual | ⏳ **Bloqueado, precisa de decisão** |
+| Redução do Tempo de Análise | ≥ 30% | não mensurável nesta fase — benchmarks publicados dão proporção de tempo, não duração absoluta comparável | ⏳ **Não mensurável sem estudo controlado** |
 
 ## Detalhamento
 
@@ -74,9 +74,19 @@ Submeti um lote de 10 manifestos contra `POST /agent-skills/import` na API real:
 
 **A meta de "≥80% válidos" da RFC não define a metodologia de amostragem** — não fica claro se o KPI mede (a) a precisão do validador contra uma amostra conhecida (o que medi: 100%), ou (b) a taxa de sucesso de submissões orgânicas de usuários reais (o que exigiria dados de uso real, que não existem ainda nesta PoC). Essa definição precisa ser decidida antes de declarar o KPI atingido ou não.
 
-### Redução do Tempo de Análise (⏳ bloqueado)
+### Redução do Tempo de Análise (⏳ não mensurável com os dados disponíveis)
 
-Exige uma linha de base de tempo de análise manual (sem a PoC) para comparar contra o tempo medido pela orquestração. Não há esse número em nenhum lugar do projeto — nem a RFC (Seção 1.1/1.2, Apêndice A) quantifica tempo, só descreve o problema qualitativamente ("gargalos", "retrabalho", "degradação de contexto"). Diferente dos outros KPIs, este não é medível só com código — precisa de uma estimativa ou entrevista com quem vive o processo manual hoje. Sem esse número, não há como calcular a redução percentual.
+Exige uma linha de base de tempo de análise manual (sem a PoC) para comparar contra o tempo medido pela orquestração. Não há esse número em nenhum lugar do projeto — nem a RFC (Seção 1.1/1.2, Apêndice A) quantifica tempo, só descreve o problema qualitativamente ("gargalos", "retrabalho", "degradação de contexto").
+
+Pesquisei benchmarks publicados sobre tempo de desenvolvedor gasto entendendo código/sistemas legados, como possível linha de base indireta:
+
+- Estudo citado pela Krugle: desenvolvedores gastam 11–30% do tempo corrigindo dívida técnica, e cerca de metade disso só entendendo o código-fonte ([Sourcegraph, "Legacy Code Modernization"](https://sourcegraph.com/blog/legacy-code-modernization)).
+- Outro benchmark: ~5% do tempo escrevendo código novo, ~20% modificando código legado, **até 60% só entendendo o sistema existente** ([IN-COM Data Systems](https://www.in-com.com/blog/developer-experience-dx-metrics-for-legacy-codebases-beyond-surveys-and-sentiment-analysis/)).
+- Levantamento mais amplo: desenvolvedores gastam entre 58% e 70% do tempo entendendo código-fonte ([Devox Software](https://devoxsoftware.com/blog/how-ai-powered-tools-accelerate-legacy-code-understanding-and-refactoring/)).
+
+**Esses números não fecham o KPI.** Eles descrevem *proporção do tempo de trabalho* (ex.: "60% de uma semana"), não a *duração absoluta* de uma tarefa pontual como os cenários testados nesta rodada (análise de um impacto técnico específico, ~12–14s de resposta automatizada). Calcular uma "redução de X%" comparando segundos de resposta da PoC contra uma fração de jornada de trabalho seria uma conta inválida — as duas grandezas não são comparáveis sem uma linha de base de duração absoluta para a MESMA tarefa.
+
+O que os benchmarks reforçam é a tese central da RFC (Seção 1.1): entendimento/análise domina o tempo do desenvolvedor, o que justifica a arquitetura, mas não substitui uma medição própria. A medição correta deste KPI exige um **estudo controlado**: cronometrar a mesma tarefa de análise, feita por uma pessoa sem a PoC e com a PoC, idealmente repetido com múltiplas pessoas/tarefas para ter validade estatística. Isso é trabalho de campo genuíno (não decidível por pesquisa bibliográfica) e fica registrado como pendência explícita para uma próxima rodada do M7.
 
 ## Bug real encontrado durante esta medição
 
@@ -97,5 +107,5 @@ Isso reforça o princípio já registrado em `docs/validation/evidence/2026-08-f
 - Nenhuma base de conhecimento foi ingerida; a Taxa de Sucesso e o nível de confiança das análises refletem isso, não a qualidade do pipeline em si.
 - Amostra pequena (5 solicitações, 8 invocações; 10 manifestos) — suficiente para uma primeira leitura, não para conclusões estatísticas.
 - Qualidade do Manifesto: a RFC não define a metodologia de amostragem (precisão do validador vs. taxa de submissões orgânicas) — medi a primeira (100%), a segunda não é medível sem dados de uso real.
-- Redução do Tempo de Análise: bloqueada até existir uma linha de base de tempo manual (estimativa ou entrevista) — não é uma medida só de código.
+- Redução do Tempo de Análise: benchmarks publicados sobre tempo de compreensão de código legado (58-70% do tempo do desenvolvedor) foram pesquisados, mas descrevem proporção de jornada, não duração absoluta comparável à resposta da PoC — o KPI exige um estudo controlado (mesma tarefa, com e sem a ferramenta), que é trabalho de campo, não decidível por pesquisa bibliográfica.
 - Este documento não substitui a análise de viabilidade final exigida pelo M7.
