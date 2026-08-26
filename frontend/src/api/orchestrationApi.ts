@@ -1,4 +1,5 @@
 import { apiRequest } from './http'
+import { ConsolidatedResponse } from './agentSkillsApi'
 
 export type RequestStatus =
   | 'RECEIVED'
@@ -8,6 +9,7 @@ export type RequestStatus =
   | 'RUNNING'
   | 'VALIDATING'
   | 'COMPLETED'
+  | 'REJECTED'
   | 'FAILED'
   | 'CANCELLED'
 
@@ -22,6 +24,7 @@ export type TechnicalRequest = {
   status: RequestStatus
   created_at: string
   updated_at: string
+  consolidated_response: ConsolidatedResponse | null
 }
 
 export type OrchestrationRun = {

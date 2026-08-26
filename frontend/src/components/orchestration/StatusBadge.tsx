@@ -8,6 +8,7 @@ const statusLabels: Record<RequestStatus, string> = {
   RUNNING: 'Em execução',
   VALIDATING: 'Quality Gate',
   COMPLETED: 'Concluída',
+  REJECTED: 'Rejeitada',
   FAILED: 'Falha',
   CANCELLED: 'Cancelada',
 }

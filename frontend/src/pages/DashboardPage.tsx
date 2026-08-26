@@ -4,7 +4,6 @@ import { DashboardSummary, dashboardApi } from '../api/dashboardApi'
 import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
 import { ActivityFeed } from '../components/dashboard/ActivityFeed'
-import { EcosystemOverview } from '../components/dashboard/EcosystemOverview'
 import { MetricCard } from '../components/dashboard/MetricCard'
 import { RecentRequestsTable } from '../components/dashboard/RecentRequestsTable'
 
@@ -72,16 +71,6 @@ export function DashboardPage() {
             <Link to="/orchestrations">Ver todas</Link>
           </div>
           <RecentRequestsTable requests={summary?.recent_requests ?? []} />
-        </article>
-
-        <article className="workspace-panel">
-          <div className="workspace-panel-heading">
-            <div>
-              <span className="workspace-card-kicker">ARQUITETURA</span>
-              <h2>Ecossistema</h2>
-            </div>
-          </div>
-          <EcosystemOverview />
         </article>
 
         <article className="workspace-panel">
