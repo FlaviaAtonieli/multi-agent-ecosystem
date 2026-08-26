@@ -48,3 +48,9 @@ class TechnicalRequest(Base):
         cascade="all, delete-orphan",
         order_by="OrchestrationEvent.sequence_number",
     )
+    consolidated_response = relationship(
+        "ConsolidatedResponse",
+        back_populates="technical_request",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )

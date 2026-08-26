@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.agent_catalog.tool_interface import SkillToolResult
 from app.agent_manifest.manifest import DomainLiteral
 from app.quality_gate.service import QualityGateVerdict
+from app.schemas.orchestration import ConsolidatedResponseRead
 
 
 class AgentSkillManifestImport(BaseModel):
@@ -63,3 +64,4 @@ class OrchestrationExecutionRead(BaseModel):
     results: list[SkillToolResult]
     verdict: QualityGateVerdict
     invocations_count: int
+    consolidated_response: ConsolidatedResponseRead
