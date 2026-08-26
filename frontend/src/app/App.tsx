@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from '../components/layout/AppShell'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { PublicRoute } from '../components/PublicRoute'
+import { AgentSkillImportPage } from '../pages/AgentSkillImportPage'
+import { AgentSkillsPage } from '../pages/AgentSkillsPage'
 import { DashboardPage } from '../pages/DashboardPage'
 import { LoginPage } from '../pages/LoginPage'
 import { NewRequestPage } from '../pages/NewRequestPage'
@@ -23,6 +25,8 @@ export function App() {
           <Route path="/requests/new" element={<NewRequestPage />} />
           <Route path="/orchestrations" element={<OrchestrationsPage />} />
           <Route path="/orchestrations/:traceId" element={<OrchestrationPage />} />
+          <Route path="/agent-skills" element={<AgentSkillsPage />} />
+          <Route path="/agent-skills/import" element={<AgentSkillImportPage />} />
         </Route>
       </Route>
 

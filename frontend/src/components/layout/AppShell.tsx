@@ -7,6 +7,7 @@ const navigation = [
   { to: '/dashboard', label: 'Visão geral', symbol: '◫' },
   { to: '/requests/new', label: 'Nova solicitação', symbol: '+' },
   { to: '/orchestrations', label: 'Orquestrações', symbol: '◎' },
+  { to: '/agent-skills', label: 'Agent Skills', symbol: '◇' },
 ]
 
 export function AppShell() {
@@ -37,9 +38,6 @@ export function AppShell() {
 
           <div className="workspace-nav-divider" />
           <span className="workspace-nav-label">ECOSSISTEMA</span>
-          <button className="workspace-nav-link workspace-nav-disabled" type="button" disabled>
-            <span aria-hidden="true">◇</span> Agent Skills
-          </button>
           <button className="workspace-nav-link workspace-nav-disabled" type="button" disabled>
             <span aria-hidden="true">⌁</span> Auditoria
           </button>
