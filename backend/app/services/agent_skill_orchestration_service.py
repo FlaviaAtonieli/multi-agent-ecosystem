@@ -126,6 +126,7 @@ async def _invoke_skill(
     skill: AgentSkill,
     technical_request: TechnicalRequest,
     user: User,
+    requested_model: str | None = None,
 ) -> tuple[AgentSkillInvocation, SkillToolResult | None]:
     tool_call = SkillToolCall(
         trace_id=technical_request.trace_id,
@@ -133,6 +134,7 @@ async def _invoke_skill(
         user_id=user.id,
         agent_skill_id=skill.id,
         analises_requeridas=technical_request.requested_domains,
+        requested_model=requested_model,
     )
     input_hash = content_sha256(tool_call.model_dump_json())
     invocation_id = str(uuid4())
@@ -227,6 +229,7 @@ async def execute_orchestration_step(
     *,
     technical_request: TechnicalRequest,
     user: User,
+    requested_model: str | None = None,
 ) -> ExecutionResult:
     """Selects and runs Agent Skills for a qualified request (RF08/RF09/RF10),
     then consolidates their responses through the Quality Gate (RF11)."""
@@ -261,7 +264,7 @@ async def execute_orchestration_step(
     results: list[SkillToolResult] = []
     for skill in skills:
         invocation, result = await _invoke_skill(
-            db, skill=skill, technical_request=technical_request, user=user
+            db, skill=skill, technical_request=technical_request, user=user, requested_model=requested_model
         )
         invocations.append(invocation)
         if result is not None:

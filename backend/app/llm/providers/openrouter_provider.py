@@ -39,6 +39,7 @@ class OpenRouterLLMProvider(LLMProvider):
         request: LLMPlanRequest,
         *,
         llm_call_id: str,
+        model: str,
     ) -> LLMProviderResult:
         from openai import APIConnectionError, APITimeoutError, RateLimitError
 
@@ -47,7 +48,7 @@ class OpenRouterLLMProvider(LLMProvider):
 
         def _call() -> LLMProviderResult:
             response = self.client.chat.completions.create(
-                model=self.config.llm_model,
+                model=model,
                 messages=[
                     {"role": "system", "content": TECHNICAL_PLANNER_INSTRUCTIONS},
                     {"role": "user", "content": prompt},

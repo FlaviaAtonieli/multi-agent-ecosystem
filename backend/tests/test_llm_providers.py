@@ -91,7 +91,7 @@ def test_openrouter_provider_parses_chat_completions_response(monkeypatch) -> No
     monkeypatch.setattr("openai.OpenAI", fake_openai_factory)
 
     provider = OpenRouterLLMProvider(_build_settings())
-    result = provider.generate_plan(_build_request(), llm_call_id="call-123")
+    result = provider.generate_plan(_build_request(), llm_call_id="call-123", model="openai/gpt-5-mini")
 
     assert result.plan.summary.startswith("Plano gerado via OpenRouter")
     assert result.usage.input_tokens == 10

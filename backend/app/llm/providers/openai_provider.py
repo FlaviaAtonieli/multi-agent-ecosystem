@@ -29,12 +29,13 @@ class OpenAILLMProvider(LLMProvider):
         request: LLMPlanRequest,
         *,
         llm_call_id: str,
+        model: str,
     ) -> LLMProviderResult:
         schema = LLMPlan.model_json_schema()
         prompt = build_technical_planner_prompt(request)
 
         response = self.client.responses.create(
-            model=self.config.llm_model,
+            model=model,
             instructions=TECHNICAL_PLANNER_INSTRUCTIONS,
             input=prompt,
             max_output_tokens=self.config.llm_max_output_tokens,
