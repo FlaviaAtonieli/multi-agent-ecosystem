@@ -16,11 +16,13 @@ def retrieve_context_for_request(
     *,
     config: Settings = settings,
 ) -> RagContext:
-    query = " ".join(
-        part
-        for part in (safe_request.problem, safe_request.objective, safe_request.context)
-        if part
-    )
+    # RFC §6.1 "Proteção de Contexto": when scoped to a single skill's domain,
+    # bias the retrieval query towards that domain instead of the generic
+    # top-K every skill would otherwise share regardless of relevance.
+    query_parts = [safe_request.problem, safe_request.objective, safe_request.context]
+    if safe_request.analysis_domain_label:
+        query_parts.append(f"Domínio: {safe_request.analysis_domain_label}")
+    query = " ".join(part for part in query_parts if part)
 
     if not config.rag_enabled or not query.strip():
         return RagContext(chunks=[], query=query)

@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.agent_manifest.manifest import DOMAIN_LABELS
 from app.models import AgentSkill, KnowledgeChunk, LLMInvocation, TechnicalRequest, User
 from app.services.llm_service import generate_technical_plan
 
@@ -130,7 +131,11 @@ class LegacyCodeSkillExecutor(SkillExecutor):
         tool_call: SkillToolCall,
     ) -> SkillToolResult:
         plan_response = generate_technical_plan(
-            db, technical_request=technical_request, user=user, requested_model=tool_call.requested_model
+            db,
+            technical_request=technical_request,
+            user=user,
+            requested_model=tool_call.requested_model,
+            analysis_domain_label=DOMAIN_LABELS.get(skill.domain),
         )
 
         retrieved_chunks: list[KnowledgeChunk] = []
@@ -218,7 +223,11 @@ class BusinessRulesSkillExecutor(SkillExecutor):
         tool_call: SkillToolCall,
     ) -> SkillToolResult:
         plan_response = generate_technical_plan(
-            db, technical_request=technical_request, user=user, requested_model=tool_call.requested_model
+            db,
+            technical_request=technical_request,
+            user=user,
+            requested_model=tool_call.requested_model,
+            analysis_domain_label=DOMAIN_LABELS.get(skill.domain),
         )
 
         retrieved_chunks: list[KnowledgeChunk] = []
@@ -304,7 +313,11 @@ class ArchitectureSkillExecutor(SkillExecutor):
         tool_call: SkillToolCall,
     ) -> SkillToolResult:
         plan_response = generate_technical_plan(
-            db, technical_request=technical_request, user=user, requested_model=tool_call.requested_model
+            db,
+            technical_request=technical_request,
+            user=user,
+            requested_model=tool_call.requested_model,
+            analysis_domain_label=DOMAIN_LABELS.get(skill.domain),
         )
 
         retrieved_chunks: list[KnowledgeChunk] = []
@@ -392,7 +405,11 @@ class SecuritySkillExecutor(SkillExecutor):
         tool_call: SkillToolCall,
     ) -> SkillToolResult:
         plan_response = generate_technical_plan(
-            db, technical_request=technical_request, user=user, requested_model=tool_call.requested_model
+            db,
+            technical_request=technical_request,
+            user=user,
+            requested_model=tool_call.requested_model,
+            analysis_domain_label=DOMAIN_LABELS.get(skill.domain),
         )
 
         retrieved_chunks: list[KnowledgeChunk] = []

@@ -12,6 +12,10 @@ class LLMPlanRequest(BaseModel):
     context: str | None = None
     restrictions: list[str] = Field(default_factory=list)
     retrieved_context: str | None = None
+    # RFC §6.1 "Proteção de Contexto": which Agent Skill domain this specific
+    # call is scoped to, when invoked on behalf of one skill (None for the raw
+    # /llm/plan endpoint, which has no single skill to scope to).
+    analysis_domain_label: str | None = None
 
 
 class LLMPlan(BaseModel):

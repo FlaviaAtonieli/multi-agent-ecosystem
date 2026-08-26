@@ -2,6 +2,19 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-26 - Fundamentacao teorica e recorte de contexto por agente
+
+### Adicionado
+
+- RFC (v3.3): paragrafos novos na Secao 3.1 contrastando agente generico vs. agente especialista (ancorado no proprio Benchmark da Secao 1.3 -- AutoGPT como exemplo de agente generico); taxonomia agente de negocio/processo/ferramenta/orquestrador mapeada explicitamente sobre os componentes do Quadro 3 (Secao 3.2);
+- recorte de contexto por agente (RFC 6.1 "Protecao de Contexto"): cada Agent Skill agora recebe um prompt e uma consulta RAG explicitamente escopados ao seu proprio dominio (`LLMPlanRequest.analysis_domain_label`, `app/llm/prompts.py`, `app/rag/service.py`) -- antes, os 4 executores enviavam o mesmo prompt generico ao LLM independente do dominio;
+- feedback visual de sucesso no frontend (`alert-success`): a tela de Orquestracao agora confirma explicitamente quando o contexto e complementado ou a orquestracao e executada, nao so por mudanca de status.
+
+### Contexto
+
+- decorre de uma auditoria pedida pela autora contra um checklist de 10 categorias (fundamentacao teorica, arquitetura, modelagem de agentes, orquestracao, contratos, PoC, frontend, seguranca, observabilidade, escrita academica) -- 5 lacunas reais encontradas e fechadas nesta entrada;
+- 2 novos testes (`test_llm_prompts.py`) cobrindo o recorte de contexto, sem custo de chamada real.
+
 ## 2026-08-26 - Primeira medicao de KPIs (M7) e correcao de schema
 
 ### Corrigido
