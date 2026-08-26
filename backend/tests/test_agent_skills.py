@@ -3,14 +3,12 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
-from sqlalchemy import select
 
 from app.agent_catalog.tool_interface import AgenteEmissor, Governanca, SkillToolResult
 from app.core.database import SessionLocal
-from app.models import User
 from app.rag.ingestion import ingest_artifact
 from app.rag.providers.mock_embedding_provider import MockEmbeddingProvider
-from tests.conftest import csrf_headers
+from tests.conftest import authenticated_csrf_headers, create_qualified_request, promote, register
 
 FIXTURES_DIR = Path(__file__).resolve().parent.parent / "app" / "agent_manifest" / "fixtures"
 FIXTURE_MANIFEST = (FIXTURES_DIR / "legacy-code-skill.md").read_text(encoding="utf-8")
@@ -27,47 +25,6 @@ REGULAR_USER = {
     "email": "usuaria.comum@example.com",
     "password": "StrongPassword!123",
 }
-
-
-def authenticated_csrf_headers(client: TestClient) -> dict[str, str]:
-    token = client.cookies.get("agenthub_csrf")
-    assert token
-    return {"X-CSRF-Token": token}
-
-
-def register(client: TestClient, user: dict) -> None:
-    response = client.post("/api/v1/auth/register", json=user, headers=csrf_headers(client))
-    assert response.status_code == 201
-
-
-def promote(email: str, role: str) -> str:
-    with SessionLocal() as db:
-        user = db.scalar(select(User).where(User.email == email))
-        assert user is not None
-        user.role = role
-        db.commit()
-        return user.id
-
-
-def create_qualified_request(client: TestClient, *, requested_domains: list[str]) -> dict:
-    response = client.post(
-        "/api/v1/requests",
-        json={
-            "title": "Avaliar limite de crédito por segmento",
-            "problem": "O limite de crédito é global e precisa considerar o segmento do cliente.",
-            "objective": "Gerar plano técnico sem executar alterações automaticamente.",
-            "context": (
-                "O sistema legado calcula o limite de crédito do cliente de forma fixa, "
-                "sem considerar o segmento, e isso precisa mudar com segurança."
-            ),
-            "restrictions": ["Não executar tools"],
-            "requested_domains": requested_domains,
-        },
-        headers=authenticated_csrf_headers(client),
-    )
-    assert response.status_code == 201
-    assert response.json()["status"] == "QUALIFIED"
-    return response.json()
 
 
 def test_import_valid_manifest_registers_and_enables_skill(client: TestClient) -> None:

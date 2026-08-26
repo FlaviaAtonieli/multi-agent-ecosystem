@@ -3,8 +3,8 @@ from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.database import SessionLocal
-from app.models import LLMInvocation, User
-from tests.conftest import csrf_headers
+from app.models import LLMInvocation
+from tests.conftest import authenticated_csrf_headers, create_qualified_request, promote, register
 
 TECHNICIAN = {
     "name": "Tecnica Autorizada",
@@ -13,55 +13,8 @@ TECHNICIAN = {
 }
 
 
-def authenticated_csrf_headers(client: TestClient) -> dict[str, str]:
-    token = client.cookies.get("agenthub_csrf")
-    assert token
-    return {"X-CSRF-Token": token}
-
-
-def register_user(client: TestClient) -> None:
-    response = client.post(
-        "/api/v1/auth/register",
-        json=TECHNICIAN,
-        headers=csrf_headers(client),
-    )
-    assert response.status_code == 201
-
-
-def promote_current_user_to_technician() -> str:
-    with SessionLocal() as db:
-        user = db.scalar(select(User).where(User.email == TECHNICIAN["email"]))
-        assert user is not None
-        user.role = "TECHNICIAN"
-        db.commit()
-        return user.id
-
-
-def create_qualified_request(client: TestClient) -> dict:
-    response = client.post(
-        "/api/v1/requests",
-        json={
-            "title": "Planejar análise técnica rastreável",
-            "problem": (
-                "A integração apresenta divergência para tecnica.llm@example.com "
-                "e contém password=SegredoTemporario! que deve ser mascarado."
-            ),
-            "objective": "Gerar um plano técnico sem executar alterações automaticamente.",
-            "context": (
-                "A rotina é corporativa, possui dependências de API e banco de dados, "
-                "e precisa de revisão humana antes de qualquer publicação."
-            ),
-            "restrictions": ["Não executar tools", "Não publicar automaticamente"],
-        },
-        headers=authenticated_csrf_headers(client),
-    )
-    assert response.status_code == 201
-    assert response.json()["status"] == "QUALIFIED"
-    return response.json()
-
-
 def test_regular_user_cannot_access_llm_status(client: TestClient) -> None:
-    register_user(client)
+    register(client, TECHNICIAN)
     response = client.get("/api/v1/llm/status")
     assert response.status_code == 403
 
@@ -70,9 +23,22 @@ def test_mock_provider_plan_is_traced_without_storing_content(
     client: TestClient,
     monkeypatch,
 ) -> None:
-    register_user(client)
-    technician_id = promote_current_user_to_technician()
-    technical_request = create_qualified_request(client)
+    register(client, TECHNICIAN)
+    technician_id = promote(TECHNICIAN["email"], "TECHNICIAN")
+    technical_request = create_qualified_request(
+        client,
+        title="Planejar análise técnica rastreável",
+        problem=(
+            "A integração apresenta divergência para tecnica.llm@example.com "
+            "e contém password=SegredoTemporario! que deve ser mascarado."
+        ),
+        objective="Gerar um plano técnico sem executar alterações automaticamente.",
+        context=(
+            "A rotina é corporativa, possui dependências de API e banco de dados, "
+            "e precisa de revisão humana antes de qualquer publicação."
+        ),
+        restrictions=["Não executar tools", "Não publicar automaticamente"],
+    )
 
     monkeypatch.setattr(settings, "llm_enabled", True)
     monkeypatch.setattr(settings, "llm_provider", "mock")

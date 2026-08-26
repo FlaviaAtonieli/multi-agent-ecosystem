@@ -1,18 +1,12 @@
 from fastapi.testclient import TestClient
 
-from tests.conftest import csrf_headers
+from tests.conftest import authenticated_csrf_headers, csrf_headers
 
 USER = {
     "name": "Flavia Souza",
     "email": "flavia.orchestration@example.com",
     "password": "StrongPassword!123",
 }
-
-
-def authenticated_csrf_headers(client: TestClient) -> dict[str, str]:
-    token = client.cookies.get("agenthub_csrf")
-    assert token
-    return {"X-CSRF-Token": token}
 
 
 def test_orchestration_foundation_flow(client: TestClient) -> None:
