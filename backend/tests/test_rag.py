@@ -2,63 +2,17 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app.core.database import SessionLocal
-from app.models import LLMInvocation, OrchestrationEvent, User
+from app.models import LLMInvocation, OrchestrationEvent
 from app.rag.ingestion import chunk_text, ingest_artifact
 from app.rag.providers.mock_embedding_provider import MockEmbeddingProvider
 from app.rag.retriever import InMemoryVectorRetriever
-from tests.conftest import csrf_headers
+from tests.conftest import authenticated_csrf_headers, create_qualified_request, promote, register
 
 TECHNICIAN = {
     "name": "Tecnica RAG",
     "email": "tecnica.rag@example.com",
     "password": "StrongPassword!123",
 }
-
-
-def authenticated_csrf_headers(client: TestClient) -> dict[str, str]:
-    token = client.cookies.get("agenthub_csrf")
-    assert token
-    return {"X-CSRF-Token": token}
-
-
-def register_user(client: TestClient) -> None:
-    response = client.post(
-        "/api/v1/auth/register",
-        json=TECHNICIAN,
-        headers=csrf_headers(client),
-    )
-    assert response.status_code == 201
-
-
-def promote_current_user_to_technician() -> str:
-    with SessionLocal() as db:
-        user = db.scalar(select(User).where(User.email == TECHNICIAN["email"]))
-        assert user is not None
-        user.role = "TECHNICIAN"
-        db.commit()
-        return user.id
-
-
-def create_qualified_request(client: TestClient) -> dict:
-    response = client.post(
-        "/api/v1/requests",
-        json={
-            "title": "Avaliar impacto de limite de crédito por segmento",
-            "problem": (
-                "O limite de crédito é global e precisa considerar o segmento do cliente."
-            ),
-            "objective": "Gerar plano técnico sem executar alterações automaticamente.",
-            "context": (
-                "O sistema legado calcula o limite de crédito do cliente de forma fixa, "
-                "sem considerar o segmento, e isso precisa mudar com segurança."
-            ),
-            "restrictions": ["Não executar tools", "Não publicar automaticamente"],
-        },
-        headers=authenticated_csrf_headers(client),
-    )
-    assert response.status_code == 201
-    assert response.json()["status"] == "QUALIFIED"
-    return response.json()
 
 
 def test_chunk_text_produces_overlapping_windows() -> None:
@@ -151,8 +105,8 @@ def test_generate_plan_runs_retrieval_before_llm_call(client: TestClient, monkey
 
     from app.core.config import settings
 
-    register_user(client)
-    promote_current_user_to_technician()
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
     technical_request = create_qualified_request(client)
 
     monkeypatch.setattr(settings, "llm_enabled", True)
@@ -199,8 +153,8 @@ def test_generate_plan_runs_retrieval_before_llm_call(client: TestClient, monkey
 def test_rag_disabled_skips_retrieval(client: TestClient, monkeypatch) -> None:
     from app.core.config import settings
 
-    register_user(client)
-    promote_current_user_to_technician()
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
     technical_request = create_qualified_request(client)
 
     monkeypatch.setattr(settings, "llm_enabled", True)
