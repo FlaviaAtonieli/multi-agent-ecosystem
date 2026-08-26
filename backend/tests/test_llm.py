@@ -6,7 +6,6 @@ from app.core.database import SessionLocal
 from app.models import LLMInvocation, User
 from tests.conftest import csrf_headers
 
-
 TECHNICIAN = {
     "name": "Tecnica Autorizada",
     "email": "tecnica.llm@example.com",

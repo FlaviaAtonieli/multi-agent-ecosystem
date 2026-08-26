@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
@@ -19,7 +19,6 @@ from app.models import (
 from app.schemas.dashboard import DashboardSummary, SecurityEventRead
 from app.schemas.orchestration import OrchestrationEventRead, TechnicalRequestRead
 from app.services.orchestration_service import ACTIVE_STATUSES, RequestStatus
-
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -65,7 +64,7 @@ def dashboard_summary(
         )
     ) or 0
 
-    start_of_today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    start_of_today = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     completed_today = db.scalar(
         select(func.count(TechnicalRequest.id)).where(
             TechnicalRequest.owner_id == owner_id,

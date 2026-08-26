@@ -27,7 +27,6 @@ from app.services.session_service import (
     set_public_csrf_cookie,
 )
 
-
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
@@ -47,7 +46,9 @@ def register(
     _rate: None = Depends(register_rate_limit),
 ) -> AuthResponse:
     if not settings.allow_registration:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Novos cadastros estão desativados.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Novos cadastros estão desativados."
+        )
 
     email = normalize_email(str(payload.email))
     existing = db.scalar(select(User).where(User.email == email))

@@ -186,7 +186,11 @@ def record_human_review(
         technical_request,
         event_type="HUMAN_REVIEW_APPROVED" if approved else "HUMAN_REVIEW_REJECTED",
         actor="REVIEWER",
-        title="Solicitação aprovada por revisão humana" if approved else "Solicitação rejeitada por revisão humana",
+        title=(
+            "Solicitação aprovada por revisão humana"
+            if approved
+            else "Solicitação rejeitada por revisão humana"
+        ),
         message=notes or (
             "Aprovada sem observações adicionais." if approved else "Rejeitada sem observações adicionais."
         ),

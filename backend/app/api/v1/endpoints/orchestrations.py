@@ -7,7 +7,6 @@ from app.core.database import get_db
 from app.models import AuthSession, OrchestrationEvent, TechnicalRequest
 from app.schemas.orchestration import OrchestrationDetail, OrchestrationEventRead
 
-
 router = APIRouter(prefix="/orchestrations", tags=["Orquestrações"])
 
 

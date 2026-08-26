@@ -2,7 +2,6 @@ from fastapi.testclient import TestClient
 
 from tests.conftest import csrf_headers
 
-
 USER = {
     "name": "Flavia Souza",
     "email": "flavia.orchestration@example.com",

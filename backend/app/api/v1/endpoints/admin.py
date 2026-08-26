@@ -9,7 +9,6 @@ from app.schemas.user import UserRead, UserRoleUpdate, UserStatusUpdate
 from app.services.audit_service import record_audit
 from app.services.session_service import revoke_all_sessions
 
-
 router = APIRouter(prefix="/admin", tags=["Administration"])
 
 

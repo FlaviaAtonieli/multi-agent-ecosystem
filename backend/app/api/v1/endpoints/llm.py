@@ -15,11 +15,12 @@ from app.services.llm_service import (
     generate_technical_plan,
 )
 
-
 router = APIRouter(prefix="/llm", tags=["LLM Integration"])
 
 
-def _find_request(db: Session, *, user: User, request_id: str | None = None, trace_id: str | None = None) -> TechnicalRequest:
+def _find_request(
+    db: Session, *, user: User, request_id: str | None = None, trace_id: str | None = None
+) -> TechnicalRequest:
     query = select(TechnicalRequest)
     if request_id:
         query = query.where(TechnicalRequest.id == request_id)
