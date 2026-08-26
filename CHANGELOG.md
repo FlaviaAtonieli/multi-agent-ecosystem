@@ -2,6 +2,18 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-26 - Fecha a rodada de KPIs do M7 (Reducao do Tempo de Analise)
+
+### Adicionado
+
+- Pesquisa de benchmarks publicados sobre tempo de desenvolvedor gasto entendendo codigo legado (Sourcegraph, IN-COM Data Systems, Devox Software: 58-70% do tempo em compreensao de codigo) como contexto para o KPI "Reducao do Tempo de Analise" (RFC 1.6, meta >=30%).
+
+### Contexto
+
+- os benchmarks encontrados descrevem proporcao de tempo de trabalho, nao duracao absoluta de uma tarefa pontual -- nao sao comparaveis aos ~12-14s de resposta medidos da PoC sem uma conta invalida (maca com laranja);
+- KPI registrado como "nao mensuravel nesta fase" em vez de forcar um numero: a medicao correta exige um estudo controlado (mesma tarefa, cronometrada com e sem a ferramenta), que e trabalho de campo, nao decidivel por pesquisa bibliografica;
+- com isso, a primeira rodada de medicao dos 7 KPIs da RFC (Tabela 1) esta completa: 3 atingidos (Rastreabilidade, Articulacao entre Dominios, Extensibilidade), 1 nao atingido (Tempo Medio de Resposta), 1 ambiguo por definicao da RFC (Taxa de Sucesso End-to-End), 2 nao mensuraveis nesta fase (Qualidade do Manifesto por ambiguidade de metodologia, Reducao do Tempo de Analise por falta de linha de base).
+
 ## 2026-08-26 - Medicao de Qualidade do Manifesto (M7)
 
 ### Adicionado
