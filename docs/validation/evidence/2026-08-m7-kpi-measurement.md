@@ -18,8 +18,8 @@ Esta é a primeira medição real dos KPIs da RFC, feita rodando 5 cenários de 
 | Articulação entre Domínios | ≥ 3 agentes | **3 agentes numa mesma análise**, comprovado por teste automatizado | ✅ Atingido (evidência anterior) |
 | Extensibilidade Plug-and-Play | 1 skill integrada | **1 skill (Segurança da Informação)** acoplada sem alterar o núcleo do Orquestrador | ✅ Atingido (evidência anterior) |
 | Taxa de Sucesso End-to-End | ≥ 80% | **100%** das execuções técnicas (8/8 invocações de Agent Skill e de LLM concluídas sem falha) — mas **0/5** solicitações chegaram a `COMPLETED` sem exigir revisão humana | ⚠️ **Ambíguo — ver limitação abaixo** |
-| Qualidade do Manifesto | ≥ 80% válidos | não medido nesta rodada | ⏳ Pendente |
-| Redução do Tempo de Análise | ≥ 30% | não medido nesta rodada | ⏳ Pendente |
+| Qualidade do Manifesto | ≥ 80% válidos | **100% de classificação correta** do validador (10/10) — ver nota metodológica abaixo antes de ler isso como "80%" | ⚠️ **Ver nota metodológica** |
+| Redução do Tempo de Análise | ≥ 30% | não medido — falta uma linha de base de tempo manual | ⏳ **Bloqueado, precisa de decisão** |
 
 ## Detalhamento
 
@@ -57,11 +57,26 @@ Todas as 8 invocações técnicas (Agent Skill + LLM) completaram sem falha de s
 
 Recomenda-se decidir essa definição antes da medição formal, idealmente rodando os cenários com uma base de conhecimento real ingerida (a PoC tem fixtures em `backend/app/rag/fixtures/legacy_billing/` e `seed_knowledge_base.py` para isso).
 
-### Qualidade do Manifesto e Redução do Tempo de Análise (⏳ pendentes)
+### Qualidade do Manifesto (⚠️ nota metodológica importante)
 
-Não medidos nesta rodada:
-- **Qualidade do Manifesto** exige um lote de manifestos (válidos e inválidos) para calcular a taxa de aprovação — precisa de uma amostra definida (manifestos reais submetidos, não só os 4 de fixture já validados).
-- **Redução do Tempo de Análise** exige uma linha de base de tempo de análise manual (sem a PoC) para comparar — é uma medida de metodologia (estimativa/entrevista), não só de código.
+Submeti um lote de 10 manifestos contra `POST /agent-skills/import` na API real: os 4 fixtures conhecidos como válidos (Código Legado, Regras de Negócio, Arquitetura, Segurança) mais 6 variações derivadas do fixture de Código Legado, cada uma com exatamente um defeito realista de autoria:
+
+| Caso | Defeito injetado | Resultado |
+|---|---|---|
+| `missing_security_rules_section` | Remove a seção "Regras de Segurança" | ✅ Rejeitado, mensagem específica |
+| `unrecognized_domain` | Domínio "Segurança Cibernética" (não existe) | ✅ Rejeitado, lista os domínios válidos |
+| `missing_version_field` | Remove o campo "Versão" da Identificação | ✅ Rejeitado, mensagem específica |
+| `empty_capabilities_section` | Seção "Capacidades" vazia | ✅ Rejeitado, mensagem específica |
+| `missing_title_heading` | Remove o heading `# Nome do Agente` | ✅ Rejeitado, mensagem específica |
+| `missing_operating_limits` | Remove a seção "Limites de Atuação" | ✅ Rejeitado, mensagem específica |
+
+**Resultado bruto: 4/10 manifestos válidos (40%)** — abaixo da meta de 80%. **Mas essa leitura direta é enganosa**: montei o lote propositalmente com 60% de defeitos para testar a cobertura do validador, não para simular o que um usuário real submeteria. A leitura correta é outra: **10/10 classificações corretas** — os 4 manifestos genuinamente válidos foram aceitos, e os 6 defeitos foram rejeitados com mensagens específicas e acionáveis (não uma mensagem genérica). Isso é evidência de que o validador funciona bem, não de que "40% dos manifestos são válidos".
+
+**A meta de "≥80% válidos" da RFC não define a metodologia de amostragem** — não fica claro se o KPI mede (a) a precisão do validador contra uma amostra conhecida (o que medi: 100%), ou (b) a taxa de sucesso de submissões orgânicas de usuários reais (o que exigiria dados de uso real, que não existem ainda nesta PoC). Essa definição precisa ser decidida antes de declarar o KPI atingido ou não.
+
+### Redução do Tempo de Análise (⏳ bloqueado)
+
+Exige uma linha de base de tempo de análise manual (sem a PoC) para comparar contra o tempo medido pela orquestração. Não há esse número em nenhum lugar do projeto — nem a RFC (Seção 1.1/1.2, Apêndice A) quantifica tempo, só descreve o problema qualitativamente ("gargalos", "retrabalho", "degradação de contexto"). Diferente dos outros KPIs, este não é medível só com código — precisa de uma estimativa ou entrevista com quem vive o processo manual hoje. Sem esse número, não há como calcular a redução percentual.
 
 ## Bug real encontrado durante esta medição
 
@@ -80,6 +95,7 @@ Isso reforça o princípio já registrado em `docs/validation/evidence/2026-08-f
 
 - Medição feita contra as branches ainda não mergeadas em `main` — deve ser repetida após o merge da pilha de PRs.
 - Nenhuma base de conhecimento foi ingerida; a Taxa de Sucesso e o nível de confiança das análises refletem isso, não a qualidade do pipeline em si.
-- Amostra pequena (5 solicitações, 8 invocações) — suficiente para uma primeira leitura, não para conclusões estatísticas.
-- Qualidade do Manifesto e Redução do Tempo de Análise ainda não têm metodologia de medição definida.
+- Amostra pequena (5 solicitações, 8 invocações; 10 manifestos) — suficiente para uma primeira leitura, não para conclusões estatísticas.
+- Qualidade do Manifesto: a RFC não define a metodologia de amostragem (precisão do validador vs. taxa de submissões orgânicas) — medi a primeira (100%), a segunda não é medível sem dados de uso real.
+- Redução do Tempo de Análise: bloqueada até existir uma linha de base de tempo manual (estimativa ou entrevista) — não é uma medida só de código.
 - Este documento não substitui a análise de viabilidade final exigida pelo M7.

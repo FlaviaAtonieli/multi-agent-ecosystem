@@ -2,6 +2,19 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-26 - Medicao de Qualidade do Manifesto (M7)
+
+### Adicionado
+
+- Medicao do KPI "Qualidade do Manifesto" em `docs/validation/evidence/2026-08-m7-kpi-measurement.md`: lote de 10 manifestos (4 fixtures validos + 6 variacoes com defeitos realistas de autoria) contra `POST /agent-skills/import` real.
+
+### Contexto
+
+- resultado bruto (4/10 = 40% validos) e enganoso e nao deve ser lido como "40%": o lote foi montado propositalmente com 60% de defeitos para testar cobertura do validador, nao para simular submissoes organicas reais;
+- leitura correta: **10/10 classificacoes corretas** do validador (4 validos aceitos, 6 defeitos rejeitados com mensagem especifica e acionavel cada);
+- a RFC nao define se a meta de "80% validos" mede precisao do validador (medido: 100%) ou taxa de submissoes organicas de usuarios reais (nao medivel sem dados de uso real);
+- Reducao do Tempo de Analise (meta >=30%) continua bloqueada: nao existe linha de base de tempo manual em nenhum lugar do projeto -- precisa de estimativa ou entrevista, nao e medivel so com codigo.
+
 ## 2026-08-26 - Fundamentacao teorica e recorte de contexto por agente
 
 ### Adicionado
