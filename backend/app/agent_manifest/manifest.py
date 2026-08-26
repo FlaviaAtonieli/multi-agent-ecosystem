@@ -35,6 +35,16 @@ _DOMAIN_ALIASES: dict[str, DomainLiteral] = {
     "seguranca": "seguranca_informacao",
 }
 
+# RFC §6.1 "Proteção de Contexto": human-readable label used to scope both the
+# RAG retrieval query and the LLM prompt to a single skill's domain, instead of
+# every skill seeing the exact same unscoped context.
+DOMAIN_LABELS: dict[str, str] = {
+    "codigo_legado": "Código Legado",
+    "regras_negocio": "Regras de Negócio",
+    "arquitetura_software": "Arquitetura de Software",
+    "seguranca_informacao": "Segurança da Informação",
+}
+
 _REQUIRED_SECTIONS = (
     "Identificação",
     "Objetivo",

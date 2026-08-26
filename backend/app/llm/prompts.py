@@ -19,6 +19,13 @@ def build_technical_planner_prompt(request: LLMPlanRequest) -> str:
         f"Restrições: {request.restrictions or ['Não informadas']}",
     ]
 
+    if request.analysis_domain_label:
+        lines.append(
+            f"Domínio de análise: {request.analysis_domain_label}. Analise a solicitação "
+            "exclusivamente sob essa perspectiva de especialidade -- não avalie nem opine "
+            "sobre aspectos de outros domínios fora da sua competência."
+        )
+
     if request.retrieved_context:
         lines.append(f"Trechos recuperados da base de conhecimento:\n{request.retrieved_context}")
 

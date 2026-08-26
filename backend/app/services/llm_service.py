@@ -28,6 +28,8 @@ class LLMModelNotAllowedError(ValueError):
 
 def _build_safe_request(
     technical_request: TechnicalRequest,
+    *,
+    analysis_domain_label: str | None = None,
 ) -> tuple[LLMPlanRequest, int, bool, str]:
     remaining = settings.llm_max_input_chars
     redacted_count = 0
@@ -64,6 +66,7 @@ def _build_safe_request(
         objective=clean(technical_request.objective) or "Objetivo não informado",
         context=clean(technical_request.context),
         restrictions=restrictions,
+        analysis_domain_label=analysis_domain_label,
     )
     safe_serialized = json.dumps(
         safe_request.model_dump(mode="json"),
@@ -84,6 +87,7 @@ def generate_technical_plan(
     technical_request: TechnicalRequest,
     user: User,
     requested_model: str | None = None,
+    analysis_domain_label: str | None = None,
 ) -> LLMPlanResponse:
     if not settings.llm_enabled:
         raise LLMDisabledError("A integração com LLM está desabilitada pelo administrador.")
@@ -94,7 +98,9 @@ def generate_technical_plan(
         )
     resolved_model = requested_model or settings.llm_model
 
-    safe_request, redacted_count, truncated, input_hash = _build_safe_request(technical_request)
+    safe_request, redacted_count, truncated, input_hash = _build_safe_request(
+        technical_request, analysis_domain_label=analysis_domain_label
+    )
 
     rag_context = retrieve_context_for_request(db, technical_request, safe_request)
     safe_request.retrieved_context = rag_context.as_prompt_block()

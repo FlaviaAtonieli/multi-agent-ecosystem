@@ -12,7 +12,7 @@ Sistemas Distribuídos**
 
 **Data da proposta:** 27/06/2026
 
-**Versão:** 3.2
+**Versão:** 3.3
 
 RFC: Request for Comments — Projeto de Portfólio
 
@@ -517,6 +517,35 @@ aplicados à construção de uma arquitetura corporativa capaz de coordenar
 especialistas artificiais voltados a domínios específicos de
 conhecimento.
 
+Boa parte dos agentes baseados em modelos de linguagem (*LLM-based
+agents*) discutidos na literatura recente — e adotados pelos
+*frameworks* analisados no Benchmark da Seção 1.3 — são construídos
+como **agentes genéricos**: recebem um objetivo em linguagem natural e
+decidem de forma autônoma quais ferramentas acionar, quais passos
+seguir e quando considerar a tarefa concluída, sem um contrato formal
+que delimite previamente seu domínio de atuação ou o formato de sua
+saída. Esse desenho favorece a flexibilidade, mas dificulta a
+governança em ambientes corporativos: é difícil auditar decisões,
+prever o escopo de atuação ou garantir que o agente não extrapole
+competências para as quais não foi projetado — lacuna já observada no
+AutoGPT (Seção 1.3), cuja autonomia irrestrita resulta em baixo
+controle de fluxo.
+
+Este trabalho adota, em vez disso, o conceito de **agente
+especialista**: um agente cujo domínio de atuação, capacidades,
+entradas esperadas, saídas produzidas e limites de atuação são
+declarados explicitamente em um contrato (o manifesto `modelo.md`,
+detalhado na Seção 6.4) antes de ser registrado no ecossistema. Um
+agente especialista não decide sozinho o que fazer a partir de um
+objetivo aberto; ele responde, dentro de um escopo delimitado e
+auditável, a uma subtarefa que o Orquestrador já decompôs e direcionou
+especificamente para o seu domínio de competência (RF09, RF10). Essa é
+a diferença central entre os dois tipos: o agente genérico é
+avaliado pela amplitude do que consegue fazer sozinho; o agente
+especialista, pela previsibilidade, rastreabilidade e conformidade do
+que faz dentro de um contrato — o critério de qualidade que a Seção 6
+e o Quality Gate desta arquitetura formalizam.
+
 Essa arquitetura extensível é sustentada por cinco pilares fundamentais:
 
 **1. Engenharia de Contexto Estruturada:** o contexto deixa de ser
@@ -614,6 +643,37 @@ Quadro 3: Matriz de Responsabilidades dos Componentes Especializados
 | **Advisory Agent / Quality Gate** | Validar respostas, identificar inconsistências e aprovar ou rejeitar resultados. |
 | **Logs e Auditoria** | Registrar interações, decisões, agentes acionados e histórico de execução. |
 | **Adaptador Plug-and-Play** | Integrar novas Agent Skills e plataformas externas sem alterar o núcleo. |
+
+A literatura de sistemas multiagentes frequentemente classifica agentes
+por finalidade — de negócio, de processo, de ferramenta, orquestrador
+— e é útil situar essa taxonomia em relação aos componentes do Quadro
+3, para deixar explícito onde cada papel é exercido nesta arquitetura:
+
+- **Agente de negócio:** realizado pelas Agent Skills de domínio
+  (Legado, Negócio, Arquitetura, Integração — e, na PoC, também
+  Segurança da Informação). São os agentes especialistas propriamente
+  ditos, cada um interpretando um recorte específico de conhecimento
+  corporativo.
+
+- **Agente de processo:** realizado em conjunto pelo Orientador de
+  Interação e pelo Orquestrador. Nenhum dos dois analisa o conteúdo
+  técnico da solicitação; ambos conduzem o *processo* pelo qual a
+  solicitação passa — qualificação de contexto, decomposição em
+  subtarefas, seleção de agentes e coordenação das etapas até a
+  consolidação final.
+
+- **Agente de ferramenta:** não é um componente autônomo nesta
+  arquitetura, mas um papel que a Camada de Contratos formaliza: cada
+  Agent Skill é exposta ao Orquestrador como uma *tool* invocável via
+  Model Context Protocol (Apêndice C), com schema de entrada e saída
+  rigidamente tipado. É a mesma lógica de "agente como ferramenta"
+  discutida na literatura de *tool use*, aplicada aqui ao acoplamento
+  de especialistas, e não à execução de comandos externos (a
+  arquitetura permanece *read-only*, conforme a Seção 6.1).
+
+- **Agente orquestrador:** realizado pelo Orquestrador, responsável por
+  selecionar agentes, dividir tarefas, coordenar a execução e
+  consolidar os resultados.
 
 Para compreender a topologia dos componentes, suas fronteiras de
 responsabilidade e os fluxos de comunicação entre interface, Orientador

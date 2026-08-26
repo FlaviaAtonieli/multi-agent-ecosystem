@@ -19,6 +19,7 @@ export function OrchestrationPage() {
   const [executing, setExecuting] = useState(false)
   const [executionError, setExecutionError] = useState('')
   const [execution, setExecution] = useState<OrchestrationExecutionResult | null>(null)
+  const [successMessage, setSuccessMessage] = useState('')
 
   const load = useCallback(async () => {
     try {
@@ -50,10 +51,16 @@ export function OrchestrationPage() {
     if (!detail) return
     setExecuting(true)
     setExecutionError('')
+    setSuccessMessage('')
     try {
       const result = await agentSkillsApi.execute(detail.technical_request.id, selectedModel || null)
       setExecution(result)
       await load()
+      setSuccessMessage(
+        result.verdict.approved
+          ? 'Orquestração executada e aprovada pelo Quality Gate.'
+          : 'Orquestração executada. O resultado aguarda revisão humana.',
+      )
     } catch (caught) {
       setExecutionError(caught instanceof ApiError ? caught.message : 'Não foi possível executar a orquestração.')
     } finally {
@@ -66,10 +73,12 @@ export function OrchestrationPage() {
     if (!detail) return
     setSubmitting(true)
     setError('')
+    setSuccessMessage('')
     try {
       await orchestrationApi.addContext(detail.technical_request.id, context)
       setContext('')
       await load()
+      setSuccessMessage('Contexto complementado com sucesso.')
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Não foi possível complementar o contexto.')
     } finally {
@@ -93,6 +102,7 @@ export function OrchestrationPage() {
       </section>
 
       {error && <div className="alert alert-error">{error}</div>}
+      {successMessage && <div className="alert alert-success">{successMessage}</div>}
 
       {detail && (
         <section className="workspace-detail-grid">
