@@ -48,6 +48,7 @@ class LLMInvocation(Base):
     redacted_fields_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     input_truncated: Mapped[bool] = mapped_column(nullable=False, default=False)
     result_payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    retrieved_chunk_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -63,6 +63,13 @@ class Settings(BaseSettings):
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_app_url: str = "http://localhost:5173"
 
+    # Retrieval-augmented generation. Independent from llm_enabled: retrieval can
+    # run (and be tested) even while the model call itself stays mocked/disabled.
+    rag_enabled: bool = True
+    rag_top_k: int = 3
+    rag_chunk_max_chars: int = 800
+    rag_chunk_overlap: int = 100
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [item.strip() for item in self.cors_origins.split(",") if item.strip()]

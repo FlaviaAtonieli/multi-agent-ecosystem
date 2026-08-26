@@ -19,4 +19,7 @@ def build_technical_planner_prompt(request: LLMPlanRequest) -> str:
         f"Restrições: {request.restrictions or ['Não informadas']}",
     ]
 
+    if request.retrieved_context:
+        lines.append(f"Trechos recuperados da base de conhecimento:\n{request.retrieved_context}")
+
     return "\n".join(lines)

@@ -11,6 +11,7 @@ class LLMPlanRequest(BaseModel):
     objective: str
     context: str | None = None
     restrictions: list[str] = Field(default_factory=list)
+    retrieved_context: str | None = None
 
 
 class LLMPlan(BaseModel):
@@ -80,5 +81,6 @@ class LLMInvocationRead(BaseModel):
     error_code: str | None
     redacted_fields_count: int
     input_truncated: bool
+    retrieved_chunk_ids: list[str] | None
     created_at: datetime
     completed_at: datetime | None

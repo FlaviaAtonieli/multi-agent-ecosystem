@@ -10,6 +10,7 @@ from app.llm.factory import create_llm_provider
 from app.llm.schemas import LLMPlanRequest, LLMPlanResponse
 from app.llm.security import content_sha256, sanitize_content
 from app.models import LLMInvocation, TechnicalRequest, User
+from app.rag.service import retrieve_context_for_request
 from app.services.orchestration_service import append_event
 
 
@@ -84,6 +85,24 @@ def generate_technical_plan(
 
     safe_request, redacted_count, truncated, input_hash = _build_safe_request(technical_request)
 
+    rag_context = retrieve_context_for_request(db, technical_request, safe_request)
+    safe_request.retrieved_context = rag_context.as_prompt_block()
+    retrieved_chunk_ids = [chunk.chunk_id for chunk in rag_context.chunks]
+    append_event(
+        db,
+        technical_request,
+        event_type="RAG_RETRIEVAL_COMPLETED",
+        actor="RETRIEVAL_AGENT",
+        title="Recuperação de contexto concluída",
+        message="Trechos da base de conhecimento foram recuperados para compor o prompt.",
+        payload={
+            "chunks_retrieved": len(rag_context.chunks),
+            "top_k": settings.rag_top_k,
+            "retrieval_latency_ms": rag_context.retrieval_latency_ms,
+            "chunk_ids": retrieved_chunk_ids,
+        },
+    )
+
     provider = create_llm_provider(settings)
     llm_call_id = str(uuid4())
 
@@ -106,6 +125,7 @@ def generate_technical_plan(
         status="STARTED",
         redacted_fields_count=redacted_count,
         input_truncated=truncated,
+        retrieved_chunk_ids=retrieved_chunk_ids or None,
     )
     db.add(invocation)
     append_event(
