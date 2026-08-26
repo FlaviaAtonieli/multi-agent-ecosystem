@@ -2,6 +2,24 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-26 - Primeira medicao de KPIs (M7) e correcao de schema
+
+### Corrigido
+
+- `agent_skills.input_contract_ref`/`output_contract_ref` ampliados de `VARCHAR(200)` para `VARCHAR(500)` (migration `0007_widen_contract_refs`). Bug real: todos os 4 manifestos de fixture tem 205 caracteres no `output_contract_ref`, excedendo o limite antigo -- nunca detectado porque a suite de testes roda em SQLite, que nao aplica limite de tamanho de coluna.
+
+### Adicionado
+
+- Primeira rodada de medicao dos KPIs da RFC (Secao 1.6) contra PostgreSQL real via docker compose, sem provedor mock: `docs/validation/evidence/2026-08-m7-kpi-measurement.md`.
+
+### Contexto
+
+- Rastreabilidade (100%), Articulacao entre Dominios (3 agentes) e Extensibilidade (1 skill) atingidos;
+- Tempo Medio de Resposta (meta <=10s) nao atingido: medido 11,8s medio / 13,9s com overhead de orquestracao, usando o modelo gratuito padrao;
+- Taxa de Sucesso End-to-End ambigua -- a RFC nao define se "sucesso" exige aprovacao do Quality Gate sem revisao humana ou so a execucao tecnica sem falha; ver o documento de evidencia para os dois calculos;
+- Qualidade do Manifesto e Reducao do Tempo de Analise ainda sem metodologia de medicao definida;
+- medicao feita contra as branches ainda nao mergeadas em main -- deve ser repetida apos o merge.
+
 ## 2026-08-26 - Remocao do provedor mock
 
 ### Removido

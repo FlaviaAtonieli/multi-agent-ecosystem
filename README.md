@@ -120,7 +120,7 @@ docker compose exec backend alembic current
 Na base atual, o resultado esperado é:
 
 ```text
-0006_consolidated_response (head)
+0007_widen_contract_refs (head)
 ```
 
 ## Fluxo disponível
@@ -166,6 +166,7 @@ docker compose build frontend --no-cache
 - [Segurança](SECURITY.md)
 - [Evidência de validação da base](docs/validation/evidence/2026-08-foundation-validation.md)
 - [Evidência de extensibilidade plug-and-play](docs/validation/evidence/2026-08-plug-and-play-extensibility.md)
+- [Primeira medição de KPIs (M7)](docs/validation/evidence/2026-08-m7-kpi-measurement.md)
 - [Histórico de mudanças](CHANGELOG.md)
 
 O RFC acadêmico permanece como a especificação principal do projeto. Os documentos deste repositório registram o que já foi implementado e as limitações conhecidas da PoC.
