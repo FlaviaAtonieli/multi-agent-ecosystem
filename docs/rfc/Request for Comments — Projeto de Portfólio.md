@@ -12,7 +12,7 @@ Sistemas Distribuídos**
 
 **Data da proposta:** 27/06/2026
 
-**Versão:** 3.1
+**Versão:** 3.2
 
 RFC: Request for Comments — Projeto de Portfólio
 
@@ -1393,6 +1393,13 @@ Os critérios mínimos de sucesso da PoC são:
 - Demonstrar o acoplamento de uma nova Agent Skill sem alteração do
   núcleo do Orquestrador.
 
+**Status (M6, v3.2, 25/08/2026):** os sete critérios mínimos acima estão
+implementados e cobertos por teste automatizado. Evidência do sétimo
+critério (extensibilidade) em
+`docs/validation/evidence/2026-08-plug-and-play-extensibility.md`. A
+medição formal dos KPIs (redução de tempo de análise, taxa de sucesso
+end-to-end) fica para o marco M7 (Validação e Avaliação).
+
 Para manter a viabilidade da PoC e isolar a validação da arquitetura de
 orquestração, assumem-se as seguintes delimitações de escopo:
 
@@ -1745,7 +1752,7 @@ Tabela 11: Roadmap do Projeto e Marcos de Entrega
 | **M3** | Concepção Arquitetural | Modelagem dos componentes centrais: Interface Técnica, Agent Builder, Importador de Agentes, Validador de modelo.md, Registro de Agent Skills, Orquestrador, Advisory Agent e camada de contratos. | Diagramas C4, matriz de responsabilidades, fluxo operacional e tratamento de exceções. | Concluído (v3.0, 27/06/2026) |
 | **M4** | UX e Prototipação | Desenho das telas principais da plataforma, com foco no fluxo de criação/importação de agentes, catálogo de Agent Skills, validação de contrato, teste de integração e acompanhamento da colaboração entre agentes. | Fluxo de navegação, wireframes, mapeamento de telas e feedback inicial. | Concluído (v3.0, 27/06/2026) |
 | **M5** | Modelagem Técnica da PoC | Definição do modelo de dados, stack tecnológica (incluindo pipeline RAG e Model Gateway via OpenRouter), contrato modelo.md, entidades de rastreabilidade e estratégia de implementação da PoC. | Stack definida, modelo conceitual, contrato do agente e estratégia de implementação. | Concluído (v3.1, 25/08/2026) |
-| **M6** | Implementação da PoC | Desenvolvimento dos componentes mínimos para validar a arquitetura: pipeline de retrieval e geração aumentada, integração com Model Gateway, criação/importação de agente, validação do manifesto, registro da skill, orquestração com agentes existentes e logs do fluxo. | Protótipo funcional, APIs principais, banco de dados e fluxo plug-and-play executável. | até 30/09/2026 (quarta-feira) |
+| **M6** | Implementação da PoC | Desenvolvimento dos componentes mínimos para validar a arquitetura: pipeline de retrieval e geração aumentada, integração com Model Gateway, criação/importação de agente, validação do manifesto, registro da skill, orquestração com agentes existentes e logs do fluxo. | Protótipo funcional, APIs principais, banco de dados e fluxo plug-and-play executável. | Concluído (v3.2, 25/08/2026) |
 | **M7** | Validação e Avaliação | Execução dos cenários de teste, medição dos KPIs arquiteturais, validação da integração de um novo agente e análise de rastreabilidade. | Evidências de execução, logs, métricas, resultados da PoC e análise de viabilidade. | até 30/10/2026 (sexta-feira) |
 | **M8** | Consolidação Acadêmica | Revisão textual, padronização dos artefatos, organização dos apêndices, ajustes finais e preparação da apresentação. | RFC final, apêndices, slides de defesa e repositório do projeto. | até 30/11/2026 (segunda-feira) — prazo final |
 
