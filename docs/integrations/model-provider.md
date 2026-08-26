@@ -134,7 +134,7 @@ LLM_REDACT_SENSITIVE_DATA=true
 ## Limitações atuais
 
 - O perfil `REVIEWER` previsto no desenho acadêmico ainda não foi implementado.
-- A seleção de Agent Skills por domínio já existe (`app/agent_catalog/`), mas só o domínio "Código Legado" tem executor real; "Regras de Negócio" e "Arquitetura" podem ser registrados no catálogo, mas ainda não executam.
+- A seleção de Agent Skills por domínio já existe (`app/agent_catalog/`), mas é por correspondência exata de domínio (sem roteamento semântico) — decisão deliberada de escopo para uma PoC de desenvolvedora única.
 - O plano não executa tools.
 - O resultado não é publicado automaticamente.
 - O rate limit é local ao processo e precisa de uma solução distribuída antes de escalar horizontalmente.

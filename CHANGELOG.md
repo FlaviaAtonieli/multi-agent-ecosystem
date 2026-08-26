@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-25 - Agent Skills de Regras de Negócio e Arquitetura
+
+### Adicionado
+
+- executor real e servidor MCP para a Agent Skill de Regras de Negócio (`app/agent_catalog/mcp_servers/business_rules_server.py`);
+- executor real e servidor MCP para a Agent Skill de Arquitetura de Software (`app/agent_catalog/mcp_servers/architecture_server.py`);
+- manifestos de exemplo `business-rules-skill.md` e `architecture-skill.md`;
+- teste de orquestração multiagente acionando as três Agent Skills (Código Legado, Regras de Negócio, Arquitetura) numa mesma análise, comprovando o critério mínimo de sucesso da PoC (RFC 5.5: ao menos três Agent Skills numa mesma análise).
+
+### Não incluído
+
+- seleção dinâmica de skills (roteamento continua por correspondência exata de domínio, decisão deliberada de escopo);
+- perfil `REVIEWER`.
+
 ## 2026-08-25 - Fechamento do Marco M5 (Modelagem Técnica da PoC)
 
 ### Adicionado

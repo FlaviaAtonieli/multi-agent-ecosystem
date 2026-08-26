@@ -2,8 +2,6 @@
 and invokes it, over either transport supported by the SDK.
 
 Domain -> server module mapping replaces the old in-process `_EXECUTORS` dict.
-Only "codigo_legado" has a server today; RF08's multi-agent collaboration is
-proven with one fully-wired domain, the others stay explicit gaps.
 """
 
 import importlib
@@ -19,6 +17,8 @@ from app.core.config import Settings, settings
 
 _DOMAIN_SERVER_MODULES: dict[str, str] = {
     "codigo_legado": "app.agent_catalog.mcp_servers.legacy_code_server",
+    "regras_negocio": "app.agent_catalog.mcp_servers.business_rules_server",
+    "arquitetura_software": "app.agent_catalog.mcp_servers.architecture_server",
 }
 
 _TOOL_NAME = "executar"

@@ -24,12 +24,12 @@ A base implementa:
 - registro de invocações com identificador próprio, hashes, latência e uso de tokens;
 - ingestão e recuperação de contexto (RAG) sobre uma base de conhecimento indexada;
 - catálogo funcional de Agent Skills, com importação do manifesto `modelo.md` e aprovação humana obrigatória;
-- execução de Agent Skills via MCP e avaliação por Quality Gate.
+- execução de Agent Skills via MCP e avaliação por Quality Gate;
+- três Agent Skills com executor real (Código Legado, Regras de Negócio e Arquitetura de Software), acionáveis em conjunto numa mesma análise.
 
 Ainda não fazem parte desta base:
 
-- seleção dinâmica de skills (hoje o roteamento é por correspondência exata de domínio);
-- execução multiagente completa (mais de uma skill por solicitação);
+- seleção dinâmica de skills (hoje o roteamento é por correspondência exata de domínio — decisão deliberada de escopo);
 - perfil separado de revisor;
 - publicação automática de artefatos.
 
