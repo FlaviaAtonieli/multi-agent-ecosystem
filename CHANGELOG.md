@@ -2,6 +2,18 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-25 - Fechamento do Marco M6 (Implementacao da PoC)
+
+### Adicionado
+
+- RFC (v3.2): Marco M6 marcado como concluido no roadmap (Tabela 11);
+- nota de status na secao 5.5 confirmando os 7 criterios minimos de sucesso implementados e testados.
+
+### Contexto
+
+- fecha o marco de implementacao da PoC (protocolo funcional, APIs principais, banco de dados, fluxo plug-and-play executavel), cujo conteudo ja estava coberto pelo trabalho registrado nas entradas anteriores deste changelog (Agent Skills, revisao humana, resposta consolidada, extensibilidade);
+- a medicao formal dos KPIs da RFC (secao 5.5) fica para o M7 (Validacao e Avaliacao), prazo ate 30/10/2026.
+
 ## 2026-08-25 - Extensibilidade plug-and-play (RFC 5.5 criterio 7)
 
 ### Adicionado
