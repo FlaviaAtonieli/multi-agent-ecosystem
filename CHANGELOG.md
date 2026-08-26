@@ -2,6 +2,30 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-26 - Remocao do provedor mock
+
+### Removido
+
+- `MockLLMProvider` e `MockEmbeddingProvider`, junto com o valor `mock` de `LLM_PROVIDER`;
+- fallback silencioso para embedding mock em `rag/factory.py` quando a OpenRouter nao esta configurada -- agora levanta `RAGConfigurationError` explicitamente.
+
+### Adicionado
+
+- `app/core/retry.py` (`retry_on_transient_error`): retry generico de ate 2 tentativas, aplicado em `OpenRouterLLMProvider.generate_plan` e `OpenRouterEmbeddingProvider.embed`, cobrindo rate limit (429), erro de conexao/timeout e resposta JSON incompleta (modelo gratuito ignorando o `response_format` estrito).
+
+### Alterado
+
+- `LLM_PROVIDER` passa a ser `openrouter` por padrao (antes `mock`); `LLM_MODEL`/`LLM_ALLOWED_MODELS` passam a apontar para `nvidia/nemotron-3-super-120b-a12b:free`, validado empiricamente para honrar o `response_format` estrito da aplicacao;
+- suite de testes do backend reescrita para chamar a OpenRouter de verdade (chat completions e embeddings), sem nenhuma chamada simulada; asserções que dependiam de conteudo exato do provedor mock foram generalizadas para tolerar variacao de saida de um modelo real;
+- README e `docs/integrations/model-provider.md` atualizados: nao ha mais como rodar a aplicacao com integracao de modelo habilitada, nem a suite de testes, sem uma `OPENROUTER_API_KEY` real.
+
+### Contexto
+
+- decisao explicita da autora: o projeto passa a validar a integracao real com a OpenRouter desde o desenvolvimento, em vez de manter uma camada de simulacao;
+- o modelo `openrouter/free` (roteador automatico de modelos gratuitos) foi testado e descartado como padrao: escolheu um modelo sem suporte a `structured_outputs` numa das chamadas, retornando JSON incompleto;
+- flakiness real observada: duas rodadas completas da suite sem retry produziram 1-2 falhas cada (sempre passando isoladamente), atribuida a instabilidade do modelo gratuito compartilhado sob rajada de chamadas; apos o retry, uma rodada completa passou 33/33 sem falhas;
+- risco conhecido: o modelo gratuito padrao tem limite de 50 requisicoes/dia sem creditos comprados; ver `docs/integrations/model-provider.md`.
+
 ## 2026-08-25 - Fechamento do Marco M6 (Implementacao da PoC)
 
 ### Adicionado

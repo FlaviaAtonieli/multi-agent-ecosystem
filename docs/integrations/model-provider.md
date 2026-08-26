@@ -4,48 +4,40 @@
 
 A integração com modelos é uma dependência opcional da camada de planejamento. Ela não substitui o Orquestrador, o catálogo de Agent Skills, os contratos nem o mecanismo de validação.
 
-A aplicação utiliza uma interface interna para evitar que regras de negócio dependam diretamente de um fornecedor. A base atual oferece três provedores:
+A aplicação utiliza uma interface interna para evitar que regras de negócio dependam diretamente de um fornecedor. A base atual oferece dois provedores, ambos chamando um serviço real — não há provedor mock:
 
-- `mock`: resposta determinística para desenvolvimento e testes;
-- `openrouter`: Model Gateway primário, adaptador para a Chat Completions API compatível com múltiplos providers/modelos por trás de uma única credencial (ex.: `openai/gpt-5-mini`, `anthropic/claude-sonnet-4.5`), desabilitado por padrão;
+- `openrouter`: Model Gateway primário, adaptador para a Chat Completions API compatível com múltiplos providers/modelos por trás de uma única credencial (ex.: `nvidia/nemotron-3-super-120b-a12b:free`, `anthropic/claude-sonnet-4.5`);
 - `openai`: adaptador direto para a Responses API da OpenAI, mantido como integração opcional para comparação.
 
 A troca entre provedores acontece só por configuração (`LLM_PROVIDER`); nenhuma regra de negócio em `llm_service.py` ou no Orquestrador precisa mudar — essa é a prova prática de que a interface `LLMProvider` é de fato plugável.
+
+Até 25/08/2026 a base tinha um terceiro provedor, `mock`, com resposta determinística e sem chamada externa. Foi removido por decisão explícita: a partir desse ponto, desenvolvimento e testes passaram a validar a integração real com a OpenRouter, usando um modelo gratuito do catálogo (sem custo, sujeito ao limite de 50 requisições/dia sem créditos comprados).
 
 ## Configuração padrão
 
 ```env
 LLM_ENABLED=false
-LLM_PROVIDER=mock
-OPENAI_API_KEY=
 ```
 
-Nesse estado, nenhuma chamada externa é realizada.
+Nesse estado, nenhuma chamada externa é realizada — a aplicação sobe normalmente, só a camada de planejamento (e a recuperação de conhecimento RAG, que depende do mesmo provedor para embeddings) fica indisponível.
 
-Para testar a integração sem chave:
-
-```env
-LLM_ENABLED=true
-LLM_PROVIDER=mock
-```
-
-O provedor simulado gera um plano estruturado e permite validar autorização, rastreabilidade e persistência sem consumo externo.
-
-## Configuração futura do OpenRouter (provedor primário)
+## Configuração do OpenRouter (provedor primário)
 
 A chave deve ser injetada no backend pelo ambiente de execução ou por um gerenciador de segredos:
 
 ```env
 LLM_ENABLED=true
 LLM_PROVIDER=openrouter
-LLM_MODEL=openai/gpt-5-mini
-LLM_ALLOWED_MODELS=openai/gpt-5-mini,anthropic/claude-sonnet-4.5
+LLM_MODEL=nvidia/nemotron-3-super-120b-a12b:free
+LLM_ALLOWED_MODELS=nvidia/nemotron-3-super-120b-a12b:free
 OPENROUTER_API_KEY=valor-injetado-fora-do-git
 ```
 
-Os nomes de modelo do OpenRouter usam o formato `vendor/modelo`. A allowlist (`LLM_ALLOWED_MODELS`) é única e compartilhada entre provedores — ao usar `openrouter`, os valores devem seguir esse formato completo.
+Os nomes de modelo do OpenRouter usam o formato `vendor/modelo`. A allowlist (`LLM_ALLOWED_MODELS`) é única e compartilhada entre provedores — ao usar `openrouter`, os valores devem seguir esse formato completo. O modelo padrão acima é gratuito, mas precisa declarar suporte a `structured_outputs` no catálogo da OpenRouter (`GET /api/v1/models`) — nem todo modelo `:free` honra o `response_format` estrito que a aplicação exige; validado empiricamente antes de virar padrão.
 
-## Configuração futura da OpenAI (integração direta opcional)
+A recuperação de conhecimento (RAG) usa o mesmo provedor `openrouter` para gerar embeddings (`openai/text-embedding-3-small` via OpenRouter) — esse modelo de embedding não é gratuito, mas o custo por chamada é irrisório e coberto pelo crédito de teste inicial de qualquer conta nova.
+
+## Configuração da OpenAI (integração direta opcional)
 
 ```env
 LLM_ENABLED=true
@@ -138,3 +130,6 @@ LLM_REDACT_SENSITIVE_DATA=true
 - O resultado não é publicado automaticamente.
 - O rate limit é local ao processo e precisa de uma solução distribuída antes de escalar horizontalmente.
 - A credencial ainda depende de variável de ambiente no desenvolvimento local.
+- O modelo gratuito padrão (`nvidia/nemotron-3-super-120b-a12b:free`) tem limite de 50 requisições/dia sem créditos comprados na conta da OpenRouter; a suíte de testes inteira consome uma fração relevante dessa cota a cada execução completa.
+- Sem provedor mock, não há mais forma de rodar a suíte de testes nem a aplicação com a integração de modelo habilitada sem uma `OPENROUTER_API_KEY` real.
+- O modelo gratuito, sendo compartilhado, apresenta instabilidade ocasional sob rajada de chamadas (rate limit, timeout ou resposta JSON incompleta). `OpenRouterLLMProvider` e `OpenRouterEmbeddingProvider` fazem retry automático (até 2 tentativas, `app/core/retry.py`) para absorver isso; validado empiricamente — sem retry, duas rodadas completas da suíte produziram 1-2 falhas cada (sempre passando isoladamente); com retry, uma rodada completa passou 33/33.

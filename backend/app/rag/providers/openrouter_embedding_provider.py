@@ -1,4 +1,5 @@
 from app.core.config import Settings
+from app.core.retry import retry_on_transient_error
 from app.rag.base import EmbeddingProvider
 
 
@@ -23,5 +24,13 @@ class OpenRouterEmbeddingProvider(EmbeddingProvider):
         )
 
     def embed(self, texts: list[str]) -> list[list[float]]:
-        response = self.client.embeddings.create(model=self.model, input=texts)
-        return [item.embedding for item in response.data]
+        from openai import APIConnectionError, APITimeoutError, RateLimitError
+
+        def _call() -> list[list[float]]:
+            response = self.client.embeddings.create(model=self.model, input=texts)
+            return [item.embedding for item in response.data]
+
+        return retry_on_transient_error(
+            _call,
+            exceptions=(RateLimitError, APIConnectionError, APITimeoutError),
+        )
