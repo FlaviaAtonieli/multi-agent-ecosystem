@@ -3,11 +3,14 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
+from sqlalchemy import select
 
 from app.agent_catalog.tool_interface import AgenteEmissor, Governanca, SkillToolResult
 from app.core.database import SessionLocal
+from app.models import LLMInvocation
 from app.rag.ingestion import ingest_artifact
 from tests.conftest import (
+    REAL_LLM_MODEL,
     authenticated_csrf_headers,
     create_qualified_request,
     enable_real_llm,
@@ -381,6 +384,76 @@ def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> 
     assert payload["invocations_count"] == 1
     assert len(payload["results"]) == 1
     assert payload["results"][0]["agente_emissor"]["dominio"] == "codigo_legado"
+
+
+def test_execute_rejects_model_not_in_allowlist(client: TestClient) -> None:
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    client.post(
+        "/api/v1/agent-skills/import",
+        json={"manifest_markdown": FIXTURE_MANIFEST},
+        headers=authenticated_csrf_headers(client),
+    )
+    technical_request = create_qualified_request(client, requested_domains=["codigo_legado"])
+
+    response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        json={"model": "not-a-real-model"},
+        headers=authenticated_csrf_headers(client),
+    )
+    assert response.status_code == 422
+
+
+def test_execute_uses_requested_model_override(client: TestClient, monkeypatch) -> None:
+    """Proves the per-execution model choice actually reaches the provider call,
+    not just accepted-and-ignored: picks a model other than LLM_MODEL and checks
+    the persisted LLMInvocation used it."""
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="CreditLimitService.java",
+            content=(
+                "O limite de credito hoje eh sempre R$ 5000,00 fixo, sem considerar "
+                "o segmento do cliente (varejo, atacado, corporativo)."
+            ),
+            language="java",
+            embedding_provider=real_embedding_provider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    client.post(
+        "/api/v1/agent-skills/import",
+        json={"manifest_markdown": FIXTURE_MANIFEST},
+        headers=authenticated_csrf_headers(client),
+    )
+    technical_request = create_qualified_request(client, requested_domains=["codigo_legado"])
+
+    from app.core.config import settings
+
+    enable_real_llm(monkeypatch)
+    override_model = "z-ai/glm-5.2:free"
+    assert override_model != REAL_LLM_MODEL
+    monkeypatch.setattr(settings, "llm_allowed_models", f"{REAL_LLM_MODEL},{override_model}")
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        json={"model": override_model},
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+
+    with SessionLocal() as db:
+        invocation = db.scalar(
+            select(LLMInvocation).where(LLMInvocation.technical_request_id == technical_request["id"])
+        )
+        assert invocation is not None
+        assert invocation.model == override_model
 
 
 def test_execute_without_matching_skill_returns_409(client: TestClient) -> None:

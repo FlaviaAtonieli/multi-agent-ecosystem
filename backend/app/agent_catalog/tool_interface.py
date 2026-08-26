@@ -25,6 +25,7 @@ class SkillToolCall(BaseModel):
     user_id: str
     agent_skill_id: str
     analises_requeridas: list[str] = Field(default_factory=list)
+    requested_model: str | None = None
 
 
 class AgenteEmissor(BaseModel):
@@ -128,7 +129,9 @@ class LegacyCodeSkillExecutor(SkillExecutor):
         user: User,
         tool_call: SkillToolCall,
     ) -> SkillToolResult:
-        plan_response = generate_technical_plan(db, technical_request=technical_request, user=user)
+        plan_response = generate_technical_plan(
+            db, technical_request=technical_request, user=user, requested_model=tool_call.requested_model
+        )
 
         retrieved_chunks: list[KnowledgeChunk] = []
         llm_invocation = db.scalar(
@@ -214,7 +217,9 @@ class BusinessRulesSkillExecutor(SkillExecutor):
         user: User,
         tool_call: SkillToolCall,
     ) -> SkillToolResult:
-        plan_response = generate_technical_plan(db, technical_request=technical_request, user=user)
+        plan_response = generate_technical_plan(
+            db, technical_request=technical_request, user=user, requested_model=tool_call.requested_model
+        )
 
         retrieved_chunks: list[KnowledgeChunk] = []
         llm_invocation = db.scalar(
@@ -298,7 +303,9 @@ class ArchitectureSkillExecutor(SkillExecutor):
         user: User,
         tool_call: SkillToolCall,
     ) -> SkillToolResult:
-        plan_response = generate_technical_plan(db, technical_request=technical_request, user=user)
+        plan_response = generate_technical_plan(
+            db, technical_request=technical_request, user=user, requested_model=tool_call.requested_model
+        )
 
         retrieved_chunks: list[KnowledgeChunk] = []
         llm_invocation = db.scalar(
@@ -384,7 +391,9 @@ class SecuritySkillExecutor(SkillExecutor):
         user: User,
         tool_call: SkillToolCall,
     ) -> SkillToolResult:
-        plan_response = generate_technical_plan(db, technical_request=technical_request, user=user)
+        plan_response = generate_technical_plan(
+            db, technical_request=technical_request, user=user, requested_model=tool_call.requested_model
+        )
 
         retrieved_chunks: list[KnowledgeChunk] = []
         llm_invocation = db.scalar(

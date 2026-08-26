@@ -20,9 +20,11 @@ from app.api.dependencies import (
     require_authenticated_csrf,
     require_technician,
 )
+from app.core.config import settings
 from app.core.database import get_db
 from app.models import AuthSession, TechnicalRequest, User
 from app.schemas.agent_skill import (
+    AgentSkillExecutionRequest,
     AgentSkillManifestCreate,
     AgentSkillManifestImport,
     AgentSkillRead,
@@ -188,14 +190,24 @@ def get_skill_detail(
 async def execute_skills_for_request(
     request_id: str,
     request: Request,
+    payload: AgentSkillExecutionRequest | None = None,
     db: Session = Depends(get_db),
     user: User = Depends(require_technician),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> OrchestrationExecutionRead:
     technical_request = _find_qualified_request(db, request_id, user)
 
+    requested_model = payload.model if payload else None
+    if requested_model and requested_model not in settings.llm_allowed_model_list:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"O modelo '{requested_model}' não está em LLM_ALLOWED_MODELS.",
+        )
+
     try:
-        execution = await execute_orchestration_step(db, technical_request=technical_request, user=user)
+        execution = await execute_orchestration_step(
+            db, technical_request=technical_request, user=user, requested_model=requested_model
+        )
     except NoAgentSkillsAvailableError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
@@ -209,6 +221,7 @@ async def execute_skills_for_request(
             "trace_id": technical_request.trace_id,
             "skills_invoked": len(execution.invocations),
             "quality_gate_approved": execution.verdict.approved,
+            "requested_model": requested_model,
         },
     )
     db.commit()

@@ -1,7 +1,10 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { agentSkillsApi, OrchestrationExecutionResult } from '../api/agentSkillsApi'
 import { ApiError } from '../api/http'
+import { llmApi } from '../api/llmApi'
 import { OrchestrationDetail, orchestrationApi } from '../api/orchestrationApi'
+import { ExecutionResultPanel } from '../components/orchestration/ExecutionResultPanel'
 import { StatusBadge } from '../components/orchestration/StatusBadge'
 
 export function OrchestrationPage() {
@@ -10,6 +13,12 @@ export function OrchestrationPage() {
   const [context, setContext] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  const [allowedModels, setAllowedModels] = useState<string[]>([])
+  const [selectedModel, setSelectedModel] = useState('')
+  const [executing, setExecuting] = useState(false)
+  const [executionError, setExecutionError] = useState('')
+  const [execution, setExecution] = useState<OrchestrationExecutionResult | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -23,6 +32,34 @@ export function OrchestrationPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  useEffect(() => {
+    llmApi
+      .status()
+      .then((status) => {
+        setAllowedModels(status.allowed_models)
+        setSelectedModel(status.model)
+      })
+      .catch(() => {
+        // Sem acesso ao status do LLM (ex.: perfil sem permissão) -- o backend
+        // usa o modelo padrão configurado quando nenhum é enviado.
+      })
+  }, [])
+
+  async function handleExecute() {
+    if (!detail) return
+    setExecuting(true)
+    setExecutionError('')
+    try {
+      const result = await agentSkillsApi.execute(detail.technical_request.id, selectedModel || null)
+      setExecution(result)
+      await load()
+    } catch (caught) {
+      setExecutionError(caught instanceof ApiError ? caught.message : 'Não foi possível executar a orquestração.')
+    } finally {
+      setExecuting(false)
+    }
+  }
 
   async function handleContextSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -96,6 +133,39 @@ export function OrchestrationPage() {
                   {submitting ? 'Validando…' : 'Enviar complementação'}
                 </button>
               </form>
+            )}
+
+            {detail.technical_request.status === 'QUALIFIED' && (
+              <div className="workspace-execute-form">
+                <label className="workspace-field">
+                  Modelo de IA para a orquestração
+                  <select value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)}>
+                    {allowedModels.length === 0 && <option value="">Padrão configurado</option>}
+                    {allowedModels.map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    ))}
+                  </select>
+                  <small>Define qual modelo o Orquestrador usa para planejar e acionar as Agent Skills.</small>
+                </label>
+                {executionError && <div className="alert alert-error">{executionError}</div>}
+                <button className="workspace-primary-action" type="button" onClick={handleExecute} disabled={executing}>
+                  {executing ? 'Executando…' : 'Executar orquestração'}
+                </button>
+              </div>
+            )}
+
+            {execution ? (
+              <ExecutionResultPanel execution={execution} />
+            ) : (
+              detail.technical_request.consolidated_response && (
+                <div className="workspace-execution">
+                  <p className="workspace-execution-synthesis">
+                    {detail.technical_request.consolidated_response.technical_synthesis}
+                  </p>
+                </div>
+              )
             )}
           </article>
 

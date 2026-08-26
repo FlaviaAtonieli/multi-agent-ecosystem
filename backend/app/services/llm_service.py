@@ -22,6 +22,10 @@ class LLMInvocationError(RuntimeError):
     pass
 
 
+class LLMModelNotAllowedError(ValueError):
+    pass
+
+
 def _build_safe_request(
     technical_request: TechnicalRequest,
 ) -> tuple[LLMPlanRequest, int, bool, str]:
@@ -79,9 +83,16 @@ def generate_technical_plan(
     *,
     technical_request: TechnicalRequest,
     user: User,
+    requested_model: str | None = None,
 ) -> LLMPlanResponse:
     if not settings.llm_enabled:
         raise LLMDisabledError("A integração com LLM está desabilitada pelo administrador.")
+
+    if requested_model and requested_model not in settings.llm_allowed_model_list:
+        raise LLMModelNotAllowedError(
+            f"O modelo '{requested_model}' não está em LLM_ALLOWED_MODELS."
+        )
+    resolved_model = requested_model or settings.llm_model
 
     safe_request, redacted_count, truncated, input_hash = _build_safe_request(technical_request)
 
@@ -117,7 +128,7 @@ def generate_technical_plan(
         trace_id=technical_request.trace_id,
         llm_call_id=llm_call_id,
         provider=provider.name,
-        model=settings.llm_model,
+        model=resolved_model,
         purpose="TECHNICAL_PLANNING",
         prompt_template_id="technical-planner",
         prompt_template_version="v1",
@@ -138,7 +149,7 @@ def generate_technical_plan(
         payload={
             "llm_call_id": llm_call_id,
             "provider": provider.name,
-            "model": settings.llm_model,
+            "model": resolved_model,
             "prompt_template": "technical-planner.v1",
         },
     )
@@ -146,7 +157,7 @@ def generate_technical_plan(
 
     started = time.perf_counter()
     try:
-        provider_result = provider.generate_plan(safe_request, llm_call_id=llm_call_id)
+        provider_result = provider.generate_plan(safe_request, llm_call_id=llm_call_id, model=resolved_model)
         latency_ms = round((time.perf_counter() - started) * 1000)
         completed_at = utc_now()
         serialized_plan = provider_result.plan.model_dump_json()
@@ -185,7 +196,7 @@ def generate_technical_plan(
             trace_id=technical_request.trace_id,
             llm_call_id=llm_call_id,
             provider=provider.name,
-            model=settings.llm_model,
+            model=resolved_model,
             plan=provider_result.plan,
             usage=provider_result.usage,
             completed_at=completed_at,

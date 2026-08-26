@@ -42,7 +42,16 @@ class Settings(BaseSettings):
     llm_enabled: bool = False
     llm_provider: Literal["openai", "openrouter"] = "openrouter"
     llm_model: str = "nvidia/nemotron-3-super-120b-a12b:free"
-    llm_allowed_models: str = "nvidia/nemotron-3-super-120b-a12b:free"
+    # Free models below declare structured_outputs support in the OpenRouter catalog
+    # (GET /api/v1/models); only the default was empirically validated end-to-end
+    # (see docs/integrations/model-provider.md). openai/gpt-5-mini is paid, kept as
+    # an example for accounts with purchased credits.
+    llm_allowed_models: str = (
+        "nvidia/nemotron-3-super-120b-a12b:free,"
+        "z-ai/glm-5.2:free,"
+        "dots-studio/dots-3-note-preview:free,"
+        "openai/gpt-5-mini"
+    )
     llm_timeout_seconds: int = 45
     llm_max_output_tokens: int = 1200
     llm_max_input_chars: int = 12000

@@ -65,3 +65,11 @@ class OrchestrationExecutionRead(BaseModel):
     verdict: QualityGateVerdict
     invocations_count: int
     consolidated_response: ConsolidatedResponseRead
+
+
+class AgentSkillExecutionRequest(BaseModel):
+    """Optional model override for this specific execution (RFC 5.2 Model Gateway:
+    picking among LLM_ALLOWED_MODELS, not an arbitrary string). None keeps the
+    configured LLM_MODEL default."""
+
+    model: str | None = Field(default=None, max_length=200)
