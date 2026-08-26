@@ -1,8 +1,12 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { AppShell } from '../components/layout/AppShell'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { PublicRoute } from '../components/PublicRoute'
 import { DashboardPage } from '../pages/DashboardPage'
 import { LoginPage } from '../pages/LoginPage'
+import { NewRequestPage } from '../pages/NewRequestPage'
+import { OrchestrationPage } from '../pages/OrchestrationPage'
+import { OrchestrationsPage } from '../pages/OrchestrationsPage'
 import { RegisterPage } from '../pages/RegisterPage'
 
 export function App() {
@@ -12,9 +16,16 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Route>
+
       <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route element={<AppShell />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/requests/new" element={<NewRequestPage />} />
+          <Route path="/orchestrations" element={<OrchestrationsPage />} />
+          <Route path="/orchestrations/:traceId" element={<OrchestrationPage />} />
+        </Route>
       </Route>
+
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   )

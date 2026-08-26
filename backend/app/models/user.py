@@ -28,3 +28,8 @@ class User(Base):
 
     sessions = relationship("AuthSession", back_populates="user", cascade="all, delete-orphan")
     audit_logs = relationship("AuditLog", back_populates="user")
+    technical_requests = relationship(
+        "TechnicalRequest",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
