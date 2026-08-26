@@ -25,8 +25,10 @@ A base implementa:
 - ingestão e recuperação de contexto (RAG) sobre uma base de conhecimento indexada;
 - catálogo funcional de Agent Skills, com importação do manifesto `modelo.md` e aprovação humana obrigatória;
 - execução de Agent Skills via MCP e avaliação por Quality Gate;
-- três Agent Skills com executor real (Código Legado, Regras de Negócio e Arquitetura de Software), acionáveis em conjunto numa mesma análise;
-- revisão humana de solicitações sinalizadas pelo Quality Gate (perfil `REVIEWER` ou `ADMIN`, aprovação ou rejeição com justificativa, `POST /api/v1/requests/{id}/review`).
+- quatro Agent Skills com executor real (Código Legado, Regras de Negócio, Arquitetura de Software e Segurança da Informação), acionáveis em conjunto numa mesma análise;
+- revisão humana de solicitações sinalizadas pelo Quality Gate (perfil `REVIEWER` ou `ADMIN`, aprovação ou rejeição com justificativa, `POST /api/v1/requests/{id}/review`);
+- resposta final consolidada (síntese técnica, recomendações, riscos, limitações e agentes participantes), distinta das respostas parciais de cada Agent Skill;
+- extensibilidade plug-and-play comprovada: a quarta Agent Skill (Segurança da Informação) foi acoplada sem alteração do núcleo do Orquestrador — evidência em `docs/validation/evidence/2026-08-plug-and-play-extensibility.md`.
 
 Ainda não fazem parte desta base:
 
@@ -165,6 +167,7 @@ docker compose build frontend --no-cache
 - [Integração com provedores de modelo](docs/integrations/model-provider.md)
 - [Segurança](SECURITY.md)
 - [Evidência de validação da base](docs/validation/evidence/2026-08-foundation-validation.md)
+- [Evidência de extensibilidade plug-and-play](docs/validation/evidence/2026-08-plug-and-play-extensibility.md)
 - [Histórico de mudanças](CHANGELOG.md)
 
 O RFC acadêmico permanece como a especificação principal do projeto. Os documentos deste repositório registram o que já foi implementado e as limitações conhecidas da PoC.

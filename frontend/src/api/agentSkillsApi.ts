@@ -1,6 +1,10 @@
 import { apiRequest } from './http'
 
-export type AgentSkillDomain = 'codigo_legado' | 'regras_negocio' | 'arquitetura_software'
+export type AgentSkillDomain =
+  | 'codigo_legado'
+  | 'regras_negocio'
+  | 'arquitetura_software'
+  | 'seguranca_informacao'
 
 export type AgentSkill = {
   id: string

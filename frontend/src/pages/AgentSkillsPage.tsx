@@ -8,6 +8,7 @@ const domainLabels: Record<AgentSkillDomain, string> = {
   codigo_legado: 'Código Legado',
   regras_negocio: 'Regras de Negócio',
   arquitetura_software: 'Arquitetura de Software',
+  seguranca_informacao: 'Segurança da Informação',
 }
 
 export function AgentSkillsPage() {

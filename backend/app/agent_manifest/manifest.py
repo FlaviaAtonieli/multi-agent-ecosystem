@@ -4,12 +4,22 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-DomainLiteral = Literal["codigo_legado", "regras_negocio", "arquitetura_software"]
+DomainLiteral = Literal[
+    "codigo_legado", "regras_negocio", "arquitetura_software", "seguranca_informacao"
+]
 
 # The RFC's two MCP-inspired schemas (Apêndice C) use two different domain
 # enumerations (escopo_analise.analises_requeridas vs. agente_emissor.dominio).
 # This project standardizes on the resposta_especialista_schema.json enum
 # everywhere a domain is stored, to avoid carrying that inconsistency into code.
+#
+# "seguranca_informacao" was added after the other three (RFC §5.5 criterio 7:
+# prova de extensibilidade plug-and-play). Registering it here and in
+# mcp_client._DOMAIN_SERVER_MODULES are the only two touch points -- the
+# Orquestrador itself (agent_skill_orchestration_service.py,
+# orchestration_service.py, quality_gate/service.py) required zero changes,
+# since it already operates generically over "whichever skills matched the
+# requested domain," regardless of how many domains exist.
 _DOMAIN_ALIASES: dict[str, DomainLiteral] = {
     "codigo legado": "codigo_legado",
     "codigo_legado": "codigo_legado",
@@ -20,6 +30,9 @@ _DOMAIN_ALIASES: dict[str, DomainLiteral] = {
     "arquitetura de software": "arquitetura_software",
     "arquitetura_software": "arquitetura_software",
     "arquitetura": "arquitetura_software",
+    "seguranca da informacao": "seguranca_informacao",
+    "seguranca_informacao": "seguranca_informacao",
+    "seguranca": "seguranca_informacao",
 }
 
 _REQUIRED_SECTIONS = (
@@ -146,8 +159,8 @@ def parse_modelo_md(content: str) -> AgentSkillManifest:
         domain = _resolve_domain(raw_domain)
         if domain is None:
             errors.append(
-                f"Domínio de atuação '{raw_domain}' não reconhecido. "
-                "Use um de: código legado, regras de negócio, arquitetura de software."
+                f"Domínio de atuação '{raw_domain}' não reconhecido. Use um de: código legado, "
+                "regras de negócio, arquitetura de software, segurança da informação."
             )
 
     if errors:

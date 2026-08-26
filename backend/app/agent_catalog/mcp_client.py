@@ -19,6 +19,10 @@ _DOMAIN_SERVER_MODULES: dict[str, str] = {
     "codigo_legado": "app.agent_catalog.mcp_servers.legacy_code_server",
     "regras_negocio": "app.agent_catalog.mcp_servers.business_rules_server",
     "arquitetura_software": "app.agent_catalog.mcp_servers.architecture_server",
+    # Added post-hoc, as evidence for RFC §5.5 criterio 7 (extensibilidade
+    # plug-and-play): this line and the DomainLiteral entry in
+    # app/agent_manifest/manifest.py were the only two touch points needed.
+    "seguranca_informacao": "app.agent_catalog.mcp_servers.security_server",
 }
 
 _TOOL_NAME = "executar"

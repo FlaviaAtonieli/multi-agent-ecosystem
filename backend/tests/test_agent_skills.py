@@ -14,6 +14,7 @@ FIXTURES_DIR = Path(__file__).resolve().parent.parent / "app" / "agent_manifest"
 FIXTURE_MANIFEST = (FIXTURES_DIR / "legacy-code-skill.md").read_text(encoding="utf-8")
 BUSINESS_RULES_FIXTURE_MANIFEST = (FIXTURES_DIR / "business-rules-skill.md").read_text(encoding="utf-8")
 ARCHITECTURE_FIXTURE_MANIFEST = (FIXTURES_DIR / "architecture-skill.md").read_text(encoding="utf-8")
+SECURITY_FIXTURE_MANIFEST = (FIXTURES_DIR / "security-skill.md").read_text(encoding="utf-8")
 
 TECHNICIAN = {
     "name": "Tecnica Skills",
@@ -263,6 +264,76 @@ def test_execute_orchestration_step_runs_three_skills_in_one_analysis(
     detail_payload = detail_response.json()
     assert detail_payload["status"] in {"COMPLETED", "VALIDATING"}
     assert detail_payload["consolidated_response"]["id"] == consolidated["id"]
+
+
+def test_new_agent_skill_couples_without_orchestrator_changes(
+    client: TestClient, monkeypatch
+) -> None:
+    """RFC 5.5 criterio 7 / RF05: proves a brand-new Agent Skill ("Segurança da
+    Informação", added after Código Legado, Regras de Negócio and Arquitetura
+    already existed) can be registered and executed through the exact same
+    generic codepath as the original three -- import via modelo.md, domain
+    selection, MCP invocation, Quality Gate, consolidation -- with zero changes
+    to agent_skill_orchestration_service.py, orchestration_service.py or
+    quality_gate/service.py (the Orquestrador's core). The only touch points
+    for this addition were a domain literal entry and one line in
+    mcp_client._DOMAIN_SERVER_MODULES -- see the comments there."""
+    from app.core.config import settings
+
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="CreditLimitService.java",
+            content=(
+                "O limite de credito hoje eh sempre R$ 5000,00 fixo, sem considerar "
+                "o segmento do cliente (varejo, atacado, corporativo)."
+            ),
+            language="java",
+            embedding_provider=MockEmbeddingProvider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    import_response = client.post(
+        "/api/v1/agent-skills/import",
+        json={"manifest_markdown": SECURITY_FIXTURE_MANIFEST},
+        headers=authenticated_csrf_headers(client),
+    )
+    assert import_response.status_code == 201
+    assert import_response.json()["domain"] == "seguranca_informacao"
+
+    technical_request = create_qualified_request(
+        client, requested_domains=["seguranca_informacao"]
+    )
+
+    monkeypatch.setattr(settings, "llm_enabled", True)
+    monkeypatch.setattr(settings, "llm_provider", "mock")
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    assert payload["results"][0]["agente_emissor"]["dominio"] == "seguranca_informacao"
+    assert payload["consolidated_response"]["participating_agents"] == [
+        payload["results"][0]["agente_emissor"]["nome"]
+    ]
+
+    events_response = client.get(f"/api/v1/orchestrations/{technical_request['trace_id']}/events")
+    event_types = [event["event_type"] for event in events_response.json()]
+    for expected in (
+        "AGENT_SKILL_SELECTED",
+        "AGENT_SKILL_INVOCATION_COMPLETED",
+        "QUALITY_GATE_EVALUATED",
+        "RESPONSE_CONSOLIDATED",
+    ):
+        assert expected in event_types
 
 
 def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> None:
