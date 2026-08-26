@@ -22,8 +22,13 @@ class AgentSkill(Base):
     objective: Mapped[str] = mapped_column(Text, nullable=False)
     manifest_markdown: Mapped[str | None] = mapped_column(Text, nullable=True)
     manifest_json: Mapped[dict] = mapped_column(JSON, nullable=False)
-    input_contract_ref: Mapped[str] = mapped_column(String(200), nullable=False)
-    output_contract_ref: Mapped[str] = mapped_column(String(200), nullable=False)
+    # 200 chars proved too tight for real content: modelo.md's "Contrato de
+    # Entrada/Saida" sections carry a descriptive gloss after the schema name
+    # (RFC Apendice C wording), not just a short slug -- e.g. every shipped
+    # fixture's output_contract_ref is 205 chars. Only caught testing against
+    # real PostgreSQL; the test suite's SQLite never enforces VARCHAR length.
+    input_contract_ref: Mapped[str] = mapped_column(String(500), nullable=False)
+    output_contract_ref: Mapped[str] = mapped_column(String(500), nullable=False)
     uses_external_services: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     submitted_by_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="RESTRICT"), index=True, nullable=False
