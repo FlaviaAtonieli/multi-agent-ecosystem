@@ -14,7 +14,6 @@ from app.core.database import SessionLocal
 from app.core.middleware import RequestIdMiddleware, SecurityHeadersMiddleware
 from app.db.init_db import bootstrap_admin, create_tables_if_enabled
 
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s %(message)s",

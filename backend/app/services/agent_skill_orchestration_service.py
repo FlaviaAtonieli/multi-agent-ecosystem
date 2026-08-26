@@ -9,9 +9,11 @@ from app.agent_catalog.registry import list_active_skills, select_skills_for_dom
 from app.agent_catalog.tool_interface import SkillToolCall, SkillToolResult
 from app.core.security import utc_now
 from app.llm.security import content_sha256
-from app.models import AgentSkill, AgentSkillInvocation, TechnicalRequest, User
+from app.models import AgentSkill, AgentSkillInvocation, ConsolidatedResponse, TechnicalRequest, User
 from app.quality_gate.service import QualityGateVerdict, evaluate
 from app.services.orchestration_service import RequestStatus, append_event
+
+_CONFIDENCE_RANK = {"BAIXO": 0, "MEDIO": 1, "ALTO": 2}
 
 
 class NoAgentSkillsAvailableError(RuntimeError):
@@ -25,10 +27,83 @@ class ExecutionResult:
         results: list[SkillToolResult],
         verdict: QualityGateVerdict,
         invocations: list[AgentSkillInvocation],
+        consolidated_response: ConsolidatedResponse,
     ) -> None:
         self.results = results
         self.verdict = verdict
         self.invocations = invocations
+        self.consolidated_response = consolidated_response
+
+
+def _consolidate(
+    db: Session,
+    *,
+    technical_request: TechnicalRequest,
+    results: list[SkillToolResult],
+    verdict: QualityGateVerdict,
+    invocations: list[AgentSkillInvocation],
+) -> ConsolidatedResponse:
+    """Builds the RFC §5.3 "Resposta Final Consolidada": a single synthesized
+    answer distinct from each skill's partial response, satisfying RFC §5.5's
+    criterion 5 ("diferenciar resposta parcial ... e resposta final
+    consolidada"). Rule-based, mirroring the Quality Gate's own explicit,
+    explainable approach — no second LLM pass to summarize the summaries.
+    """
+    technical_synthesis = (
+        " ".join(
+            f"[{result.agente_emissor.dominio}] {result.analise_estruturada.resumo_executivo}"
+            for result in results
+        )
+        if results
+        else "Nenhuma Agent Skill produziu resposta para consolidação."
+    )
+
+    risks: list[str] = []
+    for result in results:
+        for risk in result.analise_estruturada.impactos_mapeados:
+            if risk not in risks:
+                risks.append(risk)
+
+    limitations: list[str] = []
+    for result in results:
+        if result.governanca.nivel_confianca != "ALTO":
+            limitations.append(
+                f"{result.agente_emissor.nome} ({result.governanca.nivel_confianca}): "
+                f"{result.governanca.justificativa_confianca}"
+            )
+
+    recommendations = list(verdict.reasons)
+    if verdict.approved and not verdict.requires_human_review:
+        recommendations.append("Resposta aprovada pelo Quality Gate; nenhuma ação adicional necessária.")
+    else:
+        recommendations.append(
+            "Revisão humana recomendada antes de aplicar as recomendações desta análise."
+        )
+
+    overall_confidence_level = min(
+        (result.governanca.nivel_confianca for result in results),
+        key=lambda level: _CONFIDENCE_RANK[level],
+        default="BAIXO",
+    )
+
+    consolidated = technical_request.consolidated_response or ConsolidatedResponse(
+        technical_request_id=technical_request.id
+    )
+    consolidated.trace_id = technical_request.trace_id
+    consolidated.technical_synthesis = technical_synthesis
+    consolidated.recommendations = recommendations
+    consolidated.risks = risks
+    consolidated.limitations = limitations
+    consolidated.participating_agents = [result.agente_emissor.nome for result in results]
+    consolidated.overall_confidence_level = overall_confidence_level
+    consolidated.quality_gate_approved = verdict.approved
+    consolidated.requires_human_review = verdict.requires_human_review
+    consolidated.invocation_ids = [invocation.id for invocation in invocations]
+
+    technical_request.consolidated_response = consolidated
+    db.add(consolidated)
+    db.flush()
+    return consolidated
 
 
 def _resolve_target_skills(db: Session, technical_request: TechnicalRequest) -> list[AgentSkill]:
@@ -213,5 +288,30 @@ async def execute_orchestration_step(
             technical_request.status = RequestStatus.VALIDATING
             run.status = RequestStatus.VALIDATING
 
+    consolidated_response = _consolidate(
+        db,
+        technical_request=technical_request,
+        results=results,
+        verdict=verdict,
+        invocations=invocations,
+    )
+    append_event(
+        db,
+        technical_request,
+        event_type="RESPONSE_CONSOLIDATED",
+        actor="ORCHESTRATOR",
+        title="Resposta final consolidada",
+        message=(
+            f"{len(results)} resposta(s) parcial(is) consolidada(s) em uma síntese única "
+            f"(confiança geral: {consolidated_response.overall_confidence_level})."
+        ),
+        payload={"consolidated_response_id": consolidated_response.id},
+    )
+
     db.commit()
-    return ExecutionResult(results=results, verdict=verdict, invocations=invocations)
+    return ExecutionResult(
+        results=results,
+        verdict=verdict,
+        invocations=invocations,
+        consolidated_response=consolidated_response,
+    )

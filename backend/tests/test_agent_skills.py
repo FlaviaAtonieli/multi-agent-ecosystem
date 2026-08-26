@@ -285,13 +285,27 @@ def test_execute_orchestration_step_runs_three_skills_in_one_analysis(
         "arquitetura_software",
     }
 
+    # RFC 5.5 criterio 5: resposta parcial (payload["results"]) e resposta final
+    # consolidada precisam ser artefatos distintos, nao o mesmo dado reembalado.
+    consolidated = payload["consolidated_response"]
+    assert consolidated["trace_id"] == technical_request["trace_id"]
+    assert len(consolidated["participating_agents"]) == 3
+    assert len(consolidated["invocation_ids"]) == 3
+    assert consolidated["quality_gate_approved"] == payload["verdict"]["approved"]
+    assert consolidated["requires_human_review"] == payload["verdict"]["requires_human_review"]
+    for domain in ("codigo_legado", "regras_negocio", "arquitetura_software"):
+        assert f"[{domain}]" in consolidated["technical_synthesis"]
+
     events_response = client.get(f"/api/v1/orchestrations/{technical_request['trace_id']}/events")
     event_types = [event["event_type"] for event in events_response.json()]
     assert event_types.count("AGENT_SKILL_INVOCATION_COMPLETED") == 3
     assert "QUALITY_GATE_EVALUATED" in event_types
+    assert "RESPONSE_CONSOLIDATED" in event_types
 
     detail_response = client.get(f"/api/v1/requests/{technical_request['id']}")
-    assert detail_response.json()["status"] in {"COMPLETED", "VALIDATING"}
+    detail_payload = detail_response.json()
+    assert detail_payload["status"] in {"COMPLETED", "VALIDATING"}
+    assert detail_payload["consolidated_response"]["id"] == consolidated["id"]
 
 
 def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> None:

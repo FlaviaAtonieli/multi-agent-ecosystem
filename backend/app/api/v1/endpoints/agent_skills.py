@@ -27,6 +27,7 @@ from app.schemas.agent_skill import (
     AgentSkillManifestImport,
     AgentSkillRead,
     AgentSkillToolDescriptorRead,
+    ConsolidatedResponseRead,
     OrchestrationExecutionRead,
 )
 from app.services.agent_skill_orchestration_service import (
@@ -216,4 +217,5 @@ async def execute_skills_for_request(
         results=execution.results,
         verdict=execution.verdict,
         invocations_count=len(execution.invocations),
+        consolidated_response=ConsolidatedResponseRead.model_validate(execution.consolidated_response),
     )

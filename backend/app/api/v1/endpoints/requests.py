@@ -23,7 +23,6 @@ from app.services.orchestration_service import (
     record_human_review,
 )
 
-
 router = APIRouter(prefix="/requests", tags=["Solicitações técnicas"])
 
 

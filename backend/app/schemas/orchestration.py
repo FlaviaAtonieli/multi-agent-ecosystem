@@ -52,6 +52,26 @@ class TechnicalRequestContextUpdate(BaseModel):
         return value.strip()
 
 
+class ConsolidatedResponseRead(BaseModel):
+    """RFC §5.3 "Resposta Final Consolidada": the single synthesized answer,
+    distinct from each Agent Skill's partial response."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    trace_id: str
+    technical_synthesis: str
+    recommendations: list[str]
+    risks: list[str]
+    limitations: list[str]
+    participating_agents: list[str]
+    overall_confidence_level: str
+    quality_gate_approved: bool
+    requires_human_review: bool
+    invocation_ids: list[str]
+    created_at: datetime
+
+
 class TechnicalRequestRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -66,6 +86,7 @@ class TechnicalRequestRead(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+    consolidated_response: ConsolidatedResponseRead | None = None
 
 
 class TechnicalRequestReview(BaseModel):
