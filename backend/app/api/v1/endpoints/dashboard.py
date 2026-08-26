@@ -8,6 +8,7 @@ from app.api.dependencies import get_current_session
 from app.core.database import get_db
 from app.core.security import ensure_utc, utc_now
 from app.models import (
+    AgentSkill,
     AuditLog,
     AuthSession,
     OrchestrationEvent,
@@ -130,9 +131,16 @@ def dashboard_summary(
     if current_session.user.role == "ADMIN":
         total_users = db.scalar(select(func.count(User.id))) or 0
 
+    registered_agent_skills = db.scalar(
+        select(func.count(AgentSkill.id)).where(
+            AgentSkill.status == "approved",
+            AgentSkill.enabled.is_(True),
+        )
+    ) or 0
+
     return DashboardSummary(
         active_sessions=active_sessions,
-        registered_agent_skills=0,
+        registered_agent_skills=registered_agent_skills,
         orchestration_executions=orchestration_executions,
         running_orchestrations=running_orchestrations,
         awaiting_context=awaiting_context,

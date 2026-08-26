@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.agent_manifest.manifest import DomainLiteral
+
 
 class TechnicalRequestCreate(BaseModel):
     title: str = Field(min_length=5, max_length=160)
@@ -9,7 +11,7 @@ class TechnicalRequestCreate(BaseModel):
     objective: str = Field(min_length=5, max_length=5_000)
     context: str | None = Field(default=None, max_length=20_000)
     restrictions: list[str] = Field(default_factory=list, max_length=20)
-    requested_domains: list[str] = Field(default_factory=list, max_length=10)
+    requested_domains: list[DomainLiteral] = Field(default_factory=list, max_length=10)
 
     @field_validator("title", "problem", "objective")
     @classmethod

@@ -70,6 +70,11 @@ class Settings(BaseSettings):
     rag_chunk_max_chars: int = 800
     rag_chunk_overlap: int = 100
 
+    # Real MCP transport used to invoke Agent Skills. "stdio" spawns each skill's
+    # server as a genuine subprocess (JSON-RPC over stdio); "memory" connects to
+    # the same MCPServer object in-process (fast, used by the test suite).
+    mcp_skill_transport: Literal["memory", "stdio"] = "stdio"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [item.strip() for item in self.cors_origins.split(",") if item.strip()]
