@@ -5,6 +5,7 @@ from app.api.v1.endpoints import (
     auth,
     dashboard,
     health,
+    llm,
     orchestrations,
     requests,
 )
@@ -15,4 +16,5 @@ api_router.include_router(auth.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(requests.router)
 api_router.include_router(orchestrations.router)
+api_router.include_router(llm.router)
 api_router.include_router(admin.router)
