@@ -2,6 +2,19 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-25 - Extensibilidade plug-and-play (RFC 5.5 criterio 7)
+
+### Adicionado
+
+- quarta Agent Skill, Segurança da Informação (`seguranca_informacao`), com executor e servidor MCP proprios (`SecuritySkillExecutor`, `security_server.py`);
+- teste `test_new_agent_skill_couples_without_orchestrator_changes` provando que a nova skill e reconhecida e acionada pelo Orquestrador sem qualquer mudanca em `agent_skill_orchestration_service.py`, `orchestration_service.py`, `quality_gate/service.py` ou `registry.py` (confirmado por `git diff --stat` vazio nesses arquivos);
+- evidencia formal em `docs/validation/evidence/2026-08-plug-and-play-extensibility.md`.
+
+### Contexto
+
+- fecha o ultimo criterio minimo de sucesso pendente da RFC 5.5 e a etapa 7 da estrategia de implementacao (RFC 5.4);
+- os unicos dois pontos tocados foram o tipo `DomainLiteral` (camada de contratos) e uma linha em `mcp_client._DOMAIN_SERVER_MODULES` (registro do plugin) -- nenhum dos dois e o "nucleo do Orquestrador" que RF05 protege.
+
 ## 2026-08-25 - Perfil REVIEWER e revisão humana de solicitações
 
 ### Adicionado
