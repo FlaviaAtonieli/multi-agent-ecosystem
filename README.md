@@ -18,9 +18,8 @@ A base implementa:
 - qualificação inicial do contexto;
 - geração de `Trace ID`;
 - histórico e timeline de eventos;
-- abstração de provedores de modelo;
-- provedor `mock` para testes sem chamada externa;
-- adaptador da OpenAI desabilitado por padrão;
+- abstração de provedores de modelo, com OpenRouter como Model Gateway primário;
+- adaptador da OpenAI mantido como integração direta opcional;
 - registro de invocações com identificador próprio, hashes, latência e uso de tokens;
 - ingestão e recuperação de contexto (RAG) sobre uma base de conhecimento indexada;
 - catálogo funcional de Agent Skills, com importação do manifesto `modelo.md` e aprovação humana obrigatória;
@@ -82,13 +81,16 @@ BOOTSTRAP_ADMIN_EMAIL=admin@agenthub.com
 BOOTSTRAP_ADMIN_PASSWORD=defina-outra-senha-forte
 ```
 
-A integração externa deve permanecer desabilitada na primeira execução:
+Não existe provedor mock: para usar a camada de planejamento (LLM) e a recuperação de conhecimento (RAG), é necessária uma `OPENROUTER_API_KEY` real. Sem chave, a aplicação sobe normalmente com `LLM_ENABLED=false` — só a integração de modelo fica indisponível.
 
 ```env
-LLM_ENABLED=false
-LLM_PROVIDER=mock
-OPENAI_API_KEY=
+LLM_ENABLED=true
+LLM_PROVIDER=openrouter
+LLM_MODEL=nvidia/nemotron-3-super-120b-a12b:free
+OPENROUTER_API_KEY=defina-sua-chave-da-openrouter
 ```
+
+O modelo acima é gratuito no catálogo da OpenRouter (limite de 50 requisições/dia sem créditos comprados). Crie uma chave em [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys).
 
 Suba os serviços:
 
@@ -118,7 +120,7 @@ docker compose exec backend alembic current
 Na base atual, o resultado esperado é:
 
 ```text
-0003_llm_foundation (head)
+0006_consolidated_response (head)
 ```
 
 ## Fluxo disponível
@@ -133,22 +135,18 @@ Usuário autenticado
   -> dashboard e timeline exibem o histórico
 ```
 
-O provedor simulado pode ser habilitado para validar a camada de planejamento sem chave externa:
-
-```env
-LLM_ENABLED=true
-LLM_PROVIDER=mock
-```
-
-A execução exige um usuário com perfil `TECHNICIAN` ou `ADMIN`. O resultado é estruturado e marcado para aprovação humana. A base não executa tools nem publica documentos automaticamente.
+A execução exige um usuário com perfil `TECHNICIAN` ou `ADMIN`, `LLM_ENABLED=true` e uma `OPENROUTER_API_KEY` válida. O resultado é estruturado e marcado para aprovação humana. A base não executa tools nem publica documentos automaticamente.
 
 ## Testes
+
+A suíte do backend chama a OpenRouter de verdade (sem provedor mock) — exige uma `OPENROUTER_API_KEY` real no ambiente ou no `.env` da raiz do projeto antes de rodar.
 
 Backend:
 
 ```powershell
 docker run --rm `
   --mount "type=bind,source=$((Get-Location).Path)\backend,target=/app" `
+  --env-file .env `
   -w /app `
   python:3.12-slim `
   sh -c "pip install --no-cache-dir -r requirements-dev.txt && pytest -v"

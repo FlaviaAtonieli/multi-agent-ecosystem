@@ -7,8 +7,14 @@ from pydantic import ValidationError
 from app.agent_catalog.tool_interface import AgenteEmissor, Governanca, SkillToolResult
 from app.core.database import SessionLocal
 from app.rag.ingestion import ingest_artifact
-from app.rag.providers.mock_embedding_provider import MockEmbeddingProvider
-from tests.conftest import authenticated_csrf_headers, create_qualified_request, promote, register
+from tests.conftest import (
+    authenticated_csrf_headers,
+    create_qualified_request,
+    enable_real_llm,
+    promote,
+    real_embedding_provider,
+    register,
+)
 
 FIXTURES_DIR = Path(__file__).resolve().parent.parent / "app" / "agent_manifest" / "fixtures"
 FIXTURE_MANIFEST = (FIXTURES_DIR / "legacy-code-skill.md").read_text(encoding="utf-8")
@@ -127,8 +133,6 @@ def test_enable_disable_requires_admin(client: TestClient) -> None:
 
 
 def test_execute_orchestration_step_runs_skill_and_quality_gate(client: TestClient, monkeypatch) -> None:
-    from app.core.config import settings
-
     with SessionLocal() as db:
         ingest_artifact(
             db,
@@ -138,7 +142,7 @@ def test_execute_orchestration_step_runs_skill_and_quality_gate(client: TestClie
                 "o segmento do cliente (varejo, atacado, corporativo)."
             ),
             language="java",
-            embedding_provider=MockEmbeddingProvider(),
+            embedding_provider=real_embedding_provider(),
             max_chars=1000,
             overlap=0,
         )
@@ -155,8 +159,7 @@ def test_execute_orchestration_step_runs_skill_and_quality_gate(client: TestClie
 
     technical_request = create_qualified_request(client, requested_domains=["codigo_legado"])
 
-    monkeypatch.setattr(settings, "llm_enabled", True)
-    monkeypatch.setattr(settings, "llm_provider", "mock")
+    enable_real_llm(monkeypatch)
 
     execution_response = client.post(
         f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
@@ -193,8 +196,6 @@ def test_execute_orchestration_step_runs_three_skills_in_one_analysis(
     """Proves RFC 5.5's minimum success criterion: at least three Agent Skills
     acting on the same analysis, each with its own invocation, result and
     Quality Gate evaluation — not three separate requests."""
-    from app.core.config import settings
-
     with SessionLocal() as db:
         ingest_artifact(
             db,
@@ -204,7 +205,7 @@ def test_execute_orchestration_step_runs_three_skills_in_one_analysis(
                 "o segmento do cliente (varejo, atacado, corporativo)."
             ),
             language="java",
-            embedding_provider=MockEmbeddingProvider(),
+            embedding_provider=real_embedding_provider(),
             max_chars=1000,
             overlap=0,
         )
@@ -226,8 +227,7 @@ def test_execute_orchestration_step_runs_three_skills_in_one_analysis(
         requested_domains=["codigo_legado", "regras_negocio", "arquitetura_software"],
     )
 
-    monkeypatch.setattr(settings, "llm_enabled", True)
-    monkeypatch.setattr(settings, "llm_provider", "mock")
+    enable_real_llm(monkeypatch)
 
     execution_response = client.post(
         f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
@@ -278,8 +278,6 @@ def test_new_agent_skill_couples_without_orchestrator_changes(
     quality_gate/service.py (the Orquestrador's core). The only touch points
     for this addition were a domain literal entry and one line in
     mcp_client._DOMAIN_SERVER_MODULES -- see the comments there."""
-    from app.core.config import settings
-
     with SessionLocal() as db:
         ingest_artifact(
             db,
@@ -289,7 +287,7 @@ def test_new_agent_skill_couples_without_orchestrator_changes(
                 "o segmento do cliente (varejo, atacado, corporativo)."
             ),
             language="java",
-            embedding_provider=MockEmbeddingProvider(),
+            embedding_provider=real_embedding_provider(),
             max_chars=1000,
             overlap=0,
         )
@@ -310,8 +308,7 @@ def test_new_agent_skill_couples_without_orchestrator_changes(
         client, requested_domains=["seguranca_informacao"]
     )
 
-    monkeypatch.setattr(settings, "llm_enabled", True)
-    monkeypatch.setattr(settings, "llm_provider", "mock")
+    enable_real_llm(monkeypatch)
 
     execution_response = client.post(
         f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
@@ -355,7 +352,7 @@ def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> 
                 "o segmento do cliente (varejo, atacado, corporativo)."
             ),
             language="java",
-            embedding_provider=MockEmbeddingProvider(),
+            embedding_provider=real_embedding_provider(),
             max_chars=1000,
             overlap=0,
         )
@@ -372,8 +369,7 @@ def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> 
 
     technical_request = create_qualified_request(client, requested_domains=["codigo_legado"])
 
-    monkeypatch.setattr(settings, "llm_enabled", True)
-    monkeypatch.setattr(settings, "llm_provider", "mock")
+    enable_real_llm(monkeypatch)
     monkeypatch.setattr(settings, "mcp_skill_transport", "stdio")
 
     execution_response = client.post(

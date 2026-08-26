@@ -1,6 +1,5 @@
 from app.core.config import Settings, settings
 from app.llm.base import LLMProvider
-from app.llm.providers.mock_provider import MockLLMProvider
 from app.llm.providers.openai_provider import OpenAILLMProvider
 from app.llm.providers.openrouter_provider import OpenRouterLLMProvider
 
@@ -10,9 +9,6 @@ class LLMConfigurationError(RuntimeError):
 
 
 def create_llm_provider(config: Settings = settings) -> LLMProvider:
-    if config.llm_provider == "mock":
-        return MockLLMProvider(model=config.llm_model)
-
     if config.llm_provider == "openai":
         if not config.openai_api_key_value:
             raise LLMConfigurationError("A credencial do provedor OpenAI não foi configurada.")

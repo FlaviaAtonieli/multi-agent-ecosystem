@@ -1,4 +1,4 @@
-from app.llm.providers.mock_provider import MockLLMProvider
 from app.llm.providers.openai_provider import OpenAILLMProvider
+from app.llm.providers.openrouter_provider import OpenRouterLLMProvider
 
-__all__ = ["MockLLMProvider", "OpenAILLMProvider"]
+__all__ = ["OpenAILLMProvider", "OpenRouterLLMProvider"]

@@ -4,7 +4,13 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.models import LLMInvocation
-from tests.conftest import authenticated_csrf_headers, create_qualified_request, promote, register
+from tests.conftest import (
+    authenticated_csrf_headers,
+    create_qualified_request,
+    enable_real_llm,
+    promote,
+    register,
+)
 
 TECHNICIAN = {
     "name": "Tecnica Autorizada",
@@ -19,7 +25,7 @@ def test_regular_user_cannot_access_llm_status(client: TestClient) -> None:
     assert response.status_code == 403
 
 
-def test_mock_provider_plan_is_traced_without_storing_content(
+def test_openrouter_plan_is_traced_without_storing_content(
     client: TestClient,
     monkeypatch,
 ) -> None:
@@ -40,9 +46,7 @@ def test_mock_provider_plan_is_traced_without_storing_content(
         restrictions=["Não executar tools", "Não publicar automaticamente"],
     )
 
-    monkeypatch.setattr(settings, "llm_enabled", True)
-    monkeypatch.setattr(settings, "llm_provider", "mock")
-    monkeypatch.setattr(settings, "llm_model", "gpt-5-mini")
+    enable_real_llm(monkeypatch)
     monkeypatch.setattr(settings, "llm_store_result_content", False)
     monkeypatch.setattr(settings, "llm_store_provider_response", False)
 
@@ -50,7 +54,7 @@ def test_mock_provider_plan_is_traced_without_storing_content(
     assert status_response.status_code == 200
     status_payload = status_response.json()
     assert status_payload["enabled"] is True
-    assert status_payload["provider"] == "mock"
+    assert status_payload["provider"] == "openrouter"
     assert "api_key" not in status_payload
 
     plan_response = client.post(
@@ -59,8 +63,11 @@ def test_mock_provider_plan_is_traced_without_storing_content(
     )
     assert plan_response.status_code == 200
     plan_payload = plan_response.json()
-    assert plan_payload["provider"] == "mock"
+    assert plan_payload["provider"] == "openrouter"
     assert plan_payload["trace_id"] == technical_request["trace_id"]
+    # Prompted as a strict rule (RFC "humano no loop"), not just a mock default --
+    # observed consistently against the real model, but real output can in
+    # principle vary; if this ever flakes, it's evidence the prompt needs tightening.
     assert plan_payload["plan"]["requires_human_approval"] is True
     assert plan_payload["llm_call_id"]
 

@@ -4,9 +4,15 @@ from sqlalchemy import select
 from app.core.database import SessionLocal
 from app.models import LLMInvocation, OrchestrationEvent
 from app.rag.ingestion import chunk_text, ingest_artifact
-from app.rag.providers.mock_embedding_provider import MockEmbeddingProvider
 from app.rag.retriever import InMemoryVectorRetriever
-from tests.conftest import authenticated_csrf_headers, create_qualified_request, promote, register
+from tests.conftest import (
+    authenticated_csrf_headers,
+    create_qualified_request,
+    enable_real_llm,
+    promote,
+    real_embedding_provider,
+    register,
+)
 
 TECHNICIAN = {
     "name": "Tecnica RAG",
@@ -44,7 +50,7 @@ def test_ingest_artifact_persists_chunks_with_embeddings(client: TestClient) -> 
                 "sem considerar o segmento do cliente." * 5
             ),
             language="java",
-            embedding_provider=MockEmbeddingProvider(),
+            embedding_provider=real_embedding_provider(),
             max_chars=100,
             overlap=20,
         )
@@ -59,7 +65,7 @@ def test_ingest_artifact_persists_chunks_with_embeddings(client: TestClient) -> 
 
 def test_in_memory_retriever_ranks_relevant_chunk_first(client: TestClient) -> None:
     with SessionLocal() as db:
-        embedding_provider = MockEmbeddingProvider()
+        embedding_provider = real_embedding_provider()
         ingest_artifact(
             db,
             artifact_name="CreditLimitService.java",
@@ -97,21 +103,17 @@ def test_generate_plan_runs_retrieval_before_llm_call(client: TestClient, monkey
                 "o segmento do cliente (varejo, atacado, corporativo)."
             ),
             language="java",
-            embedding_provider=MockEmbeddingProvider(),
+            embedding_provider=real_embedding_provider(),
             max_chars=1000,
             overlap=0,
         )
         db.commit()
 
-    from app.core.config import settings
-
     register(client, TECHNICIAN)
     promote(TECHNICIAN["email"], "TECHNICIAN")
     technical_request = create_qualified_request(client)
 
-    monkeypatch.setattr(settings, "llm_enabled", True)
-    monkeypatch.setattr(settings, "llm_provider", "mock")
-    monkeypatch.setattr(settings, "llm_model", "gpt-5-mini")
+    enable_real_llm(monkeypatch)
 
     plan_response = client.post(
         f"/api/v1/llm/requests/{technical_request['id']}/plan",
@@ -157,8 +159,7 @@ def test_rag_disabled_skips_retrieval(client: TestClient, monkeypatch) -> None:
     promote(TECHNICIAN["email"], "TECHNICIAN")
     technical_request = create_qualified_request(client)
 
-    monkeypatch.setattr(settings, "llm_enabled", True)
-    monkeypatch.setattr(settings, "llm_provider", "mock")
+    enable_real_llm(monkeypatch)
     monkeypatch.setattr(settings, "rag_enabled", False)
 
     plan_response = client.post(

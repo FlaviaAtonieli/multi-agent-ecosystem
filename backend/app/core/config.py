@@ -37,11 +37,12 @@ class Settings(BaseSettings):
     bootstrap_admin_email: str | None = None
     bootstrap_admin_password: str | None = None
 
-    # LLM foundation. Disabled by default so the project runs without an API key.
+    # LLM foundation. Disabled by default so the project boots without an API key;
+    # once enabled, OpenRouter is the primary Model Gateway (no mock provider).
     llm_enabled: bool = False
-    llm_provider: Literal["mock", "openai", "openrouter"] = "mock"
-    llm_model: str = "gpt-5-mini"
-    llm_allowed_models: str = "gpt-5-mini,gpt-5"
+    llm_provider: Literal["openai", "openrouter"] = "openrouter"
+    llm_model: str = "nvidia/nemotron-3-super-120b-a12b:free"
+    llm_allowed_models: str = "nvidia/nemotron-3-super-120b-a12b:free"
     llm_timeout_seconds: int = 45
     llm_max_output_tokens: int = 1200
     llm_max_input_chars: int = 12000

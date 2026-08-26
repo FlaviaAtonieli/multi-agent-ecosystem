@@ -49,8 +49,6 @@ def _find_executable_request(db: Session, request_id: str, user: User) -> Techni
 
 
 def _provider_configured() -> bool:
-    if settings.llm_provider == "mock":
-        return True
     if settings.llm_provider == "openai":
         return bool(settings.openai_api_key_value)
     if settings.llm_provider == "openrouter":

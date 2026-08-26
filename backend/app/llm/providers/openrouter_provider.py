@@ -1,6 +1,9 @@
 import json
 
+from pydantic import ValidationError
+
 from app.core.config import Settings
+from app.core.retry import retry_on_transient_error
 from app.llm.base import LLMProvider
 from app.llm.prompts import TECHNICAL_PLANNER_INSTRUCTIONS, build_technical_planner_prompt
 from app.llm.schemas import LLMPlan, LLMPlanRequest, LLMProviderResult, LLMUsage
@@ -37,42 +40,61 @@ class OpenRouterLLMProvider(LLMProvider):
         *,
         llm_call_id: str,
     ) -> LLMProviderResult:
+        from openai import APIConnectionError, APITimeoutError, RateLimitError
+
         schema = LLMPlan.model_json_schema()
         prompt = build_technical_planner_prompt(request)
 
-        response = self.client.chat.completions.create(
-            model=self.config.llm_model,
-            messages=[
-                {"role": "system", "content": TECHNICAL_PLANNER_INSTRUCTIONS},
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=self.config.llm_max_output_tokens,
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "technical_orchestration_plan",
-                    "strict": True,
-                    "schema": schema,
+        def _call() -> LLMProviderResult:
+            response = self.client.chat.completions.create(
+                model=self.config.llm_model,
+                messages=[
+                    {"role": "system", "content": TECHNICAL_PLANNER_INSTRUCTIONS},
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=self.config.llm_max_output_tokens,
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "technical_orchestration_plan",
+                        "strict": True,
+                        "schema": schema,
+                    },
                 },
-            },
-            extra_headers={
-                "HTTP-Referer": self.config.openrouter_app_url,
-                "X-Title": self.config.app_name,
-                "X-Client-Request-Id": llm_call_id,
-            },
-        )
+                extra_headers={
+                    "HTTP-Referer": self.config.openrouter_app_url,
+                    "X-Title": self.config.app_name,
+                    "X-Client-Request-Id": llm_call_id,
+                },
+            )
 
-        message = response.choices[0].message.content
-        if not message:
-            raise RuntimeError("O provedor OpenRouter retornou uma resposta vazia.")
-        plan = LLMPlan.model_validate(json.loads(message))
-        usage = getattr(response, "usage", None)
-        return LLMProviderResult(
-            plan=plan,
-            provider_response_id=getattr(response, "id", None),
-            provider_request_id=getattr(response, "_request_id", None),
-            usage=LLMUsage(
-                input_tokens=getattr(usage, "prompt_tokens", None),
-                output_tokens=getattr(usage, "completion_tokens", None),
+            message = response.choices[0].message.content
+            if not message:
+                raise RuntimeError("O provedor OpenRouter retornou uma resposta vazia.")
+            # A free/shared model occasionally ignores the strict json_schema and
+            # returns valid-but-incomplete JSON (missing required fields) instead
+            # of the documented structured_outputs contract -- retried below like
+            # any other transient failure of this specific call.
+            plan = LLMPlan.model_validate(json.loads(message))
+            usage = getattr(response, "usage", None)
+            return LLMProviderResult(
+                plan=plan,
+                provider_response_id=getattr(response, "id", None),
+                provider_request_id=getattr(response, "_request_id", None),
+                usage=LLMUsage(
+                    input_tokens=getattr(usage, "prompt_tokens", None),
+                    output_tokens=getattr(usage, "completion_tokens", None),
+                ),
+            )
+
+        return retry_on_transient_error(
+            _call,
+            exceptions=(
+                RuntimeError,
+                json.JSONDecodeError,
+                ValidationError,
+                RateLimitError,
+                APIConnectionError,
+                APITimeoutError,
             ),
         )

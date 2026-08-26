@@ -2,7 +2,13 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from tests.conftest import authenticated_csrf_headers, create_qualified_request, promote, register
+from tests.conftest import (
+    authenticated_csrf_headers,
+    create_qualified_request,
+    enable_real_llm,
+    promote,
+    register,
+)
 
 FIXTURE_MANIFEST = (
     Path(__file__).resolve().parent.parent
@@ -29,8 +35,6 @@ def _create_request_pending_review(client: TestClient, monkeypatch) -> dict:
     forces BAIXO confidence in LegacyCodeSkillExecutor, so the Quality Gate
     rejects and flags requires_human_review — a deterministic way to land a
     request in VALIDATING without depending on LLM output variance."""
-    from app.core.config import settings
-
     register(client, TECHNICIAN)
     promote(TECHNICIAN["email"], "TECHNICIAN")
 
@@ -42,8 +46,7 @@ def _create_request_pending_review(client: TestClient, monkeypatch) -> dict:
 
     technical_request = create_qualified_request(client, requested_domains=["codigo_legado"])
 
-    monkeypatch.setattr(settings, "llm_enabled", True)
-    monkeypatch.setattr(settings, "llm_provider", "mock")
+    enable_real_llm(monkeypatch)
 
     execution_response = client.post(
         f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
