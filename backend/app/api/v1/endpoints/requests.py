@@ -2,16 +2,26 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.api.dependencies import get_current_session, require_authenticated_csrf
+from app.api.dependencies import (
+    get_current_session,
+    require_authenticated_csrf,
+    require_reviewer,
+)
 from app.core.database import get_db
-from app.models import AuthSession, TechnicalRequest
+from app.models import AuthSession, TechnicalRequest, User
 from app.schemas.orchestration import (
     TechnicalRequestContextUpdate,
     TechnicalRequestCreate,
     TechnicalRequestRead,
+    TechnicalRequestReview,
 )
 from app.services.audit_service import record_audit
-from app.services.orchestration_service import complement_context, create_technical_request
+from app.services.orchestration_service import (
+    RequestNotAwaitingReviewError,
+    complement_context,
+    create_technical_request,
+    record_human_review,
+)
 
 
 router = APIRouter(prefix="/requests", tags=["Solicitações técnicas"])
@@ -82,6 +92,61 @@ def get_request(
     current_session: AuthSession = Depends(get_current_session),
 ) -> TechnicalRequest:
     return find_owned_request(db, request_id, current_session.user_id)
+
+
+def find_request_for_review(db: Session, request_id: str) -> TechnicalRequest:
+    """A reviewer decides on other users' requests (RF11 human-in-the-loop), so
+    lookup here is deliberately not owner-scoped — access is gated by the
+    require_reviewer dependency instead, same pattern used for ADMIN in
+    agent_skills._find_qualified_request."""
+    technical_request = db.scalar(
+        select(TechnicalRequest)
+        .options(selectinload(TechnicalRequest.orchestration_run))
+        .where(TechnicalRequest.id == request_id)
+    )
+    if technical_request is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Solicitação técnica não encontrada.",
+        )
+    return technical_request
+
+
+@router.post("/{request_id}/review", response_model=TechnicalRequestRead)
+def review_request(
+    request_id: str,
+    payload: TechnicalRequestReview,
+    request: Request,
+    db: Session = Depends(get_db),
+    reviewer: User = Depends(require_reviewer),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> TechnicalRequest:
+    technical_request = find_request_for_review(db, request_id)
+    try:
+        reviewed = record_human_review(
+            db,
+            technical_request=technical_request,
+            reviewer=reviewer,
+            decision=payload.decision,
+            notes=payload.notes,
+        )
+    except RequestNotAwaitingReviewError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+    record_audit(
+        db,
+        request,
+        "HUMAN_REVIEW_DECIDED",
+        user_id=reviewer.id,
+        details={
+            "technical_request_id": reviewed.id,
+            "trace_id": reviewed.trace_id,
+            "decision": payload.decision,
+            "status": reviewed.status,
+        },
+    )
+    db.commit()
+    return reviewed
 
 
 @router.post("/{request_id}/context", response_model=TechnicalRequestRead)

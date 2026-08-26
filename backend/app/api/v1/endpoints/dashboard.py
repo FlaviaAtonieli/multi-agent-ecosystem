@@ -83,7 +83,7 @@ def dashboard_summary(
     failed_count = db.scalar(
         select(func.count(TechnicalRequest.id)).where(
             TechnicalRequest.owner_id == owner_id,
-            TechnicalRequest.status == RequestStatus.FAILED,
+            TechnicalRequest.status.in_({RequestStatus.FAILED, RequestStatus.REJECTED}),
         )
     ) or 0
     finished_count = completed_count + failed_count
