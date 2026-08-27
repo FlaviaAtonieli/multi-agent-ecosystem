@@ -2,6 +2,24 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-26 - Redesign do frontend, fase 1: sistema de design e layout compartilhado
+
+### Adicionado
+
+- `docs/design/AgentHub-Especificacoes.md`: especificacao completa do redesign de frontend, salva como referencia para as proximas fases.
+- Fontes Google (Manrope para titulos/numeros, IBM Plex Sans para corpo de texto) carregadas em `frontend/index.html`.
+- Novo sistema de tokens de cor em `global.css` (`--bg-app`, `--bg-sidebar`, `--bg-card`, `--bg-input`, `--border-subtle`, `--border-strong`, `--text-primary/secondary/tertiary/muted`, acentos violeta/ciano/ambar/verde/vermelho) e keyframes de animacao reutilizaveis (`fade-up`, `pulse-dot-amber`, `pulse-dot-green`, `pop-in`).
+- Agrupamento de navegacao no `AppShell` em duas secoes rotuladas ("PRINCIPAL": Visao geral, Nova solicitacao, Orquestracoes; "ECOSSISTEMA": Agent Skills, Auditoria) -- antes "Agent Skills" ficava fora do grupo Ecossistema mesmo sendo conceitualmente parte dele.
+
+### Alterado
+
+- `workspace.css` migrado para consumir os novos tokens em vez de cores hexadecimais fixas; topbar reduzida de 72px para 64px e padding do conteudo ajustado para `28px 32px 40px`, conforme a especificacao.
+
+### Contexto
+
+- primeira de 7 fases confirmadas para adequar o frontend a especificacao fornecida (`AgentHub-Especificacoes.md`), adaptando o conteudo fictício do documento (ex.: tabelas de exemplo em Agent Skills/Auditoria) para os dados reais do backend nas fases seguintes;
+- fase 1 e a base de que as demais fases dependem (tokens, fontes, layout compartilhado) -- verificada com `npx tsc -b` e checagem visual via Playwright contra o ambiente Docker real.
+
 ## 2026-08-26 - Fecha a rodada de KPIs do M7 (Reducao do Tempo de Analise)
 
 ### Adicionado

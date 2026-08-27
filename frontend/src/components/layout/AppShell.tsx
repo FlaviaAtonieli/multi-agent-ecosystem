@@ -4,10 +4,13 @@ import type { User } from '../../api/authApi'
 import { Brand } from '../Brand'
 import '../../styles/workspace.css'
 
-const navigation = [
+const principalNavigation = [
   { to: '/dashboard', label: 'Visão geral', symbol: '◫' },
   { to: '/requests/new', label: 'Nova solicitação', symbol: '+' },
   { to: '/orchestrations', label: 'Orquestrações', symbol: '◎' },
+]
+
+const ecosystemNavigation = [
   { to: '/agent-skills', label: 'Agent Skills', symbol: '◇' },
 ]
 
@@ -33,7 +36,8 @@ export function AppShell() {
         <div className="workspace-brand"><Brand /></div>
 
         <nav className="workspace-nav" aria-label="Navegação principal">
-          {navigation.map((item) => (
+          <span className="workspace-nav-label">PRINCIPAL</span>
+          {principalNavigation.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -46,6 +50,16 @@ export function AppShell() {
 
           <div className="workspace-nav-divider" />
           <span className="workspace-nav-label">ECOSSISTEMA</span>
+          {ecosystemNavigation.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => `workspace-nav-link${isActive ? ' active' : ''}`}
+            >
+              <span aria-hidden="true">{item.symbol}</span>
+              {item.label}
+            </NavLink>
+          ))}
           <button className="workspace-nav-link workspace-nav-disabled" type="button" disabled>
             <span aria-hidden="true">⌁</span> Auditoria
           </button>
