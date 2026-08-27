@@ -2,6 +2,25 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-26 - Redesign do frontend, fase 2: Visao Geral (Dashboard)
+
+### Adicionado
+
+- Banner de acao condicional (`ActionBanner`): aparece somente quando ha solicitacoes "Aguardando contexto", aponta para a mais antiga pendente e leva direto para a tela de complementacao.
+- Card "Como o ecossistema decide" (`EcosystemFlowCard`): mini-diagrama horizontal Orientador -> Orquestrador -> Quality Gate.
+- Icones e destaque visual nos 4 cards de estatistica (`MetricCard`); o card "Aguardando contexto" ganha borda/fundo ambar quando ha pendencias.
+- Toolbar de busca + filtro por status na tabela "Solicitacoes tecnicas" do dashboard.
+- Dots de atividade coloridos por origem do evento (usuario, orientador de interacao, orquestrador, agentes) na coluna "Atividade recente".
+
+### Corrigido
+
+- CSP do frontend (`nginx.conf`) bloqueava o carregamento das fontes Google (Manrope/IBM Plex Sans) adicionadas na fase 1 -- `style-src`/`font-src` nao autorizavam `fonts.googleapis.com`/`fonts.gstatic.com`, entao as fontes nunca chegavam a carregar no ambiente real (only detectado ao inspecionar o console do navegador via Playwright, nao pelo screenshot visual isolado).
+
+### Contexto
+
+- segunda de 7 fases do redesign de frontend; adapta os elementos do dashboard aos dados reais (`/dashboard/summary`) em vez do conteudo de exemplo da especificacao;
+- a falha de CSP reforca a necessidade de checar o console do navegador (nao so a captura visual) ao validar mudancas de frontend contra o ambiente Docker real.
+
 ## 2026-08-26 - Redesign do frontend, fase 1: sistema de design e layout compartilhado
 
 ### Adicionado
