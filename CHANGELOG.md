@@ -15,6 +15,10 @@ Este arquivo registra alterações relevantes da PoC. As datas correspondem ao m
 
 - `workspace.css` migrado para consumir os novos tokens em vez de cores hexadecimais fixas; topbar reduzida de 72px para 64px e padding do conteudo ajustado para `28px 32px 40px`, conforme a especificacao.
 
+### Corrigido
+
+- CSP do frontend (`nginx.conf`): `style-src`/`font-src` nao autorizavam `fonts.googleapis.com`/`fonts.gstatic.com`, entao as fontes do Google adicionadas nesta fase eram bloqueadas silenciosamente no ambiente real (nao aparecia no screenshot isolado, so no console do navegador) -- detectado ao inspecionar o console via Playwright durante a fase 2.
+
 ### Contexto
 
 - primeira de 7 fases confirmadas para adequar o frontend a especificacao fornecida (`AgentHub-Especificacoes.md`), adaptando o conteudo fictício do documento (ex.: tabelas de exemplo em Agent Skills/Auditoria) para os dados reais do backend nas fases seguintes;
