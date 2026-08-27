@@ -2,6 +2,18 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-26 - Redesign do frontend, fase 3: Orquestracoes (historico)
+
+### Adicionado
+
+- Chips de filtro por status com contagem ao vivo ("Todas", "Aguardando", "Em execucao", "Concluida", "Erro"), mapeando os 10 status reais (`RequestStatus`) para as 4 categorias da especificacao (ex.: `RECEIVED`/`QUALIFIED`/`PLANNING`/`RUNNING`/`VALIDATING` agrupados em "Em execucao").
+- Busca por titulo/Trace ID e ordenacao (mais recentes/mais antigas) na tabela de historico.
+- Tabela completa (5 colunas: Solicitacao, Status, Trace ID, Data, Acoes) com coluna Acoes dependente do status: "Completar contexto" (outline ambar) para `AWAITING_CONTEXT`, "Ver detalhes" para os demais.
+
+### Contexto
+
+- terceira de 7 fases do redesign de frontend; verificado com `npx tsc -b`, rebuild Docker e fluxo real via Playwright (3 solicitacoes com status distintos, filtro por chip, busca por texto) -- console do navegador conferido, sem novos erros alem do 403 pre-existente e esperado de `/llm/status` para usuarios sem papel tecnico.
+
 ## 2026-08-26 - Redesign do frontend, fase 2: Visao Geral (Dashboard)
 
 ### Adicionado
