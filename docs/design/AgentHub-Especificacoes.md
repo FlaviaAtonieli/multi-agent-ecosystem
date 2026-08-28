@@ -295,3 +295,10 @@ Exibido automaticamente **apenas na primeira vez** que um usuário acessa a Vis�
 2. **Taxa de sucesso** (§3.3): confirmar a regra de cálculo exata (ex.: concluídas ÷ (concluídas + erro), ou concluídas ÷ total finalizado).
 3. **Detalhe de solicitação**: as telas referenciam uma página de "detalhe" (links "Ver detalhes →", clique em linha de auditoria) que não foi desenhada nesta rodada — necessária para fechar a navegação ponta a ponta.
 4. **Persistência do onboarding**: definir se o flag fica no backend (por usuário) ou local (localStorage) — recomendação: backend, para persistir entre dispositivos.
+
+### Resolução (implementação real, PRs #21–#27)
+
+1. **Agent Skills e Auditoria**: o conceito fictício de "agente responsável" (Orientador/Legado/Orquestrador/Negócio/Quality Gate) e o estado "Beta" não existem no modelo real — adaptados para os campos reais do backend: `AgentSkill.domain` (4 domínios reais, usado como badge) e `AgentSkill.status`/`enabled` (o estado "Pendente de validação" reflete `status == "pending_validation"`). A Auditoria usa `OrchestrationEvent` real (`actor`, `event_type`, `title`, `message`), com os agentes/origens reais do sistema (USER, INTERACTION_GUIDE, ORCHESTRATOR, ADVISORY_AGENT, REVIEWER, RETRIEVAL_AGENT, TECHNICAL_PLANNER) em vez da lista de exemplo da especificação.
+2. **Taxa de sucesso**: já estava correta no backend antes deste redesign — `concluídas ÷ (concluídas + falha/rejeitada)`, ou seja, concluídas ÷ total finalizado (`backend/app/api/v1/endpoints/dashboard.py`).
+3. **Detalhe de solicitação**: já existia como `OrchestrationPage.tsx` (rota `/orchestrations/:traceId`) antes deste redesign — reaproveitada como destino de "Ver detalhes →" e "Completar contexto" nas fases 2, 3 e 6, sem necessidade de uma tela nova.
+4. **Persistência do onboarding**: implementada no backend, conforme a recomendação — campo `users.onboarding_completed_at` (migration `0008_user_onboarding`) e endpoint `POST /api/v1/auth/onboarding/complete`, expostos via `/auth/me`. Sobrevive entre dispositivos/navegadores, não fica em localStorage.
