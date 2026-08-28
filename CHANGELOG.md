@@ -2,6 +2,21 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-28 - Redesign do frontend, fase 6: Auditoria
+
+### Adicionado
+
+- Novo endpoint `GET /api/v1/audit/events` (backend/app/api/v1/endpoints/audit.py): listagem paginada de `OrchestrationEvent` entre TODAS as solicitações (nao mais escopada por dono), com filtro por agente (`actor`), busca por titulo/Trace ID da solicitacao, janela de dias configuravel, e 4 contadores do dia atual (eventos, decisoes automatizadas, intervencoes manuais, alertas de conformidade). Gated por `require_reviewer` (papeis REVIEWER/ADMIN) -- reaproveita a dependencia ja usada pela revisao humana.
+- Pagina Auditoria (`/auditoria`): 4 cards de indicadores, busca + chips de filtro por agente + dropdown de periodo, tabela completa (Evento/Origem/Solicitacao/Trace ID/Data), e exportacao CSV client-side dos eventos carregados.
+- Item de navegacao "Auditoria" no `AppShell` agora e um link real para usuarios REVIEWER/ADMIN (antes era um botao permanentemente desabilitado); continua desabilitado para USER/TECHNICIAN, evitando expor um link que sempre retornaria 403.
+- 4 novos testes (`backend/tests/test_audit.py`): gate de papel, listagem cross-user, filtro por agente, filtro por busca -- todos sem custo de chamada real de LLM.
+
+### Contexto
+
+- sexta de 7 fases do redesign de frontend; os 4 cards de estatistica sao escopados a "hoje" (por desenho, conforme o label do primeiro card na especificacao), enquanto a tabela usa uma janela configuravel (7/14/30/90 dias) -- as duas janelas sao intencionalmente independentes, entao os cards podem mostrar 0 mesmo com linhas visiveis na tabela quando nenhum evento novo ocorreu no dia corrente;
+- "Alertas de conformidade" e definido como eventos reais de falha (`LLM_INVOCATION_FAILED`, `AGENT_SKILL_INVOCATION_FAILED`, `HUMAN_REVIEW_REJECTED`), nao um conceito inventado;
+- verificado com `ruff`/`mypy`/`pytest` (41/41 testes passando) no backend, `npx tsc -b` no frontend, e fluxo real via Playwright: usuario promovido a REVIEWER via SQL direto no Postgres do ambiente Docker, visibilidade cross-user confirmada (eventos de sessoes de teste anteriores, de outros usuarios, aparecem na trilha), filtro por agente e busca testados em conjunto.
+
 ## 2026-08-26 - Redesign do frontend, fase 5: Agent Skills
 
 ### Adicionado
