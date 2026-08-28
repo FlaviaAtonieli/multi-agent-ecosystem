@@ -2,6 +2,25 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-28 - Redesign do frontend, fase 7: tour de primeiro acesso (fecha o redesign de 7 fases)
+
+### Adicionado
+
+- `users.onboarding_completed_at` (migration `0008_user_onboarding`): persiste no backend se o usuario ja concluiu (ou pulou) o tour, em vez de localStorage -- sobrevive entre dispositivos/navegadores, conforme a propria recomendacao da especificacao (§8, item em aberto 4).
+- Novo endpoint `POST /api/v1/auth/onboarding/complete` (idempotente): marca o onboarding como concluido para o usuario autenticado. Exposto em `UserRead`/`/auth/me`, entao o frontend sabe se deve mostrar o tour assim que a sessao carrega.
+- `OnboardingTour` (`frontend/src/components/onboarding/OnboardingTour.tsx`): overlay de spotlight com 4 passos (navegacao principal, botao Nova solicitacao, pendencias ou cards de estatistica, atividade recente), destacando o elemento real da tela via `data-tour` + `getBoundingClientRect`. Heuristica de posicionamento tenta direita, depois abaixo, depois acima, depois esquerda do alvo -- necessario porque a sidebar (alvo do passo 1) e alta e estreita, sem espaco acima/abaixo dentro da viewport.
+- Link "Rever tour" na topbar (`/dashboard?tour=1`), reabrindo o tour manualmente sem exigir refazer o onboarding no backend.
+- 2 novos testes (`test_auth.py`): fluxo completo (`onboarding_completed_at` nulo -> completo) e idempotencia do endpoint.
+
+### Corrigido
+
+- Heuristica inicial de posicionamento do tooltip (so acima/abaixo do alvo) colocava o card diretamente sobre a propria sidebar no passo 1, cobrindo os itens de navegacao que deveriam ficar visiveis -- corrigido antes de qualquer commit, achado durante a verificacao visual via Playwright.
+
+### Contexto
+
+- setima e ultima fase do redesign de frontend (`docs/design/AgentHub-Especificacoes.md`) -- as 7 fases confirmadas no inicio do trabalho estao completas: sistema de design, Dashboard, Orquestracoes, wizard de Nova Solicitacao, Agent Skills, Auditoria e este tour;
+- verificado com `ruff`/`mypy`/`pytest` (43/43 testes) no backend, `npx tsc -b` no frontend, e fluxo real via Playwright: tour aparece automaticamente no primeiro acesso, avanca pelos 4 passos, persiste apos "Concluir" (nao reaparece em reload), reabre via "Rever tour", e "Pular tour" fecha imediatamente.
+
 ## 2026-08-28 - Redesign do frontend, fase 6: Auditoria
 
 ### Adicionado

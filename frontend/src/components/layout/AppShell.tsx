@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import type { User } from '../../api/authApi'
 import { Brand } from '../Brand'
@@ -35,7 +35,7 @@ export function AppShell() {
 
   return (
     <div className="workspace-shell">
-      <aside className="workspace-sidebar">
+      <aside className="workspace-sidebar" data-tour="nav">
         <div className="workspace-brand"><Brand /></div>
 
         <nav className="workspace-nav" aria-label="Navegação principal">
@@ -96,6 +96,7 @@ export function AppShell() {
               <strong>{user?.name}</strong>
               <small>{user ? roleLabels[user.role] : 'Usuário técnico'}</small>
             </div>
+            <Link className="workspace-review-tour" to="/dashboard?tour=1">Rever tour</Link>
             <button className="workspace-logout" type="button" onClick={handleLogout}>Sair</button>
           </div>
         </header>

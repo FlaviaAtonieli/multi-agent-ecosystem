@@ -120,7 +120,7 @@ docker compose exec backend alembic current
 Na base atual, o resultado esperado é:
 
 ```text
-0007_widen_contract_refs (head)
+0008_user_onboarding (head)
 ```
 
 ## Fluxo disponível
