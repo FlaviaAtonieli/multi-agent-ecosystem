@@ -2,6 +2,18 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-26 - Redesign do frontend, fase 5: Agent Skills
+
+### Adicionado
+
+- Catalogo de Agent Skills reescrito como grid de cards (3 colunas), com icone abreviado colorido por dominio, badge de estado, objetivo truncado em 2 linhas, badge de dominio e versao no rodape; hover eleva o card e realca a borda.
+- Busca por nome e chips de filtro por estado (Habilitadas/Pendentes/Desabilitadas) com contagem ao vivo.
+
+### Contexto
+
+- quinta de 7 fases do redesign de frontend; a especificacao inventava um conceito de "agente responsavel" (Orientador/Legado/Orquestrador/Negocio/Quality Gate) e um estado "Beta" que nao existem no modelo real -- adaptado para os campos reais do backend: `AgentSkill.domain` (4 dominios reais, ja usado como badge) e `AgentSkill.status`/`enabled` (o estado "Pendente de validacao" reflete `status == "pending_validation"`, nao um rotulo inventado);
+- verificado com `npx tsc -b`, rebuild Docker e fluxo real via Playwright: grid renderizado com dados reais (8 skills), filtro por chip e busca testados.
+
 ## 2026-08-26 - Redesign do frontend, fase 4: wizard de Nova Solicitacao
 
 ### Adicionado
