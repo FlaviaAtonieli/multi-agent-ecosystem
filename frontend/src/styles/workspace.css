@@ -166,6 +166,18 @@
 .workspace-table-audit th:first-child, .workspace-table-audit td:first-child { width: 26%; }
 .workspace-audit-event-name { color: var(--text-primary); font-weight: 600; }
 
+.workspace-table-admin th:first-child, .workspace-table-admin td:first-child { width: 32%; }
+.workspace-table select {
+  padding: 7px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.workspace-table select:disabled { cursor: not-allowed; opacity: 0.6; }
+
 .workspace-action-banner {
   display: flex;
   align-items: center;

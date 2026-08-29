@@ -72,6 +72,16 @@ export function AppShell() {
               <span aria-hidden="true">⌁</span> Auditoria
             </button>
           )}
+
+          {user?.role === 'ADMIN' && (
+            <>
+              <div className="workspace-nav-divider" />
+              <span className="workspace-nav-label">ADMINISTRAÇÃO</span>
+              <NavLink to="/admin" className={({ isActive }) => `workspace-nav-link${isActive ? ' active' : ''}`}>
+                <span aria-hidden="true">⚙</span> Usuários
+              </NavLink>
+            </>
+          )}
         </nav>
 
         <div className="workspace-sidebar-footer">

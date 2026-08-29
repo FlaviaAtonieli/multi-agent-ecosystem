@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-29 - Pagina de administracao de usuarios
+
+### Adicionado
+
+- Pagina `/admin` (`AdminPage.tsx`): lista todos os usuarios registrados, com dropdown para trocar o papel (USER/TECHNICIAN/REVIEWER/ADMIN) e botao para ativar/desativar a conta -- reaproveita os endpoints `GET/PATCH /admin/users` que ja existiam no backend mas nao tinham nenhuma tela consumindo.
+- Item de navegacao "Usuarios" numa nova secao "ADMINISTRACAO", visivel apenas para ADMIN.
+
+### Contexto
+
+- antes desta pagina, promover um usuario para TECHNICIAN (necessario para executar orquestracoes -- gate intencional de "Autorizacao por Perfil" da RFC) exigia chamar a API manualmente (curl/Postman) ou mexer direto no banco;
+- motivado por um teste real do Pedro (revisor do repositorio) que ficou bloqueado no botao "Executar orquestracao" por nao ter papel tecnico;
+- verificado com `npx tsc -b` e fluxo real via Playwright: login como o admin de bootstrap (`admin@agenthub.com`), promocao de um usuario de teste para TECHNICIAN pela UI, confirmado que o novo papel aparece imediatamente no topo da tela apos o usuario logar novamente;
+- a senha do admin de bootstrap no ambiente Docker local estava dessincronizada do valor atual do `.env` (a conta foi criada em 31/07 com uma senha antiga, e o bootstrap so roda uma vez) -- corrigida diretamente no Postgres local para bater com o `.env` atual, sem impacto em dado de producao (ambiente e so o Docker Compose local de desenvolvimento).
+
 ## 2026-08-28 - Redesign do frontend, fase 7: tour de primeiro acesso (fecha o redesign de 7 fases)
 
 ### Adicionado
