@@ -2,6 +2,16 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-29 - Documenta a diferenca entre papel e cota de tokens
+
+### Adicionado
+
+- README (`## Fluxo disponível`): nova secao "Acesso e cota de uso" explicando as duas camadas independentes que controlam a execucao -- papel do usuario (TECHNICIAN/ADMIN, promovido via `/admin`) decide *se* alguem pode executar; a cota diaria de tokens decide *quanto* uma pessoa ja autorizada pode executar naquele dia. Deixa explicito que ter cota disponivel nao substitui o papel.
+
+### Contexto
+
+- motivado por uma pergunta real que misturou os dois conceitos ("Pedro nao precisa de acesso porque tem cota de tokens?") -- registrado para nao se repetir: sao verificacoes sequenciais e independentes, a cota so e avaliada depois que o papel ja passou.
+
 ## 2026-08-29 - Medidor visual de uso de tokens (TokenUsageMeter)
 
 ### Adicionado

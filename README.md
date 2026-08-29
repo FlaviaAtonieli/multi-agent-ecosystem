@@ -137,6 +137,15 @@ Usuário autenticado
 
 A execução exige um usuário com perfil `TECHNICIAN` ou `ADMIN`, `LLM_ENABLED=true` e uma `OPENROUTER_API_KEY` válida. O resultado é estruturado e marcado para aprovação humana. A base não executa tools nem publica documentos automaticamente.
 
+### Acesso e cota de uso (duas camadas independentes)
+
+São duas verificações separadas, aplicadas nesta ordem — a segunda só é avaliada se a primeira já passou:
+
+1. **Papel do usuário** (controla *se* a pessoa pode executar). Todo cadastro novo nasce como `USER` e não consegue executar orquestrações — o botão retorna `403 Forbidden`. Só um `ADMIN` pode promover alguém para `TECHNICIAN` (ou `REVIEWER`/`ADMIN`), pela página `/admin` (menu "ADMINISTRAÇÃO", visível só para quem já é admin) — não existe autopromoção nem fluxo de aprovação automática. A conta admin de bootstrap (`BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` no `.env`) é o ponto de partida para promover as primeiras contas.
+2. **Cota diária de tokens** (controla *quanto* uma pessoa já autorizada pode executar naquele dia). Ver [Integração com provedores de modelo](docs/integrations/model-provider.md#cota-diária-de-tokens-por-usuário) para os detalhes — `LLM_DAILY_TOKEN_LIMIT_PER_USER` no `.env`, contas `ADMIN` isentas.
+
+Ter uma cota de tokens disponível **não substitui** o papel — um usuário `USER` continua bloqueado mesmo com a cota zerada de uso.
+
 ## Testes
 
 A suíte do backend chama a OpenRouter de verdade (sem provedor mock) — exige uma `OPENROUTER_API_KEY` real no ambiente ou no `.env` da raiz do projeto antes de rodar.
