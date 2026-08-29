@@ -4,6 +4,7 @@ import { ProtectedRoute } from '../components/ProtectedRoute'
 import { PublicRoute } from '../components/PublicRoute'
 import { AgentSkillImportPage } from '../pages/AgentSkillImportPage'
 import { AgentSkillsPage } from '../pages/AgentSkillsPage'
+import { AuditoriaPage } from '../pages/AuditoriaPage'
 import { DashboardPage } from '../pages/DashboardPage'
 import { LoginPage } from '../pages/LoginPage'
 import { NewRequestPage } from '../pages/NewRequestPage'
@@ -27,6 +28,7 @@ export function App() {
           <Route path="/orchestrations/:traceId" element={<OrchestrationPage />} />
           <Route path="/agent-skills" element={<AgentSkillsPage />} />
           <Route path="/agent-skills/import" element={<AgentSkillImportPage />} />
+          <Route path="/auditoria" element={<AuditoriaPage />} />
         </Route>
       </Route>
 

@@ -151,6 +151,20 @@
 .workspace-metric-icon-success { color: var(--success-light); background: rgba(34, 197, 94, 0.14); }
 .workspace-metric-card-highlight { border-color: rgba(245, 158, 11, 0.28); background: rgba(245, 158, 11, 0.06); }
 .workspace-metric-card-highlight::before { background: var(--warning); }
+.workspace-metric-value-success { color: var(--success-light); }
+.workspace-metric-value-danger { color: var(--danger-light); }
+.workspace-metric-card-alert { border-color: rgba(239, 68, 68, 0.28); background: rgba(239, 68, 68, 0.06); }
+.workspace-metric-card-alert::before { background: var(--danger); }
+
+.workspace-actor-badge { display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; font-size: 0.7rem; font-weight: 650; white-space: nowrap; }
+.workspace-actor-badge-violet { color: var(--primary-light); background: rgba(139, 92, 246, 0.14); }
+.workspace-actor-badge-amber { color: var(--warning-light); background: rgba(245, 158, 11, 0.14); }
+.workspace-actor-badge-cyan { color: var(--accent); background: rgba(34, 211, 238, 0.14); }
+.workspace-actor-badge-sky { color: var(--info); background: rgba(56, 189, 248, 0.14); }
+.workspace-actor-badge-green { color: var(--success-light); background: rgba(34, 197, 94, 0.14); }
+
+.workspace-table-audit th:first-child, .workspace-table-audit td:first-child { width: 26%; }
+.workspace-audit-event-name { color: var(--text-primary); font-weight: 600; }
 
 .workspace-action-banner {
   display: flex;
