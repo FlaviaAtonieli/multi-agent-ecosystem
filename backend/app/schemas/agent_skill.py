@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.agent_catalog.tool_interface import SkillToolResult
+from app.agent_catalog.contracts import SkillToolResult
 from app.agent_manifest.manifest import DomainLiteral
 from app.quality_gate.service import QualityGateVerdict
 from app.schemas.orchestration import ConsolidatedResponseRead

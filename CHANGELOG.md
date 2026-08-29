@@ -2,6 +2,24 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-29 - Organiza a resposta final: sintese por dominio, achados e blocos de codigo
+
+### Adicionado
+
+- `ExecutionResultPanel`: a "Sintese consolidada" agora e separada por dominio (badge + paragrafo), em vez de um unico bloco de texto corrido com tags `[dominio]` coladas. Cada card de Agent Skill passa a mostrar tambem as descobertas tecnicas (`descobertas_tecnicas`) e, quando existe `trecho_referenciado`, renderiza em bloco de codigo monoespacado.
+- Novo endpoint `GET /orchestrations/{trace_id}/skill-results`: persiste e expoe o resultado estruturado (`SkillToolResult`) de cada Agent Skill executada. Antes desta mudanca, `AgentSkillInvocation.result_payload` nunca era preenchido -- os dados detalhados por skill so existiam durante a resposta HTTP da execucao e se perdiam ao recarregar a pagina.
+- Tela de Orquestracao passa a reaproveitar o `ExecutionResultPanel` tambem no caminho de reload (sem execucao fresca em memoria), buscando os resultados persistidos -- antes mostrava so o texto cru da sintese.
+- Novo teste (`test_agent_skills.py`) cobrindo a persistencia e o novo endpoint.
+
+### Corrigido
+
+- Import circular real introduzido ao referenciar `SkillToolResult` em `app/schemas/orchestration.py`: os contratos de dados puros (`SkillToolResult`, `SkillToolCall`, etc.) foram extraidos de `tool_interface.py` para um novo modulo `app/agent_catalog/contracts.py`, sem depender de `app.services.llm_service` -- `tool_interface.py` (que tem os `SkillExecutor`, esses sim dependentes do LLM) passa a reexportar dali, mantendo todos os imports existentes no resto do projeto inalterados.
+
+### Contexto
+
+- pedido direto da autora ao ver a sintese consolidada renderizada como texto cru com tags `[dominio]` coladas (ex.: "[arquitetura_software] Plano tecnico... [regras_negocio] Plano tecnico...");
+- verificado com `ruff`/`mypy`/`pytest` (51/51 testes, suite limpa) no backend, `npx tsc -b` no frontend, e fluxo real via Playwright: execucao completa com 8 Agent Skills (4 dominios, skills duplicadas de testes anteriores), sintese exibida separada por dominio tanto na execucao fresca quanto apos reload da pagina.
+
 ## 2026-08-29 - Coluna de uso de tokens na pagina de admin
 
 ### Adicionado

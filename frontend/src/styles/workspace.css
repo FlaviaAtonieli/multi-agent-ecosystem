@@ -582,14 +582,47 @@
 
 .workspace-execution { display: grid; gap: 16px; margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border-subtle); }
 .workspace-execution-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.workspace-execution-synthesis { margin: 0; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.65; }
 .workspace-execution-block h4 { margin: 0 0 8px; color: var(--text-muted); font-size: 0.68rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--font-heading); }
 .workspace-execution-block ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5; }
 .workspace-execution-skills { display: grid; gap: 10px; }
 .workspace-execution-skill-card { padding: 14px 16px; border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--bg-input); }
-.workspace-execution-skill-card header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.workspace-execution-skill-card header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.workspace-execution-skill-card header > div { display: grid; gap: 3px; }
 .workspace-execution-skill-card strong { font-size: 0.82rem; }
 .workspace-execution-skill-card p { margin: 0; color: var(--text-tertiary); font-size: 0.78rem; line-height: 1.55; }
+.workspace-skill-card-domain { color: var(--text-muted); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.04em; }
+.workspace-skill-card-justification { display: block; margin-top: 10px; color: var(--text-muted); font-size: 0.7rem; line-height: 1.5; font-style: italic; }
+
+.workspace-synthesis-list { display: grid; gap: 10px; }
+.workspace-synthesis-item p { margin: 4px 0 0; color: var(--text-secondary); font-size: 0.82rem; line-height: 1.6; }
+.workspace-synthesis-domain {
+  display: inline-flex;
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: var(--primary-light);
+  background: rgba(139, 92, 246, 0.12);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.workspace-findings { display: grid; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle); }
+.workspace-finding strong { display: block; margin-bottom: 3px; color: var(--text-secondary); font-size: 0.78rem; }
+.workspace-finding p { margin: 0; }
+.workspace-code-block {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-app);
+  color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+  line-height: 1.55;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
 .workspace-detail-heading { align-items: flex-start; }
 .workspace-back-link { display: block; margin-bottom: 22px; color: var(--text-tertiary); font-size: 0.77rem; }

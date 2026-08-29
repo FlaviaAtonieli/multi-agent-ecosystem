@@ -4,8 +4,12 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.api.dependencies import get_current_session
 from app.core.database import get_db
-from app.models import AuthSession, OrchestrationEvent, TechnicalRequest
-from app.schemas.orchestration import OrchestrationDetail, OrchestrationEventRead
+from app.models import AgentSkill, AgentSkillInvocation, AuthSession, OrchestrationEvent, TechnicalRequest
+from app.schemas.orchestration import (
+    AgentSkillInvocationResultRead,
+    OrchestrationDetail,
+    OrchestrationEventRead,
+)
 
 router = APIRouter(prefix="/orchestrations", tags=["Orquestrações"])
 
@@ -57,3 +61,32 @@ def get_orchestration_events(
 ) -> list[OrchestrationEvent]:
     technical_request = find_by_trace_id(db, trace_id, current_session.user_id)
     return list(technical_request.events)
+
+
+@router.get("/{trace_id}/skill-results", response_model=list[AgentSkillInvocationResultRead])
+def get_orchestration_skill_results(
+    trace_id: str,
+    db: Session = Depends(get_db),
+    current_session: AuthSession = Depends(get_current_session),
+) -> list[AgentSkillInvocationResultRead]:
+    technical_request = find_by_trace_id(db, trace_id, current_session.user_id)
+    rows = db.execute(
+        select(AgentSkillInvocation, AgentSkill.name)
+        .join(AgentSkill, AgentSkillInvocation.agent_skill_id == AgentSkill.id)
+        .where(
+            AgentSkillInvocation.technical_request_id == technical_request.id,
+            AgentSkillInvocation.status == "COMPLETED",
+        )
+        .order_by(AgentSkillInvocation.created_at.asc())
+    ).all()
+    return [
+        AgentSkillInvocationResultRead(
+            id=invocation.id,
+            agent_skill_name=skill_name,
+            status=invocation.status,
+            confidence_level=invocation.confidence_level,
+            result=invocation.result_payload,
+            created_at=invocation.created_at,
+        )
+        for invocation, skill_name in rows
+    ]

@@ -173,6 +173,7 @@ async def _invoke_skill(
         invocation.confidence_level = result.governanca.nivel_confianca
         invocation.latency_ms = latency_ms
         invocation.completed_at = utc_now()
+        invocation.result_payload = result.model_dump(mode="json")
         append_event(
             db,
             technical_request,
