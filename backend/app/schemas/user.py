@@ -39,6 +39,7 @@ class UserRead(BaseModel):
     role: str
     is_active: bool
     created_at: datetime
+    onboarding_completed_at: datetime | None
 
 
 class UserStatusUpdate(BaseModel):

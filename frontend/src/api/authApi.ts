@@ -7,6 +7,7 @@ export type User = {
   role: 'USER' | 'TECHNICIAN' | 'REVIEWER' | 'ADMIN'
   is_active: boolean
   created_at: string
+  onboarding_completed_at: string | null
 }
 
 export type AuthResponse = {
@@ -40,4 +41,5 @@ export const authApi = {
   renew: () => apiRequest<AuthResponse>('/auth/renew', { method: 'POST' }),
   logout: () => apiRequest<void>('/auth/logout', { method: 'POST' }),
   logoutAll: () => apiRequest<void>('/auth/logout-all', { method: 'POST' }),
+  completeOnboarding: () => apiRequest<User>('/auth/onboarding/complete', { method: 'POST' }),
 }

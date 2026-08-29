@@ -168,6 +168,19 @@ def me(user: User = Depends(get_current_user)) -> UserRead:
     return UserRead.model_validate(user)
 
 
+@router.post("/onboarding/complete", response_model=UserRead)
+def complete_onboarding(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> UserRead:
+    if user.onboarding_completed_at is None:
+        user.onboarding_completed_at = utc_now()
+        db.commit()
+        db.refresh(user)
+    return UserRead.model_validate(user)
+
+
 @router.get("/sessions", response_model=list[SessionRead])
 def list_sessions(
     db: Session = Depends(get_db),

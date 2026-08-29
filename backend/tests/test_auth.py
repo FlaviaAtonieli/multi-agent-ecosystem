@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from tests.conftest import csrf_headers
+from tests.conftest import authenticated_csrf_headers, csrf_headers, register
 
 VALID_USER = {
     "name": "Flavia Souza",
@@ -70,3 +70,27 @@ def test_logout_revokes_session(client: TestClient) -> None:
 
     me_response = client.get("/api/v1/auth/me")
     assert me_response.status_code == 401
+
+
+def test_onboarding_starts_unset_and_can_be_completed(client: TestClient) -> None:
+    register(client, VALID_USER)
+
+    me_response = client.get("/api/v1/auth/me")
+    assert me_response.json()["onboarding_completed_at"] is None
+
+    complete_response = client.post(
+        "/api/v1/auth/onboarding/complete", headers=authenticated_csrf_headers(client)
+    )
+    assert complete_response.status_code == 200
+    assert complete_response.json()["onboarding_completed_at"] is not None
+
+    me_after = client.get("/api/v1/auth/me")
+    assert me_after.json()["onboarding_completed_at"] is not None
+
+
+def test_onboarding_complete_is_idempotent(client: TestClient) -> None:
+    register(client, VALID_USER)
+
+    first = client.post("/api/v1/auth/onboarding/complete", headers=authenticated_csrf_headers(client))
+    second = client.post("/api/v1/auth/onboarding/complete", headers=authenticated_csrf_headers(client))
+    assert first.json()["onboarding_completed_at"] == second.json()["onboarding_completed_at"]
