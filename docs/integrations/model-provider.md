@@ -123,6 +123,15 @@ LLM_LOG_CONTENT=false
 LLM_REDACT_SENSITIVE_DATA=true
 ```
 
+## Cota diária de tokens por usuário
+
+Para proteger a assinatura/créditos da conta OpenRouter contra o consumo de um único usuário, `generate_technical_plan` (`app/services/llm_service.py`) verifica, antes de qualquer chamada ao provedor, a soma de `input_tokens + output_tokens` das invocações `COMPLETED` do usuário no dia corrente (UTC). Se o total já atingiu `LLM_DAILY_TOKEN_LIMIT_PER_USER` (padrão: 150000, `0` desabilita), a chamada é recusada com `429 Too Many Requests` antes de gastar créditos.
+
+- Contas `ADMIN` são isentas (operador confiável da assinatura).
+- A checagem cobre os dois pontos de entrada que acionam o LLM: `POST /llm/requests/{id}/plan` e `POST /agent-skills/requests/{id}/execute` (cada Agent Skill invocada também chama `generate_technical_plan` internamente).
+- `GET /llm/status` expõe `daily_token_limit_per_user` e `tokens_used_today` (do usuário autenticado), consumido pela tela de Orquestração para mostrar o uso e desabilitar o botão "Executar orquestração" preventivamente quando a cota já foi atingida.
+- É uma cota simples de uso (contagem de tokens), não um modelo de negócio de créditos/planos — não há hoje distinção entre usuários "free" e "pro"; ficou registrado como possível evolução futura, não implementada.
+
 ## Limitações atuais
 
 - A seleção de Agent Skills por domínio já existe (`app/agent_catalog/`), mas é por correspondência exata de domínio (sem roteamento semântico) — decisão deliberada de escopo para uma PoC de desenvolvedora única.

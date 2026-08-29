@@ -1,10 +1,13 @@
 import json
 import time
+from datetime import UTC, datetime
 from uuid import uuid4
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.roles import ROLE_ADMIN
 from app.core.security import utc_now
 from app.llm.factory import create_llm_provider
 from app.llm.schemas import LLMPlanRequest, LLMPlanResponse
@@ -24,6 +27,26 @@ class LLMInvocationError(RuntimeError):
 
 class LLMModelNotAllowedError(ValueError):
     pass
+
+
+class LLMQuotaExceededError(RuntimeError):
+    pass
+
+
+def tokens_used_today(db: Session, user_id: str) -> int:
+    start_of_day = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    used = db.scalar(
+        select(
+            func.coalesce(
+                func.sum(LLMInvocation.input_tokens + LLMInvocation.output_tokens), 0
+            )
+        ).where(
+            LLMInvocation.user_id == user_id,
+            LLMInvocation.status == "COMPLETED",
+            LLMInvocation.created_at >= start_of_day,
+        )
+    )
+    return int(used or 0)
 
 
 def _build_safe_request(
@@ -97,6 +120,14 @@ def generate_technical_plan(
             f"O modelo '{requested_model}' não está em LLM_ALLOWED_MODELS."
         )
     resolved_model = requested_model or settings.llm_model
+
+    if user.role != ROLE_ADMIN and settings.llm_daily_token_limit_per_user > 0:
+        used = tokens_used_today(db, user.id)
+        if used >= settings.llm_daily_token_limit_per_user:
+            raise LLMQuotaExceededError(
+                f"Limite diário de {settings.llm_daily_token_limit_per_user} tokens por "
+                f"usuário atingido ({used} usados hoje). Tente novamente amanhã."
+            )
 
     safe_request, redacted_count, truncated, input_hash = _build_safe_request(
         technical_request, analysis_domain_label=analysis_domain_label

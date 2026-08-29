@@ -2,6 +2,19 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-29 - Cota diaria de tokens por usuario
+
+### Adicionado
+
+- `generate_technical_plan` (`app/services/llm_service.py`) agora verifica, antes de qualquer chamada ao provedor, a soma de `input_tokens + output_tokens` das invocacoes `COMPLETED` do usuario no dia corrente (UTC). Acima de `LLM_DAILY_TOKEN_LIMIT_PER_USER` (padrao 150000, `0` desabilita), a chamada e recusada com `429` antes de gastar creditos -- cobre os dois pontos de entrada que acionam o LLM (`POST /llm/requests/{id}/plan` e `POST /agent-skills/requests/{id}/execute`, ja que cada Agent Skill invocada chama a mesma funcao internamente). Contas `ADMIN` sao isentas.
+- `GET /llm/status` expoe `daily_token_limit_per_user` e `tokens_used_today`; a tela de Orquestracao mostra "Uso de tokens hoje: X / Y" perto do botao de executar e desabilita o botao preventivamente quando a cota ja foi atingida.
+- 2 novos testes (`test_llm.py`): bloqueio ao atingir a cota (sem custo de chamada real -- a checagem ocorre antes do provedor) e isencao de conta ADMIN (com uma chamada real, para confirmar que o fluxo completa).
+
+### Contexto
+
+- motivado por uma pergunta direta da autora sobre como proteger a assinatura da OpenRouter de um unico usuario consumir todos os creditos -- decisao explicita: cota simples por contagem de tokens, sem modelo de negocio free/pro por enquanto;
+- verificado com `ruff`/`mypy`/`pytest` no backend (2 rodadas completas da suite, 1 flake isolado e nao relacionado em cada rodada -- mesmo padrao de instabilidade do modelo gratuito ja documentado em `docs/integrations/model-provider.md`, confirmado por re-execucao isolada), `npx tsc -b` no frontend, e fluxo real via Playwright: indicador "0 / 150.000" com uso normal, e estado bloqueado/vermelho com botao desabilitado apos simular uso acima da cota.
+
 ## 2026-08-29 - Pagina de administracao de usuarios
 
 ### Adicionado

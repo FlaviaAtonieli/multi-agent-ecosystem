@@ -544,6 +544,8 @@
 
 .workspace-execute-form { display: grid; gap: 14px; margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border-subtle); }
 .workspace-execute-form .workspace-primary-action { justify-self: start; }
+.workspace-token-usage { color: var(--text-muted); font-size: 0.72rem; }
+.workspace-token-usage-exhausted { color: var(--danger-light); font-weight: 600; }
 
 .workspace-execution { display: grid; gap: 16px; margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border-subtle); }
 .workspace-execution-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }

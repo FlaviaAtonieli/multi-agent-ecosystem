@@ -37,6 +37,7 @@ from app.services.agent_skill_orchestration_service import (
     execute_orchestration_step,
 )
 from app.services.audit_service import record_audit
+from app.services.llm_service import LLMQuotaExceededError
 
 router = APIRouter(prefix="/agent-skills", tags=["Agent Skills"])
 
@@ -210,6 +211,8 @@ async def execute_skills_for_request(
         )
     except NoAgentSkillsAvailableError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except LLMQuotaExceededError as exc:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
 
     record_audit(
         db,

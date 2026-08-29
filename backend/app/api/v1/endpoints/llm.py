@@ -12,7 +12,9 @@ from app.services.audit_service import record_audit
 from app.services.llm_service import (
     LLMDisabledError,
     LLMInvocationError,
+    LLMQuotaExceededError,
     generate_technical_plan,
+    tokens_used_today,
 )
 
 router = APIRouter(prefix="/llm", tags=["LLM Integration"])
@@ -57,7 +59,9 @@ def _provider_configured() -> bool:
 
 
 @router.get("/status", response_model=LLMStatusRead)
-def llm_status(_: User = Depends(require_technician)) -> LLMStatusRead:
+def llm_status(
+    db: Session = Depends(get_db), user: User = Depends(require_technician)
+) -> LLMStatusRead:
     configured = _provider_configured()
     return LLMStatusRead(
         enabled=settings.llm_enabled,
@@ -70,6 +74,8 @@ def llm_status(_: User = Depends(require_technician)) -> LLMStatusRead:
         requests_per_hour_technician=settings.llm_requests_per_hour_technician,
         store_provider_response=settings.llm_store_provider_response,
         store_result_content=settings.llm_store_result_content,
+        daily_token_limit_per_user=settings.llm_daily_token_limit_per_user,
+        tokens_used_today=tokens_used_today(db, user.id),
     )
 
 
@@ -117,6 +123,8 @@ def create_plan(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="O provedor não concluiu o planejamento. Use o Trace ID para suporte.",
         ) from exc
+    except LLMQuotaExceededError as exc:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
 
     record_audit(
         db,
