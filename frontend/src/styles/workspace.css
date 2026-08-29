@@ -166,7 +166,21 @@
 .workspace-table-audit th:first-child, .workspace-table-audit td:first-child { width: 26%; }
 .workspace-audit-event-name { color: var(--text-primary); font-weight: 600; }
 
-.workspace-table-admin th:first-child, .workspace-table-admin td:first-child { width: 32%; }
+.workspace-table-admin th:first-child, .workspace-table-admin td:first-child { width: 28%; }
+.workspace-token-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.72rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.workspace-token-pill-warning { color: var(--warning-light); background: rgba(245, 158, 11, 0.14); }
+.workspace-token-pill-danger { color: var(--danger-light); background: rgba(239, 68, 68, 0.14); }
+.workspace-token-pill-exempt { color: var(--text-muted); background: transparent; }
 .workspace-table select {
   padding: 7px 10px;
   border: 1px solid var(--border-strong);
