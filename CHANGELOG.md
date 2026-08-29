@@ -2,6 +2,17 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-29 - Medidor visual de uso de tokens (TokenUsageMeter)
+
+### Adicionado
+
+- `TokenUsageMeter`: substitui o texto simples "Uso de tokens hoje: X / Y" por um card com barra de progresso, percentual em destaque e 3 estados de cor (violeta/ciano normal, ambar >=70%, vermelho ao atingir a cota) -- consistente com o design system do redesign de 7 fases (fonte Manrope nos numeros, tokens de cor existentes).
+
+### Contexto
+
+- feedback direto da autora: o indicador anterior era so texto pequeno cinza, sem o acabamento visual do resto do app;
+- verificado com `npx tsc -b` e fluxo real via Playwright nos dois estados (uso baixo/normal e cota esgotada, este ultimo simulado com uma invocacao semeada direto no banco).
+
 ## 2026-08-29 - Confirma o limite de tokens/dia contra o preco real do modelo pago
 
 ### Contexto

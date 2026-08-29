@@ -544,8 +544,27 @@
 
 .workspace-execute-form { display: grid; gap: 14px; margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border-subtle); }
 .workspace-execute-form .workspace-primary-action { justify-self: start; }
-.workspace-token-usage { color: var(--text-muted); font-size: 0.72rem; }
-.workspace-token-usage-exhausted { color: var(--danger-light); font-weight: 600; }
+.workspace-token-meter {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-input);
+}
+.workspace-token-meter-header { display: flex; align-items: baseline; justify-content: space-between; color: var(--text-tertiary); font-size: 0.72rem; }
+.workspace-token-meter-header strong { font-family: var(--font-heading); font-size: 0.88rem; color: var(--text-primary); }
+.workspace-token-meter-track { height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.workspace-token-meter-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.3s ease, background 0.3s ease; }
+.workspace-token-meter small { color: var(--text-muted); font-size: 0.68rem; }
+
+.workspace-token-meter-warning .workspace-token-meter-fill { background: linear-gradient(90deg, var(--warning), var(--warning-light)); }
+.workspace-token-meter-warning .workspace-token-meter-header strong { color: var(--warning-light); }
+.workspace-token-meter-warning { border-color: rgba(245, 158, 11, 0.28); }
+
+.workspace-token-meter-danger .workspace-token-meter-fill { background: var(--danger); }
+.workspace-token-meter-danger .workspace-token-meter-header strong { color: var(--danger-light); }
+.workspace-token-meter-danger { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.06); }
 
 .workspace-execution { display: grid; gap: 16px; margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border-subtle); }
 .workspace-execution-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }

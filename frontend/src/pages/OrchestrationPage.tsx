@@ -6,6 +6,7 @@ import { llmApi } from '../api/llmApi'
 import { OrchestrationDetail, orchestrationApi } from '../api/orchestrationApi'
 import { ExecutionResultPanel } from '../components/orchestration/ExecutionResultPanel'
 import { StatusBadge } from '../components/orchestration/StatusBadge'
+import { TokenUsageMeter } from '../components/orchestration/TokenUsageMeter'
 
 export function OrchestrationPage() {
   const { traceId = '' } = useParams()
@@ -171,11 +172,7 @@ export function OrchestrationPage() {
                   </select>
                   <small>Define qual modelo o Orquestrador usa para planejar e acionar as Agent Skills.</small>
                 </label>
-                {tokenUsage && (
-                  <small className={`workspace-token-usage${tokenUsage.used >= tokenUsage.limit ? ' workspace-token-usage-exhausted' : ''}`}>
-                    Uso de tokens hoje: {tokenUsage.used.toLocaleString('pt-BR')} / {tokenUsage.limit.toLocaleString('pt-BR')}
-                  </small>
-                )}
+                {tokenUsage && <TokenUsageMeter used={tokenUsage.used} limit={tokenUsage.limit} />}
                 {executionError && <div className="alert alert-error">{executionError}</div>}
                 <button
                   className="workspace-primary-action"
