@@ -2,6 +2,24 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-26 - Redesign do frontend, fase 4: wizard de Nova Solicitacao
+
+### Adicionado
+
+- Formulario de Nova Solicitacao reescrito como wizard guiado de 3 etapas (Identificacao -> Problema & objetivo -> Contexto & restricoes), com stepper visual, validacao por etapa e navegacao Voltar/Continuar preservando os dados ja preenchidos.
+- Painel de orientacao lateral: checklist de contexto ao vivo (pendente/atual/concluido) e caixa de dica especifica por etapa.
+- Chips de sugestao no campo Contexto tecnico (Modulos, Tecnologias, Dependencias, Comportamento esperado) e campo Restricoes convertido em input de tags removiveis.
+
+### Corrigido
+
+- Checklist "Restricoes informadas" aparecia marcado como concluido logo na etapa 1, porque o campo de restricoes vem pre-preenchido com um valor padrao ("Nao executar alteracoes automaticamente") herdado do formulario anterior -- os itens da etapa 3 agora so avaliam seu estado quando o usuario de fato chega nela.
+
+### Contexto
+
+- quarta de 7 fases do redesign de frontend; **Contexto tecnico continua opcional** (nao obrigatorio como sugere a especificacao) para preservar o comportamento real do backend: uma solicitacao sem contexto suficiente e roteada para "Aguardando contexto" em vez de bloquear o envio -- esse fluxo ja e demonstrado nas fases 2 e 3;
+- campo "Tipo de solicitacao" da especificacao (chips Duvida tecnica/Bug/Nova funcionalidade/...) foi omitido: nao existe campo correspondente em `CreateTechnicalRequestInput` no backend, e adicionar um controle que nao persiste nada seria enganoso;
+- verificado com `npx tsc -b`, rebuild Docker e fluxo real via Playwright cobrindo as 3 etapas, validacao bloqueando avanco com titulo vazio, chip de sugestao de contexto, tags de restricao, volta preservando dados, e envio final gerando Trace ID.
+
 ## 2026-08-26 - Redesign do frontend, fase 3: Orquestracoes (historico)
 
 ### Adicionado
