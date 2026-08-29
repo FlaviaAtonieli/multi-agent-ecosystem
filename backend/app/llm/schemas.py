@@ -50,6 +50,8 @@ class LLMStatusRead(BaseModel):
     requests_per_hour_technician: int
     store_provider_response: bool
     store_result_content: bool
+    daily_token_limit_per_user: int
+    tokens_used_today: int
 
 
 class LLMPlanResponse(BaseModel):

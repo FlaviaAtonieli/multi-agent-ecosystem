@@ -16,6 +16,7 @@ export function OrchestrationPage() {
 
   const [allowedModels, setAllowedModels] = useState<string[]>([])
   const [selectedModel, setSelectedModel] = useState('')
+  const [tokenUsage, setTokenUsage] = useState<{ used: number; limit: number } | null>(null)
   const [executing, setExecuting] = useState(false)
   const [executionError, setExecutionError] = useState('')
   const [execution, setExecution] = useState<OrchestrationExecutionResult | null>(null)
@@ -40,6 +41,9 @@ export function OrchestrationPage() {
       .then((status) => {
         setAllowedModels(status.allowed_models)
         setSelectedModel(status.model)
+        if (status.daily_token_limit_per_user > 0) {
+          setTokenUsage({ used: status.tokens_used_today, limit: status.daily_token_limit_per_user })
+        }
       })
       .catch(() => {
         // Sem acesso ao status do LLM (ex.: perfil sem permissão) -- o backend
@@ -56,6 +60,14 @@ export function OrchestrationPage() {
       const result = await agentSkillsApi.execute(detail.technical_request.id, selectedModel || null)
       setExecution(result)
       await load()
+      llmApi
+        .status()
+        .then((status) => {
+          if (status.daily_token_limit_per_user > 0) {
+            setTokenUsage({ used: status.tokens_used_today, limit: status.daily_token_limit_per_user })
+          }
+        })
+        .catch(() => undefined)
       setSuccessMessage(
         result.verdict.approved
           ? 'Orquestração executada e aprovada pelo Quality Gate.'
@@ -159,8 +171,18 @@ export function OrchestrationPage() {
                   </select>
                   <small>Define qual modelo o Orquestrador usa para planejar e acionar as Agent Skills.</small>
                 </label>
+                {tokenUsage && (
+                  <small className={`workspace-token-usage${tokenUsage.used >= tokenUsage.limit ? ' workspace-token-usage-exhausted' : ''}`}>
+                    Uso de tokens hoje: {tokenUsage.used.toLocaleString('pt-BR')} / {tokenUsage.limit.toLocaleString('pt-BR')}
+                  </small>
+                )}
                 {executionError && <div className="alert alert-error">{executionError}</div>}
-                <button className="workspace-primary-action" type="button" onClick={handleExecute} disabled={executing}>
+                <button
+                  className="workspace-primary-action"
+                  type="button"
+                  onClick={handleExecute}
+                  disabled={executing || Boolean(tokenUsage && tokenUsage.used >= tokenUsage.limit)}
+                >
                   {executing ? 'Executando…' : 'Executar orquestração'}
                 </button>
               </div>

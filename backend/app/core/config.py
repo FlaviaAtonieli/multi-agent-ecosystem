@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     llm_max_output_tokens: int = 1200
     llm_max_input_chars: int = 12000
     llm_requests_per_hour_technician: int = 20
+    # Caps total input+output tokens (LLMInvocation.input_tokens + output_tokens,
+    # summed across every "COMPLETED" call the same day) per non-admin user, to
+    # protect the account's OpenRouter subscription from a single user's usage.
+    # 0 disables the cap. ADMIN accounts are exempt (trusted operator).
+    llm_daily_token_limit_per_user: int = 150_000
 
     # Privacy-safe defaults.
     llm_store_provider_response: bool = False
@@ -123,6 +128,8 @@ class Settings(BaseSettings):
             raise ValueError("LLM_MAX_OUTPUT_TOKENS deve ser maior ou igual a 128.")
         if self.llm_requests_per_hour_technician < 1:
             raise ValueError("LLM_REQUESTS_PER_HOUR_TECHNICIAN deve ser maior que zero.")
+        if self.llm_daily_token_limit_per_user < 0:
+            raise ValueError("LLM_DAILY_TOKEN_LIMIT_PER_USER não pode ser negativo.")
 
         if not self.llm_enabled:
             return self
