@@ -2,6 +2,14 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-29 - Confirma o limite de tokens/dia contra o preco real do modelo pago
+
+### Contexto
+
+- a autora perguntou de onde veio o numero 150000 -- documentado em `docs/integrations/model-provider.md`: e uma conta a partir dos tetos ja configurados (`LLM_MAX_INPUT_CHARS`/`LLM_MAX_OUTPUT_TOKENS`), nao uma calibracao de custo real;
+- verificado contra o preco real do unico modelo pago da allowlist (`openai/gpt-5-mini`: $0,25/milhao tokens de entrada, $2,00/milhao de saida, fonte OpenRouter) -- no pior caso, 150000 tokens/dia custam ~US$0,30/dia por usuario; com US$10 de credito na conta, dura mais de 30 dias mesmo com varios usuarios testando;
+- decisao explicita da autora: manter o valor como esta, ja que a margem e confortavel.
+
 ## 2026-08-29 - Cota diaria de tokens por usuario
 
 ### Adicionado
