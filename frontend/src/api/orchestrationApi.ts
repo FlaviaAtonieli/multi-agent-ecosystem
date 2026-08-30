@@ -21,6 +21,7 @@ export type TechnicalRequest = {
   objective: string
   context: string | null
   restrictions: string[]
+  requested_domains: string[]
   status: RequestStatus
   created_at: string
   updated_at: string
