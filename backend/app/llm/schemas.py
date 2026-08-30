@@ -3,6 +3,24 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
+def strict_json_schema(model: type[BaseModel]) -> dict:
+    """Builds a JSON schema compliant with OpenAI's strict Structured Outputs mode.
+
+    Pydantic only lists a field in "required" when it has no Python-level
+    default -- but strict mode additionally requires every key in "properties"
+    to appear in "required" (optionality is expressed via the value's type/
+    default content, not by omission). Skipping this made a real, genuinely
+    OpenAI-backed model (openai/gpt-5-mini) reject every call outright with a
+    400 "invalid_json_schema" before any generation happened; a lenient/free
+    OpenRouter model tolerated the same malformed schema, which is why this
+    went unnoticed until a strict-mode model was actually exercised end-to-end.
+    """
+    schema = model.model_json_schema()
+    schema["required"] = list(schema["properties"].keys())
+    schema["additionalProperties"] = False
+    return schema
+
+
 class LLMPlanRequest(BaseModel):
     technical_request_id: str
     trace_id: str

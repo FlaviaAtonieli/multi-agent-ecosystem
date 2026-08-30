@@ -4,9 +4,9 @@ from pydantic import ValidationError
 
 from app.core.config import Settings
 from app.core.retry import retry_on_transient_error
-from app.llm.base import LLMProvider
+from app.llm.base import LLMEmptyResponseError, LLMProvider
 from app.llm.prompts import TECHNICAL_PLANNER_INSTRUCTIONS, build_technical_planner_prompt
-from app.llm.schemas import LLMPlan, LLMPlanRequest, LLMProviderResult, LLMUsage
+from app.llm.schemas import LLMPlan, LLMPlanRequest, LLMProviderResult, LLMUsage, strict_json_schema
 
 
 class OpenRouterLLMProvider(LLMProvider):
@@ -43,7 +43,7 @@ class OpenRouterLLMProvider(LLMProvider):
     ) -> LLMProviderResult:
         from openai import APIConnectionError, APITimeoutError, RateLimitError
 
-        schema = LLMPlan.model_json_schema()
+        schema = strict_json_schema(LLMPlan)
         prompt = build_technical_planner_prompt(request)
 
         def _call() -> LLMProviderResult:
@@ -69,8 +69,20 @@ class OpenRouterLLMProvider(LLMProvider):
                 },
             )
 
-            message = response.choices[0].message.content
+            choice = response.choices[0]
+            message = choice.message.content
             if not message:
+                if choice.finish_reason == "length":
+                    # Reasoning models (e.g. openai/gpt-5-mini) spend part of
+                    # max_tokens on hidden chain-of-thought before writing
+                    # visible output; a tight budget or a rich schema can burn
+                    # the whole budget on reasoning alone. Not worth retrying:
+                    # the same prompt/budget fails identically every attempt.
+                    raise LLMEmptyResponseError(
+                        "O modelo esgotou o orçamento de tokens de saída "
+                        "(LLM_MAX_OUTPUT_TOKENS) processando raciocínio interno, "
+                        "antes de gerar conteúdo visível."
+                    )
                 raise RuntimeError("O provedor OpenRouter retornou uma resposta vazia.")
             # A free/shared model occasionally ignores the strict json_schema and
             # returns valid-but-incomplete JSON (missing required fields) instead

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.roles import ROLE_ADMIN
 from app.core.security import utc_now
+from app.llm.base import LLMEmptyResponseError
 from app.llm.factory import create_llm_provider
 from app.llm.schemas import LLMPlanRequest, LLMPlanResponse
 from app.llm.security import content_sha256, sanitize_content
@@ -245,8 +246,10 @@ def generate_technical_plan(
         )
     except Exception as exc:
         latency_ms = round((time.perf_counter() - started) * 1000)
+        is_empty_response = isinstance(exc, LLMEmptyResponseError)
+        error_code = "EMPTY_RESPONSE_TOKEN_BUDGET" if is_empty_response else "PROVIDER_ERROR"
         invocation.status = "FAILED"
-        invocation.error_code = "PROVIDER_ERROR"
+        invocation.error_code = error_code
         invocation.latency_ms = latency_ms
         invocation.completed_at = utc_now()
         append_event(
@@ -255,11 +258,17 @@ def generate_technical_plan(
             event_type="LLM_INVOCATION_FAILED",
             actor="TECHNICAL_PLANNER",
             title="Falha no planejamento por modelo",
-            message="A chamada falhou e nenhuma ação automática foi executada.",
+            message=(
+                "O modelo esgotou o orçamento de tokens de saída com raciocínio "
+                "interno antes de gerar conteúdo visível. Tente novamente ou "
+                "escolha outro modelo."
+                if is_empty_response
+                else "A chamada falhou e nenhuma ação automática foi executada."
+            ),
             payload={
                 "llm_call_id": llm_call_id,
-                "error_code": "PROVIDER_ERROR",
-                "retryable": True,
+                "error_code": error_code,
+                "retryable": not is_empty_response,
             },
         )
         db.commit()

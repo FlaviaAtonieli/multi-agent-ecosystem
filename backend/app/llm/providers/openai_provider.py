@@ -3,7 +3,7 @@ import json
 from app.core.config import Settings
 from app.llm.base import LLMProvider
 from app.llm.prompts import TECHNICAL_PLANNER_INSTRUCTIONS, build_technical_planner_prompt
-from app.llm.schemas import LLMPlan, LLMPlanRequest, LLMProviderResult, LLMUsage
+from app.llm.schemas import LLMPlan, LLMPlanRequest, LLMProviderResult, LLMUsage, strict_json_schema
 
 
 class OpenAILLMProvider(LLMProvider):
@@ -31,7 +31,7 @@ class OpenAILLMProvider(LLMProvider):
         llm_call_id: str,
         model: str,
     ) -> LLMProviderResult:
-        schema = LLMPlan.model_json_schema()
+        schema = strict_json_schema(LLMPlan)
         prompt = build_technical_planner_prompt(request)
 
         response = self.client.responses.create(

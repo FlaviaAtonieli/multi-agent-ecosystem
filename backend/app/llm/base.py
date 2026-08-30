@@ -3,6 +3,13 @@ from abc import ABC, abstractmethod
 from app.llm.schemas import LLMPlanRequest, LLMProviderResult
 
 
+class LLMEmptyResponseError(RuntimeError):
+    """Raised when the provider returns no content because it exhausted
+    LLM_MAX_OUTPUT_TOKENS on hidden reasoning tokens before writing any visible
+    output (finish_reason="length") -- distinct from a transient empty response,
+    since retrying the identical request/budget fails the same way every time."""
+
+
 class LLMProvider(ABC):
     name: str
 
