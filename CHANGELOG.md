@@ -2,6 +2,19 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-30 - Corrige navegacao colada no cabecalho em telas medias (<=820px)
+
+### Corrigido
+
+- `frontend/src/styles/workspace.css`: no breakpoint `max-width: 820px`, a barra lateral vira uma navegacao horizontal (`.workspace-sidebar { position: static }`), mas ficava sem nenhuma separacao visual do cabecalho logo abaixo -- a borda direita da versao desktop nao faz sentido nesse layout horizontal. Adicionada `border-bottom` + sombra sutil no lugar da borda direita, e o cabecalho deixa de ser `position: sticky` nesse breakpoint (evita que ele deslize por cima da navegacao ao rolar a pagina, ja que os dois agora sao blocos normais empilhados na mesma coluna).
+
+### Contexto
+
+- reportado pela autora com um print real do Pedro (revisor) testando em uma largura de tela media -- a navegacao aparecia "em cima do cabecalho";
+- reproduzido de proposito com Playwright em varias larguras (700-1000px) pra achar o breakpoint exato (820px) antes de corrigir;
+- verificado visualmente nas mesmas larguras apos a correcao, incluindo com a pagina rolada, sem sobreposicao em nenhum caso;
+- `npx tsc -b` limpo (mudanca e so CSS).
+
 ## 2026-08-30 - Corrige falha sistematica do openai/gpt-5-mini (schema JSON em modo strict)
 
 ### Corrigido
