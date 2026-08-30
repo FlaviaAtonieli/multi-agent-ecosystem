@@ -176,6 +176,7 @@ docker compose build frontend --no-cache
 - [Evidência de validação da base](docs/validation/evidence/2026-08-foundation-validation.md)
 - [Evidência de extensibilidade plug-and-play](docs/validation/evidence/2026-08-plug-and-play-extensibility.md)
 - [Primeira medição de KPIs (M7)](docs/validation/evidence/2026-08-m7-kpi-measurement.md)
+- [Validação de qualidade do RAG](docs/validation/evidence/2026-08-30-rag-quality-validation.md)
 - [Histórico de mudanças](CHANGELOG.md)
 
 O RFC acadêmico permanece como a especificação principal do projeto. Os documentos deste repositório registram o que já foi implementado e as limitações conhecidas da PoC.
