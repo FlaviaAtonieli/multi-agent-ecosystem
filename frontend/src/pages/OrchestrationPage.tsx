@@ -1,10 +1,12 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { agentSkillsApi, OrchestrationExecutionResult } from '../api/agentSkillsApi'
+import { AgentSkillDomain, agentSkillsApi, FollowUpExchange, OrchestrationExecutionResult } from '../api/agentSkillsApi'
 import { ApiError } from '../api/http'
 import { llmApi } from '../api/llmApi'
 import { AgentSkillInvocationResult, OrchestrationDetail, orchestrationApi } from '../api/orchestrationApi'
 import { ExecutionResultPanel } from '../components/orchestration/ExecutionResultPanel'
+import { FollowUpExchangeCard } from '../components/orchestration/FollowUpExchangeCard'
+import { FollowUpForm } from '../components/orchestration/FollowUpForm'
 import { StatusBadge } from '../components/orchestration/StatusBadge'
 import { TokenUsageMeter } from '../components/orchestration/TokenUsageMeter'
 
@@ -12,6 +14,7 @@ export function OrchestrationPage() {
   const { traceId = '' } = useParams()
   const [detail, setDetail] = useState<OrchestrationDetail | null>(null)
   const [pastSkillResults, setPastSkillResults] = useState<AgentSkillInvocationResult[]>([])
+  const [followUps, setFollowUps] = useState<FollowUpExchange[]>([])
   const [context, setContext] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -23,6 +26,8 @@ export function OrchestrationPage() {
   const [executionError, setExecutionError] = useState('')
   const [execution, setExecution] = useState<OrchestrationExecutionResult | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
+  const [askingFollowUp, setAskingFollowUp] = useState(false)
+  const [followUpError, setFollowUpError] = useState('')
 
   const load = useCallback(async () => {
     try {
@@ -34,11 +39,24 @@ export function OrchestrationPage() {
           .getSkillResults(traceId)
           .then(setPastSkillResults)
           .catch(() => setPastSkillResults([]))
+        orchestrationApi
+          .getFollowUps(traceId)
+          .then(setFollowUps)
+          .catch(() => setFollowUps([]))
       }
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Não foi possível carregar a orquestração.')
     }
   }, [traceId])
+
+  const participatingDomains = useMemo(() => {
+    const domains: AgentSkillDomain[] = execution
+      ? execution.results.map((result) => result.agente_emissor.dominio)
+      : pastSkillResults
+          .map((item) => item.result?.agente_emissor.dominio)
+          .filter((domain): domain is AgentSkillDomain => Boolean(domain))
+    return [...new Set(domains)]
+  }, [execution, pastSkillResults])
 
   useEffect(() => {
     load()
@@ -86,6 +104,33 @@ export function OrchestrationPage() {
       setExecutionError(caught instanceof ApiError ? caught.message : 'Não foi possível executar a orquestração.')
     } finally {
       setExecuting(false)
+    }
+  }
+
+  async function handleAskFollowUp(question: string, targetDomain: string | null) {
+    if (!detail) return
+    setAskingFollowUp(true)
+    setFollowUpError('')
+    try {
+      const exchange = await agentSkillsApi.askFollowUp(
+        detail.technical_request.id,
+        question,
+        targetDomain as AgentSkillDomain | null,
+        selectedModel || null,
+      )
+      setFollowUps((current) => [...current, exchange])
+      llmApi
+        .status()
+        .then((status) => {
+          if (status.daily_token_limit_per_user > 0) {
+            setTokenUsage({ used: status.tokens_used_today, limit: status.daily_token_limit_per_user })
+          }
+        })
+        .catch(() => undefined)
+    } catch (caught) {
+      setFollowUpError(caught instanceof ApiError ? caught.message : 'Não foi possível registrar a pergunta.')
+    } finally {
+      setAskingFollowUp(false)
     }
   }
 
@@ -210,6 +255,20 @@ export function OrchestrationPage() {
                   }}
                 />
               )
+            )}
+
+            {detail.technical_request.consolidated_response && (
+              <div className="workspace-follow-up-section">
+                {followUps.map((exchange) => (
+                  <FollowUpExchangeCard key={exchange.id} exchange={exchange} />
+                ))}
+                <FollowUpForm
+                  participatingDomains={participatingDomains}
+                  onAsk={handleAskFollowUp}
+                  submitting={askingFollowUp}
+                  error={followUpError}
+                />
+              </div>
             )}
           </article>
 

@@ -145,3 +145,34 @@ class AgentSkillInvocationResultRead(BaseModel):
     confidence_level: str | None
     result: SkillToolResult | None
     created_at: datetime
+
+
+class FollowUpQuestionCreate(BaseModel):
+    """A question asked after the initial execution, continuing the same
+    orchestration chain (trace_id). target_domain=None broadcasts to every
+    domain the original execution used; set it to aim the question at one
+    specific Agent Skill domain instead."""
+
+    question: str = Field(min_length=5, max_length=5_000)
+    target_domain: DomainLiteral | None = Field(default=None)
+    model: str | None = Field(default=None, max_length=200)
+
+    @field_validator("question")
+    @classmethod
+    def strip_question(cls, value: str) -> str:
+        return value.strip()
+
+
+class FollowUpExchangeRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    sequence_number: int
+    question: str
+    target_domain: str | None
+    synthesis: str
+    results: list[SkillToolResult]
+    overall_confidence_level: str
+    quality_gate_approved: bool
+    requires_human_review: bool
+    created_at: datetime

@@ -29,4 +29,10 @@ def build_technical_planner_prompt(request: LLMPlanRequest) -> str:
     if request.retrieved_context:
         lines.append(f"Trechos recuperados da base de conhecimento:\n{request.retrieved_context}")
 
+    if request.additional_question:
+        lines.append(
+            f"Pergunta de acompanhamento do usuário: {request.additional_question}. "
+            "Responda especificamente a essa pergunta, além do já analisado acima."
+        )
+
     return "\n".join(lines)

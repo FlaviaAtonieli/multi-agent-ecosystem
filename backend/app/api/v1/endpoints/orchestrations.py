@@ -4,9 +4,17 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.api.dependencies import get_current_session
 from app.core.database import get_db
-from app.models import AgentSkill, AgentSkillInvocation, AuthSession, OrchestrationEvent, TechnicalRequest
+from app.models import (
+    AgentSkill,
+    AgentSkillInvocation,
+    AuthSession,
+    FollowUpExchange,
+    OrchestrationEvent,
+    TechnicalRequest,
+)
 from app.schemas.orchestration import (
     AgentSkillInvocationResultRead,
+    FollowUpExchangeRead,
     OrchestrationDetail,
     OrchestrationEventRead,
 )
@@ -90,3 +98,19 @@ def get_orchestration_skill_results(
         )
         for invocation, skill_name in rows
     ]
+
+
+@router.get("/{trace_id}/follow-ups", response_model=list[FollowUpExchangeRead])
+def get_orchestration_follow_ups(
+    trace_id: str,
+    db: Session = Depends(get_db),
+    current_session: AuthSession = Depends(get_current_session),
+) -> list[FollowUpExchange]:
+    technical_request = find_by_trace_id(db, trace_id, current_session.user_id)
+    return list(
+        db.scalars(
+            select(FollowUpExchange)
+            .where(FollowUpExchange.technical_request_id == technical_request.id)
+            .order_by(FollowUpExchange.sequence_number.asc())
+        )
+    )

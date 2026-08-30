@@ -2,6 +2,7 @@ import json
 import time
 from uuid import uuid4
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.agent_catalog.mcp_client import SkillServerNotImplementedError, call_skill_tool
@@ -9,7 +10,14 @@ from app.agent_catalog.registry import list_active_skills, select_skills_for_dom
 from app.agent_catalog.tool_interface import SkillToolCall, SkillToolResult
 from app.core.security import utc_now
 from app.llm.security import content_sha256
-from app.models import AgentSkill, AgentSkillInvocation, ConsolidatedResponse, TechnicalRequest, User
+from app.models import (
+    AgentSkill,
+    AgentSkillInvocation,
+    ConsolidatedResponse,
+    FollowUpExchange,
+    TechnicalRequest,
+    User,
+)
 from app.quality_gate.service import QualityGateVerdict, evaluate
 from app.services.orchestration_service import RequestStatus, append_event
 
@@ -35,6 +43,29 @@ class ExecutionResult:
         self.consolidated_response = consolidated_response
 
 
+def _build_technical_synthesis(results: list[SkillToolResult]) -> str:
+    """Rule-based cross-agent synthesis, mirroring the Quality Gate's own
+    explicit, explainable approach — no second LLM pass to summarize the
+    summaries. Shared by the initial consolidation and every follow-up
+    exchange, so both render the same domain-tagged shape on the frontend."""
+    return (
+        " ".join(
+            f"[{result.agente_emissor.dominio}] {result.analise_estruturada.resumo_executivo}"
+            for result in results
+        )
+        if results
+        else "Nenhuma Agent Skill produziu resposta para consolidação."
+    )
+
+
+def _overall_confidence(results: list[SkillToolResult]) -> str:
+    return min(
+        (result.governanca.nivel_confianca for result in results),
+        key=lambda level: _CONFIDENCE_RANK[level],
+        default="BAIXO",
+    )
+
+
 def _consolidate(
     db: Session,
     *,
@@ -46,17 +77,9 @@ def _consolidate(
     """Builds the RFC §5.3 "Resposta Final Consolidada": a single synthesized
     answer distinct from each skill's partial response, satisfying RFC §5.5's
     criterion 5 ("diferenciar resposta parcial ... e resposta final
-    consolidada"). Rule-based, mirroring the Quality Gate's own explicit,
-    explainable approach — no second LLM pass to summarize the summaries.
+    consolidada").
     """
-    technical_synthesis = (
-        " ".join(
-            f"[{result.agente_emissor.dominio}] {result.analise_estruturada.resumo_executivo}"
-            for result in results
-        )
-        if results
-        else "Nenhuma Agent Skill produziu resposta para consolidação."
-    )
+    technical_synthesis = _build_technical_synthesis(results)
 
     risks: list[str] = []
     for result in results:
@@ -80,11 +103,7 @@ def _consolidate(
             "Revisão humana recomendada antes de aplicar as recomendações desta análise."
         )
 
-    overall_confidence_level = min(
-        (result.governanca.nivel_confianca for result in results),
-        key=lambda level: _CONFIDENCE_RANK[level],
-        default="BAIXO",
-    )
+    overall_confidence_level = _overall_confidence(results)
 
     consolidated = technical_request.consolidated_response or ConsolidatedResponse(
         technical_request_id=technical_request.id
@@ -127,6 +146,7 @@ async def _invoke_skill(
     technical_request: TechnicalRequest,
     user: User,
     requested_model: str | None = None,
+    additional_question: str | None = None,
 ) -> tuple[AgentSkillInvocation, SkillToolResult | None]:
     tool_call = SkillToolCall(
         trace_id=technical_request.trace_id,
@@ -135,6 +155,7 @@ async def _invoke_skill(
         agent_skill_id=skill.id,
         analises_requeridas=technical_request.requested_domains,
         requested_model=requested_model,
+        additional_question=additional_question,
     )
     input_hash = content_sha256(tool_call.model_dump_json())
     invocation_id = str(uuid4())
@@ -319,3 +340,107 @@ async def execute_orchestration_step(
         invocations=invocations,
         consolidated_response=consolidated_response,
     )
+
+
+async def ask_follow_up_question(
+    db: Session,
+    *,
+    technical_request: TechnicalRequest,
+    user: User,
+    question: str,
+    target_domain: str | None = None,
+    requested_model: str | None = None,
+) -> FollowUpExchange:
+    """Continues the same orchestration chain (trace_id) after the initial
+    execution: the user can keep asking questions, either broadcast to every
+    domain the original run used (target_domain=None) or aimed at one
+    specific Agent Skill domain. Every round — even a single agent answering —
+    still goes through the same Quality Gate as the initial execution (RF11),
+    and is kept as its own row so the conversation history survives (unlike
+    ConsolidatedResponse, one per TechnicalRequest)."""
+    skills = (
+        select_skills_for_domain(db, domain=target_domain)
+        if target_domain
+        else _resolve_target_skills(db, technical_request)
+    )
+    if not skills:
+        raise NoAgentSkillsAvailableError(
+            "Nenhuma Agent Skill ativa disponível para responder a esta pergunta."
+        )
+
+    append_event(
+        db,
+        technical_request,
+        event_type="FOLLOW_UP_QUESTION_ASKED",
+        actor="USER",
+        title="Pergunta de acompanhamento registrada",
+        message=question,
+        payload={"target_domain": target_domain},
+    )
+    db.commit()
+
+    invocations: list[AgentSkillInvocation] = []
+    results: list[SkillToolResult] = []
+    for skill in skills:
+        invocation, result = await _invoke_skill(
+            db,
+            skill=skill,
+            technical_request=technical_request,
+            user=user,
+            requested_model=requested_model,
+            additional_question=question,
+        )
+        invocations.append(invocation)
+        if result is not None:
+            results.append(result)
+
+    verdict = evaluate(results)
+    append_event(
+        db,
+        technical_request,
+        event_type="QUALITY_GATE_EVALUATED",
+        actor="ADVISORY_AGENT",
+        title="Quality Gate avaliado (pergunta de acompanhamento)",
+        message="; ".join(verdict.reasons) if verdict.reasons else "Avaliação concluída.",
+        payload=json.loads(verdict.model_dump_json()),
+    )
+
+    next_sequence = (
+        db.scalar(
+            select(func.coalesce(func.max(FollowUpExchange.sequence_number), 0)).where(
+                FollowUpExchange.technical_request_id == technical_request.id
+            )
+        )
+        or 0
+    ) + 1
+
+    exchange = FollowUpExchange(
+        technical_request_id=technical_request.id,
+        trace_id=technical_request.trace_id,
+        asked_by_id=user.id,
+        sequence_number=next_sequence,
+        question=question,
+        target_domain=target_domain,
+        synthesis=_build_technical_synthesis(results),
+        results=[result.model_dump(mode="json") for result in results],
+        overall_confidence_level=_overall_confidence(results),
+        quality_gate_approved=verdict.approved,
+        requires_human_review=verdict.requires_human_review,
+    )
+    db.add(exchange)
+    append_event(
+        db,
+        technical_request,
+        event_type="FOLLOW_UP_RESPONSE_RECEIVED",
+        actor="ORCHESTRATOR",
+        title="Resposta de acompanhamento consolidada",
+        message=(
+            f"{len(results)} resposta(s) recebida(s) para a pergunta de acompanhamento "
+            f"(confiança geral: {exchange.overall_confidence_level})."
+        ),
+        payload={"target_domain": target_domain, "sequence_number": next_sequence},
+    )
+
+    db.commit()
+    db.refresh(exchange)
+    return exchange

@@ -31,6 +31,7 @@ class SkillToolCall(BaseModel):
     agent_skill_id: str
     analises_requeridas: list[str] = Field(default_factory=list)
     requested_model: str | None = None
+    additional_question: str | None = None
 
 
 class AgenteEmissor(BaseModel):

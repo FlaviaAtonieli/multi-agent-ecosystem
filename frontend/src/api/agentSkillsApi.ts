@@ -76,6 +76,19 @@ export type OrchestrationExecutionResult = {
   consolidated_response: ConsolidatedResponse
 }
 
+export type FollowUpExchange = {
+  id: string
+  sequence_number: number
+  question: string
+  target_domain: AgentSkillDomain | null
+  synthesis: string
+  results: SkillToolResult[]
+  overall_confidence_level: ConfidenceLevel
+  quality_gate_approved: boolean
+  requires_human_review: boolean
+  created_at: string
+}
+
 export const agentSkillsApi = {
   listSkills: (onlyActive = false) =>
     apiRequest<AgentSkill[]>(`/agent-skills?only_active=${onlyActive}`),
@@ -94,6 +107,14 @@ export const agentSkillsApi = {
       {
         method: 'POST',
         body: JSON.stringify({ model }),
+      },
+    ),
+  askFollowUp: (requestId: string, question: string, targetDomain: AgentSkillDomain | null, model: string | null) =>
+    apiRequest<FollowUpExchange>(
+      `/agent-skills/requests/${encodeURIComponent(requestId)}/ask`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ question, target_domain: targetDomain, model }),
       },
     ),
 }

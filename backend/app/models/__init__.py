@@ -3,6 +3,7 @@ from app.models.agent_skill_invocation import AgentSkillInvocation
 from app.models.audit_log import AuditLog
 from app.models.auth_session import AuthSession
 from app.models.consolidated_response import ConsolidatedResponse
+from app.models.follow_up_exchange import FollowUpExchange
 from app.models.knowledge_chunk import KnowledgeChunk
 from app.models.llm_invocation import LLMInvocation
 from app.models.orchestration_event import OrchestrationEvent
@@ -16,6 +17,7 @@ __all__ = [
     "AuditLog",
     "AuthSession",
     "ConsolidatedResponse",
+    "FollowUpExchange",
     "KnowledgeChunk",
     "LLMInvocation",
     "OrchestrationEvent",
