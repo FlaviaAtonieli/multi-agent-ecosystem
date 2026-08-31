@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.agent_catalog.contracts import SkillToolResult
 from app.agent_manifest.manifest import DomainLiteral
 
 
@@ -131,3 +132,16 @@ class OrchestrationDetail(BaseModel):
     technical_request: TechnicalRequestRead
     run: OrchestrationRunRead
     events: list[OrchestrationEventRead]
+
+
+class AgentSkillInvocationResultRead(BaseModel):
+    """Persisted per-skill result (AgentSkillInvocation.result_payload), so the
+    detailed breakdown survives a page reload -- not just the ephemeral response
+    of POST /agent-skills/requests/{id}/execute."""
+
+    id: str
+    agent_skill_name: str
+    status: str
+    confidence_level: str | None
+    result: SkillToolResult | None
+    created_at: datetime

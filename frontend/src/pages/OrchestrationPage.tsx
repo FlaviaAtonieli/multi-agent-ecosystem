@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { agentSkillsApi, OrchestrationExecutionResult } from '../api/agentSkillsApi'
 import { ApiError } from '../api/http'
 import { llmApi } from '../api/llmApi'
-import { OrchestrationDetail, orchestrationApi } from '../api/orchestrationApi'
+import { AgentSkillInvocationResult, OrchestrationDetail, orchestrationApi } from '../api/orchestrationApi'
 import { ExecutionResultPanel } from '../components/orchestration/ExecutionResultPanel'
 import { StatusBadge } from '../components/orchestration/StatusBadge'
 import { TokenUsageMeter } from '../components/orchestration/TokenUsageMeter'
@@ -11,6 +11,7 @@ import { TokenUsageMeter } from '../components/orchestration/TokenUsageMeter'
 export function OrchestrationPage() {
   const { traceId = '' } = useParams()
   const [detail, setDetail] = useState<OrchestrationDetail | null>(null)
+  const [pastSkillResults, setPastSkillResults] = useState<AgentSkillInvocationResult[]>([])
   const [context, setContext] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -25,8 +26,15 @@ export function OrchestrationPage() {
 
   const load = useCallback(async () => {
     try {
-      setDetail(await orchestrationApi.getOrchestration(traceId))
+      const orchestration = await orchestrationApi.getOrchestration(traceId)
+      setDetail(orchestration)
       setError('')
+      if (orchestration.technical_request.consolidated_response) {
+        orchestrationApi
+          .getSkillResults(traceId)
+          .then(setPastSkillResults)
+          .catch(() => setPastSkillResults([]))
+      }
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Não foi possível carregar a orquestração.')
     }
@@ -189,11 +197,18 @@ export function OrchestrationPage() {
               <ExecutionResultPanel execution={execution} />
             ) : (
               detail.technical_request.consolidated_response && (
-                <div className="workspace-execution">
-                  <p className="workspace-execution-synthesis">
-                    {detail.technical_request.consolidated_response.technical_synthesis}
-                  </p>
-                </div>
+                <ExecutionResultPanel
+                  execution={{
+                    results: pastSkillResults.map((item) => item.result).filter((item) => item !== null),
+                    verdict: {
+                      approved: detail.technical_request.consolidated_response.quality_gate_approved,
+                      requires_human_review: detail.technical_request.consolidated_response.requires_human_review,
+                      reasons: [],
+                    },
+                    invocations_count: pastSkillResults.length,
+                    consolidated_response: detail.technical_request.consolidated_response,
+                  }}
+                />
               )
             )}
           </article>

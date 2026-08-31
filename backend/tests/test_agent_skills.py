@@ -192,6 +192,16 @@ def test_execute_orchestration_step_runs_skill_and_quality_gate(client: TestClie
     detail_response = client.get(f"/api/v1/requests/{technical_request['id']}")
     assert detail_response.json()["status"] in {"COMPLETED", "VALIDATING"}
 
+    skill_results_response = client.get(
+        f"/api/v1/orchestrations/{technical_request['trace_id']}/skill-results"
+    )
+    assert skill_results_response.status_code == 200
+    skill_results = skill_results_response.json()
+    assert len(skill_results) == 1
+    assert skill_results[0]["status"] == "COMPLETED"
+    assert skill_results[0]["result"]["agente_emissor"]["dominio"] == "codigo_legado"
+    assert skill_results[0]["result"]["analise_estruturada"]["resumo_executivo"]
+
 
 def test_execute_orchestration_step_runs_three_skills_in_one_analysis(
     client: TestClient, monkeypatch

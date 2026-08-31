@@ -1,5 +1,5 @@
 import { apiRequest } from './http'
-import { ConsolidatedResponse } from './agentSkillsApi'
+import { ConsolidatedResponse, SkillToolResult } from './agentSkillsApi'
 
 export type RequestStatus =
   | 'RECEIVED'
@@ -54,6 +54,15 @@ export type OrchestrationDetail = {
   events: OrchestrationEvent[]
 }
 
+export type AgentSkillInvocationResult = {
+  id: string
+  agent_skill_name: string
+  status: string
+  confidence_level: string | null
+  result: SkillToolResult | null
+  created_at: string
+}
+
 export type CreateTechnicalRequestInput = {
   title: string
   problem: string
@@ -71,6 +80,8 @@ export const orchestrationApi = {
     }),
   getOrchestration: (traceId: string) =>
     apiRequest<OrchestrationDetail>(`/orchestrations/${encodeURIComponent(traceId)}`),
+  getSkillResults: (traceId: string) =>
+    apiRequest<AgentSkillInvocationResult[]>(`/orchestrations/${encodeURIComponent(traceId)}/skill-results`),
   addContext: (requestId: string, context: string) =>
     apiRequest<TechnicalRequest>(`/requests/${encodeURIComponent(requestId)}/context`, {
       method: 'POST',
