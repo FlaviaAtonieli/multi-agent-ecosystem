@@ -54,3 +54,9 @@ class TechnicalRequest(Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
+    follow_up_exchanges = relationship(
+        "FollowUpExchange",
+        back_populates="technical_request",
+        cascade="all, delete-orphan",
+        order_by="FollowUpExchange.sequence_number",
+    )

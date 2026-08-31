@@ -16,6 +16,10 @@ class LLMPlanRequest(BaseModel):
     # call is scoped to, when invoked on behalf of one skill (None for the raw
     # /llm/plan endpoint, which has no single skill to scope to).
     analysis_domain_label: str | None = None
+    # Set only for a follow-up exchange (POST .../ask) -- appended to the
+    # prompt so the model addresses it specifically, on top of the original
+    # problem/objective/context.
+    additional_question: str | None = None
 
 
 class LLMPlan(BaseModel):

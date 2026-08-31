@@ -32,8 +32,10 @@ from app.schemas.agent_skill import (
     ConsolidatedResponseRead,
     OrchestrationExecutionRead,
 )
+from app.schemas.orchestration import FollowUpExchangeRead, FollowUpQuestionCreate
 from app.services.agent_skill_orchestration_service import (
     NoAgentSkillsAvailableError,
+    ask_follow_up_question,
     execute_orchestration_step,
 )
 from app.services.audit_service import record_audit
@@ -53,6 +55,24 @@ def _find_qualified_request(db: Session, request_id: str, user: User) -> Technic
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="A solicitação precisa estar qualificada antes da execução das Agent Skills.",
+        )
+    return technical_request
+
+
+def _find_executed_request(db: Session, request_id: str, user: User) -> TechnicalRequest:
+    query = select(TechnicalRequest).where(TechnicalRequest.id == request_id)
+    if user.role != "ADMIN":
+        query = query.where(TechnicalRequest.owner_id == user.id)
+    technical_request = db.scalar(query)
+    if technical_request is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Solicitação não encontrada.")
+    if technical_request.consolidated_response is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "A solicitação precisa ter sido executada ao menos uma vez "
+                "antes de perguntas de acompanhamento."
+            ),
         )
     return technical_request
 
@@ -235,3 +255,50 @@ async def execute_skills_for_request(
         invocations_count=len(execution.invocations),
         consolidated_response=ConsolidatedResponseRead.model_validate(execution.consolidated_response),
     )
+
+
+@router.post("/requests/{request_id}/ask", response_model=FollowUpExchangeRead)
+async def ask_follow_up(
+    request_id: str,
+    payload: FollowUpQuestionCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_technician),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> FollowUpExchangeRead:
+    technical_request = _find_executed_request(db, request_id, user)
+
+    if payload.model and payload.model not in settings.llm_allowed_model_list:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"O modelo '{payload.model}' não está em LLM_ALLOWED_MODELS.",
+        )
+
+    try:
+        exchange = await ask_follow_up_question(
+            db,
+            technical_request=technical_request,
+            user=user,
+            question=payload.question,
+            target_domain=payload.target_domain,
+            requested_model=payload.model,
+        )
+    except NoAgentSkillsAvailableError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except LLMQuotaExceededError as exc:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
+
+    record_audit(
+        db,
+        request,
+        "FOLLOW_UP_QUESTION_ASKED",
+        user_id=user.id,
+        details={
+            "technical_request_id": technical_request.id,
+            "trace_id": technical_request.trace_id,
+            "target_domain": payload.target_domain,
+            "sequence_number": exchange.sequence_number,
+        },
+    )
+    db.commit()
+    return FollowUpExchangeRead.model_validate(exchange)

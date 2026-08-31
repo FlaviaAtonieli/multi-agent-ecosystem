@@ -1,5 +1,5 @@
 import { apiRequest } from './http'
-import { ConsolidatedResponse, SkillToolResult } from './agentSkillsApi'
+import { ConsolidatedResponse, FollowUpExchange, SkillToolResult } from './agentSkillsApi'
 
 export type RequestStatus =
   | 'RECEIVED'
@@ -82,6 +82,8 @@ export const orchestrationApi = {
     apiRequest<OrchestrationDetail>(`/orchestrations/${encodeURIComponent(traceId)}`),
   getSkillResults: (traceId: string) =>
     apiRequest<AgentSkillInvocationResult[]>(`/orchestrations/${encodeURIComponent(traceId)}/skill-results`),
+  getFollowUps: (traceId: string) =>
+    apiRequest<FollowUpExchange[]>(`/orchestrations/${encodeURIComponent(traceId)}/follow-ups`),
   addContext: (requestId: string, context: string) =>
     apiRequest<TechnicalRequest>(`/requests/${encodeURIComponent(requestId)}/context`, {
       method: 'POST',

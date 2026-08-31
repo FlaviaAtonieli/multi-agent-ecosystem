@@ -2,6 +2,23 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-30 - Perguntas de acompanhamento: continuar a interacao na mesma cadeia de orquestracao
+
+### Adicionado
+
+- Novo modelo `FollowUpExchange` (migration `0009_follow_up_exchanges`): cada pergunta de acompanhamento apos a execucao inicial vira sua propria linha, preservando o historico completo -- ao contrario de `ConsolidatedResponse` (uma por solicitacao, a "resposta final" unica do RFC 5.3), uma solicitacao pode acumular N trocas.
+- `POST /agent-skills/requests/{id}/ask`: registra uma pergunta de acompanhamento, continuando a mesma cadeia de orquestracao (mesmo `trace_id`). `target_domain=null` transmite para todos os dominios que participaram da execucao original; um dominio especifico direciona a pergunta so aquele Agent Skill. Toda rodada -- mesmo com um unico agente -- passa pelo mesmo Quality Gate (RF11) da execucao inicial, seguindo o padrao ja estabelecido.
+- `GET /orchestrations/{trace_id}/follow-ups`: lista o historico de trocas, em ordem.
+- `LLMPlanRequest`/`SkillToolCall` ganham `additional_question`, incorporado ao prompt do planejador tecnico quando presente.
+- Frontend: `FollowUpForm` (pergunta + seletor "Perguntar para" com os dominios que participaram da analise) e `FollowUpExchangeCard` (reaproveita os mesmos componentes de sintese-por-dominio e card-de-skill da fase anterior) exibidos apos qualquer execucao concluida.
+- 3 novos testes (`test_follow_up.py`): exige execucao previa, broadcast persistindo corretamente, e pergunta direcionada a um dominio especifico (alem do 409 quando nao ha skill para o dominio pedido).
+
+### Contexto
+
+- pedido direto da autora: "ter uma acao de continuar com a interacao... poder perguntar para um agente em especifico... se tiver respostas de mais de um agente tem que seguir nosso padrao";
+- duas decisoes de escopo confirmadas explicitamente antes da implementacao: manter historico completo (nao sobrescrever a resposta anterior) e sempre passar pelo Quality Gate, mesmo com um unico agente respondendo;
+- verificado com `ruff`/`mypy`/`pytest` (53/53 testes, suite limpa apos re-execucoes isoladas confirmarem que as falhas anteriores eram a instabilidade ja documentada do modelo gratuito, nao regressao) no backend, `npx tsc -b` no frontend, e fluxo real via Playwright: pergunta em broadcast (8 skills, ~2min) e pergunta direcionada a um dominio (2 skills) confirmadas na tabela `follow_up_exchanges` e renderizadas corretamente na tela, incluindo apos reload.
+
 ## 2026-08-29 - Organiza a resposta final: sintese por dominio, achados e blocos de codigo
 
 ### Adicionado
