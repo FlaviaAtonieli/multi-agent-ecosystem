@@ -44,8 +44,10 @@ class Settings(BaseSettings):
     llm_model: str = "nvidia/nemotron-3-super-120b-a12b:free"
     # Free models below declare structured_outputs support in the OpenRouter catalog
     # (GET /api/v1/models); only the default was empirically validated end-to-end
-    # (see docs/integrations/model-provider.md). openai/gpt-5-mini is paid, kept as
-    # an example for accounts with purchased credits.
+    # (see docs/integrations/model-provider.md). openai/gpt-5-mini is paid (needs
+    # purchased OpenRouter credits) and a genuine reasoning model -- validated
+    # end-to-end on 2026-08-30 after fixing the strict-mode JSON schema (see
+    # strict_json_schema in app/llm/schemas.py) and raising llm_max_output_tokens.
     llm_allowed_models: str = (
         "nvidia/nemotron-3-super-120b-a12b:free,"
         "z-ai/glm-5.2:free,"
@@ -53,7 +55,11 @@ class Settings(BaseSettings):
         "openai/gpt-5-mini"
     )
     llm_timeout_seconds: int = 45
-    llm_max_output_tokens: int = 1200
+    # Reasoning models (e.g. openai/gpt-5-mini) spend part of this budget on
+    # hidden chain-of-thought tokens before writing visible output; 1200 proved
+    # too tight for the full LLMPlan schema and left content=None (finish_reason
+    # "length") -- see docs/integrations/model-provider.md.
+    llm_max_output_tokens: int = 3000
     llm_max_input_chars: int = 12000
     llm_requests_per_hour_technician: int = 20
     # Caps total input+output tokens (LLMInvocation.input_tokens + output_tokens,

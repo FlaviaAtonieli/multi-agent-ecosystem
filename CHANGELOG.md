@@ -2,6 +2,24 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-30 - Corrige falha sistematica do openai/gpt-5-mini (schema JSON em modo strict)
+
+### Corrigido
+
+- `app/llm/schemas.py` (`strict_json_schema`, novo): o schema JSON enviado com `strict: true` nao listava em `required` os campos de `LLMPlan` com valor padrao no Pydantic (`required_agents`, `required_skills`, `risks`, `missing_information`, `requires_human_approval`) -- o modo estrito da OpenAI exige que todo campo de `properties` apareca em `required`. Um modelo `:free` do OpenRouter tolerava o schema malformado; `openai/gpt-5-mini`, roteado direto pra infraestrutura da OpenAI/Azure, rejeitava a chamada inteira com HTTP 400 antes de qualquer geracao -- 100% das chamadas falhavam. Usado agora pelos dois provedores (`openrouter_provider.py`, `openai_provider.py`).
+- `app/core/config.py`: `LLM_MAX_OUTPUT_TOKENS` sobe de 1200 para 3000 -- modelos de raciocinio (como `gpt-5-mini`) gastam parte do teto em tokens de "pensamento" interno antes do conteudo visivel; 1200 ja era apertado mesmo com o schema corrigido.
+
+### Adicionado
+
+- `app/llm/base.py` (`LLMEmptyResponseError`): erro especifico para quando o provedor esgota o orcamento de saida so com raciocinio (`finish_reason=length`, conteudo vazio) -- nao entra no retry automatico (a mesma chamada falharia de novo do mesmo jeito), e gera uma mensagem especifica no evento de auditoria (`error_code=EMPTY_RESPONSE_TOKEN_BUDGET`) em vez do generico "falha no planejamento".
+
+### Contexto
+
+- a autora testou manualmente uma orquestracao com o modelo `openai/gpt-5-mini` e recebeu "Confianca geral: Baixa" com 0 respostas de Agent Skill consolidadas, pediu pra investigar a causa raiz antes de decidir o que fazer;
+- investigacao real, sem chute: consultado `llm_invocations` direto no Postgres pra achar o trace/modelo exato, depois reproduzida a chamada exata fora do app (schema e prompt reais) pra capturar o erro completo -- a primeira hipotese (so estouro de orcamento de raciocinio) nao explicava o padrao 100% consistente; a reproducao revelou o HTTP 400 real da OpenAI, causa raiz mais fundamental;
+- decisao confirmada com a autora: corrigir o schema, subir o teto de tokens, e melhorar a mensagem de erro -- as tres coisas, nao so uma;
+- verificado com `ruff`/`mypy app` (limpos), suite completa do backend (real, sem mock), e 2 execucoes reais consecutivas de `openai/gpt-5-mini` contra o prompt e schema exatos de producao, ambas com sucesso apos a correcao.
+
 ## 2026-08-30 - Animacao de "pensamento" durante a execucao da orquestracao
 
 ### Adicionado
