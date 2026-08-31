@@ -580,6 +580,72 @@
 .workspace-token-meter-danger .workspace-token-meter-header strong { color: var(--danger-light); }
 .workspace-token-meter-danger { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.06); }
 
+.workspace-thinking {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-input);
+}
+.workspace-thinking-steps { display: grid; gap: 10px; list-style: none; margin: 0; padding: 0; }
+.workspace-thinking-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  transition: color 0.3s ease;
+}
+.workspace-thinking-step.is-done { color: var(--text-tertiary); }
+.workspace-thinking-step.is-active { color: var(--text-primary); font-weight: 600; }
+
+.workspace-thinking-marker {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+.workspace-thinking-step.is-done .workspace-thinking-marker { background: var(--primary-light); }
+.workspace-thinking-step.is-active .workspace-thinking-marker {
+  background: var(--primary);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.22);
+  animation: workspace-thinking-pulse 1.4s ease-in-out infinite;
+}
+
+.workspace-thinking-trace {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+.workspace-thinking-trace code { color: var(--accent); font-family: var(--font-body); }
+
+.workspace-thinking-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: workspace-thinking-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes workspace-thinking-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.72); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-thinking-marker, .workspace-thinking-dot { animation: none; }
+}
+
 .workspace-execution { display: grid; gap: 16px; margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border-subtle); }
 .workspace-execution-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .workspace-execution-block h4 { margin: 0 0 8px; color: var(--text-muted); font-size: 0.68rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--font-heading); }

@@ -7,6 +7,7 @@ import { AgentSkillInvocationResult, OrchestrationDetail, orchestrationApi } fro
 import { ExecutionResultPanel } from '../components/orchestration/ExecutionResultPanel'
 import { FollowUpExchangeCard } from '../components/orchestration/FollowUpExchangeCard'
 import { FollowUpForm } from '../components/orchestration/FollowUpForm'
+import { OrchestrationThinkingAnimation } from '../components/orchestration/OrchestrationThinkingAnimation'
 import { StatusBadge } from '../components/orchestration/StatusBadge'
 import { TokenUsageMeter } from '../components/orchestration/TokenUsageMeter'
 
@@ -28,6 +29,7 @@ export function OrchestrationPage() {
   const [successMessage, setSuccessMessage] = useState('')
   const [askingFollowUp, setAskingFollowUp] = useState(false)
   const [followUpError, setFollowUpError] = useState('')
+  const [activeSkillDomains, setActiveSkillDomains] = useState<AgentSkillDomain[]>([])
 
   const load = useCallback(async () => {
     try {
@@ -76,6 +78,15 @@ export function OrchestrationPage() {
         // Sem acesso ao status do LLM (ex.: perfil sem permissão) -- o backend
         // usa o modelo padrão configurado quando nenhum é enviado.
       })
+    // A solicitação hoje não escolhe domínios explicitamente na tela de criação
+    // (requested_domains chega vazio) -- nesse caso o Orquestrador consulta
+    // todas as Agent Skills ativas do catálogo (ver _resolve_target_skills no
+    // backend). Busca aqui a mesma lista, só para nomear as etapas reais da
+    // animação de execução.
+    agentSkillsApi
+      .listSkills(true)
+      .then((skills) => setActiveSkillDomains([...new Set(skills.map((skill) => skill.domain))]))
+      .catch(() => setActiveSkillDomains([]))
   }, [])
 
   async function handleExecute() {
@@ -235,6 +246,16 @@ export function OrchestrationPage() {
                 >
                   {executing ? 'Executando…' : 'Executar orquestração'}
                 </button>
+                {executing && (
+                  <OrchestrationThinkingAnimation
+                    domains={
+                      detail.technical_request.requested_domains.length > 0
+                        ? (detail.technical_request.requested_domains as AgentSkillDomain[])
+                        : activeSkillDomains
+                    }
+                    traceId={detail.technical_request.trace_id}
+                  />
+                )}
               </div>
             )}
 

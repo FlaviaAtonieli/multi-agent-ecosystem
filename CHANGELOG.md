@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-30 - Animacao de "pensamento" durante a execucao da orquestracao
+
+### Adicionado
+
+- `frontend/src/components/orchestration/OrchestrationThinkingAnimation.tsx`: substitui o botao "Executando..." estatico por uma sequencia animada de etapas (selecao de Agent Skills, recuperacao RAG, uma etapa por dominio realmente consultado, avaliacao do Quality Gate, consolidacao), com uma linha citando o Trace ID e reforcando que cada etapa fica registrada na Auditoria.
+- `frontend/src/pages/OrchestrationPage.tsx`: busca o catalogo de Agent Skills ativas (`agentSkillsApi.listSkills(true)`) para nomear os dominios reais na animacao quando `requested_domains` chega vazio da tela de criacao (caso em que o Orquestrador consulta todas as skills ativas -- `_resolve_target_skills` no backend).
+- `frontend/src/api/orchestrationApi.ts`: tipo `TechnicalRequest` ganha `requested_domains` (o backend ja expunha o campo; faltava no tipo do frontend).
+
+### Contexto
+
+- pedido direto da autora ao notar, durante um teste manual guiado, que o estado "Executando..." sem nenhum feedback visual durante ~1-2 minutos (4 chamadas reais de LLM) passava ansiedade;
+- decisao de design: a animacao e deliberadamente "fake" (nao reflete o passo exato do backend em tempo real, ja que o `execute` e uma unica chamada sincrona sem streaming/SSE hoje), mas so nomeia etapas e dominios reais do pipeline desta solicitacao especifica, nunca conteudo decorativo desconectado do que de fato acontece;
+- verificado com `tsc -b` (limpo) e Playwright contra o stack real: solicitacao criada, execucao disparada, animacao progredindo pelos 4 dominios reais, e o resultado final (4 cards de skill, sintese consolidada, timeline) renderizando corretamente ao final.
+
 ## 2026-08-30 - Validacao de qualidade do RAG
 
 ### Adicionado
