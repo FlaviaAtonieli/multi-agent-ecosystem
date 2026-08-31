@@ -2,6 +2,21 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-30 - Validacao de qualidade do RAG
+
+### Adicionado
+
+- `backend/app/rag/evaluation.py`: metricas de recuperacao de informacao (Precision@k, Recall@k, Reciprocal Rank) e um gabarito de 8 perguntas com artefatos relevantes esperados, definido manualmente a partir do conteudo real do fixture `legacy_billing` (nao gerado automaticamente).
+- `backend/tests/test_rag_quality.py`: `test_retrieval_quality_against_ground_truth` mede a recuperacao real (embeddings da OpenRouter, sem mock) contra o gabarito e trava a suite se MRR ou Recall@3 medios cairem abaixo de limiares fixados com margem real sobre o medido (MRR 0.875, Recall@3 0.812); `test_rag_enabled_plan_reflects_retrieved_context` prova mecanicamente (evento `RAG_RETRIEVAL_COMPLETED` + chunks recuperados) que o contexto recuperado alimentou a chamada, sem travar a suite numa asercao fragil sobre o texto livre do modelo gratuito.
+- `docs/validation/evidence/2026-08-30-rag-quality-validation.md`: registra os numeros medidos, incluindo a unica pergunta que falhou (P@3=R@3=0.00, sobre uma tabela que nao existe no schema) sem esconder o resultado, e tres respostas reais capturadas comparando com/sem RAG habilitado para a mesma pergunta.
+
+### Contexto
+
+- pedido direto da autora depois de validar a rubrica oficial da linha "IA" do Portfolio Directions do professor, que lista como tema explicitamente vedado "solucoes que apenas consomem uma API de LLM por prompt, sem incorporar IA de fato" -- risco que ja estava registrado como pendencia de alta prioridade em `docs/gestao/agenthub-epicos-historias.csv` antes mesmo de ver a rubrica;
+- decisao de escopo tomada durante a implementacao, nao perguntada antes: a comparacao com/sem RAG foi desenhada para nao depender de correspondencia literal de termos no texto livre do modelo (a primeira tentativa quebrou por causa da variacao natural do modelo gratuito -- documentada no proprio arquivo de evidencia), preferindo uma asercao mecanica confiavel na suite automatizada e evidencia qualitativa no documento;
+- cobre so o dominio `codigo_legado` (unico com base de conhecimento indexada hoje) -- limitacao registrada explicitamente, nao escondida;
+- verificado com `ruff`/`mypy app` (limpos) e suite completa do backend (execucao real contra a OpenRouter).
+
 ## 2026-08-30 - Perguntas de acompanhamento: continuar a interacao na mesma cadeia de orquestracao
 
 ### Adicionado
