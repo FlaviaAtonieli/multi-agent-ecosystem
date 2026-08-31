@@ -42,6 +42,11 @@ class UserRead(BaseModel):
     onboarding_completed_at: datetime | None
 
 
+class AdminUserRead(UserRead):
+    tokens_used_today: int
+    daily_token_limit_per_user: int
+
+
 class UserStatusUpdate(BaseModel):
     is_active: bool
 

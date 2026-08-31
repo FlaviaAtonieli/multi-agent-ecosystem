@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-08-29 - Coluna de uso de tokens na pagina de admin
+
+### Adicionado
+
+- `GET/PATCH /admin/users*` agora retornam `AdminUserRead` (estende `UserRead` com `tokens_used_today` e `daily_token_limit_per_user`) -- uma unica query agregada por usuario, nao N+1.
+- Pagina `/admin`: nova coluna "Tokens hoje" com pill colorida (neutro/ambar >=70%/vermelho na cota) por usuario; contas ADMIN mostram "Isento".
+- 5 novos testes (`test_admin.py`): gate de acesso (403 para nao-admin), listagem com uso agregado correto, troca de papel/status refletindo `AdminUserRead`, protecao contra autodegradacao do proprio admin.
+
+### Contexto
+
+- pedido direto da autora apos ver a cota de tokens funcionando: queria ver o consumo de cada usuario direto no painel de admin, sem precisar consultar o banco;
+- endpoint `/admin/users` nao tinha nenhum teste ate agora -- fechado junto com esta mudanca, ja que o arquivo foi mexido de qualquer forma;
+- verificado com `ruff`/`mypy`/`pytest` (50/50 testes, suite limpa) no backend, `npx tsc -b` no frontend, e fluxo real via Playwright logado como o admin de bootstrap.
+
 ## 2026-08-29 - Documenta a diferenca entre papel e cota de tokens
 
 ### Adicionado
