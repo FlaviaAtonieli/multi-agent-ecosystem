@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-08 - Auditoria de seguranca P0: aplicacao recusa subir em producao sem COOKIE_SECURE
+
+### Adicionado
+
+- `Settings.validate_production_hardening` (`app/core/config.py`): falha no boot se `ENVIRONMENT=production` e `COOKIE_SECURE=false` -- antes disso era so uma recomendacao em `SECURITY.md`, sem nada aplicando de fato.
+- `.env.production.example`: template de producao com os valores minimos exigidos (`ENVIRONMENT=production`, `COOKIE_SECURE=true`, `ALLOW_REGISTRATION=false`, dominio real em `CORS_ORIGINS`/`TRUSTED_HOSTS`), todo valor sensivel marcado `CHANGE-ME`. Adicionado ao `.gitignore` como excecao (igual `.env.example`) para nao ser tratado como segredo.
+- `backend/tests/test_config.py`: 3 testes cobrindo o validador (bloqueia producao insegura, aceita producao correta, nao afeta desenvolvimento) -- rapidos, sem chamada real de LLM.
+
+### Contexto
+
+- item P0 do plano de fechamento tecnico/seguranca (auditoria completa em Etapas 1-4, aprovado pela autora antes de qualquer mudanca de codigo);
+- achado original: nenhuma configuracao de produção real existia no repositorio, e `COOKIE_SECURE=false` era o padrao sem nenhum enforcement -- se a stack subisse "em producao" como estava, cookies de sessao/CSRF trafegariam em texto claro;
+- verificado com `ruff`/`mypy app` (limpos) e teste manual direto (`ENVIRONMENT=production COOKIE_SECURE=false` realmente bloqueia na inicializacao, com a mensagem de erro certa).
+
 ## 2026-09-08 - Rede de agentes, fase 1: skills criadas por usuario (fundacao)
 
 ### Adicionado

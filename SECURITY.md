@@ -114,7 +114,7 @@ Antes de uso real em produção, ainda precisam ser avaliados ou implementados:
 
 ## Requisitos de produção
 
-Configuração mínima esperada:
+Configuração mínima esperada — use `.env.production.example` como ponto de partida:
 
 ```env
 ENVIRONMENT=production
@@ -122,6 +122,8 @@ COOKIE_SECURE=true
 ALLOW_REGISTRATION=false
 AUTO_CREATE_TABLES=false
 ```
+
+`ENVIRONMENT=production` com `COOKIE_SECURE=false` não é apenas desaconselhado: a aplicação recusa iniciar nessa combinação (`Settings.validate_production_hardening`, `app/core/config.py`) — os cookies de sessão e CSRF trafegariam sem a flag `Secure`, que depende de HTTPS de verdade na frente da aplicação para ter efeito.
 
 O ambiente também deve utilizar:
 

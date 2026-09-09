@@ -157,6 +157,20 @@ class Settings(BaseSettings):
 
         return self
 
+    @model_validator(mode="after")
+    def validate_production_hardening(self) -> "Settings":
+        """Fail-closed check (auditoria de segurança P0): ENVIRONMENT=production
+        com COOKIE_SECURE=false enviaria o cookie de sessão e o de CSRF em texto
+        claro. SECURITY.md já documentava isso como requisito mínimo de
+        produção; isso o transforma de documentação em algo que a aplicação
+        recusa a subir sem atender."""
+        if self.is_production and not self.cookie_secure:
+            raise ValueError(
+                "ENVIRONMENT=production exige COOKIE_SECURE=true (a aplicação deve estar "
+                "atrás de HTTPS). Veja 'Requisitos de produção' em SECURITY.md."
+            )
+        return self
+
 
 @lru_cache
 def get_settings() -> Settings:
