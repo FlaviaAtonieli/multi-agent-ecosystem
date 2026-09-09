@@ -2,6 +2,18 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-08 - Limpa artefatos de citacao do Documento_de_referencia.md
+
+### Corrigido
+
+- Removidas as 76 ocorrencias de marcadores de citacao nao processados (sequencias `citeturnNsearchM`/`citeturnNviewM` usando caracteres da Private Use Area do Unicode como delimitadores invisiveis -- por isso nao apareciam em buscas de texto simples antes de investigar os bytes crus do arquivo) que restavam de uma sessao de pesquisa anterior.
+- Adicionado aviso no topo do documento deixando explicito que o conteudo (arquitetura "Agentic Control Plane", integracao com Hermes/GSD Pi) e especulativo e nao implementado no codigo -- a RFC continua sendo a especificacao vigente do projeto.
+
+### Contexto
+
+- item aprovado pela autora durante a revisao de documentos artificiais/desatualizados do repositorio;
+- verificado: diff minimo (so as linhas com marcador realmente mudaram, nada de formatacao pre-existente foi tocado -- confirmado comparando contagem de espacos duplos antes/depois, identica) e zero marcador remanescente (bytes crus checados diretamente, nao so busca de texto).
+
 ## 2026-09-08 - Auditoria de seguranca P2/P3: VALIDATION.md atualizado, limite de corpo HTTP, limpeza de diretorios fantasma
 
 ### Adicionado

@@ -1,16 +1,23 @@
 # Documento de referência — Ecossistema Agentic Control Plane com MCP, Hermes, GSD Pi e OpenRouter
 
+> **Conteúdo especulativo, não implementado.** Este documento é uma exploração de
+> arquitetura futura (Agentic Control Plane, integração com Hermes e GSD Pi) — nada
+> aqui existe no código do `multi-agent-ecosystem` hoje. A arquitetura realmente
+> implementada está descrita no RFC (`docs/rfc/`), que é a especificação vigente do
+> projeto. Trate as ideias abaixo como material de roadmap a avaliar, não como
+> documentação do estado atual.
+
 ## Resumo executivo
 
 A recomendação é evoluir a base já codada para um **Agentic Control Plane**: uma camada central de governança que registra capacidades MCP, inicia e acompanha runtimes agênticos, aplica políticas antes de ações sensíveis, controla modelos e custos, correlaciona toda execução por `Trace ID` e oferece um laboratório de avaliação comparável.
 
-O ponto arquitetural mais importante é **não reconstruir Hermes, GSD Pi ou um roteador de LLMs dentro do projeto**. Hermes já oferece runtime agêntico, ferramentas, subagentes, memória, skills e integração com servidores MCP; GSD Pi já oferece planejamento estruturado em milestones/slices/tasks, execução com verificação, isolamento por Git worktrees e persistência local de estado; OpenRouter fornece uma API unificada para um catálogo atualmente anunciado como superior a 400 modelos e 70 providers. O projeto deve agregar valor exatamente onde esses componentes não formam, por si só, uma camada central de governança. citeturn18view1turn19view2turn18view0turn22view3
+O ponto arquitetural mais importante é **não reconstruir Hermes, GSD Pi ou um roteador de LLMs dentro do projeto**. Hermes já oferece runtime agêntico, ferramentas, subagentes, memória, skills e integração com servidores MCP; GSD Pi já oferece planejamento estruturado em milestones/slices/tasks, execução com verificação, isolamento por Git worktrees e persistência local de estado; OpenRouter fornece uma API unificada para um catálogo atualmente anunciado como superior a 400 modelos e 70 providers. O projeto deve agregar valor exatamente onde esses componentes não formam, por si só, uma camada central de governança.
 
-A versão atual publicada da especificação MCP, **2026-07-28**, mudou a base para requisições stateless e negociação de capabilities por request, mantendo `Tools`, `Resources` e `Prompts` como primitivas centrais; a especificação também lista extensões como Tasks e Skills over MCP. citeturn18view3 Para o projeto, isso torna MCP muito mais do que um “adaptador de ferramentas”: ele passa a ser o **contrato de interoperabilidade** entre o Control Plane e o ecossistema de capacidades.
+A versão atual publicada da especificação MCP, **2026-07-28**, mudou a base para requisições stateless e negociação de capabilities por request, mantendo `Tools`, `Resources` e `Prompts` como primitivas centrais; a especificação também lista extensões como Tasks e Skills over MCP. Para o projeto, isso torna MCP muito mais do que um “adaptador de ferramentas”: ele passa a ser o **contrato de interoperabilidade** entre o Control Plane e o ecossistema de capacidades.
 
-Há, porém, um risco de versão que precisa entrar explicitamente no desenho. O repositório do Hermes possui um issue aberto rastreando a migração para MCP 2026-07-28 e `mcp>=2.0`, indicando que o runtime ainda precisa concluir essa transição. citeturn18view2 Além disso, releases recentes do GSD Pi registram problemas de interoperabilidade entre `open-gsd-hermes` e `gsd-mcp-server`, inclusive divergência de framing/transporte e timeout. citeturn21search0 Portanto, **Hermes e GSD não devem ser acoplados diretamente como fundação da arquitetura**; ambos devem ficar atrás do `Runtime Gateway`.
+Há, porém, um risco de versão que precisa entrar explicitamente no desenho. O repositório do Hermes possui um issue aberto rastreando a migração para MCP 2026-07-28 e `mcp>=2.0`, indicando que o runtime ainda precisa concluir essa transição. Além disso, releases recentes do GSD Pi registram problemas de interoperabilidade entre `open-gsd-hermes` e `gsd-mcp-server`, inclusive divergência de framing/transporte e timeout. Portanto, **Hermes e GSD não devem ser acoplados diretamente como fundação da arquitetura**; ambos devem ficar atrás do `Runtime Gateway`.
 
-A decisão de usar **OpenRouter como Model Gateway primário da PoC é tecnicamente coerente** com o objetivo de experimentação. O plano pay-as-you-go atual anuncia 400+ modelos, 70+ providers, sem gasto mínimo e com taxa de plataforma de 5,5%; seu roteamento permite preferências por provider, preço, throughput, latência e ZDR. citeturn22view3turn16search6 Isso permite comparar modelos sem trocar a arquitetura e preservar o adaptador OpenAI existente apenas como integração direta opcional.
+A decisão de usar **OpenRouter como Model Gateway primário da PoC é tecnicamente coerente** com o objetivo de experimentação. O plano pay-as-you-go atual anuncia 400+ modelos, 70+ providers, sem gasto mínimo e com taxa de plataforma de 5,5%; seu roteamento permite preferências por provider, preço, throughput, latência e ZDR. Isso permite comparar modelos sem trocar a arquitetura e preservar o adaptador OpenAI existente apenas como integração direta opcional.
 
 O estado final recomendado é:
 
@@ -50,7 +57,7 @@ O sistema deve separar claramente **Control Plane** e **Data Plane**.
 
 O Control Plane determina *o que pode acontecer*: workflow, policies, runtimes permitidos, modelos, orçamento, approvals, credenciais e rastreabilidade. O Data Plane é onde *a execução acontece*: Hermes, GSD Pi, chamadas de modelo e servidores MCP.
 
-Essa separação é particularmente importante porque o Hermes consegue descobrir automaticamente tools de servidores MCP locais via `stdio` ou remotos via HTTP e também registrar wrappers para Resources e Prompts. citeturn19view2 Se Hermes for configurado diretamente com todos os servidores, o Control Plane deixa de ter um ponto confiável de enforcement. Portanto, a recomendação é que os runtimes enxerguem **um MCP Proxy controlado pelo projeto**, e não credenciais/endpoints arbitrários de servidores upstream.
+Essa separação é particularmente importante porque o Hermes consegue descobrir automaticamente tools de servidores MCP locais via `stdio` ou remotos via HTTP e também registrar wrappers para Resources e Prompts. Se Hermes for configurado diretamente com todos os servidores, o Control Plane deixa de ter um ponto confiável de enforcement. Portanto, a recomendação é que os runtimes enxerguem **um MCP Proxy controlado pelo projeto**, e não credenciais/endpoints arbitrários de servidores upstream.
 
 **C4 simplificado — contexto e containers**
 
@@ -131,7 +138,7 @@ flowchart TB
     MG --> OBS
 ```
 
-Essa arquitetura segue a separação MCP entre host/client/server: aplicações host conectam-se a servers que fornecem contexto e capabilities; o protocolo atual usa JSON-RPC 2.0, requisições autocontidas/stateless e capabilities negociadas por request. citeturn18view3
+Essa arquitetura segue a separação MCP entre host/client/server: aplicações host conectam-se a servers que fornecem contexto e capabilities; o protocolo atual usa JSON-RPC 2.0, requisições autocontidas/stateless e capabilities negociadas por request.
 
 **Responsabilidade dos componentes**
 
@@ -147,15 +154,15 @@ Essa arquitetura segue a separação MCP entre host/client/server: aplicações 
 | **Trace & Observability** | Correlacionar runs, models, tools, errors, custos e duração | Armazenar conteúdo sensível desnecessariamente |
 | **Evaluation Lab** | Executar campanhas comparáveis e calcular KPIs | Alterar comportamento produtivo para “melhorar” teste |
 
-O **MCP Registry** deve modelar as três primitivas principais separadamente. Tools são funções executáveis pelo modelo; Resources representam dados/contexto identificados por URI; Prompts representam templates/workflows oferecidos pelo server. citeturn14view0turn15search29turn14view2
+O **MCP Registry** deve modelar as três primitivas principais separadamente. Tools são funções executáveis pelo modelo; Resources representam dados/contexto identificados por URI; Prompts representam templates/workflows oferecidos pelo server.
 
-Uma consequência importante é que o antigo conceito de `modelo.md` deixa de ser o único contrato de plug-in. O núcleo deve funcionar apenas com MCP core. A iniciativa oficial **Skills over MCP** está ativa, mas sua direção atual ainda passa por um SEP/extension em revisão; portanto, ela deve ser acompanhada como evolução futura, não usada como dependência P0 da PoC. citeturn19view0
+Uma consequência importante é que o antigo conceito de `modelo.md` deixa de ser o único contrato de plug-in. O núcleo deve funcionar apenas com MCP core. A iniciativa oficial **Skills over MCP** está ativa, mas sua direção atual ainda passa por um SEP/extension em revisão; portanto, ela deve ser acompanhada como evolução futura, não usada como dependência P0 da PoC.
 
-O mesmo vale para **MCP Tasks**. Tasks oferecem handles duráveis, polling, estados como `working`, `input_required`, `completed`, `failed` e `cancelled`, sendo úteis para operações longas e human-in-the-loop, mas são uma extensão opt-in cujo suporte varia por cliente. citeturn19view1 O Workflow Engine próprio deve continuar sendo a fonte oficial de estado; posteriormente ele poderá mapear um step para um MCP Task quando client e server suportarem a extensão.
+O mesmo vale para **MCP Tasks**. Tasks oferecem handles duráveis, polling, estados como `working`, `input_required`, `completed`, `failed` e `cancelled`, sendo úteis para operações longas e human-in-the-loop, mas são uma extensão opt-in cujo suporte varia por cliente. O Workflow Engine próprio deve continuar sendo a fonte oficial de estado; posteriormente ele poderá mapear um step para um MCP Task quando client e server suportarem a extensão.
 
 **Posicionamento do Hermes**
 
-Hermes deve ser tratado como um **runtime de execução agêntica**, não como núcleo do projeto. Ele já suporta múltiplos providers, subagentes, execução em diferentes terminal backends, skills e MCP. citeturn18view1 No MCP, atualmente suporta servidores `stdio` e HTTP, discovery automático, filtragem de tools e Resources/Prompts. citeturn19view2
+Hermes deve ser tratado como um **runtime de execução agêntica**, não como núcleo do projeto. Ele já suporta múltiplos providers, subagentes, execução em diferentes terminal backends, skills e MCP. No MCP, atualmente suporta servidores `stdio` e HTTP, discovery automático, filtragem de tools e Resources/Prompts.
 
 A arquitetura deverá preferir:
 
@@ -179,11 +186,11 @@ Hermes
    └── Database MCP
 ```
 
-A segunda opção funciona tecnicamente, mas reduz a capacidade de governança central. Essa conclusão é uma **decisão arquitetural do projeto**, derivada da capacidade de Hermes de conectar MCPs diretamente e da recomendação do próprio MCP de manter consentimento, controle e cautela na execução de tools. citeturn19view2turn18view3
+A segunda opção funciona tecnicamente, mas reduz a capacidade de governança central. Essa conclusão é uma **decisão arquitetural do projeto**, derivada da capacidade de Hermes de conectar MCPs diretamente e da recomendação do próprio MCP de manter consentimento, controle e cautela na execução de tools.
 
 **Posicionamento do GSD Pi**
 
-`open-gsd/gsd-pi` passa a ser o repositório canônico. O GSD Pi planeja trabalho em milestones, slices e tasks, executa sessões com contexto e verificação, utiliza worktrees e mantém estado local com projeções Markdown. citeturn18view0 A documentação também descreve `.gsd/` como diretório de estado do projeto, incluindo planos, milestones, tasks, decisões, histórico e metadados, com arquivos de runtime e banco local mantidos separadamente do conteúdo versionável. citeturn20view2
+`open-gsd/gsd-pi` passa a ser o repositório canônico. O GSD Pi planeja trabalho em milestones, slices e tasks, executa sessões com contexto e verificação, utiliza worktrees e mantém estado local com projeções Markdown. A documentação também descreve `.gsd/` como diretório de estado do projeto, incluindo planos, milestones, tasks, decisões, histórico e metadados, com arquivos de runtime e banco local mantidos separadamente do conteúdo versionável.
 
 No nosso desenho:
 
@@ -194,11 +201,11 @@ Control Plane = dono do workflow global
 
 Não devemos transformar o banco local do GSD na fonte oficial do Control Plane. O adapter traduz estado externo do GSD para `RuntimeStatus`, enquanto `workflow_runs` e `run_steps` no PostgreSQL continuam sendo a verdade operacional do produto.
 
-Também é melhor **não tornar uma integração Hermes ↔ GSD direta uma dependência crítica da PoC inicial**. Releases recentes do GSD Pi mencionam bugs envolvendo o plugin `open-gsd-hermes` e o `gsd-mcp-server`; isso reforça o valor do Runtime Gateway desacoplado. citeturn21search0
+Também é melhor **não tornar uma integração Hermes ↔ GSD direta uma dependência crítica da PoC inicial**. Releases recentes do GSD Pi mencionam bugs envolvendo o plugin `open-gsd-hermes` e o `gsd-mcp-server`; isso reforça o valor do Runtime Gateway desacoplado.
 
 **Posicionamento do OpenRouter**
 
-OpenRouter deve ser usado como **Model Gateway upstream**, e não como orquestrador de agentes. Sua API oferece um ponto unificado de inferência e o roteamento permite controlar providers, modelos e critérios como preço, throughput, latência e ZDR. citeturn21search6turn16search6
+OpenRouter deve ser usado como **Model Gateway upstream**, e não como orquestrador de agentes. Sua API oferece um ponto unificado de inferência e o roteamento permite controlar providers, modelos e critérios como preço, throughput, latência e ZDR.
 
 A relação desejada é:
 
@@ -260,23 +267,23 @@ O mapeamento abaixo é **funcional**, baseado nos artefatos que você informou; 
 
 | ID | Decisão | Justificativa |
 |---|---|---|
-| **DEC-01** | `open-gsd/gsd-pi` é o GSD canônico | É a baseline pública ativa do projeto e implementa planning/execution/verification. citeturn18view0 |
-| **DEC-02** | OpenRouter será o gateway primário de modelos da PoC | Amplia a superfície experimental sem acoplamento a um único fabricante. citeturn22view3turn16search6 |
-| **DEC-03** | MCP 2026-07-28 é o contrato-alvo | É a especificação publicada atual, stateless e com capabilities por request. citeturn18view3 |
-| **DEC-04** | Haverá camada de compatibilidade MCP anterior | Hermes ainda rastreia sua migração para a revisão de julho de 2026. citeturn18view2 |
+| **DEC-01** | `open-gsd/gsd-pi` é o GSD canônico | É a baseline pública ativa do projeto e implementa planning/execution/verification. |
+| **DEC-02** | OpenRouter será o gateway primário de modelos da PoC | Amplia a superfície experimental sem acoplamento a um único fabricante. |
+| **DEC-03** | MCP 2026-07-28 é o contrato-alvo | É a especificação publicada atual, stateless e com capabilities por request. |
+| **DEC-04** | Haverá camada de compatibilidade MCP anterior | Hermes ainda rastreia sua migração para a revisão de julho de 2026. |
 | **DEC-05** | Control Plane/PostgreSQL é a fonte oficial de estado | Evita dependência do armazenamento interno do Hermes/GSD |
 | **DEC-06** | Runtime Gateway isola Hermes e GSD | Evita acoplamento a APIs/CLIs em rápida evolução |
 | **DEC-07** | Todo MCP de runtime passa pelo Policy Proxy em modo governado | Permite policy, approval, tracing e auditoria |
 | **DEC-08** | Model Gateway permanece provider-agnostic | OpenRouter é decisão de deployment, não contrato de domínio |
-| **DEC-09** | Tools com side effects exigem policy explícita | MCP trata tools como caminhos potencialmente arbitrários de execução. citeturn18view3 |
-| **DEC-10** | Skills over MCP não será dependência de MVP | A extensão ainda está em trabalho/revisão. citeturn19view0 |
-| **DEC-11** | MCP Tasks será integração opcional, não engine de estado | Tasks é extensão e o suporte de clientes varia. citeturn19view1 |
-| **DEC-12** | Trace Context seguirá padrão W3C | `traceparent` e `tracestate` fornecem propagação interoperável de traces. citeturn15search6 |
+| **DEC-09** | Tools com side effects exigem policy explícita | MCP trata tools como caminhos potencialmente arbitrários de execução. |
+| **DEC-10** | Skills over MCP não será dependência de MVP | A extensão ainda está em trabalho/revisão. |
+| **DEC-11** | MCP Tasks será integração opcional, não engine de estado | Tasks é extensão e o suporte de clientes varia. |
+| **DEC-12** | Trace Context seguirá padrão W3C | `traceparent` e `tracestate` fornecem propagação interoperável de traces. |
 | **DEC-13** | Runtime será sandboxed e read-only por padrão | Reduz o blast radius de tools/autonomia |
 | **DEC-14** | Evaluation será entidade persistente de primeira classe | Permite comparação reproduzível de runtimes/modelos |
 | **DEC-15** | Ralph será referência de loop, não dependência de runtime | Mantém a ideia de contexto fresco/iterações sem introduzir outro componente central |
 
-A DEC-03 merece atenção especial. O MCP atual é stateless; portanto, não faz sentido construir um Registry/Proxy novo com premissas de sessão permanente. citeturn18view3 Ao mesmo tempo, o adapter de Hermes deve ter contract tests para a versão realmente suportada pelo runtime, exatamente porque o projeto Hermes ainda possui um trabalho aberto de migração. citeturn18view2
+A DEC-03 merece atenção especial. O MCP atual é stateless; portanto, não faz sentido construir um Registry/Proxy novo com premissas de sessão permanente. Ao mesmo tempo, o adapter de Hermes deve ter contract tests para a versão realmente suportada pelo runtime, exatamente porque o projeto Hermes ainda possui um trabalho aberto de migração.
 
 **Estrutura de código sugerida**
 
@@ -377,7 +384,7 @@ A API REST administra servidores, workflows, policies, runtimes e avaliações. 
 }
 ```
 
-O Control Plane realiza discovery e normaliza o catálogo. O MCP atual mantém Tools, Resources e Prompts como primitives de server. citeturn18view3
+O Control Plane realiza discovery e normaliza o catálogo. O MCP atual mantém Tools, Resources e Prompts como primitives de server.
 
 **Tool normalizada**
 
@@ -409,7 +416,7 @@ O Control Plane realiza discovery e normaliza o catálogo. O MCP atual mantém T
 }
 ```
 
-O protocolo prevê `tools/list` para discovery e `tools/call` para invocation, e ferramentas devem expor seus contratos estruturados. citeturn14view0
+O protocolo prevê `tools/list` para discovery e `tools/call` para invocation, e ferramentas devem expor seus contratos estruturados.
 
 **Resource proposta**
 
@@ -422,7 +429,7 @@ O protocolo prevê `tools/list` para discovery e `tools/call` para invocation, e
 }
 ```
 
-Resources utilizam URIs para representar dados/contexto, incluindo casos como arquivos e schemas de banco. citeturn15search29
+Resources utilizam URIs para representar dados/contexto, incluindo casos como arquivos e schemas de banco.
 
 **Prompt proposta**
 
@@ -440,7 +447,7 @@ Resources utilizam URIs para representar dados/contexto, incluindo casos como ar
 }
 ```
 
-MCP diferencia Prompts das Tools: prompts são templates explicitamente disponibilizados ao cliente, enquanto tools correspondem a funções executáveis. citeturn14view2turn14view0
+MCP diferencia Prompts das Tools: prompts são templates explicitamente disponibilizados ao cliente, enquanto tools correspondem a funções executáveis.
 
 **Data Plane MCP**
 
@@ -546,9 +553,9 @@ AgentRuntime
 └── GsdPiRuntimeAdapter
 ```
 
-O `HermesRuntimeAdapter` deve ser validado inicialmente em spike usando a superfície de integração mais estável disponível na versão fixada. Hermes já oferece CLI/gateway, múltiplos providers e MCP, mas a aplicação não deve acoplar o domínio a esses detalhes. citeturn18view1turn19view2
+O `HermesRuntimeAdapter` deve ser validado inicialmente em spike usando a superfície de integração mais estável disponível na versão fixada. Hermes já oferece CLI/gateway, múltiplos providers e MCP, mas a aplicação não deve acoplar o domínio a esses detalhes.
 
-Para GSD, eu recomendaria **começar com um adapter controlado por processo/CLI ou interface estável comprovada no spike**. Só promover `gsd-mcp-server` a caminho principal após contract tests, dado que releases atuais registram falhas de interoperabilidade nessa superfície. citeturn21search0
+Para GSD, eu recomendaria **começar com um adapter controlado por processo/CLI ou interface estável comprovada no spike**. Só promover `gsd-mcp-server` a caminho principal após contract tests, dado que releases atuais registram falhas de interoperabilidade nessa superfície.
 
 **Interface `ModelGateway`**
 
@@ -612,7 +619,7 @@ class ModelGateway(Protocol):
 }
 ```
 
-OpenRouter devolve hoje informações de uso com tokens de prompt/completion, reasoning/cached tokens e custo, que devem alimentar `model_calls` diretamente. citeturn22view2
+OpenRouter devolve hoje informações de uso com tokens de prompt/completion, reasoning/cached tokens e custo, que devem alimentar `model_calls` diretamente.
 
 A implementação fica:
 
@@ -657,7 +664,7 @@ CANCELLED
 BLOCKED
 ```
 
-Esse modelo preserva internamente uma semântica semelhante à de operações longas/inputs encontrada no MCP Tasks, sem tornar a extensão obrigatória. citeturn19view1
+Esse modelo preserva internamente uma semântica semelhante à de operações longas/inputs encontrada no MCP Tasks, sem tornar a extensão obrigatória.
 
 **Sequência proposta**
 
@@ -875,7 +882,7 @@ O modelo deve preferir hashes e atributos redacted em tabelas de auditoria a arm
 
 ## Segurança, privacidade e observabilidade
 
-A arquitetura precisa assumir que **agente, modelo, tool description, MCP Resource e resultado externo são entradas não confiáveis**. O próprio MCP alerta que tools podem representar execução arbitrária e que descrições/annotations não devem ser consideradas confiáveis apenas porque vieram do server. citeturn18view3
+A arquitetura precisa assumir que **agente, modelo, tool description, MCP Resource e resultado externo são entradas não confiáveis**. O próprio MCP alerta que tools podem representar execução arbitrária e que descrições/annotations não devem ser consideradas confiáveis apenas porque vieram do server.
 
 Por isso, a política deve ser aplicada **fora do runtime**.
 
@@ -890,7 +897,7 @@ Por isso, a política deve ser aplicada **fora do runtime**.
 | `CREDENTIAL` | acessar segredo/token | Nunca expor ao modelo |
 | `NETWORK_EXTERNAL` | chamar API externa | Allowlist + egress policy |
 
-A especificação MCP enfatiza consentimento e controle do usuário, incluindo clareza sobre acesso a dados e operações executadas. citeturn18view3 Para conciliar isso com autonomia, o Control Plane pode registrar um **consent grant** no início do run para um conjunto de tools `READ`, enquanto `WRITE/DESTRUCTIVE` exige approval explícito conforme policy.
+A especificação MCP enfatiza consentimento e controle do usuário, incluindo clareza sobre acesso a dados e operações executadas. Para conciliar isso com autonomia, o Control Plane pode registrar um **consent grant** no início do run para um conjunto de tools `READ`, enquanto `WRITE/DESTRUCTIVE` exige approval explícito conforme policy.
 
 **Policy flow**
 
@@ -931,7 +938,7 @@ Risk classification
 
 **MCP Authorization**
 
-Servidores MCP protegidos devem usar o modelo de autorização previsto na especificação atual; a documentação oficial descreve protected servers como resource servers OAuth 2.1 e estabelece discovery de authorization servers por Protected Resource Metadata. citeturn15search3turn15search15
+Servidores MCP protegidos devem usar o modelo de autorização previsto na especificação atual; a documentação oficial descreve protected servers como resource servers OAuth 2.1 e estabelece discovery de authorization servers por Protected Resource Metadata.
 
 Portanto:
 
@@ -957,11 +964,11 @@ Nunca:
 
 em PostgreSQL.
 
-Hermes também recomenda manter segredos em seu ambiente/`.env` e comportamento não secreto em config, reforçando a separação entre credencial e configuração. citeturn16search19 No Control Plane, o ideal é ir além e injetar credenciais temporariamente no runtime container.
+Hermes também recomenda manter segredos em seu ambiente/`.env` e comportamento não secreto em config, reforçando a separação entre credencial e configuração. No Control Plane, o ideal é ir além e injetar credenciais temporariamente no runtime container.
 
 **Elicitation e segredos**
 
-Quando um MCP Server solicitar informações adicionais, o Control Plane não deve tratar qualquer input como seguro. A especificação de Elicitation proíbe o uso do modo de formulário para solicitar senhas, API keys, access tokens ou credenciais de pagamento; interações sensíveis devem usar mecanismos apropriados de autorização. citeturn14view3
+Quando um MCP Server solicitar informações adicionais, o Control Plane não deve tratar qualquer input como seguro. A especificação de Elicitation proíbe o uso do modo de formulário para solicitar senhas, API keys, access tokens ou credenciais de pagamento; interações sensíveis devem usar mecanismos apropriados de autorização.
 
 **OpenRouter e ZDR**
 
@@ -975,7 +982,7 @@ Para runs classificados como `CONFIDENTIAL` ou equivalentes, a policy deve exigi
 }
 ```
 
-OpenRouter documenta que `zdr: true` restringe o roteamento a endpoints que possuem política Zero Data Retention; ZDR também pode ser aplicado por conta, grupo de modelos ou Guardrail. citeturn22view1turn16search6
+OpenRouter documenta que `zdr: true` restringe o roteamento a endpoints que possuem política Zero Data Retention; ZDR também pode ser aplicado por conta, grupo de modelos ou Guardrail.
 
 Uma policy interna pode ser:
 
@@ -1003,7 +1010,7 @@ budget:
   max_cost_usd: 1.00
 ```
 
-Há uma distinção crítica: o ZDR do OpenRouter aplica-se ao **roteamento de inference providers**; ele não cobre automaticamente plugins/tools externos, que podem ter políticas de retenção próprias. citeturn22view1 Logo:
+Há uma distinção crítica: o ZDR do OpenRouter aplica-se ao **roteamento de inference providers**; ele não cobre automaticamente plugins/tools externos, que podem ter políticas de retenção próprias. Logo:
 
 ```text
 OpenRouter ZDR
@@ -1013,11 +1020,11 @@ MCP ecosystem ZDR
 
 Cada servidor MCP precisa de sua própria trust/privacy policy.
 
-OpenRouter também possui Guardrails para budgets, allowlists de modelos/providers e políticas de privacidade; esses recursos são úteis como segunda camada de enforcement, mas não devem substituir o `Policy Engine` do Control Plane. citeturn22view4
+OpenRouter também possui Guardrails para budgets, allowlists de modelos/providers e políticas de privacidade; esses recursos são úteis como segunda camada de enforcement, mas não devem substituir o `Policy Engine` do Control Plane.
 
 **Sandboxing**
 
-Hermes suporta vários tipos de terminal backend, incluindo execução em ambientes isolados. citeturn18view1 Para a PoC, Docker é suficiente, desde que cada runtime execute preferencialmente:
+Hermes suporta vários tipos de terminal backend, incluindo execução em ambientes isolados. Para a PoC, Docker é suficiente, desde que cada runtime execute preferencialmente:
 
 ```text
 non-root
@@ -1052,7 +1059,7 @@ trace_id
     └── verification_span
 ```
 
-O W3C Trace Context padroniza `traceparent` e `tracestate` para propagar contexto distribuído entre serviços. citeturn15search6 O MCP 2026 também evoluiu em direção a melhor interoperabilidade de tracing, tornando essa escolha especialmente apropriada para o Proxy.
+O W3C Trace Context padroniza `traceparent` e `tracestate` para propagar contexto distribuído entre serviços. O MCP 2026 também evoluiu em direção a melhor interoperabilidade de tracing, tornando essa escolha especialmente apropriada para o Proxy.
 
 IDs recomendados:
 
@@ -1069,7 +1076,7 @@ evaluation_run_id
 external_generation_id
 ```
 
-OpenRouter oferece dados detalhados de tokens e custo em suas respostas; isso evita depender de estimativas locais para a principal métrica de custo. citeturn22view2
+OpenRouter oferece dados detalhados de tokens e custo em suas respostas; isso evita depender de estimativas locais para a principal métrica de custo.
 
 **Evento exemplo**
 
@@ -1105,7 +1112,7 @@ a menos que haja necessidade explícita e política de retenção definida.
 
 ## Plano de implementação e cronograma
 
-A implementação deve começar com **spikes que eliminem riscos de integração**, não diretamente por telas. Isso é especialmente importante porque MCP teve uma revisão substancial em julho de 2026 e Hermes ainda possui trabalho aberto relacionado à migração; o GSD também registra problemas recentes na integração Hermes/MCP. citeturn18view2turn21search0
+A implementação deve começar com **spikes que eliminem riscos de integração**, não diretamente por telas. Isso é especialmente importante porque MCP teve uma revisão substancial em julho de 2026 e Hermes ainda possui trabalho aberto relacionado à migração; o GSD também registra problemas recentes na integração Hermes/MCP.
 
 **Roadmap em sprints de duas semanas**
 
@@ -1432,7 +1439,7 @@ Quality Gate
 Reviewer
 ```
 
-O GSD é especialmente adequado à fase de planejamento/estrutura porque o projeto já organiza trabalho em milestones, slices e tasks e inclui verificação no fluxo. citeturn18view0 Hermes é adequado ao papel executor/researcher porque oferece MCP tools, subagentes e escolha flexível de providers/modelos. citeturn18view1turn19view2
+O GSD é especialmente adequado à fase de planejamento/estrutura porque o projeto já organiza trabalho em milestones, slices e tasks e inclui verificação no fluxo. Hermes é adequado ao papel executor/researcher porque oferece MCP tools, subagentes e escolha flexível de providers/modelos.
 
 A composição `GSD → Hermes` deve ser considerada **perfil experimental**, não dependência da arquitetura. O Control Plane também deve conseguir executar:
 
@@ -1474,7 +1481,7 @@ temperature:
   preferred: 0
 ```
 
-OpenRouter permite consultar modelos e trabalhar com uma única API; provider routing pode aplicar preferências relacionadas a preço, latência, throughput e ZDR. citeturn21search6turn16search6 Para reprodutibilidade científica, entretanto, cada `evaluation_run` deve armazenar o **model ID exato e provider efetivo**, e não apenas alias/perfil.
+OpenRouter permite consultar modelos e trabalhar com uma única API; provider routing pode aplicar preferências relacionadas a preço, latência, throughput e ZDR. Para reprodutibilidade científica, entretanto, cada `evaluation_run` deve armazenar o **model ID exato e provider efetivo**, e não apenas alias/perfil.
 
 Com:
 
@@ -1547,7 +1554,7 @@ ground_truth_hits
 unsupported_claims
 ```
 
-OpenRouter já fornece tokens e custo em suas respostas de usage, incluindo detalhes de reasoning/cached tokens quando aplicáveis. citeturn22view2
+OpenRouter já fornece tokens e custo em suas respostas de usage, incluindo detalhes de reasoning/cached tokens quando aplicáveis.
 
 **Estrutura dos scripts**
 
@@ -1664,7 +1671,7 @@ assert raw_response_not_persisted
 assert secrets_not_in_trace
 ```
 
-O ZDR do OpenRouter deve ser validado separadamente do comportamento dos MCP Servers, porque a própria documentação esclarece que ZDR de inference não cobre tools/plugins externos. citeturn22view1
+O ZDR do OpenRouter deve ser validado separadamente do comportamento dos MCP Servers, porque a própria documentação esclarece que ZDR de inference não cobre tools/plugins externos.
 
 **Teste de failure injection**
 
@@ -1695,14 +1702,14 @@ recover workflow from database
 | Risco | Impacto | Mitigação |
 |---|---|---|
 | MCP evolui rapidamente | Alto | Pin de versão + compatibility suite |
-| Hermes ainda migra para MCP 2026 | Alto | MCP compatibility proxy + contract test citeturn18view2 |
-| GSD/Hermes integração instável | Alto | Runtime Gateway; não acoplar diretamente citeturn21search0 |
+| Hermes ainda migra para MCP 2026 | Alto | MCP compatibility proxy + contract test |
+| GSD/Hermes integração instável | Alto | Runtime Gateway; não acoplar diretamente |
 | Runtime contorna Policy Proxy | Crítico | network egress + config gerada pelo Control Plane |
 | Tool maliciosa/prompt injection | Crítico | trust model + allowlist + sandbox |
 | Vazamento de segredo | Crítico | Secret Store + redaction + ephemeral injection |
 | Dados enviados a provider inadequado | Alto | classificação + ZDR + allowlists |
-| ZDR interpretado como proteção de MCP | Alto | privacy policy separada por server citeturn22view1 |
-| Custo imprevisível | Médio | budgets + OpenRouter Guardrails + rate limit citeturn22view4 |
+| ZDR interpretado como proteção de MCP | Alto | privacy policy separada por server |
+| Custo imprevisível | Médio | budgets + OpenRouter Guardrails + rate limit |
 | Resultado não determinístico | Médio | múltiplas repetições + ground truth |
 | Alteração de catálogo de modelos | Médio | pin model/provider por campaign |
 | Trace contém conteúdo sensível | Alto | hashes/redaction/no raw prompt |
@@ -1752,45 +1759,45 @@ Isso transforma o trabalho de “uma aplicação que usa agentes” em uma demon
 
 As referências abaixo são ordenadas pela importância para decisões de implementação. As fontes primárias/oficiais foram priorizadas; a documentação oficial relevante está majoritariamente em inglês, portanto a terminologia deste relatório foi normalizada para pt-BR.
 
-**Model Context Protocol — especificação 2026-07-28.** É a principal referência normativa para o novo boundary MCP. Define arquitetura Host/Client/Server, JSON-RPC 2.0, requisições stateless, capabilities por request e as primitivas Resources, Prompts e Tools. citeturn18view3
+**Model Context Protocol — especificação 2026-07-28.** É a principal referência normativa para o novo boundary MCP. Define arquitetura Host/Client/Server, JSON-RPC 2.0, requisições stateless, capabilities por request e as primitivas Resources, Prompts e Tools.
 
-**MCP — Tools.** Referência para `tools/list`, `tools/call`, schemas e comportamento seguro de invocação. citeturn14view0
+**MCP — Tools.** Referência para `tools/list`, `tools/call`, schemas e comportamento seguro de invocação.
 
-**MCP — Resources.** Referência para recursos orientados a URI e exposição de dados/contexto. citeturn15search29turn14view1
+**MCP — Resources.** Referência para recursos orientados a URI e exposição de dados/contexto.
 
-**MCP — Prompts.** Referência para descoberta e obtenção de templates/prompts oferecidos por servers. citeturn14view2
+**MCP — Prompts.** Referência para descoberta e obtenção de templates/prompts oferecidos por servers.
 
-**MCP — Security Best Practices e Authorization.** Referências para threat model, authorization e uso de OAuth/Protected Resource Metadata. citeturn15search0turn15search15
+**MCP — Security Best Practices e Authorization.** Referências para threat model, authorization e uso de OAuth/Protected Resource Metadata.
 
-**MCP Tasks Extension.** Deve ser acompanhada para futuras operações long-running, pause/input/approval e handles duráveis, mas não deve substituir o Workflow Engine na primeira versão. citeturn19view1
+**MCP Tasks Extension.** Deve ser acompanhada para futuras operações long-running, pause/input/approval e handles duráveis, mas não deve substituir o Workflow Engine na primeira versão.
 
-**MCP Skills over MCP Working Group.** Relevante para a evolução futura do antigo conceito de Agent Skills; a direção atual é uma extensão formal baseada em primitives MCP, ainda em desenvolvimento/revisão. citeturn19view0
+**MCP Skills over MCP Working Group.** Relevante para a evolução futura do antigo conceito de Agent Skills; a direção atual é uma extensão formal baseada em primitives MCP, ainda em desenvolvimento/revisão.
 
-**Nous Research — Hermes Agent.** Referência oficial do runtime escolhido, incluindo modelos/provider flexibility, subagentes, terminal backends, skills e arquitetura geral. citeturn18view1
+**Nous Research — Hermes Agent.** Referência oficial do runtime escolhido, incluindo modelos/provider flexibility, subagentes, terminal backends, skills e arquitetura geral.
 
-**Hermes Agent — MCP Integration.** Referência direta para configuração de MCP, `stdio`, HTTP, discovery, tool filtering e suporte a Resources/Prompts. citeturn19view2
+**Hermes Agent — MCP Integration.** Referência direta para configuração de MCP, `stdio`, HTTP, discovery, tool filtering e suporte a Resources/Prompts.
 
-**Hermes Agent — rastreamento de migração MCP 2026.** Deve permanecer no compatibility watchlist do projeto até que a versão fixada em nossa PoC prove suporte à especificação alvo. citeturn18view2
+**Hermes Agent — rastreamento de migração MCP 2026.** Deve permanecer no compatibility watchlist do projeto até que a versão fixada em nossa PoC prove suporte à especificação alvo.
 
-**Open GSD — GSD Pi.** Repositório canônico para planejamento orientado a milestones/slices/tasks, verificação, worktrees, banco local e artifacts. citeturn18view0
+**Open GSD — GSD Pi.** Repositório canônico para planejamento orientado a milestones/slices/tasks, verificação, worktrees, banco local e artifacts.
 
-**GSD Pi — Getting Started.** Referência para estado `.gsd/`, fluxo de auto mode, configuração, runtime local e organização operacional. citeturn20view2
+**GSD Pi — Getting Started.** Referência para estado `.gsd/`, fluxo de auto mode, configuração, runtime local e organização operacional.
 
-**GSD Pi — Releases.** Deve entrar no watchlist de dependências porque versões recentes registram problemas em caminhos de integração MCP/Hermes, justificando o desacoplamento via Runtime Gateway. citeturn21search0
+**GSD Pi — Releases.** Deve entrar no watchlist de dependências porque versões recentes registram problemas em caminhos de integração MCP/Hermes, justificando o desacoplamento via Runtime Gateway.
 
-**OpenRouter — Quickstart/API.** Referência da integração HTTP unificada que deverá fundamentar `OpenRouterModelGateway`. citeturn21search6
+**OpenRouter — Quickstart/API.** Referência da integração HTTP unificada que deverá fundamentar `OpenRouterModelGateway`.
 
-**OpenRouter — Provider Routing.** Referência para provider selection, fallback, critérios de preço/desempenho e enforcement ZDR por request. citeturn16search6
+**OpenRouter — Provider Routing.** Referência para provider selection, fallback, critérios de preço/desempenho e enforcement ZDR por request.
 
-**OpenRouter — Zero Data Retention.** Referência obrigatória para a privacy policy da PoC; documenta enforcement global, por model group, guardrail e request, além da importante limitação de que ZDR de inference não governa plugins/tools externos. citeturn22view1
+**OpenRouter — Zero Data Retention.** Referência obrigatória para a privacy policy da PoC; documenta enforcement global, por model group, guardrail e request, além da importante limitação de que ZDR de inference não governa plugins/tools externos.
 
-**OpenRouter — Guardrails.** Referência complementar para budgets, model/provider allowlists e políticas de privacidade. citeturn22view4
+**OpenRouter — Guardrails.** Referência complementar para budgets, model/provider allowlists e políticas de privacidade.
 
-**OpenRouter — Usage Accounting.** Referência para tokens, reasoning tokens, caching e custos que alimentarão `model_calls` e Evaluation Lab. citeturn22view2
+**OpenRouter — Usage Accounting.** Referência para tokens, reasoning tokens, caching e custos que alimentarão `model_calls` e Evaluation Lab.
 
-**OpenRouter — Pricing.** Na data desta pesquisa, o pay-as-you-go informa 400+ modelos, 70+ providers, taxa de plataforma de 5,5% e ausência de gasto mínimo; esses números devem ser tratados como informação operacional mutável e não como premissa permanente da arquitetura. citeturn22view3
+**OpenRouter — Pricing.** Na data desta pesquisa, o pay-as-you-go informa 400+ modelos, 70+ providers, taxa de plataforma de 5,5% e ausência de gasto mínimo; esses números devem ser tratados como informação operacional mutável e não como premissa permanente da arquitetura.
 
-**W3C Trace Context.** Referência para interoperabilidade de tracing distribuído por `traceparent` e `tracestate`. citeturn15search6
+**W3C Trace Context.** Referência para interoperabilidade de tracing distribuído por `traceparent` e `tracestate`.
 
 A baseline documental que deve ser congelada junto com o primeiro release da PoC é, portanto:
 
