@@ -5,6 +5,8 @@ from time import monotonic
 
 from fastapi import HTTPException, Request, status
 
+from app.core.config import settings
+
 
 class InMemoryRateLimiter:
     def __init__(self) -> None:
@@ -34,9 +36,26 @@ class InMemoryRateLimiter:
 limiter = InMemoryRateLimiter()
 
 
+def resolve_client_ip(request: Request) -> str:
+    """Returns the real client IP, trusting X-Forwarded-For only when the
+    directly-connecting peer is itself an allowlisted reverse proxy
+    (TRUSTED_PROXY_IPS) -- otherwise a request hitting the backend directly
+    could forge that header and dodge its own per-IP rate limit."""
+    direct_ip = request.client.host if request.client else "unknown"
+    trusted_proxies = settings.trusted_proxy_ip_list
+    if trusted_proxies and direct_ip in trusted_proxies:
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        if forwarded_for:
+            # nginx appends to this header; the first entry is the original client.
+            first_hop = forwarded_for.split(",")[0].strip()
+            if first_hop:
+                return first_hop
+    return direct_ip
+
+
 def rate_limit(name: str, max_requests: int, window_seconds: int) -> Callable[[Request], None]:
     def dependency(request: Request) -> None:
-        client_ip = request.client.host if request.client else "unknown"
+        client_ip = resolve_client_ip(request)
         limiter.check(f"{name}:{client_ip}", max_requests, window_seconds)
 
     return dependency

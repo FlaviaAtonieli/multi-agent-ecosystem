@@ -23,7 +23,8 @@ A aplicação utiliza sessão persistida no servidor, e não JWT armazenado no n
 - Lista de hosts confiáveis.
 - Cabeçalhos de segurança aplicados pelo middleware.
 - Identificador de requisição para correlação de erros.
-- Rate limit em cadastro, login, renovação e chamadas de modelo.
+- Rate limit em cadastro, login, renovação e chamadas de modelo. Contabilizado pelo IP direto da conexão por padrão; atrás de um reverse proxy real, `TRUSTED_PROXY_IPS` permite confiar no cabeçalho `X-Forwarded-For` — só quando o IP que abriu a conexão for o próprio proxy configurado, para não ser possível forjar o cabeçalho contornando o limite.
+- `/docs`, `/redoc` e `/openapi.json` desligados quando `ENVIRONMENT=production`, independente de a porta do backend estar ou não acessível diretamente do host.
 
 ### Proteção contra enumeração e força bruta
 
@@ -33,17 +34,16 @@ A aplicação utiliza sessão persistida no servidor, e não JWT armazenado no n
 
 ### Autorização
 
-A implementação atual possui três perfis:
+A implementação atual possui quatro perfis:
 
 | Perfil | Permissões principais |
 |---|---|
 | `USER` | Funções gerais e solicitações próprias |
 | `TECHNICIAN` | Planejamento em solicitações próprias e consulta dos próprios rastros |
-| `ADMIN` | Administração de usuários, perfis e consultas administrativas |
+| `REVIEWER` | Revisão humana de solicitações sinalizadas pelo Quality Gate (aprovação/rejeição com justificativa) e consulta da trilha de auditoria entre usuários |
+| `ADMIN` | Administração de usuários, perfis e consultas administrativas; isento da cota diária de tokens |
 
 A promoção de perfil é restrita ao administrador. Quando o papel de outro usuário é alterado, as sessões desse usuário são revogadas.
-
-O perfil `REVIEWER`, previsto na evolução da PoC, ainda não faz parte da implementação atual.
 
 ## Segurança da integração com modelos
 

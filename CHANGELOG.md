@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-08 - Auditoria de seguranca P1 (parte 2): Swagger desligado em producao, rate limiter confia em proxy so quando configurado
+
+### Corrigido
+
+- `app/main.py`: `docs_url`/`redoc_url`/`openapi_url` desligados quando `ENVIRONMENT=production`, independente da porta do backend estar exposta -- corrige o achado real (Swagger acessivel em producao) sem mudar o fluxo de desenvolvimento local (a porta 8000 continua exposta, `localhost:8000/docs` continua funcionando em dev).
+- `app/core/rate_limit.py` (`resolve_client_ip`, novo): o rate limiter so confia no cabecalho `X-Forwarded-For` quando o IP que abriu a conexao direta estiver na lista `TRUSTED_PROXY_IPS` (nova config, vazia por padrao) -- caso contrario continua usando o IP direto de hoje. Evita que uma requisicao direta forje o cabecalho pra escapar do proprio limite.
+- `frontend/nginx.conf`: passa a enviar `X-Forwarded-For` (faltava) -- pre-requisito pro item acima funcionar quando `TRUSTED_PROXY_IPS` for configurado num deploy real.
+- `SECURITY.md`: secao de autorizacao atualizada para os 4 perfis reais (estava desatualizada, ainda listava 3 e dizia que REVIEWER nao existia); documenta o novo comportamento do rate limiter e do desligamento do Swagger.
+
+### Contexto
+
+- restante do item P1 do plano de fechamento tecnico/seguranca; a correcao original prevista (fechar a porta 8000, confiar sempre no proxy) foi revista em conversa direta -- fechar a porta quebraria o acesso local ao Swagger sem necessidade, e confiar sempre no X-Forwarded-For sem allowlist seria uma forma nova de burlar o rate limit;
+- verificado com `ruff`/`mypy app` (limpos), 6 testes novos/atualizados em `test_config.py` (bloqueio de producao insegura + resolucao de IP com e sem proxy confiavel), suite completa do backend, e verificacao real via Docker Compose: `/docs` responde 200 em dev, login via nginx com o novo cabecalho funciona normalmente.
+
 ## 2026-09-08 - Auditoria de seguranca P1: sobe react-router-dom para v7 (CVEs)
 
 ### Corrigido

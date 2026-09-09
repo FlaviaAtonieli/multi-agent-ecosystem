@@ -35,6 +35,12 @@ app = FastAPI(
     description="Secure foundation for the Agent Skills orchestration ecosystem.",
     version="0.1.0",
     lifespan=lifespan,
+    # Auditoria de seguranca P1: Swagger/Redoc/schema nao ficam servidos em
+    # producao, independente de a porta do backend estar ou nao acessivel
+    # diretamente do host.
+    docs_url=None if settings.is_production else "/docs",
+    redoc_url=None if settings.is_production else "/redoc",
+    openapi_url=None if settings.is_production else "/openapi.json",
 )
 
 app.add_middleware(RequestIdMiddleware)
@@ -102,7 +108,10 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 @app.get("/", include_in_schema=False)
 def root() -> dict[str, str]:
-    return {"name": settings.app_name, "status": "online", "docs": "/docs"}
+    payload = {"name": settings.app_name, "status": "online"}
+    if app.docs_url:
+        payload["docs"] = app.docs_url
+    return payload
 
 
 app.include_router(api_router, prefix=settings.api_v1_prefix)
