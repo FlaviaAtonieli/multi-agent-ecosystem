@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-08 - Auditoria de seguranca P1: sobe react-router-dom para v7 (CVEs)
+
+### Corrigido
+
+- `react-router-dom` 6.28.0 -> 7.18.3. A auditoria original recomendava so um patch dentro da 6.x (6.30.6), mas CVEs novas identificadas nesta verificacao (redirecionamento aberto via backslash em `<Link>`/`useNavigate`, injecao arbitraria de construtor via `deserializeErrors()` na hidratacao SSR) passaram a afetar toda a linha 6.x ate 7.17.0 -- so a v7 corrige de fato. App usa o modo declarativo (`<Routes>`/`<Route>`/`<Link>`/`useNavigate`), compativel sem mudanca de codigo.
+- `vite` 5.4.11 -> 5.4.21 (patch, mesma major): corrige 3 vulnerabilidades do servidor de desenvolvimento (bypass de `server.fs.deny`, path traversal em source maps, disclosure de hash NTLMv2 no Windows) -- nao afetam o build de producao servido pelo nginx, so o `vite dev` local.
+
+### Contexto
+
+- item P1 do plano de fechamento tecnico/seguranca aprovado pela autora;
+- residual conhecido, aceito por ora: `esbuild <=0.24.2` (moderado, GHSA-67mh-4wv8-2f99) continua no audit -- so corrige com Vite 6+/8+ (mudanca de major, fora do escopo deste item; tambem dev-server-only, nao afeta producao);
+- verificado com `tsc -b`, `npm run build` (limpos), e um smoke test funcional real via Playwright cobrindo todas as rotas da aplicacao, navegacao profunda, voltar/avancar do navegador e logout -- sem erro de console real, so o 401 esperado apos logout.
+
+
 ## 2026-09-08 - Auditoria de seguranca P0: aplicacao recusa subir em producao sem COOKIE_SECURE
 
 ### Adicionado
