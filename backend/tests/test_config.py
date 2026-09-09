@@ -1,4 +1,5 @@
 import pytest
+from fastapi.testclient import TestClient
 from starlette.requests import Request
 
 from app.core.config import Settings, settings
@@ -48,3 +49,18 @@ def test_resolve_client_ip_ignores_forwarded_header_from_untrusted_peer(monkeypa
     # its way past the rate limit just by sending its own X-Forwarded-For.
     request = _make_request("203.0.113.9", {"X-Forwarded-For": "198.51.100.1"})
     assert resolve_client_ip(request) == "203.0.113.9"
+
+
+def test_oversized_body_is_rejected_before_reaching_the_route(
+    client: TestClient, monkeypatch
+) -> None:
+    monkeypatch.setattr(settings, "max_request_body_bytes", 1024)
+    response = client.post("/api/v1/auth/login", content=b"x" * 2048)
+    assert response.status_code == 413
+    assert response.json()["error"] == "PAYLOAD_TOO_LARGE"
+
+
+def test_body_within_limit_reaches_normal_validation(client: TestClient) -> None:
+    response = client.post("/api/v1/auth/login", json={"email": "not-real", "password": "x"})
+    # Rejected by request validation (bad payload shape), not by the size guard.
+    assert response.status_code in (400, 401, 403, 422)

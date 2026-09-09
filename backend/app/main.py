@@ -11,7 +11,11 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.database import SessionLocal
-from app.core.middleware import RequestIdMiddleware, SecurityHeadersMiddleware
+from app.core.middleware import (
+    MaxBodySizeMiddleware,
+    RequestIdMiddleware,
+    SecurityHeadersMiddleware,
+)
 from app.db.init_db import bootstrap_admin, create_tables_if_enabled
 
 logging.basicConfig(
@@ -56,6 +60,10 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "X-CSRF-Token", "X-Request-ID"],
 )
+# Added last so it runs first (Starlette wraps outward) -- rejects an
+# oversized body via Content-Length before any other middleware or route
+# handler touches the request.
+app.add_middleware(MaxBodySizeMiddleware)
 
 
 @app.exception_handler(StarletteHTTPException)
