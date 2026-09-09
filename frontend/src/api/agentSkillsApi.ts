@@ -6,6 +6,8 @@ export type AgentSkillDomain =
   | 'arquitetura_software'
   | 'seguranca_informacao'
 
+export type AgentSkillVisibility = 'OFFICIAL' | 'PRIVATE' | 'CLAN' | 'PUBLIC'
+
 export type AgentSkill = {
   id: string
   name: string
@@ -18,9 +20,31 @@ export type AgentSkill = {
   input_contract_ref: string
   output_contract_ref: string
   uses_external_services: boolean
+  owner_id: string | null
+  visibility: AgentSkillVisibility
+  persona_instructions: string | null
   validated_at: string | null
   created_at: string
   updated_at: string
+}
+
+export type AgentSkillCreatePayload = {
+  name: string
+  version: string
+  author_origin: string
+  domain: AgentSkillDomain
+  objective: string
+  capabilities: string[]
+  expected_inputs: string[]
+  produced_outputs: string[]
+  operating_limits: string[]
+  input_contract_ref: string
+  output_contract_ref: string
+  security_rules: string[]
+  usage_examples: string[]
+  validation_criteria: string[]
+  uses_external_services: boolean
+  persona_instructions: string | null
 }
 
 export type ConfidenceLevel = 'ALTO' | 'MEDIO' | 'BAIXO'
@@ -96,6 +120,11 @@ export const agentSkillsApi = {
     apiRequest<AgentSkill>('/agent-skills/import', {
       method: 'POST',
       body: JSON.stringify({ manifest_markdown: manifestMarkdown }),
+    }),
+  createSkill: (payload: AgentSkillCreatePayload) =>
+    apiRequest<AgentSkill>('/agent-skills', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
   enableSkill: (id: string) =>
     apiRequest<AgentSkill>(`/agent-skills/${encodeURIComponent(id)}/enable`, { method: 'PATCH' }),

@@ -126,13 +126,14 @@ def _consolidate(
 
 
 def _resolve_target_skills(db: Session, technical_request: TechnicalRequest) -> list[AgentSkill]:
+    viewer_id = technical_request.owner_id
     domains = technical_request.requested_domains or [
-        skill.domain for skill in list_active_skills(db)
+        skill.domain for skill in list_active_skills(db, viewer_id=viewer_id)
     ]
     seen_ids: set[str] = set()
     skills: list[AgentSkill] = []
     for domain in dict.fromkeys(domains):  # de-dupe, preserve order
-        for skill in select_skills_for_domain(db, domain=domain):
+        for skill in select_skills_for_domain(db, domain=domain, viewer_id=viewer_id):
             if skill.id not in seen_ids:
                 seen_ids.add(skill.id)
                 skills.append(skill)
@@ -186,7 +187,7 @@ async def _invoke_skill(
     started = time.perf_counter()
 
     try:
-        result = await call_skill_tool(skill.domain, tool_call)
+        result = await call_skill_tool(skill, tool_call)
         latency_ms = round((time.perf_counter() - started) * 1000)
 
         invocation.status = "COMPLETED"
@@ -359,7 +360,7 @@ async def ask_follow_up_question(
     and is kept as its own row so the conversation history survives (unlike
     ConsolidatedResponse, one per TechnicalRequest)."""
     skills = (
-        select_skills_for_domain(db, domain=target_domain)
+        select_skills_for_domain(db, domain=target_domain, viewer_id=technical_request.owner_id)
         if target_domain
         else _resolve_target_skills(db, technical_request)
     )

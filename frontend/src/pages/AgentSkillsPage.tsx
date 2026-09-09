@@ -25,6 +25,27 @@ const domainTones: Record<AgentSkillDomain, string> = {
   seguranca_informacao: 'red',
 }
 
+const CORE_AGENTS = [
+  {
+    key: 'orquestrador',
+    icon: '⌘',
+    name: 'Orquestrador',
+    description: 'Seleciona as Agent Skills certas para cada solicitação e coordena a execução de ponta a ponta.',
+  },
+  {
+    key: 'conselheiro',
+    icon: '✓',
+    name: 'Conselheiro',
+    description: 'Avalia as respostas antes da entrega final — verifica consistência e completude, aprova ou sinaliza revisão humana.',
+  },
+  {
+    key: 'orientador',
+    icon: '◈',
+    name: 'Orientador de Interação',
+    description: 'Garante que o contexto está completo antes de qualquer análise começar.',
+  },
+] as const
+
 type StatusFilter = 'ALL' | 'ENABLED' | 'PENDING' | 'DISABLED'
 
 function statusOf(skill: AgentSkill): Exclude<StatusFilter, 'ALL'> {
@@ -98,10 +119,30 @@ export function AgentSkillsPage() {
           <p>Skills registradas, seus domínios de atuação e o estado de habilitação no ecossistema.</p>
         </div>
         {canImport && (
-          <Link className="workspace-primary-action" to="/agent-skills/import">
-            + Importar manifesto
-          </Link>
+          <div className="workspace-page-heading-actions">
+            <Link className="workspace-secondary-action" to="/agent-skills/import">
+              Importar manifesto
+            </Link>
+            <Link className="workspace-primary-action" to="/agent-skills/new">
+              + Criar skill
+            </Link>
+          </div>
         )}
+      </section>
+
+      <section className="workspace-core-agents fade-up" style={{ animationDelay: '0.04s' }}>
+        <span className="workspace-card-kicker">NÚCLEO DO ECOSSISTEMA · SEMPRE ATIVOS</span>
+        <div className="workspace-core-agents-grid">
+          {CORE_AGENTS.map((agent) => (
+            <article key={agent.key} className="workspace-core-agent-card">
+              <span className="workspace-core-agent-icon">{agent.icon}</span>
+              <div>
+                <strong>{agent.name}</strong>
+                <p>{agent.description}</p>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -164,6 +205,18 @@ export function AgentSkillsPage() {
                   <span className="workspace-skill-domain-badge">{domainLabels[skill.domain]}</span>
                   <code>{skill.version}</code>
                 </div>
+
+                <span
+                  className={`workspace-ownership-badge workspace-ownership-badge-${
+                    skill.visibility === 'OFFICIAL' ? 'official' : 'private'
+                  }`}
+                >
+                  {skill.visibility === 'OFFICIAL'
+                    ? 'Oficial do ecossistema'
+                    : skill.owner_id === user?.id
+                      ? 'Minha skill · privada'
+                      : 'Skill privada'}
+                </span>
 
                 {canManage && (
                   <button

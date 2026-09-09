@@ -3,6 +3,7 @@ import { AppShell } from '../components/layout/AppShell'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { PublicRoute } from '../components/PublicRoute'
 import { AdminPage } from '../pages/AdminPage'
+import { AgentSkillCreatePage } from '../pages/AgentSkillCreatePage'
 import { AgentSkillImportPage } from '../pages/AgentSkillImportPage'
 import { AgentSkillsPage } from '../pages/AgentSkillsPage'
 import { AuditoriaPage } from '../pages/AuditoriaPage'
@@ -28,6 +29,7 @@ export function App() {
           <Route path="/orchestrations" element={<OrchestrationsPage />} />
           <Route path="/orchestrations/:traceId" element={<OrchestrationPage />} />
           <Route path="/agent-skills" element={<AgentSkillsPage />} />
+          <Route path="/agent-skills/new" element={<AgentSkillCreatePage />} />
           <Route path="/agent-skills/import" element={<AgentSkillImportPage />} />
           <Route path="/auditoria" element={<AuditoriaPage />} />
           <Route path="/admin" element={<AdminPage />} />

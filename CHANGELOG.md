@@ -2,6 +2,26 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-08 - Rede de agentes, fase 1: skills criadas por usuario (fundacao)
+
+### Adicionado
+
+- `AgentSkill` ganha `owner_id`, `visibility` (OFFICIAL/PRIVATE/CLAN/PUBLIC) e `persona_instructions` (migration `0010_agent_skill_ownership`) -- as 4 skills oficiais existentes viram `visibility=OFFICIAL` automaticamente, sem mudanca de comportamento.
+- `GenericSkillExecutor` (`app/agent_catalog/tool_interface.py`) + `generic_skill_server.py` (novo servidor MCP real): qualquer skill criada por um usuario roda por esse caminho generico, guiada pela `persona_instructions` do proprio manifesto, sem precisar de uma classe `SkillExecutor` dedicada por skill -- os 4 executores oficiais continuam intactos.
+- `POST /agent-skills` (endpoint ja existente, "criacao assistida") agora grava `owner_id`/`visibility=PRIVATE`; toda a cadeia de selecao de skills (`_resolve_target_skills`, `select_skills_for_domain`, `list_active_skills`, `list_all_skills`, follow-up direcionado) passa a ser escopada por dono -- um usuario nunca ve nem aciona a skill privada de outro.
+- `GET /agent-skills/{id}` retorna 404 para skill privada de outro usuario (antes nao tinha nenhum escopo).
+- Frontend: `frontend/src/pages/AgentSkillCreatePage.tsx` -- wizard de 3 passos (Identidade, Persona, Comportamento esperado) pra criar uma skill sem precisar colar um `modelo.md` cru; `TagListField` (componente reutilizavel) padroniza os campos de lista. `AgentSkillsPage` ganha os 3 agentes fixos do ecossistema (Orquestrador, Conselheiro -- o Advisory Agent/Quality Gate ja existente, batizado agora -- e Orientador de Interacao) como cards no topo, e um selo "Oficial do ecossistema" / "Minha skill · privada" em cada card de skill.
+
+### Corrigido
+
+- Bug de regressao real (nao instabilidade) introduzido durante esta mudanca: `ask_follow_up_question` (pergunta direcionada a um dominio especifico) chamava `select_skills_for_domain` sem `viewer_id`, o que passou a excluir as proprias skills importadas do usuario assim que elas viraram `PRIVATE` por padrao -- pego pela suite real antes do commit, nao em producao.
+
+### Contexto
+
+- pedido direto da autora: arquitetura de "rede de agentes" com fase 1 (fundacao) definida em conversa -- executor generico por manifesto (nao codigo por skill), skill nasce privada, escopo por dono desde ja mesmo sem a tela de rede completa (fases 2 e 3 ainda por vir: Contestador/QA e clas/publico);
+- decisao tecnica verificada no codigo antes de implementar: os 4 executores oficiais ja eram quase identicos entre si (so o rotulo de dominio mudava), confirmando que um executor generico era viavel sem reescrever nada dos 4 existentes;
+- verificado com `ruff`/`mypy app` (limpos), suite completa do backend (real, sem mock) incluindo 2 testes novos (`test_custom_skills.py`), `tsc -b` (frontend) e fluxo real via Playwright + Docker Compose: catalogo com os 3 agentes fixos, wizard completo, skill criada aparecendo como "Minha skill · privada", e um bug de layout (badge "obrigatorio" quebrando linha) corrigido antes do commit.
+
 ## 2026-08-30 - Corrige navegacao colada no cabecalho em telas medias (<=820px)
 
 ### Corrigido

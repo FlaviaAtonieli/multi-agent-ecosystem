@@ -32,6 +32,7 @@ class AgentSkillManifestCreate(BaseModel):
     usage_examples: list[str] = Field(default_factory=list)
     validation_criteria: list[str] = Field(default_factory=list)
     uses_external_services: bool = False
+    persona_instructions: str | None = Field(default=None, max_length=4000)
 
 
 class AgentSkillRead(BaseModel):
@@ -48,6 +49,9 @@ class AgentSkillRead(BaseModel):
     input_contract_ref: str
     output_contract_ref: str
     uses_external_services: bool
+    owner_id: str | None
+    visibility: str
+    persona_instructions: str | None
     validated_at: datetime | None
     created_at: datetime
     updated_at: datetime

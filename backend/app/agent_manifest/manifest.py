@@ -87,6 +87,10 @@ class AgentSkillManifest(BaseModel):
     usage_examples: list[str] = Field(default_factory=list)
     validation_criteria: list[str] = Field(default_factory=list)
     uses_external_services: bool = False
+    # Only meaningful for a user-created skill executed by GenericSkillExecutor
+    # -- the 4 official skills keep their behavior in dedicated SkillExecutor
+    # subclasses and ignore this field even if present.
+    persona_instructions: str | None = Field(default=None, max_length=4000)
 
 
 def _normalize(text: str) -> str:
