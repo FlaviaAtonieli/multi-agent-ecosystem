@@ -14,6 +14,7 @@ from pydantic import SecretStr
 
 from app.agent_catalog.tool_interface import SkillToolCall, SkillToolResult
 from app.core.config import Settings, settings
+from app.models import AgentSkill
 
 _DOMAIN_SERVER_MODULES: dict[str, str] = {
     "codigo_legado": "app.agent_catalog.mcp_servers.legacy_code_server",
@@ -24,6 +25,17 @@ _DOMAIN_SERVER_MODULES: dict[str, str] = {
     # app/agent_manifest/manifest.py were the only two touch points needed.
     "seguranca_informacao": "app.agent_catalog.mcp_servers.security_server",
 }
+
+_GENERIC_SKILL_SERVER_MODULE = "app.agent_catalog.mcp_servers.generic_skill_server"
+
+
+def _module_for_skill(skill: AgentSkill) -> str | None:
+    # A user-created skill (owner_id set) always routes to the generic,
+    # persona-driven server -- regardless of which domain it declares --
+    # since it has no dedicated SkillExecutor/server module of its own.
+    if skill.owner_id is not None:
+        return _GENERIC_SKILL_SERVER_MODULE
+    return _DOMAIN_SERVER_MODULES.get(skill.domain)
 
 _TOOL_NAME = "executar"
 
@@ -69,15 +81,15 @@ def _subprocess_env(config: Settings) -> dict[str, str]:
 
 
 async def call_skill_tool(
-    domain: str,
+    skill: AgentSkill,
     tool_call: SkillToolCall,
     *,
     config: Settings = settings,
 ) -> SkillToolResult:
-    module_path = _DOMAIN_SERVER_MODULES.get(domain)
+    module_path = _module_for_skill(skill)
     if module_path is None:
         raise SkillServerNotImplementedError(
-            f"Não há servidor MCP implementado para o domínio '{domain}' nesta PoC."
+            f"Não há servidor MCP implementado para o domínio '{skill.domain}' nesta PoC."
         )
 
     if config.mcp_skill_transport == "memory":

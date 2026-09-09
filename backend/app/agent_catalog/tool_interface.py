@@ -33,6 +33,7 @@ __all__ = [
     "BusinessRulesSkillExecutor",
     "ArchitectureSkillExecutor",
     "SecuritySkillExecutor",
+    "GenericSkillExecutor",
 ]
 
 
@@ -399,6 +400,99 @@ class SecuritySkillExecutor(SkillExecutor):
             justification = (
                 "Nenhum trecho relevante foi recuperado da base de conhecimento; a análise "
                 "de segurança carece de evidência documental direta."
+            )
+
+        return SkillToolResult(
+            trace_id=technical_request.trace_id,
+            agente_emissor=AgenteEmissor(
+                nome=skill.name,
+                versao_prompt=skill.version,
+                dominio=skill.domain,
+            ),
+            analise_estruturada=AnaliseEstruturada(
+                resumo_executivo=plan_response.plan.summary,
+                descobertas_tecnicas=findings,
+                impactos_mapeados=plan_response.plan.risks,
+            ),
+            governanca=Governanca(
+                nivel_confianca=confidence,
+                justificativa_confianca=justification,
+                referencias_catalogo=[],
+            ),
+        )
+
+
+class GenericSkillExecutor(SkillExecutor):
+    """Executor for user-created skills ("rede de agentes" fase 1): a single,
+    domain-agnostic implementation driven by the skill's own
+    `persona_instructions` instead of a dedicated SkillExecutor subclass per
+    skill. The 4 official skills above predate this and keep their own
+    classes; this one is what makes "qualquer usuário cria uma skill" viable
+    without needing a developer to write code for every new skill.
+    """
+
+    def execute(
+        self,
+        db: Session,
+        *,
+        skill: AgentSkill,
+        technical_request: TechnicalRequest,
+        user: User,
+        tool_call: SkillToolCall,
+    ) -> SkillToolResult:
+        plan_response = generate_technical_plan(
+            db,
+            technical_request=technical_request,
+            user=user,
+            requested_model=tool_call.requested_model,
+            analysis_domain_label=DOMAIN_LABELS.get(skill.domain, skill.domain),
+            additional_question=tool_call.additional_question,
+            persona_instructions=skill.persona_instructions,
+        )
+
+        retrieved_chunks: list[KnowledgeChunk] = []
+        llm_invocation = db.scalar(
+            select(LLMInvocation).where(LLMInvocation.llm_call_id == plan_response.llm_call_id)
+        )
+        if llm_invocation and llm_invocation.retrieved_chunk_ids:
+            retrieved_chunks = list(
+                db.scalars(
+                    select(KnowledgeChunk).where(
+                        KnowledgeChunk.id.in_(llm_invocation.retrieved_chunk_ids)
+                    )
+                )
+            )
+
+        findings = [
+            AchadoTecnico(
+                item_identificado=chunk.artifact_name,
+                descricao_detalhada=(
+                    "Trecho recuperado da base de conhecimento como evidência relevante "
+                    "para a análise solicitada."
+                ),
+                trecho_referenciado=chunk.content[:500],
+            )
+            for chunk in retrieved_chunks
+        ]
+
+        missing = plan_response.plan.missing_information
+        if not missing and findings:
+            confidence: ConfidenceLevel = "ALTO"
+            justification = (
+                f"{len(findings)} trecho(s) de evidência recuperados e nenhuma lacuna "
+                "de informação identificada pelo planejador técnico."
+            )
+        elif findings:
+            confidence = "MEDIO"
+            justification = (
+                f"{len(findings)} trecho(s) de evidência recuperados, mas o planejador "
+                f"técnico identificou {len(missing)} lacuna(s) de informação."
+            )
+        else:
+            confidence = "BAIXO"
+            justification = (
+                "Nenhum trecho relevante foi recuperado da base de conhecimento; "
+                "a análise carece de evidência documental direta."
             )
 
         return SkillToolResult(

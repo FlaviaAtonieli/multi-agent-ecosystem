@@ -15,7 +15,7 @@ from app.agent_catalog.registry import (
 from app.agent_catalog.tool_interface import list_tools
 from app.agent_manifest.manifest import AgentSkillManifest, ManifestParseError, parse_modelo_md
 from app.api.dependencies import (
-    get_current_session,
+    get_current_user,
     require_admin,
     require_authenticated_csrf,
     require_technician,
@@ -81,17 +81,21 @@ def _find_executed_request(db: Session, request_id: str, user: User) -> Technica
 def list_skills(
     only_active: bool = True,
     db: Session = Depends(get_db),
-    _: AuthSession = Depends(get_current_session),
+    user: User = Depends(get_current_user),
 ) -> list:
-    return list_active_skills(db) if only_active else list_all_skills(db)
+    return (
+        list_active_skills(db, viewer_id=user.id)
+        if only_active
+        else list_all_skills(db, viewer_id=user.id)
+    )
 
 
 @router.get("/tools", response_model=list[AgentSkillToolDescriptorRead])
 def list_skill_tools(
     db: Session = Depends(get_db),
-    _: AuthSession = Depends(get_current_session),
+    user: User = Depends(get_current_user),
 ) -> list:
-    return list_tools(list_active_skills(db))
+    return list_tools(list_active_skills(db, viewer_id=user.id))
 
 
 @router.post("", response_model=AgentSkillRead, status_code=status.HTTP_201_CREATED)
@@ -104,7 +108,7 @@ def create_skill(
 ) -> object:
     manifest = AgentSkillManifest(**payload.model_dump())
     try:
-        skill = register_skill(db, manifest=manifest, submitted_by=user)
+        skill = register_skill(db, manifest=manifest, submitted_by=user, owner_id=user.id)
     except AgentSkillValidationError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="; ".join(exc.errors)
@@ -142,6 +146,7 @@ def import_skill(
             manifest=manifest,
             submitted_by=user,
             raw_markdown=payload.manifest_markdown,
+            owner_id=user.id,
         )
     except AgentSkillValidationError as exc:
         raise HTTPException(
@@ -199,12 +204,16 @@ def disable(
 def get_skill_detail(
     skill_id: str,
     db: Session = Depends(get_db),
-    _: AuthSession = Depends(get_current_session),
+    user: User = Depends(get_current_user),
 ) -> object:
     try:
-        return get_skill(db, skill_id)
+        skill = get_skill(db, skill_id)
     except AgentSkillNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    if skill.visibility != "OFFICIAL" and skill.owner_id != user.id and user.role != "ADMIN":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent Skill não encontrada.")
+    return skill
 
 
 @router.post("/requests/{request_id}/execute", response_model=OrchestrationExecutionRead)

@@ -33,6 +33,20 @@ class AgentSkill(Base):
     submitted_by_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="RESTRICT"), index=True, nullable=False
     )
+    # None = curated/official skill (the 4 shipped with the PoC). Set = a skill
+    # created by that user via the assisted form -- private to them until a
+    # later network/sharing phase (docs/gestao rede de agentes) changes visibility.
+    owner_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True
+    )
+    visibility: Mapped[str] = mapped_column(
+        String(20), index=True, nullable=False, default="OFFICIAL"
+    )
+    # Free-text "voice"/focus for a user-created skill, fed into the shared
+    # planner prompt (see app/llm/prompts.py) instead of domain-specific Python
+    # logic -- the 4 official skills don't use this, they keep their own
+    # SkillExecutor subclasses.
+    persona_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
     validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
