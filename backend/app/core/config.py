@@ -22,6 +22,12 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173"
     trusted_hosts: str = "localhost,127.0.0.1"
+    # Auditoria de seguranca P1: IPs de reverse proxy confiaveis, cujo cabecalho
+    # X-Forwarded-For sera usado para o rate limiter em vez de request.client.host.
+    # Vazio por padrao -- so ativa a confianca quando o operador do deploy real
+    # configurar explicitamente o IP do proxy; sem isso, qualquer requisicao
+    # direta poderia forjar X-Forwarded-For e furtar o limite por IP.
+    trusted_proxy_ips: str = ""
 
     session_cookie_name: str = "agenthub_session"
     csrf_cookie_name: str = "agenthub_csrf"
@@ -103,6 +109,10 @@ class Settings(BaseSettings):
     @property
     def trusted_host_list(self) -> list[str]:
         return [item.strip() for item in self.trusted_hosts.split(",") if item.strip()]
+
+    @property
+    def trusted_proxy_ip_list(self) -> list[str]:
+        return [item.strip() for item in self.trusted_proxy_ips.split(",") if item.strip()]
 
     @property
     def llm_allowed_model_list(self) -> list[str]:
