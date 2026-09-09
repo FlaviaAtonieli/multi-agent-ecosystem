@@ -2,6 +2,24 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-08 - Auditoria de seguranca P2/P3: VALIDATION.md atualizado, limite de corpo HTTP, limpeza de diretorios fantasma
+
+### Adicionado
+
+- `MaxBodySizeMiddleware` (`app/core/middleware.py`, novo `MAX_REQUEST_BODY_BYTES`, padrao 2MB): rejeita pelo `Content-Length` declarado, antes de qualquer rota le-lo -- a aplicacao so recebe JSON, sem upload de arquivo, entao o teto cobre folgadamente o maior payload legitimo hoje.
+- 2 testes cobrindo o middleware (corpo grande rejeitado com 413, corpo normal segue pro fluxo de validacao de sempre).
+
+### Corrigido
+
+- `VALIDATION.md` reescrito por completo -- estava parado na migration `0003` e citava `LLM_PROVIDER=mock`, removido do codigo ha muito tempo; agora reflete o estado real (migration `0010`, 4 perfis, sem mock, 63 testes) e referencia `docs/validation/evidence/` em vez de duplicar o conteudo.
+- Removidos dois diretorios fantasma da raiz do repositorio, nunca rastreados pelo git: `doc/` (legado, ja vazio -- as imagens do RFC ja tinham sido movidas pra `docs/rfc/imagens/` antes desta sessao) e um diretorio cujo nome comecava literalmente com aspas (`"docs`, sobra de um comando mal executado). De quebra, isso eliminou um aviso recorrente do git ("could not open directory...") que aparecia em todo comando `git status` desde o inicio da sessao -- a pasta fantasma confundia a leitura do diretorio real `docs/`.
+
+### Contexto
+
+- itens P2 e P3 do plano de fechamento tecnico/seguranca aprovado pela autora;
+- os diretorios fantasma nunca estiveram no historico do git (`git ls-files` confirmou 0 arquivos rastreados em ambos) -- a remocao nao gera diff nenhum, so limpa a arvore de trabalho;
+- verificado com `ruff`/`mypy app` (limpos) e suite completa do backend (real, sem mock).
+
 ## 2026-09-08 - Auditoria de seguranca P1 (parte 2): Swagger desligado em producao, rate limiter confia em proxy so quando configurado
 
 ### Corrigido

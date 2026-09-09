@@ -22,6 +22,10 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173"
     trusted_hosts: str = "localhost,127.0.0.1"
+    # Auditoria de seguranca P2: teto de tamanho de corpo de requisicao (bytes).
+    # A aplicacao so recebe JSON, sem upload de arquivo -- 2MB cobre folgadamente
+    # o maior payload legitimo hoje (contexto de solicitacao + listas de manifesto).
+    max_request_body_bytes: int = 2 * 1024 * 1024
     # Auditoria de seguranca P1: IPs de reverse proxy confiaveis, cujo cabecalho
     # X-Forwarded-For sera usado para o rate limiter em vez de request.client.host.
     # Vazio por padrao -- so ativa a confianca quando o operador do deploy real
