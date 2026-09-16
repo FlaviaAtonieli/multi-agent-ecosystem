@@ -135,16 +135,17 @@ Usuário autenticado
   -> dashboard e timeline exibem o histórico
 ```
 
-A execução exige um usuário com perfil `TECHNICIAN` ou `ADMIN`, `LLM_ENABLED=true` e uma `OPENROUTER_API_KEY` válida. O resultado é estruturado e marcado para aprovação humana. A base não executa tools nem publica documentos automaticamente.
+A execução exige um usuário autenticado com qualquer papel exceto `REVIEWER` (ver `ORCHESTRATION_ROLES` em `app/core/roles.py` — separação de funções: quem revisa não é quem produz), `LLM_ENABLED=true` e uma `OPENROUTER_API_KEY` válida. O resultado é estruturado e marcado para aprovação humana. A base não executa tools nem publica documentos automaticamente.
 
-### Acesso e cota de uso (duas camadas independentes)
+### Acesso e cota de uso (três camadas independentes)
 
-São duas verificações separadas, aplicadas nesta ordem — a segunda só é avaliada se a primeira já passou:
+São três verificações separadas, aplicadas nesta ordem — cada uma só é avaliada se a anterior já passou:
 
-1. **Papel do usuário** (controla *se* a pessoa pode executar). Todo cadastro novo nasce como `USER` e não consegue executar orquestrações — o botão retorna `403 Forbidden`. Só um `ADMIN` pode promover alguém para `TECHNICIAN` (ou `REVIEWER`/`ADMIN`), pela página `/admin` (menu "ADMINISTRAÇÃO", visível só para quem já é admin) — não existe autopromoção nem fluxo de aprovação automática. A conta admin de bootstrap (`BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` no `.env`) é o ponto de partida para promover as primeiras contas.
-2. **Cota diária de tokens** (controla *quanto* uma pessoa já autorizada pode executar naquele dia; desligada por padrão — `LLM_DAILY_TOKEN_LIMIT_PER_USER=0`). Ver [Integração com provedores de modelo](docs/integrations/model-provider.md#cota-diária-de-tokens-por-usuário) para os detalhes — `LLM_DAILY_TOKEN_LIMIT_PER_USER` no `.env`, contas `ADMIN` sempre isentas.
+1. **Papel do usuário** (controla *se* a pessoa pode executar). Todo cadastro novo nasce como `USER` e já consegue executar orquestrações — `USER`, `TECHNICIAN` e `ADMIN` podem; só `REVIEWER` não pode (seu papel é avaliar o que foi produzido, não produzir). Importar/criar uma nova Agent Skill continua restrito a `TECHNICIAN`/`ADMIN` — rodar uma skill já existente é um nível de confiança diferente de decidir quais skills entram no catálogo. Só um `ADMIN` pode promover alguém de papel, pela página `/admin` (menu "ADMINISTRAÇÃO", visível só para quem já é admin) — não existe autopromoção nem fluxo de aprovação automática. A conta admin de bootstrap (`BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` no `.env`) é o ponto de partida para promover as primeiras contas.
+2. **Visibilidade da Agent Skill** (controla *o que* existe pra executar). Toda skill nova nasce `OFFICIAL` — visível e executável por qualquer usuário autenticado, não só por quem a importou — pra que o catálogo não fique vazio para todo mundo além do `TECHNICIAN`/`ADMIN` que importou cada skill. `owner_id` continua registrado para atribuição/auditoria, mesmo não controlando mais visibilidade por padrão; `visibility="PRIVATE"` ainda existe no modelo para quem quiser registrar uma skill em teste, visível só ao próprio dono (e a `ADMIN`), mas não é o padrão.
+3. **Cota diária de tokens** (controla *quanto* uma pessoa já autorizada pode executar naquele dia; desligada por padrão — `LLM_DAILY_TOKEN_LIMIT_PER_USER=0`). Ver [Integração com provedores de modelo](docs/integrations/model-provider.md#cota-diária-de-tokens-por-usuário) para os detalhes — `LLM_DAILY_TOKEN_LIMIT_PER_USER` no `.env`, contas `ADMIN` sempre isentas.
 
-Ter uma cota de tokens disponível **não substitui** o papel — um usuário `USER` continua bloqueado mesmo com a cota zerada de uso.
+> Como o cadastro é aberto por padrão (`ALLOW_REGISTRATION=true`) e agora `USER` executa sem precisar de promoção, um deploy real exposto publicamente deve considerar reativar a cota diária de tokens (item 3) e/ou fechar o cadastro — sem isso, qualquer pessoa que se cadastre pode gerar chamadas de LLM sem limite algum.
 
 ## Testes
 

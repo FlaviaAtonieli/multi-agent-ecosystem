@@ -24,7 +24,7 @@ def register_skill(
     submitted_by: User,
     raw_markdown: str | None = None,
     owner_id: str | None = None,
-    visibility: str = "PRIVATE",
+    visibility: str = "OFFICIAL",
 ) -> AgentSkill:
     """Registers a new Agent Skill (RF01/RF02/RF04).
 
@@ -33,10 +33,14 @@ def register_skill(
     list of problems, so an invalid import (Cenário 2, Apêndice H) can report
     everything wrong at once instead of failing on the first field.
 
-    owner_id/visibility default to a private, user-owned skill (fase 1 da
-    rede de agentes) -- the 4 curated skills that ship with the PoC were
-    seeded directly with owner_id=None/visibility=OFFICIAL and don't go
-    through this path again.
+    visibility defaults to OFFICIAL (visible/executable by every authenticated
+    user, not just its owner) -- otherwise the catalog would stay empty for
+    everyone except whichever TECHNICIAN/ADMIN happened to import each skill,
+    and a plain USER (allowed to execute orchestrations, see
+    ORCHESTRATION_ROLES in app/core/roles.py) would have nothing to run.
+    owner_id is still recorded for attribution/audit; pass visibility="PRIVATE"
+    explicitly for a skill still being drafted/tested that shouldn't be
+    executable by anyone but its owner (and ADMIN) yet.
     """
     result = validate_manifest(manifest)
     if not result.is_valid:
@@ -75,10 +79,10 @@ def get_skill(db: Session, skill_id: str) -> AgentSkill:
 
 
 def _visibility_filter(viewer_id: str | None):
-    """Fase 1 da rede de agentes: um usuário só enxerga skills oficiais (visibility
-    OFFICIAL, owner_id nulo) e as que ele mesmo criou -- nunca a skill privada de
-    outro usuário. Seguro por padrão: sem viewer_id, só as oficiais aparecem (nunca
-    vaza skill privada de ninguém); list_all_skills (admin) não usa este filtro."""
+    """Um usuário enxerga skills OFFICIAL (o padrão para toda skill nova, ver
+    register_skill) e, além dessas, as que ele mesmo criou como PRIVATE --
+    nunca a skill PRIVATE de outro usuário. Seguro por padrão: sem viewer_id,
+    só as oficiais aparecem (nunca vaza skill privada de ninguém)."""
     if viewer_id is None:
         return AgentSkill.visibility == "OFFICIAL"
     return (AgentSkill.visibility == "OFFICIAL") | (AgentSkill.owner_id == viewer_id)

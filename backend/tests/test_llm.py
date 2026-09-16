@@ -19,8 +19,23 @@ TECHNICIAN = {
 }
 
 
-def test_regular_user_cannot_access_llm_status(client: TestClient) -> None:
+def test_regular_user_can_access_llm_status(client: TestClient) -> None:
+    """USER can run orchestrations (RN separação de papéis não exclui USER da
+    execução, só REVIEWER) -- so /llm/status, used to show model/quota info
+    on the orchestration screen, must work for the default USER role too."""
     register(client, TECHNICIAN)
+    response = client.get("/api/v1/llm/status")
+    assert response.status_code == 200
+
+
+def test_reviewer_cannot_access_llm_status(client: TestClient) -> None:
+    reviewer = {
+        "name": "Revisora Sem Execucao",
+        "email": "revisora.sem.execucao@example.com",
+        "password": "StrongPassword!123",
+    }
+    register(client, reviewer)
+    promote(reviewer["email"], "REVIEWER")
     response = client.get("/api/v1/llm/status")
     assert response.status_code == 403
 

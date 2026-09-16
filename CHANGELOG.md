@@ -2,6 +2,23 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-16 - USER pode executar orquestracoes; novas Agent Skills nascem OFFICIAL
+
+### Corrigido
+
+- `app/core/roles.py`: `LLM_EXECUTION_ROLES` (TECHNICIAN+ADMIN, usado pra tudo que tocava LLM) virou dois grupos distintos -- `ORCHESTRATION_ROLES = {USER, TECHNICIAN, ADMIN}` (rodar orquestracoes) e `SKILL_CATALOG_ROLES = {TECHNICIAN, ADMIN}` (curar o catalogo de Agent Skills). REVIEWER continua fora de `ORCHESTRATION_ROLES` -- separacao de funcoes, quem revisa nao e quem produz.
+- `app/api/dependencies.py`: `require_technician` virou duas dependencies -- `require_orchestration_access` (novo grupo `ORCHESTRATION_ROLES`) e `require_skill_curator` (`SKILL_CATALOG_ROLES`, mesmo grupo de antes).
+- `app/api/v1/endpoints/llm.py` (`/llm/status`, `/llm/invocations/{trace_id}`, `POST /llm/requests/{id}/plan`) e `app/api/v1/endpoints/agent_skills.py` (`POST /agent-skills/requests/{id}/execute`, `POST /agent-skills/requests/{id}/ask`): gate trocado de `require_technician` pra `require_orchestration_access` -- USER pode chamar agora. `create_skill`/`import_skill` (curadoria do catalogo) ficaram em `require_skill_curator`, sem mudanca de comportamento (continua TECHNICIAN/ADMIN).
+- `app/agent_catalog/registry.py` (`register_skill`): `visibility` default muda de `PRIVATE` pra `OFFICIAL`. Sem essa mudanca, abrir o papel USER pra executar orquestracoes nao bastava na pratica -- toda skill nascia privada de quem importou, entao um USER recem-cadastrado batia em "Nenhuma Agent Skill... encontrada" (`NoAgentSkillsAvailableError`) mesmo com o papel liberado, porque `_resolve_target_skills` usa `viewer_id = technical_request.owner_id` e a skill so aparecia pro proprio importador. `owner_id` continua gravado pra atribuicao/auditoria; `visibility="PRIVATE"` continua existindo no modelo pra quem quiser registrar uma skill ainda em teste.
+
+### Contexto
+
+- a pedido da autora: "acho que o USER pode Executar orquestracao tambem pq se nao ele nao tem o pq de entrar na rede" -- o objetivo de fundo era ter um fluxo realmente usavel pro papel USER, nao so passar no gate de permissao.
+- investigado e reportado antes de implementar: a liberacao de papel sozinha nao entregava o objetivo (catalogo ficava vazio pra USER por causa da visibilidade PRIVATE por padrao). 3 opcoes foram apresentadas (skills nascerem OFFICIAL / ADMIN publicar manualmente / deixar so o gate de papel) -- escolhida a primeira.
+- testes: `test_llm.py` ganhou `test_regular_user_can_access_llm_status` (substituindo o antigo `test_regular_user_cannot_access_llm_status`) e `test_reviewer_cannot_access_llm_status` (prova que REVIEWER continua de fora); `test_custom_skills.py` teve `test_custom_skill_is_private_and_owner_scoped` reescrito pra `test_custom_skill_is_official_and_visible_to_everyone` (reflete o novo default) e ganhou `test_plain_user_can_execute_orchestration_on_others_official_skill`, provando o cenario real: USER nunca promovido executando contra uma skill importada por outra pessoa.
+- risco assumido, ja documentado no README: com cadastro aberto por padrao (`ALLOW_REGISTRATION=true`) e cota diaria de tokens desligada por padrao (mudanca de 2026-09-14), qualquer pessoa que se cadastre agora pode gerar chamadas de LLM sem limite algum -- um deploy real exposto publicamente deve reativar a cota diaria e/ou fechar o cadastro.
+- observado durante os testes (nao investigado a fundo, fora do escopo desta mudanca): alguns testes que chamam a OpenRouter de verdade com modelos `:free` falham de forma intermitente com resultado vazio/incompleto -- comportamento ja documentado nos comentarios de `openrouter_provider.py` (modelo free as vezes ignora o `strict json_schema`), reproduzido tanto antes quanto depois desta mudanca, portanto nao e uma regressao introduzida aqui.
+
 ## 2026-09-14 - Trilha de auditoria liberada para todo usuario autenticado, com escopo por dono
 
 ### Corrigido

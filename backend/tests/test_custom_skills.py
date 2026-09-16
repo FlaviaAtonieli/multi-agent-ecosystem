@@ -49,12 +49,17 @@ def _create_custom_skill(client: TestClient) -> dict:
     return response.json()
 
 
-def test_custom_skill_is_private_and_owner_scoped(client: TestClient) -> None:
+def test_custom_skill_is_official_and_visible_to_everyone(client: TestClient) -> None:
+    """New skills default to OFFICIAL (not PRIVATE) so the catalog isn't empty
+    for anyone besides whichever TECHNICIAN/ADMIN happened to import each one
+    -- a plain USER, allowed to execute orchestrations (ORCHESTRATION_ROLES),
+    needs something to actually run. owner_id is still recorded for
+    attribution even though it no longer gates visibility."""
     register(client, OWNER)
     promote(OWNER["email"], "TECHNICIAN")
     skill = _create_custom_skill(client)
     assert skill["owner_id"] is not None
-    assert skill["visibility"] == "PRIVATE"
+    assert skill["visibility"] == "OFFICIAL"
 
     owner_catalog = client.get("/api/v1/agent-skills").json()
     assert any(item["id"] == skill["id"] for item in owner_catalog)
@@ -66,10 +71,10 @@ def test_custom_skill_is_private_and_owner_scoped(client: TestClient) -> None:
     register(client, OTHER_USER)
 
     other_catalog = client.get("/api/v1/agent-skills").json()
-    assert all(item["id"] != skill["id"] for item in other_catalog)
+    assert any(item["id"] == skill["id"] for item in other_catalog)
 
     other_detail = client.get(f"/api/v1/agent-skills/{skill['id']}")
-    assert other_detail.status_code == 404
+    assert other_detail.status_code == 200
 
 
 def test_generic_executor_runs_custom_skill_end_to_end(client: TestClient, monkeypatch) -> None:
@@ -93,3 +98,31 @@ def test_generic_executor_runs_custom_skill_end_to_end(client: TestClient, monke
     assert result["agente_emissor"]["dominio"] == "codigo_legado"
     assert result["analise_estruturada"]["resumo_executivo"]
     assert result["governanca"]["nivel_confianca"] in {"ALTO", "MEDIO", "BAIXO"}
+
+
+def test_plain_user_can_execute_orchestration_on_others_official_skill(
+    client: TestClient, monkeypatch
+) -> None:
+    """The actual end-to-end goal of opening execution up to USER: a plain
+    USER (never promoted) creates their own request and runs it against a
+    skill a TECHNICIAN imported -- no role beyond being logged in, and no
+    ownership of the skill itself, required."""
+    register(client, OWNER)
+    promote(OWNER["email"], "TECHNICIAN")
+    _create_custom_skill(client)
+
+    client.post("/api/v1/auth/logout", headers=authenticated_csrf_headers(client))
+    register(client, OTHER_USER)  # stays USER -- never promoted
+
+    technical_request = create_qualified_request(client, requested_domains=["codigo_legado"])
+
+    enable_real_llm(monkeypatch)
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    assert len(payload["results"]) == 1

@@ -64,7 +64,7 @@ A chave não deve ser registrada em:
 Uma solicitação só pode ser planejada quando:
 
 - o usuário está autenticado;
-- o perfil é `TECHNICIAN` ou `ADMIN`;
+- o perfil não é `REVIEWER` (`ORCHESTRATION_ROLES` em `app/core/roles.py` -- desde 2026-09-16, `USER`, `TECHNICIAN` e `ADMIN` podem, só `REVIEWER` fica de fora por separação de funções);
 - o token CSRF é válido;
 - a solicitação pertence ao usuário, salvo acesso administrativo;
 - o estado da solicitação é `QUALIFIED`;
