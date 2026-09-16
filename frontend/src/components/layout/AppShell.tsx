@@ -21,12 +21,9 @@ const roleLabels: Record<User['role'], string> = {
   ADMIN: 'Administrador',
 }
 
-const AUDIT_ROLES: Array<User['role']> = ['REVIEWER', 'ADMIN']
-
 export function AppShell() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-  const canViewAudit = user ? AUDIT_ROLES.includes(user.role) : false
 
   async function handleLogout() {
     await logout()
@@ -63,15 +60,9 @@ export function AppShell() {
               {item.label}
             </NavLink>
           ))}
-          {canViewAudit ? (
-            <NavLink to="/auditoria" className={({ isActive }) => `workspace-nav-link${isActive ? ' active' : ''}`}>
-              <span aria-hidden="true">⌁</span> Auditoria
-            </NavLink>
-          ) : (
-            <button className="workspace-nav-link workspace-nav-disabled" type="button" disabled title="Disponível para revisores e administradores">
-              <span aria-hidden="true">⌁</span> Auditoria
-            </button>
-          )}
+          <NavLink to="/auditoria" className={({ isActive }) => `workspace-nav-link${isActive ? ' active' : ''}`}>
+            <span aria-hidden="true">⌁</span> Auditoria
+          </NavLink>
 
           {user?.role === 'ADMIN' && (
             <>

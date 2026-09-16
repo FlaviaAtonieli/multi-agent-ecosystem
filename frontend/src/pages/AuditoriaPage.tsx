@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AuditEvent, AuditEventPage, auditApi } from '../api/auditApi'
 import { ApiError } from '../api/http'
+import { useAuth } from '../auth/AuthContext'
+
+const REVIEW_ROLES = ['REVIEWER', 'ADMIN']
 
 const actorLabels: Record<string, string> = {
   USER: 'Usuário',
@@ -50,6 +53,8 @@ function downloadCsv(csv: string) {
 }
 
 export function AuditoriaPage() {
+  const { user } = useAuth()
+  const isScopedToOwnRequests = user ? !REVIEW_ROLES.includes(user.role) : false
   const [page, setPage] = useState<AuditEventPage | null>(null)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
@@ -78,7 +83,16 @@ export function AuditoriaPage() {
         <div>
           <span className="workspace-eyebrow">AUDITORIA</span>
           <h1>Trilha de auditoria</h1>
-          <p>Histórico completo de eventos do ecossistema, por agente e por solicitação, para conformidade e rastreabilidade.</p>
+          <p>
+            {isScopedToOwnRequests
+              ? 'Histórico de eventos das suas solicitações, por agente, para conformidade e rastreabilidade.'
+              : 'Histórico completo de eventos do ecossistema, por agente e por solicitação, para conformidade e rastreabilidade.'}
+          </p>
+          {isScopedToOwnRequests && (
+            <span className="workspace-eyebrow" style={{ marginTop: '0.5rem', display: 'inline-block' }}>
+              Mostrando apenas as suas solicitações · revisores e administradores veem a trilha completa
+            </span>
+          )}
         </div>
         <button
           type="button"
