@@ -2,6 +2,19 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-16 - Resposta a revisao: opcao de manter Agent Skill PRIVATE ao criar/importar
+
+### Adicionado
+
+- `visibility` (opcional, `"OFFICIAL"` ou `"PRIVATE"`, padrao `"OFFICIAL"`) em `AgentSkillManifestCreate` e `AgentSkillManifestImport` (`app/schemas/agent_skill.py`) -- `POST /agent-skills` e `POST /agent-skills/import` passam esse valor pra `register_skill` em vez de sempre usar o default do servico. So TECHNICIAN/ADMIN alcancam esses endpoints (`require_skill_curator`), entao nenhuma checagem de papel nova foi necessaria.
+- Frontend: checkbox "Manter privada por enquanto" nas telas de criar (`AgentSkillCreatePage.tsx`) e importar (`AgentSkillImportPage.tsx`) Agent Skill, desmarcado por padrao (= OFFICIAL). Corrigido tambem um texto desatualizado na tela de criar que ainda dizia "ela nasce privada", sobrevivente de antes do PR #45 mudar o padrao -- ninguem tinha atualizado.
+
+### Contexto
+
+- revisao da Amanda no PR #45 (ja mergeado): "nao teria mais como criar/testar uma skill de forma privada antes de disponibilizar para os outros usuarios. Isso ja e intencional para essa fase do projeto ou faria sentido manter a opcao de PRIVATE ate ela ser aprovada/publicada?" -- resolvido restaurando a opcao, sem reverter o padrao OFFICIAL que resolveu o problema original (USER sem nada pra executar).
+- ela tambem perguntou se o risco composto com a cota de tokens (#43) era esperado pro estagio atual -- confirmado que sim, e que a mitigacao (reativar a cota em producao) ja estava documentada; sem mudanca de codigo adicional pra essa parte.
+- 4 testes novos/atualizados: `test_custom_skill_can_opt_into_private_visibility` e `test_import_can_opt_into_private_visibility` provam o opt-in; `test_custom_skill_is_official_and_visible_to_everyone` e `test_import_valid_manifest_registers_and_enables_skill` ganharam uma asserção a mais confirmando o default `OFFICIAL` explicitamente.
+
 ## 2026-09-16 - Login com GitHub (OAuth), adicional ao email/senha
 
 ### Adicionado

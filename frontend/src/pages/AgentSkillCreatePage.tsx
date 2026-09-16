@@ -36,6 +36,7 @@ export function AgentSkillCreatePage() {
   const [validationCriteria, setValidationCriteria] = useState<string[]>([])
   const [securityRules, setSecurityRules] = useState<string[]>([])
   const [usageExamples, setUsageExamples] = useState<string[]>([])
+  const [keepPrivate, setKeepPrivate] = useState(false)
 
   const [stepError, setStepError] = useState('')
   const [submitError, setSubmitError] = useState('')
@@ -91,6 +92,7 @@ export function AgentSkillCreatePage() {
         validation_criteria: validationCriteria,
         uses_external_services: false,
         persona_instructions: personaInstructions.trim() || null,
+        visibility: keepPrivate ? 'PRIVATE' : 'OFFICIAL',
       })
       navigate(`/agent-skills?created=${created.id}`)
     } catch (caught) {
@@ -107,8 +109,9 @@ export function AgentSkillCreatePage() {
           <span className="workspace-eyebrow">NOVA AGENT SKILL</span>
           <h1>Criar uma skill sua</h1>
           <p>
-            Ela nasce <strong>privada</strong> — só você vai vê-la e usá-la até decidir compartilhar com um clã ou
-            com a rede.
+            Por padrão ela nasce <strong>disponível para todo o ecossistema</strong>, pronta pra ser executada por
+            qualquer usuário — desmarque a opção no último passo se quiser mantê-la privada (só você e administradores)
+            até publicar.
           </p>
         </div>
       </section>
@@ -237,6 +240,11 @@ export function AgentSkillCreatePage() {
                 onChange={setUsageExamples}
                 placeholder="Ex.: Revisar uma proposta de refatoração antes do merge"
               />
+
+              <label className="workspace-field workspace-field-full workspace-field-checkbox">
+                <input type="checkbox" checked={keepPrivate} onChange={(event) => setKeepPrivate(event.target.checked)} />
+                Manter privada por enquanto (só eu e administradores veremos/executaremos)
+              </label>
             </div>
           )}
 
