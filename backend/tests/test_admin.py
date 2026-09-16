@@ -71,7 +71,7 @@ def test_admin_lists_users_with_token_usage(client: TestClient) -> None:
 
     outsider_row = next(item for item in payload if item["id"] == outsider_id)
     assert outsider_row["tokens_used_today"] == 1234
-    assert outsider_row["daily_token_limit_per_user"] > 0
+    assert outsider_row["daily_token_limit_per_user"] == 0
     assert outsider_row["role"] == "TECHNICIAN"
 
     admin_row = next(item for item in payload if item["email"] == ADMIN["email"])
@@ -95,7 +95,7 @@ def test_admin_can_change_role_and_response_reflects_it(client: TestClient) -> N
     payload = response.json()
     assert payload["role"] == "TECHNICIAN"
     assert payload["tokens_used_today"] == 0
-    assert payload["daily_token_limit_per_user"] > 0
+    assert payload["daily_token_limit_per_user"] == 0
 
 
 def test_admin_cannot_remove_own_admin_role(client: TestClient) -> None:

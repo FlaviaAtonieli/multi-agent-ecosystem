@@ -66,17 +66,20 @@ class Settings(BaseSettings):
     )
     llm_timeout_seconds: int = 45
     # Reasoning models (e.g. openai/gpt-5-mini) spend part of this budget on
-    # hidden chain-of-thought tokens before writing visible output; 1200 proved
-    # too tight for the full LLMPlan schema and left content=None (finish_reason
-    # "length") -- see docs/integrations/model-provider.md.
-    llm_max_output_tokens: int = 3000
+    # hidden chain-of-thought tokens before writing visible output; fixed caps
+    # (1200, then 3000) kept leaving content=None (finish_reason "length") on
+    # rich schemas -- see docs/integrations/model-provider.md. 0 disables the
+    # cap entirely (the provider call omits max_tokens/max_output_tokens and
+    # the model's own maximum applies), which is now the default so it never
+    # bottlenecks multi-agent orchestration output.
+    llm_max_output_tokens: int = 0
     llm_max_input_chars: int = 12000
     llm_requests_per_hour_technician: int = 20
     # Caps total input+output tokens (LLMInvocation.input_tokens + output_tokens,
     # summed across every "COMPLETED" call the same day) per non-admin user, to
     # protect the account's OpenRouter subscription from a single user's usage.
-    # 0 disables the cap. ADMIN accounts are exempt (trusted operator).
-    llm_daily_token_limit_per_user: int = 150_000
+    # 0 disables the cap (default). ADMIN accounts are always exempt regardless.
+    llm_daily_token_limit_per_user: int = 0
 
     # Privacy-safe defaults.
     llm_store_provider_response: bool = False
@@ -144,8 +147,8 @@ class Settings(BaseSettings):
     def validate_llm_configuration(self) -> "Settings":
         if self.llm_max_input_chars < 1000:
             raise ValueError("LLM_MAX_INPUT_CHARS deve ser maior ou igual a 1000.")
-        if self.llm_max_output_tokens < 128:
-            raise ValueError("LLM_MAX_OUTPUT_TOKENS deve ser maior ou igual a 128.")
+        if self.llm_max_output_tokens != 0 and self.llm_max_output_tokens < 128:
+            raise ValueError("LLM_MAX_OUTPUT_TOKENS deve ser 0 (sem teto) ou maior ou igual a 128.")
         if self.llm_requests_per_hour_technician < 1:
             raise ValueError("LLM_REQUESTS_PER_HOUR_TECHNICIAN deve ser maior que zero.")
         if self.llm_daily_token_limit_per_user < 0:
