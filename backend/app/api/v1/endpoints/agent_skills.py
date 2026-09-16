@@ -18,7 +18,8 @@ from app.api.dependencies import (
     get_current_user,
     require_admin,
     require_authenticated_csrf,
-    require_technician,
+    require_orchestration_access,
+    require_skill_curator,
 )
 from app.core.config import settings
 from app.core.database import get_db
@@ -103,7 +104,7 @@ def create_skill(
     payload: AgentSkillManifestCreate,
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(require_technician),
+    user: User = Depends(require_skill_curator),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> object:
     manifest = AgentSkillManifest(**payload.model_dump())
@@ -130,7 +131,7 @@ def import_skill(
     payload: AgentSkillManifestImport,
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(require_technician),
+    user: User = Depends(require_skill_curator),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> object:
     try:
@@ -222,7 +223,7 @@ async def execute_skills_for_request(
     request: Request,
     payload: AgentSkillExecutionRequest | None = None,
     db: Session = Depends(get_db),
-    user: User = Depends(require_technician),
+    user: User = Depends(require_orchestration_access),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> OrchestrationExecutionRead:
     technical_request = _find_qualified_request(db, request_id, user)
@@ -272,7 +273,7 @@ async def ask_follow_up(
     payload: FollowUpQuestionCreate,
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(require_technician),
+    user: User = Depends(require_orchestration_access),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> FollowUpExchangeRead:
     technical_request = _find_executed_request(db, request_id, user)
