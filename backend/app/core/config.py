@@ -47,6 +47,18 @@ class Settings(BaseSettings):
     bootstrap_admin_email: str | None = None
     bootstrap_admin_password: str | None = None
 
+    # GitHub OAuth: login adicional, ao lado do fluxo de email/senha (nao o
+    # substitui). Disabled by default so the project boots without um OAuth
+    # App configurado -- ver docs/integrations/github-oauth.md.
+    github_oauth_enabled: bool = False
+    github_client_id: str | None = None
+    github_client_secret: SecretStr | None = None
+    # Precisa bater exatamente com a "Authorization callback URL" cadastrada
+    # no GitHub OAuth App.
+    github_oauth_redirect_uri: str = "http://localhost:8000/api/v1/auth/github/callback"
+    # Para onde o navegador volta depois do callback (sucesso ou erro).
+    frontend_base_url: str = "http://localhost:5173"
+
     # LLM foundation. Disabled by default so the project boots without an API key;
     # once enabled, OpenRouter is the primary Model Gateway (no mock provider).
     llm_enabled: bool = False
@@ -140,8 +152,25 @@ class Settings(BaseSettings):
         return value or None
 
     @property
+    def github_client_secret_value(self) -> str | None:
+        if self.github_client_secret is None:
+            return None
+        value = self.github_client_secret.get_secret_value().strip()
+        return value or None
+
+    @property
     def is_production(self) -> bool:
         return self.environment.lower() == "production"
+
+    @model_validator(mode="after")
+    def validate_github_oauth_configuration(self) -> "Settings":
+        if not self.github_oauth_enabled:
+            return self
+        if not self.github_client_id:
+            raise ValueError("GITHUB_CLIENT_ID é obrigatório quando GITHUB_OAUTH_ENABLED=true.")
+        if not self.github_client_secret_value:
+            raise ValueError("GITHUB_CLIENT_SECRET é obrigatório quando GITHUB_OAUTH_ENABLED=true.")
+        return self
 
     @model_validator(mode="after")
     def validate_llm_configuration(self) -> "Settings":

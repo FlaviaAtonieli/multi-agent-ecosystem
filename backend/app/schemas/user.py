@@ -38,6 +38,7 @@ class UserRead(BaseModel):
     email: EmailStr
     role: str
     is_active: bool
+    avatar_url: str | None
     created_at: datetime
     onboarding_completed_at: datetime | None
 

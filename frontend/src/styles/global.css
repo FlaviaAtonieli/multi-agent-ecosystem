@@ -109,6 +109,10 @@ code { color: var(--primary-light); }
 .primary-button { padding: 14px 18px; color: white; background: linear-gradient(135deg, var(--primary), var(--primary-strong)); box-shadow: 0 15px 30px rgba(101,83,243,.24); }
 .primary-button:hover:not(:disabled), .secondary-button:hover:not(:disabled) { transform: translateY(-1px); }
 button:disabled { cursor: not-allowed; opacity: .58; }
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 22px 0; color: var(--muted); font-size: .82rem; }
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.github-button { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 13px 18px; color: var(--text); background: rgba(148,163,184,.08); border: 1px solid var(--border-strong); text-decoration: none; }
+.github-button:hover { transform: translateY(-1px); background: rgba(148,163,184,.14); }
 .form-footer { margin: 22px 0 0; text-align: center; color: var(--muted); font-size: .9rem; }
 .alert { padding: 12px 14px; border-radius: 11px; font-size: .9rem; line-height: 1.45; }
 .alert-error { border: 1px solid rgba(255,107,125,.3); color: #ffb7c1; background: rgba(255,107,125,.1); }

@@ -87,7 +87,7 @@
 .workspace-user > div:not(.workspace-avatar) { display: grid; gap: 2px; }
 .workspace-user strong { font-size: 0.82rem; }
 .workspace-user small { color: var(--text-secondary); font-size: 0.69rem; }
-.workspace-avatar { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; color: white; font-weight: 850; background: linear-gradient(135deg, var(--primary), var(--accent)); }
+.workspace-avatar { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; color: white; font-weight: 850; background: linear-gradient(135deg, var(--primary), var(--accent)); object-fit: cover; }
 .workspace-logout { margin-left: 8px; padding: 8px 10px; border: 1px solid var(--border-subtle); border-radius: 10px; color: var(--text-secondary); background: rgba(255,255,255,0.035); cursor: pointer; }
 
 .workspace-content { padding: 28px 32px 40px; }

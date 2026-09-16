@@ -2,6 +2,23 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-16 - Login com GitHub (OAuth), adicional ao email/senha
+
+### Adicionado
+
+- `GET /api/v1/auth/github/login` e `GET /api/v1/auth/github/callback` (`app/api/v1/endpoints/auth.py`): fluxo padrao de authorization code. O login gera um `state` aleatorio guardado num cookie curto (10 min) -- protecao CSRF propria do OAuth, ja que essa perna do fluxo e navegacao de pagina inteira, nao um fetch autenticado pelo CSRF da sessao. O callback valida o `state`, troca o `code` por um access_token, busca perfil/email verificado no GitHub, encontra ou cria a conta e abre uma sessao normal (mesmos cookies do login por senha) -- depois redireciona pro frontend.
+- `app/services/github_oauth_service.py`: chamadas HTTP ao GitHub (`httpx`, adicionado a `requirements.txt`) e `find_or_create_user` -- casa por `github_id` primeiro; se o email verificado ja pertence a outra conta, recusa com erro claro (`github_email_in_use`) em vez de auto-linkar (essa app nao verifica email no cadastro por senha, entao auto-link seria uma via de account takeover).
+- `users.password_hash` vira nullable (migration `0011_github_oauth`) -- contas GitHub nao tem senha. Novas colunas `github_id` (unico, indexado) e `avatar_url`. `authenticate_user` (`app/services/auth_service.py`) recusa login por senha numa conta GitHub-only com mensagem clara, gastando o mesmo tempo de uma verificacao real (`perform_dummy_password_check`) pra nao vazar pelo timing se a conta existe.
+- `GITHUB_OAUTH_ENABLED` (padrao `false`), `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_OAUTH_REDIRECT_URI`, `FRONTEND_BASE_URL` -- novas settings, com validacao (client id/secret obrigatorios quando habilitado). Desabilitado por padrao: o projeto sobe normalmente sem OAuth App configurado, so o botao "Continuar com GitHub" some (e `/auth/github/*` responde 404).
+- Frontend: botao "Continuar com GitHub" (`GitHubLoginButton.tsx`) nas telas de login e cadastro; `LoginPage.tsx` mostra mensagem de erro quando o backend redireciona com `?error=...`; avatar do GitHub substitui a inicial do nome na topbar quando disponivel (`AppShell.tsx`).
+- `docs/integrations/github-oauth.md`: passo a passo pra criar o OAuth App no GitHub, diagrama do fluxo, tabela de codigos de erro.
+
+### Contexto
+
+- a pedido da autora: login adicional ao email/senha (nao substitui), mantendo a suite de testes existente intacta -- ela ja cria contas por senha na maioria dos testes.
+- decisao de nao fazer auto-link de conta por email: risco real de account takeover dado que o cadastro por senha desta app nao verifica email hoje. Vincular manualmente e um fluxo que ainda nao existe.
+- 7 testes novos em `test_github_oauth.py`, todos com as chamadas de rede ao GitHub mockadas via `monkeypatch` (diferente do padrao "sem mock" usado pros testes de LLM/RAG -- nao ha como automatizar o consentimento real de um usuario numa tela do GitHub).
+
 ## 2026-09-16 - USER pode executar orquestracoes; novas Agent Skills nascem OFFICIAL
 
 ### Corrigido
