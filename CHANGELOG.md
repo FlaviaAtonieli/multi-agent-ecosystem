@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-14 - Remove tetos de token que limitavam a orquestracao por padrao
+
+### Corrigido
+
+- `LLM_MAX_OUTPUT_TOKENS` (`app/core/config.py`, `app/llm/providers/openrouter_provider.py`, `app/llm/providers/openai_provider.py`): padrao muda de 3000 para `0` (sem teto) -- os providers agora omitem `max_tokens`/`max_output_tokens` da chamada quando o valor e 0, deixando o modelo usar seu proprio maximo. Esse teto fixo ja tinha causado respostas vazias (`finish_reason: length`) em modelos de raciocinio como `gpt-5-mini`, que gastam parte do orcamento em "pensamento" interno antes do conteudo visivel -- exatamente o tipo de limitacao que truncava planos de orquestracao. Validador atualizado para aceitar `0` ou `>= 128`.
+- `LLM_DAILY_TOKEN_LIMIT_PER_USER` (`app/core/config.py`): padrao muda de 150000 para `0` (sem limite) -- a checagem de cota diaria continua existindo em `generate_technical_plan`, so fica desligada por padrao.
+
+### Contexto
+
+- a pedido da autora: a limitacao de tokens estava restringindo a orquestracao multi-agente.
+- ambos os tetos ja suportavam `0 = sem limite`; a mudanca foi so de valor padrao (e, no caso do teto por chamada, passar a omitir o parametro em vez de enviar um numero fixo).
+- **risco assumido**: sem `LLM_DAILY_TOKEN_LIMIT_PER_USER` a protecao de custo contra uso excessivo da assinatura OpenRouter fica desligada por padrao; quem fizer deploy real deve reativar essa variavel com um valor calibrado se quiser esse disjuntor de volta.
+- 2 asserções em `test_admin.py` que assumiam o antigo padrao positivo (`daily_token_limit_per_user > 0`) foram atualizadas para `== 0`; os testes em `test_llm.py` já definiam o limite via `monkeypatch` e não foram afetados.
+
 ## 2026-09-08 - Limpa artefatos de citacao do Documento_de_referencia.md
 
 ### Corrigido

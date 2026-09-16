@@ -47,13 +47,16 @@ class OpenRouterLLMProvider(LLMProvider):
         prompt = build_technical_planner_prompt(request)
 
         def _call() -> LLMProviderResult:
+            extra_kwargs: dict = {}
+            if self.config.llm_max_output_tokens:
+                extra_kwargs["max_tokens"] = self.config.llm_max_output_tokens
+
             response = self.client.chat.completions.create(
                 model=model,
                 messages=[
                     {"role": "system", "content": TECHNICAL_PLANNER_INSTRUCTIONS},
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=self.config.llm_max_output_tokens,
                 response_format={
                     "type": "json_schema",
                     "json_schema": {
@@ -67,6 +70,7 @@ class OpenRouterLLMProvider(LLMProvider):
                     "X-Title": self.config.app_name,
                     "X-Client-Request-Id": llm_call_id,
                 },
+                **extra_kwargs,
             )
 
             choice = response.choices[0]

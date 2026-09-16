@@ -34,11 +34,14 @@ class OpenAILLMProvider(LLMProvider):
         schema = strict_json_schema(LLMPlan)
         prompt = build_technical_planner_prompt(request)
 
+        extra_kwargs: dict = {}
+        if self.config.llm_max_output_tokens:
+            extra_kwargs["max_output_tokens"] = self.config.llm_max_output_tokens
+
         response = self.client.responses.create(
             model=model,
             instructions=TECHNICAL_PLANNER_INSTRUCTIONS,
             input=prompt,
-            max_output_tokens=self.config.llm_max_output_tokens,
             store=self.config.llm_store_provider_response,
             text={
                 "format": {
@@ -50,6 +53,7 @@ class OpenAILLMProvider(LLMProvider):
                 }
             },
             extra_headers={"X-Client-Request-Id": llm_call_id},
+            **extra_kwargs,
         )
 
         plan = LLMPlan.model_validate(json.loads(response.output_text))
