@@ -2,6 +2,21 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-14 - Trilha de auditoria liberada para todo usuario autenticado, com escopo por dono
+
+### Corrigido
+
+- `GET /api/v1/audit/events` (`app/api/v1/endpoints/audit.py`): trocado o gate de `require_reviewer` (403 para USER/TECHNICIAN) para `get_current_user` -- qualquer papel autenticado pode consultar a trilha agora. REVIEWER/ADMIN continuam vendo o historico completo do sistema; USER/TECHNICIAN veem so eventos de solicitacoes que eles proprios criaram (filtro por `TechnicalRequest.owner_id`, aplicado tanto na listagem quanto nos contadores de estatisticas do dia).
+- `frontend/src/components/layout/AppShell.tsx`: removido o item de menu "Auditoria" bloqueado (cadeado/disabled) para quem nao era REVIEWER/ADMIN -- o link fica sempre habilitado.
+- `frontend/src/pages/AuditoriaPage.tsx`: aviso indicando escopo ("mostrando apenas as suas solicitacoes") quando o usuario logado nao e REVIEWER/ADMIN, pra nao parecer que a pagina esta vazia/quebrada.
+
+### Contexto
+
+- a pedido da autora: a pagina estava bloqueada demais (so REVIEWER/ADMIN), e ela queria liberar acesso pros demais usuarios verem sua propria trilha.
+- opcao escolhida entre 3 alternativas apresentadas: abrir pra todo usuario autenticado (incluindo USER, que hoje nao tem nenhum papel de execucao), escopado as proprias solicitacoes -- nao abrir a trilha completa do sistema pra quem nao e revisor/admin, pra nao vazar dado de outros usuarios.
+- verificado contra a RFC do projeto (`docs/rfc/...md`): RF15 fala em "usuarios autorizados" (termo generico, nao restrito a REVIEWER/ADMIN) consultarem o historico, e a jornada de usuario padrao descrita no documento ja inclui "consulta a resposta consolidada e, posteriormente, pode auditar o historico de decisoes" como parte do fluxo normal -- a mudanca fica mais aderente a especificacao formal, nao e um desvio dela.
+- 3 testes atualizados/adicionados em `test_audit.py`: o teste antigo que esperava 403 pra USER virou dois novos (USER ve as proprias, USER nao ve as de outro USER) e um teste de 401 genuino (sem sessao) substituiu a checagem de role que nao existia mais.
+
 ## 2026-09-14 - Remove tetos de token que limitavam a orquestracao por padrao
 
 ### Corrigido
