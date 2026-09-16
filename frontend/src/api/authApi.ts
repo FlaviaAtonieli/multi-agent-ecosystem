@@ -1,4 +1,4 @@
-import { apiRequest } from './http'
+import { API_URL, apiRequest } from './http'
 
 export type User = {
   id: string
@@ -6,6 +6,7 @@ export type User = {
   email: string
   role: 'USER' | 'TECHNICIAN' | 'REVIEWER' | 'ADMIN'
   is_active: boolean
+  avatar_url: string | null
   created_at: string
   onboarding_completed_at: string | null
 }
@@ -25,6 +26,11 @@ export type LoginInput = {
   email: string
   password: string
 }
+
+// Navegacao de pagina inteira, nao uma chamada fetch: o backend precisa
+// redirecionar o navegador ate o GitHub (e o GitHub de volta) pra completar
+// o fluxo OAuth, o que uma requisicao XHR/fetch nao consegue fazer.
+export const githubLoginUrl = `${API_URL}/auth/github/login`
 
 export const authApi = {
   me: () => apiRequest<User>('/auth/me'),

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
 import { Brand } from '../components/Brand'
+import { GitHubLoginButton } from '../components/GitHubLoginButton'
 
 export function RegisterPage() {
   const navigate = useNavigate()
@@ -81,6 +82,9 @@ export function RegisterPage() {
               {submitting ? 'Criando conta…' : 'Criar conta'}
             </button>
           </form>
+
+          <div className="auth-divider">ou</div>
+          <GitHubLoginButton />
 
           <p className="form-footer">
             Já possui conta? <Link to="/login">Voltar ao login</Link>

@@ -64,3 +64,4 @@ def rate_limit(name: str, max_requests: int, window_seconds: int) -> Callable[[R
 register_rate_limit = rate_limit("register", 3, 60)
 login_rate_limit = rate_limit("login", 5, 60)
 renew_rate_limit = rate_limit("renew", 10, 60)
+github_oauth_rate_limit = rate_limit("github_oauth", 10, 60)
