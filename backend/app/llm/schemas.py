@@ -14,10 +14,23 @@ def strict_json_schema(model: type[BaseModel]) -> dict:
     400 "invalid_json_schema" before any generation happened; a lenient/free
     OpenRouter model tolerated the same malformed schema, which is why this
     went unnoticed until a strict-mode model was actually exercised end-to-end.
+
+    OpenAI validates every object node in the schema tree this way, not just
+    the top level (see platform.openai.com/docs/guides/structured-outputs,
+    "All fields must be required" / "additionalProperties: false"). LLMPlan
+    itself is flat today so this didn't matter in practice yet, but a nested
+    BaseModel field would land in Pydantic's top-level "$defs" (verified: it
+    flattens every nested model there, however deep, with $ref pointing back
+    to it -- not inlined into "properties"), so patching just the top level
+    would silently miss it and reproduce the exact 400 this function exists
+    to prevent, the moment either LLMPlan gains a nested field or this gets
+    reused for a schema that already has one.
     """
     schema = model.model_json_schema()
-    schema["required"] = list(schema["properties"].keys())
-    schema["additionalProperties"] = False
+    for node in (schema, *schema.get("$defs", {}).values()):
+        if "properties" in node:
+            node["required"] = list(node["properties"].keys())
+            node["additionalProperties"] = False
     return schema
 
 

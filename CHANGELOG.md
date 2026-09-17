@@ -2,6 +2,18 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-17 - Resposta a revisao (Pedro): strict_json_schema so cobria o nivel raiz; retry de resposta vazia ja acontecia (mas a documentacao dizia o contrario)
+
+### Corrigido
+
+- `strict_json_schema` (`app/llm/schemas.py`): so aplicava `required`/`additionalProperties: false` no nivel raiz do schema. `LLMPlan` e plano hoje (sem campo aninhado), entao isso nao quebrou nada ainda na pratica -- mas um `BaseModel` aninhado cai em `$defs` do Pydantic (todo modelo aninhado, em qualquer profundidade, fica la com `$ref` apontando de volta, verificado empiricamente), e ficaria sem o mesmo patch, reproduzindo exatamente o 400 `invalid_json_schema` que essa funcao existe pra evitar. Corrigido pra aplicar o patch tambem em cada entrada de `$defs`.
+- `LLMEmptyResponseError` (`app/llm/base.py`) e o comentario em `openrouter_provider.py`: a classe ja e uma subclasse de `RuntimeError`, e `RuntimeError` ja estava no tuple de excecoes retentaveis de `retry_on_transient_error` -- ou seja, o retry **ja acontecia**, mas o docstring da excecao e o comentario no provider afirmavam o contrario ("not worth retrying", "fails the same way every time"), uma alegacao nunca verificada empiricamente e provavelmente falsa (consumo de tokens de raciocinio pro mesmo prompt nao e perfeitamente deterministico, varia com a amostragem). Documentacao corrigida pra refletir o comportamento real; nenhuma mudanca funcional foi necessaria alem disso.
+
+### Contexto
+
+- revisao do Pedro no PR #35 (ja mergeado): "Deveria ter chamado atenção que o problema vinha de uma regra pouco óbvia do strict:true... Eu esperaria pelo menos uma pergunta sobre cobertura futura do strict_json_schema() com outros modelos strict. Também faltou questionar se LLMEmptyResponseError realmente deve ficar sem retry em todos os casos, já que resposta vazia pode ter outras causas."
+- pra confirmar o segundo ponto, escrevi um teste que efetivamente engana o provider (primeira chamada retorna vazio com `finish_reason=length`, segunda retorna um plano valido) e provei que a segunda tentativa realmente acontece e tem sucesso -- nao bastava so ler o codigo, empiricamente o retry ja funcionava.
+- teste novo em `test_llm_schemas.py` comprovado contra o codigo antigo antes de corrigir: revertido temporariamente, o `$defs` aninhado ficava sem o patch (`{'label'}` em vez de `{'label', 'weight'}` num teste com um campo com valor padrao), confirmando que a lacuna era real.
 ## 2026-09-16 - Resposta a revisao: so aceita email verificado do GitHub
 
 ### Corrigido
