@@ -1,8 +1,10 @@
+import httpx
+import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
 from app.core.config import settings
-from app.services.github_oauth_service import GitHubProfile
+from app.services.github_oauth_service import GitHubOAuthError, GitHubProfile, fetch_github_profile
 from tests.conftest import authenticated_csrf_headers, csrf_headers, register
 
 PASSWORD_OWNER = {
@@ -170,3 +172,53 @@ def test_password_login_rejected_for_github_only_account(client: TestClient, mon
     )
     assert response.status_code == 401
     assert "GitHub" in response.json()["message"]
+
+
+def _stub_github_http(monkeypatch, *, user_json: dict, emails_json: list[dict]) -> None:
+    """Mocks the two real GitHub API calls fetch_github_profile makes --
+    unlike _stub_github_profile above (which replaces the whole function for
+    endpoint-level tests), this exercises fetch_github_profile's own logic,
+    including the verified-email selection this suite is about."""
+
+    def fake_get(url: str, **_kwargs) -> httpx.Response:
+        if url == "https://api.github.com/user":
+            body = user_json
+        elif url == "https://api.github.com/user/emails":
+            body = emails_json
+        else:
+            raise AssertionError(f"unexpected GitHub API URL in test: {url}")
+        return httpx.Response(200, json=body, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr("app.services.github_oauth_service.httpx.get", fake_get)
+
+
+def test_fetch_github_profile_ignores_unverified_public_email(monkeypatch) -> None:
+    """Amanda's review on #46: /user's own "email" field is the profile's
+    public email and isn't guaranteed verified -- fetch_github_profile must
+    not trust it at face value, always resolving through /user/emails
+    instead and picking a verified one (primary preferred)."""
+    _stub_github_http(
+        monkeypatch,
+        user_json={"id": 42, "login": "dev42", "email": "spoofed-public@example.com", "avatar_url": None},
+        emails_json=[
+            {"email": "spoofed-public@example.com", "primary": False, "verified": False},
+            {"email": "secondary@example.com", "primary": False, "verified": True},
+            {"email": "verified-primary@example.com", "primary": True, "verified": True},
+        ],
+    )
+
+    profile = fetch_github_profile("fake-token")
+
+    assert profile.email == "verified-primary@example.com"
+    assert profile.github_id == "42"
+
+
+def test_fetch_github_profile_raises_without_any_verified_email(monkeypatch) -> None:
+    _stub_github_http(
+        monkeypatch,
+        user_json={"id": 43, "login": "dev43", "email": None, "avatar_url": None},
+        emails_json=[{"email": "nunca-verificado@example.com", "primary": True, "verified": False}],
+    )
+
+    with pytest.raises(GitHubOAuthError, match="verificado"):
+        fetch_github_profile("fake-token")
