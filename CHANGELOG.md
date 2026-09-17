@@ -2,6 +2,18 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-16 - Resposta a revisao: cota de producao com valor sugerido, latencia sem teto medida
+
+### Corrigido
+
+- `.env.production.example`: `LLM_DAILY_TOKEN_LIMIT_PER_USER` deixa de sugerir `0` (sem limite) e passa a vir com `150000` -- o mesmo valor usado antes da cota ser desligada por padrao (#43), ja calibrado contra o preco real do unico modelo pago da allowlist. O codigo continua permitindo `0`; so o template de producao deixou de sugerir isso como padrao seguro.
+- `docs/integrations/model-provider.md`: documentado o impacto em latencia de `LLM_MAX_OUTPUT_TOKENS=0` medido contra chamadas reais ja feitas nesta base -- consistentemente abaixo de 3s por chamada, sem estouro do timeout de 45s.
+
+### Contexto
+
+- revisao da Amanda no PR #43 (ja mergeado): "removendo o LLM_DAILY_TOKEN_LIMIT_PER_USER por padrao, o projeto nao fica sem nenhuma protecao de custo caso isso va pra producao?" e "ja testou uma chamada com uma resposta bem grande pra ver o impacto em tempo de resposta?".
+- como o PR original ja foi mergeado, essa correcao vai em um PR novo empilhado na ponta atual, referenciando o comentario original.
+
 ## 2026-09-16 - Login com GitHub (OAuth), adicional ao email/senha
 
 ### Adicionado
