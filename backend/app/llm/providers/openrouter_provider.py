@@ -80,8 +80,12 @@ class OpenRouterLLMProvider(LLMProvider):
                     # Reasoning models (e.g. openai/gpt-5-mini) spend part of
                     # max_tokens on hidden chain-of-thought before writing
                     # visible output; a tight budget or a rich schema can burn
-                    # the whole budget on reasoning alone. Not worth retrying:
-                    # the same prompt/budget fails identically every attempt.
+                    # the whole budget on reasoning alone. Retried below like
+                    # any other transient failure of this specific call: how
+                    # many reasoning tokens a model burns for the same prompt
+                    # isn't perfectly deterministic (sampling varies it too),
+                    # so a second attempt isn't guaranteed to fail the same
+                    # way, even at the same LLM_MAX_OUTPUT_TOKENS.
                     raise LLMEmptyResponseError(
                         "O modelo esgotou o orçamento de tokens de saída "
                         "(LLM_MAX_OUTPUT_TOKENS) processando raciocínio interno, "
@@ -107,7 +111,7 @@ class OpenRouterLLMProvider(LLMProvider):
         return retry_on_transient_error(
             _call,
             exceptions=(
-                RuntimeError,
+                RuntimeError,  # covers LLMEmptyResponseError, a RuntimeError subclass
                 json.JSONDecodeError,
                 ValidationError,
                 RateLimitError,
