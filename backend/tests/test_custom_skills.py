@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 
+from app.core.database import SessionLocal
+from app.models import AgentSkill
 from tests.conftest import (
     authenticated_csrf_headers,
     create_qualified_request,
@@ -75,6 +77,38 @@ def test_custom_skill_is_official_and_visible_to_everyone(client: TestClient) ->
 
     other_detail = client.get(f"/api/v1/agent-skills/{skill['id']}")
     assert other_detail.status_code == 200
+
+
+def test_dashboard_registered_skills_count_excludes_others_private_skills(
+    client: TestClient,
+) -> None:
+    """Security review (PR #37): the reviewer asked whether every read of
+    AgentSkill goes through the same visibility filter as
+    list_active_skills/select_skills_for_domain. This one didn't --
+    dashboard_summary's registered_agent_skills counted every approved+
+    enabled skill system-wide, PRIVATE ones included, while every other
+    metric on that same screen is scoped to the caller's own data. A
+    PRIVATE skill belonging to someone else would still bump the number a
+    plain user sees, an observable (if detail-free) leak of private
+    activity."""
+    register(client, OWNER)
+    promote(OWNER["email"], "TECHNICIAN")
+    private_skill = _create_custom_skill(client)
+    with SessionLocal() as db:
+        db.query(AgentSkill).filter(AgentSkill.id == private_skill["id"]).update(
+            {"visibility": "PRIVATE"}
+        )
+        db.commit()
+
+    owner_dashboard = client.get("/api/v1/dashboard/summary", headers=authenticated_csrf_headers(client))
+    assert owner_dashboard.status_code == 200
+    assert owner_dashboard.json()["registered_agent_skills"] == 1
+
+    client.post("/api/v1/auth/logout", headers=authenticated_csrf_headers(client))
+    register(client, OTHER_USER)
+    other_dashboard = client.get("/api/v1/dashboard/summary", headers=authenticated_csrf_headers(client))
+    assert other_dashboard.status_code == 200
+    assert other_dashboard.json()["registered_agent_skills"] == 0
 
 
 def test_generic_executor_runs_custom_skill_end_to_end(client: TestClient, monkeypatch) -> None:
