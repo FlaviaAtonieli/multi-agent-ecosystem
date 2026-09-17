@@ -51,10 +51,28 @@ def test_import_valid_manifest_registers_and_enables_skill(client: TestClient) -
     assert payload["status"] == "approved"
     assert payload["enabled"] is True
     assert payload["domain"] == "codigo_legado"
+    assert payload["visibility"] == "OFFICIAL"
 
     catalog_response = client.get("/api/v1/agent-skills")
     assert catalog_response.status_code == 200
     assert any(skill["id"] == payload["id"] for skill in catalog_response.json())
+
+
+def test_import_can_opt_into_private_visibility(client: TestClient) -> None:
+    """Amanda's review on #45: importing a skill can still be kept PRIVATE
+    (owner-only) instead of the OFFICIAL default, for testing before
+    publishing -- see also test_custom_skills.py's equivalent for the
+    assisted-creation endpoint."""
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    response = client.post(
+        "/api/v1/agent-skills/import",
+        json={"manifest_markdown": FIXTURE_MANIFEST, "visibility": "PRIVATE"},
+        headers=authenticated_csrf_headers(client),
+    )
+    assert response.status_code == 201
+    assert response.json()["visibility"] == "PRIVATE"
 
 
 def test_import_invalid_manifest_is_rejected_with_reasons(client: TestClient) -> None:

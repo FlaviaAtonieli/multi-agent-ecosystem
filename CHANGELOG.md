@@ -13,6 +13,28 @@ Este arquivo registra alterações relevantes da PoC. As datas correspondem ao m
 - revisao do Pedro no PR #41 (ja mergeado): "O MaxBodySizeMiddleware valida só o Content-Length declarado. Isso não cobre requisições com Transfer-Encoding: chunked. Um revisor atento deveria pelo menos ter perguntado se essa limitação é intencional e aceita, ou se ficou como uma lacuna na proteção." -- era mesmo uma lacuna real, nao intencional.
 - 2 testes novos em `test_config.py`: um prova que um corpo chunked acima do limite e recusado (`413`) -- reproduzi a falha primeiro revertendo temporariamente pro codigo antigo pra confirmar que o teste realmente pegava o bug (ficava `403`, a checagem de CSRF, em vez de `413` -- ou seja, passava direto pela guarda de tamanho); outro prova que um corpo chunked dentro do limite continua chegando corretamente na rota.
 - durante a correcao, a primeira tentativa (substituir `request._receive` pelos bytes ja lidos) quebrou a suite inteira (422 em quase todo POST) -- `BaseHTTPMiddleware` do Starlette usa uma `_CachedRequest` interna que so repassa o corpo corretamente pro proximo middleware/rota se `request._body` for setado (o mesmo campo que `Request.body()` preenche), nao `_receive`. Corrigido pra setar `request._body` diretamente, replicando o que `Request.body()` faz internamente.
+## 2026-09-16 - Resposta a revisao: so aceita email verificado do GitHub
+
+### Corrigido
+
+- `fetch_github_profile` (`app/services/github_oauth_service.py`): deixa de usar o campo `email` de `GET /user` diretamente -- esse campo e o email publico do perfil e nao tem garantia de estar `verified`. Agora sempre consulta `GET /user/emails` e escolhe o primario verificado (ou, na falta dele, qualquer verificado); sem nenhum email verificado acessivel, a request falha (`github_oauth_failed`) antes de tocar o banco.
+
+### Contexto
+
+- revisao da Amanda no PR #46 (ja mergeado): "quando o /user ja retorna um email, a gente usa ele direto. Nao valeria validar tambem se esse email esta como verified no GitHub antes de criar a conta?" -- achado de seguranca real, nao so uma duvida: usar um email nao verificado abriria a mesma classe de risco (reivindicar acesso via email que nao se controla de fato) que `find_or_create_user` ja evitava por outro angulo (recusando auto-link por email).
+- 2 testes novos exercitam `fetch_github_profile` diretamente (nao so o endpoint, que ja mockava a funcao inteira antes) -- mockam as duas chamadas reais ao GitHub (`GET /user`, `GET /user/emails`) e provam que um email publico nao-verificado e ignorado em favor do primario verificado da lista.
+## 2026-09-16 - Resposta a revisao: opcao de manter Agent Skill PRIVATE ao criar/importar
+
+### Adicionado
+
+- `visibility` (opcional, `"OFFICIAL"` ou `"PRIVATE"`, padrao `"OFFICIAL"`) em `AgentSkillManifestCreate` e `AgentSkillManifestImport` (`app/schemas/agent_skill.py`) -- `POST /agent-skills` e `POST /agent-skills/import` passam esse valor pra `register_skill` em vez de sempre usar o default do servico. So TECHNICIAN/ADMIN alcancam esses endpoints (`require_skill_curator`), entao nenhuma checagem de papel nova foi necessaria.
+- Frontend: checkbox "Manter privada por enquanto" nas telas de criar (`AgentSkillCreatePage.tsx`) e importar (`AgentSkillImportPage.tsx`) Agent Skill, desmarcado por padrao (= OFFICIAL). Corrigido tambem um texto desatualizado na tela de criar que ainda dizia "ela nasce privada", sobrevivente de antes do PR #45 mudar o padrao -- ninguem tinha atualizado.
+
+### Contexto
+
+- revisao da Amanda no PR #45 (ja mergeado): "nao teria mais como criar/testar uma skill de forma privada antes de disponibilizar para os outros usuarios. Isso ja e intencional para essa fase do projeto ou faria sentido manter a opcao de PRIVATE ate ela ser aprovada/publicada?" -- resolvido restaurando a opcao, sem reverter o padrao OFFICIAL que resolveu o problema original (USER sem nada pra executar).
+- ela tambem perguntou se o risco composto com a cota de tokens (#43) era esperado pro estagio atual -- confirmado que sim, e que a mitigacao (reativar a cota em producao) ja estava documentada; sem mudanca de codigo adicional pra essa parte.
+- 4 testes novos/atualizados: `test_custom_skill_can_opt_into_private_visibility` e `test_import_can_opt_into_private_visibility` provam o opt-in; `test_custom_skill_is_official_and_visible_to_everyone` e `test_import_valid_manifest_registers_and_enables_skill` ganharam uma asserção a mais confirmando o default `OFFICIAL` explicitamente.
 ## 2026-09-16 - Resposta a revisao: prova que os contadores de auditoria nao vazam entre usuarios
 
 ### Corrigido
