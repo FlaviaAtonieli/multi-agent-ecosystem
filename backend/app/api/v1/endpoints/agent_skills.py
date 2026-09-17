@@ -107,9 +107,15 @@ def create_skill(
     user: User = Depends(require_skill_curator),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> object:
-    manifest = AgentSkillManifest(**payload.model_dump())
+    manifest = AgentSkillManifest(**payload.model_dump(exclude={"visibility"}))
     try:
-        skill = register_skill(db, manifest=manifest, submitted_by=user, owner_id=user.id)
+        skill = register_skill(
+            db,
+            manifest=manifest,
+            submitted_by=user,
+            owner_id=user.id,
+            visibility=payload.visibility,
+        )
     except AgentSkillValidationError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="; ".join(exc.errors)
@@ -148,6 +154,7 @@ def import_skill(
             submitted_by=user,
             raw_markdown=payload.manifest_markdown,
             owner_id=user.id,
+            visibility=payload.visibility,
         )
     except AgentSkillValidationError as exc:
         raise HTTPException(
