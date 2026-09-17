@@ -13,6 +13,49 @@ Este arquivo registra alterações relevantes da PoC. As datas correspondem ao m
 
 - revisao do Pedro no PR #37 (ja mergeado): "A própria PR introduziu e corrigiu um bug em que ask_follow_up_question não passava viewer_id, com risco de expor skill privada. Um review mais cuidadoso deveria ter perguntado se foi feito um scan por outras chamadas de select_skills_for_domain e list_active_skills sem viewer_id." -- fiz o scan pedido: as 7 chamadas existentes a essas duas funcoes ja passam `viewer_id` corretamente (nenhuma omissao restante). O achado real ficou um passo adiante do que foi literalmente pedido: uma leitura de `AgentSkill` que nao passa por nenhuma das duas funcoes (uma contagem direta em `dashboard.py`), mas sofre do mesmo problema de fundo -- ler a tabela sem respeitar visibilidade.
 - teste novo comprovado contra o codigo antigo antes de corrigir: revertido temporariamente, o teste falhava (`1 == 0`, o outro usuario via a skill PRIVATE contada), confirmando que o vazamento era real antes de escrever a correcao.
+## 2026-09-16 - Resposta a revisao: so aceita email verificado do GitHub
+
+### Corrigido
+
+- `fetch_github_profile` (`app/services/github_oauth_service.py`): deixa de usar o campo `email` de `GET /user` diretamente -- esse campo e o email publico do perfil e nao tem garantia de estar `verified`. Agora sempre consulta `GET /user/emails` e escolhe o primario verificado (ou, na falta dele, qualquer verificado); sem nenhum email verificado acessivel, a request falha (`github_oauth_failed`) antes de tocar o banco.
+
+### Contexto
+
+- revisao da Amanda no PR #46 (ja mergeado): "quando o /user ja retorna um email, a gente usa ele direto. Nao valeria validar tambem se esse email esta como verified no GitHub antes de criar a conta?" -- achado de seguranca real, nao so uma duvida: usar um email nao verificado abriria a mesma classe de risco (reivindicar acesso via email que nao se controla de fato) que `find_or_create_user` ja evitava por outro angulo (recusando auto-link por email).
+- 2 testes novos exercitam `fetch_github_profile` diretamente (nao so o endpoint, que ja mockava a funcao inteira antes) -- mockam as duas chamadas reais ao GitHub (`GET /user`, `GET /user/emails`) e provam que um email publico nao-verificado e ignorado em favor do primario verificado da lista.
+## 2026-09-16 - Resposta a revisao: opcao de manter Agent Skill PRIVATE ao criar/importar
+
+### Adicionado
+
+- `visibility` (opcional, `"OFFICIAL"` ou `"PRIVATE"`, padrao `"OFFICIAL"`) em `AgentSkillManifestCreate` e `AgentSkillManifestImport` (`app/schemas/agent_skill.py`) -- `POST /agent-skills` e `POST /agent-skills/import` passam esse valor pra `register_skill` em vez de sempre usar o default do servico. So TECHNICIAN/ADMIN alcancam esses endpoints (`require_skill_curator`), entao nenhuma checagem de papel nova foi necessaria.
+- Frontend: checkbox "Manter privada por enquanto" nas telas de criar (`AgentSkillCreatePage.tsx`) e importar (`AgentSkillImportPage.tsx`) Agent Skill, desmarcado por padrao (= OFFICIAL). Corrigido tambem um texto desatualizado na tela de criar que ainda dizia "ela nasce privada", sobrevivente de antes do PR #45 mudar o padrao -- ninguem tinha atualizado.
+
+### Contexto
+
+- revisao da Amanda no PR #45 (ja mergeado): "nao teria mais como criar/testar uma skill de forma privada antes de disponibilizar para os outros usuarios. Isso ja e intencional para essa fase do projeto ou faria sentido manter a opcao de PRIVATE ate ela ser aprovada/publicada?" -- resolvido restaurando a opcao, sem reverter o padrao OFFICIAL que resolveu o problema original (USER sem nada pra executar).
+- ela tambem perguntou se o risco composto com a cota de tokens (#43) era esperado pro estagio atual -- confirmado que sim, e que a mitigacao (reativar a cota em producao) ja estava documentada; sem mudanca de codigo adicional pra essa parte.
+- 4 testes novos/atualizados: `test_custom_skill_can_opt_into_private_visibility` e `test_import_can_opt_into_private_visibility` provam o opt-in; `test_custom_skill_is_official_and_visible_to_everyone` e `test_import_valid_manifest_registers_and_enables_skill` ganharam uma asserção a mais confirmando o default `OFFICIAL` explicitamente.
+## 2026-09-16 - Resposta a revisao: prova que os contadores de auditoria nao vazam entre usuarios
+
+### Corrigido
+
+- `tests/test_audit.py`: novo teste (`test_audit_events_plain_user_stat_counters_dont_leak_other_users`) provando explicitamente que os 4 contadores do topo (`events_today`, `automated_decisions_today`, `manual_interventions_today`, `compliance_alerts_today`) sao escopados por dono pra um usuario comum, nao so a lista principal -- ja tinha teste pra lista, faltava um pros contadores. O codigo em `app/api/v1/endpoints/audit.py` ja aplicava o filtro corretamente (`_count_today` usa o mesmo `owner_filter` da query principal); o que faltava era a prova.
+
+### Contexto
+
+- revisao da Amanda no PR #44 (ja mergeado): "validou esses numeros com um usuario comum pra garantir que eles tambem estao filtrados por usuario e nao acabam trazendo contagens de outras pessoas? Nos testes que vi, me parece que a lista principal esta coberta, mas nao consegui identificar essa validacao nos contadores." -- achado de cobertura de teste legitimo.
+- o teste novo compara os contadores de um usuario comum contra o total do sistema inteiro (visivel so a um REVIEWER) depois que outro usuario tambem gerou eventos no mesmo dia -- se os contadores do usuario comum tivessem vazado, bateriam com o total do sistema; a prova exige que sejam estritamente menores, e que o contador do usuario comum bata exatamente com a contagem dos proprios itens dele.
+## 2026-09-16 - Resposta a revisao: cota de producao com valor sugerido, latencia sem teto medida
+
+### Corrigido
+
+- `.env.production.example`: `LLM_DAILY_TOKEN_LIMIT_PER_USER` deixa de sugerir `0` (sem limite) e passa a vir com `150000` -- o mesmo valor usado antes da cota ser desligada por padrao (#43), ja calibrado contra o preco real do unico modelo pago da allowlist. O codigo continua permitindo `0`; so o template de producao deixou de sugerir isso como padrao seguro.
+- `docs/integrations/model-provider.md`: documentado o impacto em latencia de `LLM_MAX_OUTPUT_TOKENS=0` medido contra chamadas reais ja feitas nesta base -- consistentemente abaixo de 3s por chamada, sem estouro do timeout de 45s.
+
+### Contexto
+
+- revisao da Amanda no PR #43 (ja mergeado): "removendo o LLM_DAILY_TOKEN_LIMIT_PER_USER por padrao, o projeto nao fica sem nenhuma protecao de custo caso isso va pra producao?" e "ja testou uma chamada com uma resposta bem grande pra ver o impacto em tempo de resposta?".
+- como o PR original ja foi mergeado, essa correcao vai em um PR novo empilhado na ponta atual, referenciando o comentario original.
 
 ## 2026-09-16 - Login com GitHub (OAuth), adicional ao email/senha
 

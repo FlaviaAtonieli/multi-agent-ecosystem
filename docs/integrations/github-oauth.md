@@ -48,6 +48,10 @@ Usuário clica "Continuar com GitHub"
   -> redireciona pro frontend (FRONTEND_BASE_URL/dashboard, ou /login?error=... em caso de falha)
 ```
 
+## Resolução do e-mail (`fetch_github_profile`, `app/services/github_oauth_service.py`)
+
+O campo `email` retornado por `GET /user` é o e-mail **público** do perfil do GitHub e não tem garantia de estar marcado como `verified` pela API. Por isso `fetch_github_profile` **nunca** usa esse campo diretamente -- sempre consulta `GET /user/emails` (requer o escopo `user:email`, já pedido) e escolhe o primário verificado (ou, na falta dele, qualquer verificado). Sem nenhum e-mail verificado acessível, a request falha com `github_oauth_failed` antes de tocar o banco. Usar um e-mail não verificado abriria a mesma classe de risco que a resolução de conta abaixo já evita por outro ângulo (alguém reivindicando acesso via um e-mail que não controla de fato).
+
 ## Resolução de conta (`find_or_create_user`, `app/services/github_oauth_service.py`)
 
 1. **Por `github_id`** primeiro (estável mesmo que o usuário troque de e-mail ou nome no GitHub) -- se existe, entra nessa conta e atualiza nome/avatar.
