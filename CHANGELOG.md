@@ -2,6 +2,17 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-17 - Resposta a revisao (Pedro): contagem de skills no dashboard vazava skill PRIVATE alheia
+
+### Corrigido
+
+- `dashboard_summary` (`app/api/v1/endpoints/dashboard.py`): `registered_agent_skills` contava toda `AgentSkill` `approved`+`enabled` do sistema inteiro, sem nenhum filtro de visibilidade -- a unica metrica dessa tela sem escopo por `owner_id`, todas as outras ja eram escopadas ao usuario logado. Uma skill `PRIVATE` de outro usuario incrementava o numero mesmo assim, um vazamento observavel (sem detalhes, mas perceptivel) de atividade privada alheia.
+- `app/agent_catalog/registry.py`: `_visibility_filter` renomeada pra `visibility_filter` (publica) -- passou a ser reutilizada fora do modulo, em `dashboard.py`, em vez de duplicar a mesma logica de filtro.
+
+### Contexto
+
+- revisao do Pedro no PR #37 (ja mergeado): "A própria PR introduziu e corrigiu um bug em que ask_follow_up_question não passava viewer_id, com risco de expor skill privada. Um review mais cuidadoso deveria ter perguntado se foi feito um scan por outras chamadas de select_skills_for_domain e list_active_skills sem viewer_id." -- fiz o scan pedido: as 7 chamadas existentes a essas duas funcoes ja passam `viewer_id` corretamente (nenhuma omissao restante). O achado real ficou um passo adiante do que foi literalmente pedido: uma leitura de `AgentSkill` que nao passa por nenhuma das duas funcoes (uma contagem direta em `dashboard.py`), mas sofre do mesmo problema de fundo -- ler a tabela sem respeitar visibilidade.
+- teste novo comprovado contra o codigo antigo antes de corrigir: revertido temporariamente, o teste falhava (`1 == 0`, o outro usuario via a skill PRIVATE contada), confirmando que o vazamento era real antes de escrever a correcao.
 ## 2026-09-16 - Resposta a revisao: so aceita email verificado do GitHub
 
 ### Corrigido
