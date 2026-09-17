@@ -14,6 +14,16 @@ Este arquivo registra alterações relevantes da PoC. As datas correspondem ao m
 - revisao do Pedro no PR #35 (ja mergeado): "Deveria ter chamado atenção que o problema vinha de uma regra pouco óbvia do strict:true... Eu esperaria pelo menos uma pergunta sobre cobertura futura do strict_json_schema() com outros modelos strict. Também faltou questionar se LLMEmptyResponseError realmente deve ficar sem retry em todos os casos, já que resposta vazia pode ter outras causas."
 - pra confirmar o segundo ponto, escrevi um teste que efetivamente engana o provider (primeira chamada retorna vazio com `finish_reason=length`, segunda retorna um plano valido) e provei que a segunda tentativa realmente acontece e tem sucesso -- nao bastava so ler o codigo, empiricamente o retry ja funcionava.
 - teste novo em `test_llm_schemas.py` comprovado contra o codigo antigo antes de corrigir: revertido temporariamente, o `$defs` aninhado ficava sem o patch (`{'label'}` em vez de `{'label', 'weight'}` num teste com um campo com valor padrao), confirmando que a lacuna era real.
+## 2026-09-16 - Resposta a revisao: so aceita email verificado do GitHub
+
+### Corrigido
+
+- `fetch_github_profile` (`app/services/github_oauth_service.py`): deixa de usar o campo `email` de `GET /user` diretamente -- esse campo e o email publico do perfil e nao tem garantia de estar `verified`. Agora sempre consulta `GET /user/emails` e escolhe o primario verificado (ou, na falta dele, qualquer verificado); sem nenhum email verificado acessivel, a request falha (`github_oauth_failed`) antes de tocar o banco.
+
+### Contexto
+
+- revisao da Amanda no PR #46 (ja mergeado): "quando o /user ja retorna um email, a gente usa ele direto. Nao valeria validar tambem se esse email esta como verified no GitHub antes de criar a conta?" -- achado de seguranca real, nao so uma duvida: usar um email nao verificado abriria a mesma classe de risco (reivindicar acesso via email que nao se controla de fato) que `find_or_create_user` ja evitava por outro angulo (recusando auto-link por email).
+- 2 testes novos exercitam `fetch_github_profile` diretamente (nao so o endpoint, que ja mockava a funcao inteira antes) -- mockam as duas chamadas reais ao GitHub (`GET /user`, `GET /user/emails`) e provam que um email publico nao-verificado e ignorado em favor do primario verificado da lista.
 ## 2026-09-16 - Resposta a revisao: opcao de manter Agent Skill PRIVATE ao criar/importar
 
 ### Adicionado

@@ -97,16 +97,17 @@ def fetch_github_profile(access_token: str) -> GitHubProfile:
     raw_profile = _github_get(GITHUB_USER_URL, access_token)
     profile: dict = raw_profile if isinstance(raw_profile, dict) else {}
 
-    email = profile.get("email")
-    if not email:
-        # Sem email publico -- busca a lista de emails da conta (requer o
-        # escopo user:email) e usa o primario verificado; na falta dele,
-        # qualquer email verificado.
-        raw_emails = _github_get(GITHUB_USER_EMAILS_URL, access_token)
-        candidates: list[dict] = raw_emails if isinstance(raw_emails, list) else []
-        primary = next((e for e in candidates if e.get("primary") and e.get("verified")), None)
-        chosen = primary or next((e for e in candidates if e.get("verified")), None)
-        email = chosen["email"] if chosen else None
+    # Sempre busca a lista de e-mails da conta (requer o escopo user:email) em
+    # vez de confiar no campo "email" de /user: esse campo é o e-mail público
+    # do perfil e não tem garantia de estar marcado como verified pela API --
+    # usá-lo sem checar abriria uma via pra alguém reivindicar/criar uma conta
+    # com um e-mail que não controla de fato (mesma classe de risco que
+    # find_or_create_user já evita ao recusar auto-link por e-mail).
+    raw_emails = _github_get(GITHUB_USER_EMAILS_URL, access_token)
+    candidates: list[dict] = raw_emails if isinstance(raw_emails, list) else []
+    primary = next((e for e in candidates if e.get("primary") and e.get("verified")), None)
+    chosen = primary or next((e for e in candidates if e.get("verified")), None)
+    email = chosen["email"] if chosen else None
 
     if not email:
         raise GitHubOAuthError(
