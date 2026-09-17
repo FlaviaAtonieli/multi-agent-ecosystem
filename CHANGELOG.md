@@ -13,6 +13,27 @@ Este arquivo registra alterações relevantes da PoC. As datas correspondem ao m
 - revisao do Pedro no PR #41 (ja mergeado): "O MaxBodySizeMiddleware valida só o Content-Length declarado. Isso não cobre requisições com Transfer-Encoding: chunked. Um revisor atento deveria pelo menos ter perguntado se essa limitação é intencional e aceita, ou se ficou como uma lacuna na proteção." -- era mesmo uma lacuna real, nao intencional.
 - 2 testes novos em `test_config.py`: um prova que um corpo chunked acima do limite e recusado (`413`) -- reproduzi a falha primeiro revertendo temporariamente pro codigo antigo pra confirmar que o teste realmente pegava o bug (ficava `403`, a checagem de CSRF, em vez de `413` -- ou seja, passava direto pela guarda de tamanho); outro prova que um corpo chunked dentro do limite continua chegando corretamente na rota.
 - durante a correcao, a primeira tentativa (substituir `request._receive` pelos bytes ja lidos) quebrou a suite inteira (422 em quase todo POST) -- `BaseHTTPMiddleware` do Starlette usa uma `_CachedRequest` interna que so repassa o corpo corretamente pro proximo middleware/rota se `request._body` for setado (o mesmo campo que `Request.body()` preenche), nao `_receive`. Corrigido pra setar `request._body` diretamente, replicando o que `Request.body()` faz internamente.
+## 2026-09-16 - Resposta a revisao: prova que os contadores de auditoria nao vazam entre usuarios
+
+### Corrigido
+
+- `tests/test_audit.py`: novo teste (`test_audit_events_plain_user_stat_counters_dont_leak_other_users`) provando explicitamente que os 4 contadores do topo (`events_today`, `automated_decisions_today`, `manual_interventions_today`, `compliance_alerts_today`) sao escopados por dono pra um usuario comum, nao so a lista principal -- ja tinha teste pra lista, faltava um pros contadores. O codigo em `app/api/v1/endpoints/audit.py` ja aplicava o filtro corretamente (`_count_today` usa o mesmo `owner_filter` da query principal); o que faltava era a prova.
+
+### Contexto
+
+- revisao da Amanda no PR #44 (ja mergeado): "validou esses numeros com um usuario comum pra garantir que eles tambem estao filtrados por usuario e nao acabam trazendo contagens de outras pessoas? Nos testes que vi, me parece que a lista principal esta coberta, mas nao consegui identificar essa validacao nos contadores." -- achado de cobertura de teste legitimo.
+- o teste novo compara os contadores de um usuario comum contra o total do sistema inteiro (visivel so a um REVIEWER) depois que outro usuario tambem gerou eventos no mesmo dia -- se os contadores do usuario comum tivessem vazado, bateriam com o total do sistema; a prova exige que sejam estritamente menores, e que o contador do usuario comum bata exatamente com a contagem dos proprios itens dele.
+## 2026-09-16 - Resposta a revisao: cota de producao com valor sugerido, latencia sem teto medida
+
+### Corrigido
+
+- `.env.production.example`: `LLM_DAILY_TOKEN_LIMIT_PER_USER` deixa de sugerir `0` (sem limite) e passa a vir com `150000` -- o mesmo valor usado antes da cota ser desligada por padrao (#43), ja calibrado contra o preco real do unico modelo pago da allowlist. O codigo continua permitindo `0`; so o template de producao deixou de sugerir isso como padrao seguro.
+- `docs/integrations/model-provider.md`: documentado o impacto em latencia de `LLM_MAX_OUTPUT_TOKENS=0` medido contra chamadas reais ja feitas nesta base -- consistentemente abaixo de 3s por chamada, sem estouro do timeout de 45s.
+
+### Contexto
+
+- revisao da Amanda no PR #43 (ja mergeado): "removendo o LLM_DAILY_TOKEN_LIMIT_PER_USER por padrao, o projeto nao fica sem nenhuma protecao de custo caso isso va pra producao?" e "ja testou uma chamada com uma resposta bem grande pra ver o impacto em tempo de resposta?".
+- como o PR original ja foi mergeado, essa correcao vai em um PR novo empilhado na ponta atual, referenciando o comentario original.
 
 ## 2026-09-16 - Login com GitHub (OAuth), adicional ao email/senha
 
