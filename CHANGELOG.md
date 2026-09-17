@@ -2,6 +2,17 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-17 - Resposta a revisao (Pedro): limite de corpo HTTP ignorava requisicao chunked
+
+### Corrigido
+
+- `MaxBodySizeMiddleware` (`app/core/middleware.py`): a primeira versao so checava o cabecalho `Content-Length` declarado -- uma requisicao com `Transfer-Encoding: chunked` (sem `Content-Length`, tamanho desconhecido ate o corpo terminar de chegar) passava direto, sem limite algum. Agora o corpo e lido em stream e contado byte a byte conforme chega, entao o limite (`MAX_REQUEST_BODY_BYTES`) vale independentemente de o cliente declarar (ou mentir sobre) o tamanho.
+
+### Contexto
+
+- revisao do Pedro no PR #41 (ja mergeado): "O MaxBodySizeMiddleware valida só o Content-Length declarado. Isso não cobre requisições com Transfer-Encoding: chunked. Um revisor atento deveria pelo menos ter perguntado se essa limitação é intencional e aceita, ou se ficou como uma lacuna na proteção." -- era mesmo uma lacuna real, nao intencional.
+- 2 testes novos em `test_config.py`: um prova que um corpo chunked acima do limite e recusado (`413`) -- reproduzi a falha primeiro revertendo temporariamente pro codigo antigo pra confirmar que o teste realmente pegava o bug (ficava `403`, a checagem de CSRF, em vez de `413` -- ou seja, passava direto pela guarda de tamanho); outro prova que um corpo chunked dentro do limite continua chegando corretamente na rota.
+- durante a correcao, a primeira tentativa (substituir `request._receive` pelos bytes ja lidos) quebrou a suite inteira (422 em quase todo POST) -- `BaseHTTPMiddleware` do Starlette usa uma `_CachedRequest` interna que so repassa o corpo corretamente pro proximo middleware/rota se `request._body` for setado (o mesmo campo que `Request.body()` preenche), nao `_receive`. Corrigido pra setar `request._body` diretamente, replicando o que `Request.body()` faz internamente.
 ## 2026-09-16 - Resposta a revisao: so aceita email verificado do GitHub
 
 ### Corrigido
