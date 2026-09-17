@@ -14,6 +14,17 @@ Este arquivo registra alterações relevantes da PoC. As datas correspondem ao m
 - revisao da Amanda no PR #45 (ja mergeado): "nao teria mais como criar/testar uma skill de forma privada antes de disponibilizar para os outros usuarios. Isso ja e intencional para essa fase do projeto ou faria sentido manter a opcao de PRIVATE ate ela ser aprovada/publicada?" -- resolvido restaurando a opcao, sem reverter o padrao OFFICIAL que resolveu o problema original (USER sem nada pra executar).
 - ela tambem perguntou se o risco composto com a cota de tokens (#43) era esperado pro estagio atual -- confirmado que sim, e que a mitigacao (reativar a cota em producao) ja estava documentada; sem mudanca de codigo adicional pra essa parte.
 - 4 testes novos/atualizados: `test_custom_skill_can_opt_into_private_visibility` e `test_import_can_opt_into_private_visibility` provam o opt-in; `test_custom_skill_is_official_and_visible_to_everyone` e `test_import_valid_manifest_registers_and_enables_skill` ganharam uma asserção a mais confirmando o default `OFFICIAL` explicitamente.
+## 2026-09-16 - Resposta a revisao: cota de producao com valor sugerido, latencia sem teto medida
+
+### Corrigido
+
+- `.env.production.example`: `LLM_DAILY_TOKEN_LIMIT_PER_USER` deixa de sugerir `0` (sem limite) e passa a vir com `150000` -- o mesmo valor usado antes da cota ser desligada por padrao (#43), ja calibrado contra o preco real do unico modelo pago da allowlist. O codigo continua permitindo `0`; so o template de producao deixou de sugerir isso como padrao seguro.
+- `docs/integrations/model-provider.md`: documentado o impacto em latencia de `LLM_MAX_OUTPUT_TOKENS=0` medido contra chamadas reais ja feitas nesta base -- consistentemente abaixo de 3s por chamada, sem estouro do timeout de 45s.
+
+### Contexto
+
+- revisao da Amanda no PR #43 (ja mergeado): "removendo o LLM_DAILY_TOKEN_LIMIT_PER_USER por padrao, o projeto nao fica sem nenhuma protecao de custo caso isso va pra producao?" e "ja testou uma chamada com uma resposta bem grande pra ver o impacto em tempo de resposta?".
+- como o PR original ja foi mergeado, essa correcao vai em um PR novo empilhado na ponta atual, referenciando o comentario original.
 
 ## 2026-09-16 - Login com GitHub (OAuth), adicional ao email/senha
 
