@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -7,11 +8,18 @@ from app.agent_manifest.manifest import DomainLiteral
 from app.quality_gate.service import QualityGateVerdict
 from app.schemas.orchestration import ConsolidatedResponseRead
 
+# OFFICIAL (default): visible/executable by every authenticated user, the
+# same day it's registered. PRIVATE: visible only to its owner (and ADMIN)
+# until they re-register it as OFFICIAL -- there's no in-place "publish"
+# toggle yet, re-import/re-create is the way to promote one.
+AgentSkillVisibility = Literal["OFFICIAL", "PRIVATE"]
+
 
 class AgentSkillManifestImport(BaseModel):
     """RF02: import an existing Agent Skill from a raw modelo.md file."""
 
     manifest_markdown: str = Field(min_length=1)
+    visibility: AgentSkillVisibility = "OFFICIAL"
 
 
 class AgentSkillManifestCreate(BaseModel):
@@ -33,6 +41,7 @@ class AgentSkillManifestCreate(BaseModel):
     validation_criteria: list[str] = Field(default_factory=list)
     uses_external_services: bool = False
     persona_instructions: str | None = Field(default=None, max_length=4000)
+    visibility: AgentSkillVisibility = "OFFICIAL"
 
 
 class AgentSkillRead(BaseModel):

@@ -45,6 +45,7 @@ export type AgentSkillCreatePayload = {
   validation_criteria: string[]
   uses_external_services: boolean
   persona_instructions: string | null
+  visibility: 'OFFICIAL' | 'PRIVATE'
 }
 
 export type ConfidenceLevel = 'ALTO' | 'MEDIO' | 'BAIXO'
@@ -116,10 +117,10 @@ export type FollowUpExchange = {
 export const agentSkillsApi = {
   listSkills: (onlyActive = false) =>
     apiRequest<AgentSkill[]>(`/agent-skills?only_active=${onlyActive}`),
-  importSkill: (manifestMarkdown: string) =>
+  importSkill: (manifestMarkdown: string, visibility: 'OFFICIAL' | 'PRIVATE' = 'OFFICIAL') =>
     apiRequest<AgentSkill>('/agent-skills/import', {
       method: 'POST',
-      body: JSON.stringify({ manifest_markdown: manifestMarkdown }),
+      body: JSON.stringify({ manifest_markdown: manifestMarkdown, visibility }),
     }),
   createSkill: (payload: AgentSkillCreatePayload) =>
     apiRequest<AgentSkill>('/agent-skills', {
