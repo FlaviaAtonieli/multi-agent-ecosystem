@@ -2,6 +2,16 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-16 - Resposta a revisao: prova que os contadores de auditoria nao vazam entre usuarios
+
+### Corrigido
+
+- `tests/test_audit.py`: novo teste (`test_audit_events_plain_user_stat_counters_dont_leak_other_users`) provando explicitamente que os 4 contadores do topo (`events_today`, `automated_decisions_today`, `manual_interventions_today`, `compliance_alerts_today`) sao escopados por dono pra um usuario comum, nao so a lista principal -- ja tinha teste pra lista, faltava um pros contadores. O codigo em `app/api/v1/endpoints/audit.py` ja aplicava o filtro corretamente (`_count_today` usa o mesmo `owner_filter` da query principal); o que faltava era a prova.
+
+### Contexto
+
+- revisao da Amanda no PR #44 (ja mergeado): "validou esses numeros com um usuario comum pra garantir que eles tambem estao filtrados por usuario e nao acabam trazendo contagens de outras pessoas? Nos testes que vi, me parece que a lista principal esta coberta, mas nao consegui identificar essa validacao nos contadores." -- achado de cobertura de teste legitimo.
+- o teste novo compara os contadores de um usuario comum contra o total do sistema inteiro (visivel so a um REVIEWER) depois que outro usuario tambem gerou eventos no mesmo dia -- se os contadores do usuario comum tivessem vazado, bateriam com o total do sistema; a prova exige que sejam estritamente menores, e que o contador do usuario comum bata exatamente com a contagem dos proprios itens dele.
 ## 2026-09-16 - Resposta a revisao: cota de producao com valor sugerido, latencia sem teto medida
 
 ### Corrigido
