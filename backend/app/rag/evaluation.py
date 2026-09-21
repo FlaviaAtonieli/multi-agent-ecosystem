@@ -92,3 +92,114 @@ LEGACY_BILLING_GROUND_TRUTH: list[RetrievalEvalCase] = [
         relevant_artifacts={"CreditLimitService.java"},
     ),
 ]
+
+
+# Ground truth for the "Regras de Negócio" domain, grounded in
+# app/rag/fixtures/business_rules/ -- distinct documents from legacy_billing,
+# but over the same underlying system, so retrieval must discriminate by
+# subject (business decision history vs. pricing policy), not just recognize
+# "credit limit" as a keyword.
+BUSINESS_RULES_GROUND_TRUTH: list[RetrievalEvalCase] = [
+    RetrievalEvalCase(
+        query=(
+            "Existe alguma decisão de negócio aprovada para diferenciar o "
+            "limite de crédito por segmento de cliente?"
+        ),
+        relevant_artifacts={"change-request-history.md"},
+    ),
+    RetrievalEvalCase(
+        query="Qual é a regra de desconto aplicada hoje a pedidos de alto valor?",
+        relevant_artifacts={"pricing-policy.md"},
+    ),
+    RetrievalEvalCase(
+        query="O desconto comercial concedido a um pedido depende do segmento do cliente?",
+        relevant_artifacts={"pricing-policy.md"},
+    ),
+    RetrievalEvalCase(
+        query=(
+            "Por que a proposta de alçada de aprovação manual acima do "
+            "limite de crédito foi rejeitada?"
+        ),
+        relevant_artifacts={"change-request-history.md"},
+    ),
+    RetrievalEvalCase(
+        query=(
+            "Quais solicitações de mudança de negócio já foram registradas "
+            "envolvendo o limite de crédito do cliente, e qual o status de "
+            "cada uma?"
+        ),
+        relevant_artifacts={"change-request-history.md"},
+    ),
+]
+
+
+# Ground truth for the "Arquitetura de Software" domain, grounded in
+# app/rag/fixtures/architecture/.
+ARCHITECTURE_GROUND_TRUTH: list[RetrievalEvalCase] = [
+    RetrievalEvalCase(
+        query=(
+            "Quais módulos dependem diretamente do serviço de limite de "
+            "crédito e por que isso é um risco arquitetural?"
+        ),
+        relevant_artifacts={"module-dependency-map.md"},
+    ),
+    RetrievalEvalCase(
+        query="Existe alguma camada de abstração entre o CreditLimitService e os módulos que o consomem?",
+        relevant_artifacts={"module-dependency-map.md"},
+    ),
+    RetrievalEvalCase(
+        query=(
+            "Onde o job noturno de recálculo de risco roda, e ele compete "
+            "por recursos com o fluxo de aprovação de pedidos?"
+        ),
+        relevant_artifacts={"deployment-topology.md"},
+    ),
+    RetrievalEvalCase(
+        query=(
+            "O processamento em lote do limite de crédito roda em uma fila "
+            "ou worker separado da aplicação web?"
+        ),
+        relevant_artifacts={"deployment-topology.md"},
+    ),
+    RetrievalEvalCase(
+        query=(
+            "O serviço de domínio do limite de crédito está acoplado "
+            "diretamente ao schema do banco de dados?"
+        ),
+        relevant_artifacts={"module-dependency-map.md", "CustomerRepository.java"},
+    ),
+]
+
+
+# Ground truth for the "Segurança da Informação" domain, grounded in
+# app/rag/fixtures/security/.
+SECURITY_GROUND_TRUTH: list[RetrievalEvalCase] = [
+    RetrievalEvalCase(
+        query="As consultas do CustomerRepository são vulneráveis a SQL injection?",
+        relevant_artifacts={"access-control-notes.md", "CustomerRepository.java"},
+    ),
+    RetrievalEvalCase(
+        query="Existe log de auditoria para consultas ao limite de crédito de um cliente?",
+        relevant_artifacts={"access-control-notes.md"},
+    ),
+    RetrievalEvalCase(
+        query="O campo EMAIL do cliente é considerado dado pessoal sensível para fins de LGPD?",
+        relevant_artifacts={"data-classification.md"},
+    ),
+    RetrievalEvalCase(
+        query="O relatório financeiro mensal expõe o e-mail do cliente sem necessidade para o caso de uso?",
+        relevant_artifacts={"data-classification.md"},
+    ),
+    RetrievalEvalCase(
+        query="A credencial de banco usada pelo job noturno de risco tem permissões restritas de leitura?",
+        relevant_artifacts={"access-control-notes.md"},
+    ),
+]
+
+
+GROUND_TRUTH_BY_DOMAIN: dict[str, list[RetrievalEvalCase]] = {
+    "Código Legado": LEGACY_BILLING_GROUND_TRUTH,
+    "Regras de Negócio": BUSINESS_RULES_GROUND_TRUTH,
+    "Arquitetura de Software": ARCHITECTURE_GROUND_TRUTH,
+    "Segurança da Informação": SECURITY_GROUND_TRUTH,
+}
