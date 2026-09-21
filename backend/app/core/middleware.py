@@ -9,10 +9,11 @@ from app.core.config import settings
 
 class MaxBodySizeMiddleware(BaseHTTPMiddleware):
     """Auditoria de seguranca P2: rejeita, pelo Content-Length declarado, um corpo
-    de requisicao maior que o esperado -- antes de qualquer endpoint le-lo. A
-    aplicacao so recebe JSON (sem upload de arquivo), entao o limite de
+    de requisicao maior que o esperado -- antes de qualquer endpoint le-lo.
     MAX_REQUEST_BODY_BYTES cobre folgadamente o maior payload legitimo hoje
-    (contexto de solicitacao tecnica + listas do manifesto de uma skill)."""
+    (contexto de solicitacao tecnica, listas do manifesto de uma skill, ou um
+    documento anexado via multipart -- ver ATTACHMENT_MAX_BYTES, sempre menor
+    que este teto)."""
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         content_length = request.headers.get("content-length")

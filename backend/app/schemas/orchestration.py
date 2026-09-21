@@ -90,6 +90,16 @@ class TechnicalRequestRead(BaseModel):
     consolidated_response: ConsolidatedResponseRead | None = None
 
 
+class RequestAttachmentRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    filename: str
+    content_type: str | None
+    size_bytes: int
+    created_at: datetime
+
+
 class TechnicalRequestReview(BaseModel):
     decision: Literal["approve", "reject"]
     notes: str | None = Field(default=None, max_length=2000)

@@ -29,6 +29,9 @@ def build_technical_planner_prompt(request: LLMPlanRequest) -> str:
     if request.retrieved_context:
         lines.append(f"Trechos recuperados da base de conhecimento:\n{request.retrieved_context}")
 
+    if request.attachments_context:
+        lines.append(f"Documentos anexados pelo usuário:\n{request.attachments_context}")
+
     if request.persona_instructions:
         lines.append(
             f"Persona e instruções específicas desta skill: {request.persona_instructions}. "

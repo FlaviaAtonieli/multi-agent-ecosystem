@@ -42,6 +42,10 @@ class LLMPlanRequest(BaseModel):
     # -- shapes the model's voice/focus beyond the domain label, without a
     # dedicated SkillExecutor subclass per custom skill.
     persona_instructions: str | None = None
+    # Text extracted from documents attached to the request (RequestAttachment,
+    # PR #24 code review) -- concatenated and labeled by filename, goes through
+    # the same sanitize_content/truncation pipeline as every other field here.
+    attachments_context: str | None = None
 
 
 class LLMPlan(BaseModel):

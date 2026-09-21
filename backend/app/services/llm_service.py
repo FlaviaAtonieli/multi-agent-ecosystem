@@ -84,6 +84,11 @@ def _build_safe_request(
         if cleaned:
             restrictions.append(cleaned)
 
+    raw_attachments_text = "\n\n".join(
+        f"[Anexo: {attachment.filename}]\n{attachment.content}"
+        for attachment in technical_request.attachments
+    )
+
     safe_request = LLMPlanRequest(
         technical_request_id=technical_request.id,
         trace_id=technical_request.trace_id,
@@ -95,6 +100,7 @@ def _build_safe_request(
         analysis_domain_label=analysis_domain_label,
         additional_question=clean(additional_question),
         persona_instructions=clean(persona_instructions),
+        attachments_context=clean(raw_attachments_text) if raw_attachments_text else None,
     )
     safe_serialized = json.dumps(
         safe_request.model_dump(mode="json"),

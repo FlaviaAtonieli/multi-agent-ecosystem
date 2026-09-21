@@ -1,11 +1,13 @@
 import secrets
 from datetime import datetime
+from pathlib import Path
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import utc_now
-from app.models import OrchestrationEvent, OrchestrationRun, TechnicalRequest, User
+from app.models import OrchestrationEvent, OrchestrationRun, RequestAttachment, TechnicalRequest, User
 from app.schemas.orchestration import TechnicalRequestCreate
 
 CONTEXT_MIN_LENGTH = 40
@@ -151,6 +153,13 @@ class RequestNotAwaitingReviewError(ValueError):
     pass
 
 
+class AttachmentRejectedError(ValueError):
+    """Raised for any reason an uploaded document can't become a
+    RequestAttachment -- disallowed extension, over the size cap, or bytes
+    that don't decode as UTF-8 text. The message is safe to return to the
+    caller as-is (no internals leak through it)."""
+
+
 def record_human_review(
     db: Session,
     *,
@@ -249,3 +258,87 @@ def complement_context(
 
     db.flush()
     return technical_request
+
+
+def add_attachment(
+    db: Session,
+    *,
+    technical_request: TechnicalRequest,
+    uploaded_by: User,
+    filename: str,
+    content_type: str | None,
+    raw_bytes: bytes,
+) -> RequestAttachment:
+    """Validates and stores an uploaded document as extra context for a
+    request (RFC UX suggestion, PR #24 code review). Deliberately orthogonal
+    to complement_context/has_sufficient_context: an attachment never changes
+    AWAITING_CONTEXT/QUALIFIED status by itself -- that qualification path is
+    specifically about the freeform context field's minimum length, and
+    conflating the two would mean a single tiny file could silently qualify
+    a request with no real textual context. The content still reaches the
+    planner prompt regardless of status (see llm_service._build_safe_request),
+    so it isn't ignored -- it just isn't a second route to "qualified"."""
+    extension = Path(filename).suffix.lower()
+    if not extension or extension not in settings.attachment_allowed_extension_list:
+        raise AttachmentRejectedError(
+            f"Tipo de arquivo não suportado. Extensões aceitas: "
+            f"{', '.join(settings.attachment_allowed_extension_list)}."
+        )
+
+    if len(raw_bytes) == 0:
+        raise AttachmentRejectedError("O arquivo enviado está vazio.")
+    if len(raw_bytes) > settings.attachment_max_bytes:
+        raise AttachmentRejectedError(
+            f"O arquivo excede o tamanho máximo permitido de "
+            f"{settings.attachment_max_bytes // 1000} KB."
+        )
+
+    try:
+        content = raw_bytes.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise AttachmentRejectedError(
+            "O arquivo precisa ser texto puro em UTF-8 (documentos binários como "
+            "PDF/DOCX ainda não são suportados)."
+        ) from exc
+
+    attachment = RequestAttachment(
+        technical_request_id=technical_request.id,
+        uploaded_by_id=uploaded_by.id,
+        filename=filename,
+        content_type=content_type,
+        content=content,
+        size_bytes=len(raw_bytes),
+    )
+    db.add(attachment)
+
+    append_event(
+        db,
+        technical_request,
+        event_type="ATTACHMENT_ADDED",
+        actor="USER",
+        title="Documento anexado",
+        message=f'O usuário anexou "{filename}" como contexto adicional da solicitação.',
+        payload={"filename": filename, "size_bytes": len(raw_bytes)},
+    )
+
+    db.flush()
+    return attachment
+
+
+def remove_attachment(
+    db: Session,
+    *,
+    technical_request: TechnicalRequest,
+    attachment: RequestAttachment,
+) -> None:
+    append_event(
+        db,
+        technical_request,
+        event_type="ATTACHMENT_REMOVED",
+        actor="USER",
+        title="Anexo removido",
+        message=f'O usuário removeu o anexo "{attachment.filename}".',
+        payload={"filename": attachment.filename},
+    )
+    db.delete(attachment)
+    db.flush()

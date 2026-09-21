@@ -2,6 +2,24 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-21 - Anexo de documentos como contexto adicional da solicitacao
+
+### Adicionado
+
+- `RequestAttachment` (migration `0012_request_attachments`): documento anexado a uma `TechnicalRequest`, guardado como texto (nao blob binario) -- so extensoes de texto puro/codigo-fonte sao aceitas (`.txt`, `.md`, `.py`, `.js`, `.java`, `.json`, etc., ver `ATTACHMENT_ALLOWED_EXTENSIONS`); PDF/DOCX ficam de fora deliberadamente, evitando puxar dependencias novas de parsing de binario (e a superficie de seguranca que vem junto -- PDF malformado, DOCX tipo zip-bomb) sem avaliar isso a parte.
+- `POST/GET /api/v1/requests/{id}/attachments` e `DELETE .../attachments/{attachment_id}`: upload multipart (ate `ATTACHMENT_MAX_BYTES`, 300 KB por padrao), listagem e remocao, todos escopados ao dono da solicitacao (`find_owned_request`, mesmo padrao de `add_request_context`).
+- O conteudo dos anexos entra no prompt do planejador tecnico (`LLMPlanRequest.attachments_context`, `_build_safe_request` em `llm_service.py`) pelo mesmo pipeline de sanitizacao/truncamento/redacao que o resto do contexto -- nao e um caminho a parte que escapa da mascara de dados sensiveis.
+- Anexar um documento e deliberadamente ortogonal a `complement_context`/qualificacao por tamanho minimo de contexto: nunca muda o status `AWAITING_CONTEXT` -> `QUALIFIED` sozinho (documentado no docstring de `add_attachment`), pra um arquivo pequeno nao virar uma segunda rota pra "qualificado" sem contexto textual de verdade.
+- Frontend: campo de upload no passo 3 do wizard de Nova Solicitacao (arquivos selecionados localmente, enviados logo apos a solicitacao ser criada -- uma falha de upload nao bloqueia a criacao, so aparece como aviso na tela de orquestracao); secao "Documentos anexados" na tela de orquestracao pra listar/adicionar/remover anexos depois de criada.
+
+### Contexto
+
+- sugestao do Pedro no code review do PR #24 (wizard de Nova Solicitacao, ja mergeado): "gostaria de sugerir que seria de bom tom adicionar um campo de anexo de documento no contexto da orquestracao."
+- decisao de escopo (texto puro, nao PDF/DOCX): extrair texto de formatos binarios exigiria novas dependencias de parsing com sua propria superficie de seguranca (documento malformado, entrada excessivamente grande apos descompactacao) que nao foi avaliada nesta rodada -- registrado como evolucao futura, nao esquecida.
+- `python-multipart` adicionado a `requirements.txt` -- ja estava instalado como dependencia transitiva do `mcp`, mas o codigo novo depende dele diretamente (FastAPI `UploadFile`), entao passou a ser declarado explicitamente em vez de depender implicitamente de outra dependencia trazer ele.
+- `MaxBodySizeMiddleware`/`MAX_REQUEST_BODY_BYTES` (docstring/comentarios): a alegacao de que "a aplicacao so recebe JSON, sem upload de arquivo" deixou de ser verdade com esse PR -- corrigida pra nao ficar desatualizada.
+- 15 testes novos: `test_request_attachments.py` (upload/listagem/remocao, rejeicao por extensao/tamanho/vazio/nao-UTF-8, escopo por dono, ortogonalidade com qualificacao), `test_llm_service_build_request.py` (conteudo do anexo chega em `_build_safe_request`, rotulado por nome de arquivo, multiplos anexos concatenados em ordem) e 2 novos em `test_llm_prompts.py` (secao de anexos aparece/nao aparece no prompt conforme esperado).
+
 ## 2026-09-16 - Login com GitHub (OAuth), adicional ao email/senha
 
 ### Adicionado

@@ -60,3 +60,9 @@ class TechnicalRequest(Base):
         cascade="all, delete-orphan",
         order_by="FollowUpExchange.sequence_number",
     )
+    attachments = relationship(
+        "RequestAttachment",
+        back_populates="technical_request",
+        cascade="all, delete-orphan",
+        order_by="RequestAttachment.created_at",
+    )
