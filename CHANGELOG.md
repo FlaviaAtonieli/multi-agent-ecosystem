@@ -2,6 +2,18 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-21 - Animacao de processando vira widget fixo no canto da tela
+
+### Corrigido
+
+- `OrchestrationThinkingAnimation.tsx`: a animacao de passos (ja existia, so client-side, sem progresso real do backend) deixa de ficar embutida no meio do formulario de execucao -- agora renderiza como um card fixo no canto inferior direito (`position: fixed`), com cabecalho clicavel pra recolher/expandir. Recolhido, mostra so "Processando orquestracao" + o passo atual; expandido, mostra a lista completa de passos e o Trace ID, igual antes.
+- Nenhuma mudanca em `OrchestrationPage.tsx` foi necessaria -- o componente ja era renderizado condicionalmente em `{executing && (...)}`; virar `position: fixed` foi suficiente pra tirar do fluxo da pagina, sem a pagina empurrar conteudo pra baixo enquanto a orquestracao roda.
+
+### Contexto
+
+- a pedido da autora: a espera da orquestracao ficava "sem status" visivel de forma incomoda -- queria a tela livre pra acompanhar o resto do conteudo da pagina enquanto um indicador fixo mostra que algo esta rodando.
+- corpo do widget expandido ganhou `max-height`+scroll proprio (nao existia limite antes) -- pensado pra quando `domains` tiver varios itens e a lista de passos crescer.
+
 ## 2026-09-21 - Ajustes de UX: status da orquestracao, catalogo de skills, sidebar
 
 ### Corrigido
