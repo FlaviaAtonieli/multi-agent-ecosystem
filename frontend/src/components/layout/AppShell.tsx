@@ -74,14 +74,6 @@ export function AppShell() {
             </>
           )}
         </nav>
-
-        <div className="workspace-sidebar-footer">
-          <span className="workspace-live-dot" />
-          <div>
-            <strong>Ecossistema operacional</strong>
-            <small>Base de orquestração v1</small>
-          </div>
-        </div>
       </aside>
 
       <div className="workspace-main">
