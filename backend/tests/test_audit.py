@@ -8,8 +8,8 @@ OWNER = {
     "password": "StrongPassword!123",
 }
 AUDITOR = {
-    "name": "Auditora Reviewer",
-    "email": "auditora.reviewer@example.com",
+    "name": "Conta Auditora",
+    "email": "conta.auditora@example.com",
     "password": "StrongPassword!123",
 }
 
@@ -19,44 +19,28 @@ def test_audit_events_requires_authentication(client: TestClient) -> None:
     assert response.status_code == 401
 
 
-def test_audit_events_scopes_plain_user_to_own_requests(client: TestClient) -> None:
-    """Any authenticated role (USER included) can open the audit trail, but
-    without REVIEWER/ADMIN it's scoped to requests the caller owns."""
+def test_audit_events_forbidden_for_plain_user(client: TestClient) -> None:
     register(client, OWNER)
-    technical_request = create_qualified_request(client, title="Investigar timeout no checkout")
-
     response = client.get("/api/v1/audit/events", headers=authenticated_csrf_headers(client))
-    assert response.status_code == 200
-    payload = response.json()
-
-    matching = [item for item in payload["items"] if item["request_id"] == technical_request["id"]]
-    assert len(matching) >= 1
-    event_types = {item["event_type"] for item in matching}
-    assert "REQUEST_CREATED" in event_types
-    assert payload["stats"]["events_today"] >= len(matching)
+    assert response.status_code == 403
 
 
-def test_audit_events_plain_user_cannot_see_others_requests(client: TestClient) -> None:
-    register(client, OWNER)
-    technical_request = create_qualified_request(client, title="Investigar timeout no checkout")
-
-    client.post("/api/v1/auth/logout", headers=authenticated_csrf_headers(client))
-    register(client, AUDITOR)  # a second plain USER account, not promoted here
-
+def test_audit_events_forbidden_for_reviewer(client: TestClient) -> None:
+    """REVIEWER had system-wide access before this endpoint went admin-only --
+    confirms that door is closed too, not just USER/TECHNICIAN."""
+    register(client, AUDITOR)
+    promote(AUDITOR["email"], "REVIEWER")
     response = client.get("/api/v1/audit/events", headers=authenticated_csrf_headers(client))
-    assert response.status_code == 200
-    payload = response.json()
-
-    assert all(item["request_id"] != technical_request["id"] for item in payload["items"])
+    assert response.status_code == 403
 
 
-def test_audit_events_lists_events_across_users(client: TestClient) -> None:
+def test_audit_events_lists_events_across_users_for_admin(client: TestClient) -> None:
     register(client, OWNER)
     technical_request = create_qualified_request(client, title="Investigar timeout no checkout")
 
     client.post("/api/v1/auth/logout", headers=authenticated_csrf_headers(client))
     register(client, AUDITOR)
-    promote(AUDITOR["email"], "REVIEWER")
+    promote(AUDITOR["email"], "ADMIN")
 
     response = client.get("/api/v1/audit/events", headers=authenticated_csrf_headers(client))
     assert response.status_code == 200
@@ -79,7 +63,7 @@ def test_audit_events_filters_by_actor(client: TestClient) -> None:
 
     client.post("/api/v1/auth/logout", headers=authenticated_csrf_headers(client))
     register(client, AUDITOR)
-    promote(AUDITOR["email"], "REVIEWER")
+    promote(AUDITOR["email"], "ADMIN")
 
     response = client.get(
         "/api/v1/audit/events", params={"actor": "USER"}, headers=authenticated_csrf_headers(client)
@@ -96,7 +80,7 @@ def test_audit_events_filters_by_search(client: TestClient) -> None:
 
     client.post("/api/v1/auth/logout", headers=authenticated_csrf_headers(client))
     register(client, AUDITOR)
-    promote(AUDITOR["email"], "REVIEWER")
+    promote(AUDITOR["email"], "ADMIN")
 
     response = client.get(
         "/api/v1/audit/events",

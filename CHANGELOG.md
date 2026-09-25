@@ -2,6 +2,19 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-25 - Auditoria volta a ser exclusiva de ADMIN
+
+### Corrigido
+
+- `audit.py`: `GET /api/v1/audit/events` trocou o gate de `get_current_user` (qualquer usuario autenticado, com escopo por dono pra quem nao fosse REVIEWER/ADMIN) para `require_admin` -- reverte a decisao de 2026-09-14 (ver entrada correspondente abaixo). A query e o `_count_today` deixam de aplicar qualquer filtro por dono, ja que agora so ADMIN chega la.
+- `test_audit.py`: reescrito -- `test_audit_events_forbidden_for_plain_user` e `test_audit_events_forbidden_for_reviewer` (novo -- REVIEWER tinha acesso de sistema antes desta reversao, precisa confirmar que perdeu tambem) substituem os testes que assumiam acesso escopado; os demais passam a promover pra ADMIN em vez de REVIEWER.
+- `AppShell.tsx`: link "Auditoria" sai de "ECOSSISTEMA" (visivel a todo mundo) e entra em "ADMINISTRACAO", junto com "Usuarios" -- atras do mesmo gate `user?.role === 'ADMIN'`.
+
+### Contexto
+
+- a pedido da autora: "vamos remover a pagina de auditoria dos usuarios e manter ela apenas para adm" -- reversao explicita da decisao anterior, nao uma correcao de bug.
+- decisao de onde colocar o link ("Auditoria" dentro de "ADMINISTRACAO" vs. secao propria) perguntada e confirmada antes de implementar.
+
 ## 2026-09-25 - Corrige popover/widget fixo posicionado errado; botao de anexo estilizado
 
 ### Corrigido
