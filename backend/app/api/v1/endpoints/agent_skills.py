@@ -34,6 +34,7 @@ from app.schemas.agent_skill import (
     AgentSkillToolDescriptorRead,
     ConsolidatedResponseRead,
     OrchestrationExecutionRead,
+    SkillVisibilityLiteral,
 )
 from app.schemas.orchestration import FollowUpExchangeRead, FollowUpQuestionCreate
 from app.services.agent_skill_orchestration_service import (
@@ -42,7 +43,33 @@ from app.services.agent_skill_orchestration_service import (
     execute_orchestration_step,
 )
 from app.services.audit_service import record_audit
+from app.services.clan_service import ClanNotFoundError, get_clan, is_member
 from app.services.llm_service import LLMQuotaExceededError
+
+
+def _resolve_visibility(
+    db: Session, *, visibility: SkillVisibilityLiteral, clan_id: str | None, user: User
+) -> str | None:
+    """Validates the visibility/clan_id combo from a create/import request and
+    returns the clan_id to persist (None for OFFICIAL/PRIVATE)."""
+    if visibility != "CLAN":
+        return None
+
+    if not clan_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="clan_id é obrigatório quando visibility='CLAN'.",
+        )
+    try:
+        get_clan(db, clan_id)
+    except ClanNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    if user.role != "ADMIN" and not is_member(db, clan_id=clan_id, user_id=user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Só um membro do clã pode registrar uma skill com visibilidade CLAN nele.",
+        )
+    return clan_id
 
 router = APIRouter(prefix="/agent-skills", tags=["Agent Skills"])
 
@@ -127,9 +154,17 @@ def create_skill(
     user: User = Depends(require_skill_curator),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> object:
-    manifest = AgentSkillManifest(**payload.model_dump())
+    clan_id = _resolve_visibility(db, visibility=payload.visibility, clan_id=payload.clan_id, user=user)
+    manifest = AgentSkillManifest(**payload.model_dump(exclude={"visibility", "clan_id"}))
     try:
-        skill = register_skill(db, manifest=manifest, submitted_by=user, owner_id=user.id)
+        skill = register_skill(
+            db,
+            manifest=manifest,
+            submitted_by=user,
+            owner_id=user.id,
+            visibility=payload.visibility,
+            clan_id=clan_id,
+        )
     except AgentSkillValidationError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="; ".join(exc.errors)
@@ -161,6 +196,7 @@ def import_skill(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="; ".join(exc.errors)
         ) from exc
 
+    clan_id = _resolve_visibility(db, visibility=payload.visibility, clan_id=payload.clan_id, user=user)
     try:
         skill = register_skill(
             db,
@@ -168,6 +204,8 @@ def import_skill(
             submitted_by=user,
             raw_markdown=payload.manifest_markdown,
             owner_id=user.id,
+            visibility=payload.visibility,
+            clan_id=clan_id,
         )
     except AgentSkillValidationError as exc:
         raise HTTPException(
@@ -232,7 +270,17 @@ def get_skill_detail(
     except AgentSkillNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
-    if skill.visibility != "OFFICIAL" and skill.owner_id != user.id and user.role != "ADMIN":
+    visible = (
+        skill.visibility == "OFFICIAL"
+        or skill.owner_id == user.id
+        or user.role == "ADMIN"
+        or (
+            skill.visibility == "CLAN"
+            and skill.clan_id
+            and is_member(db, clan_id=skill.clan_id, user_id=user.id)
+        )
+    )
+    if not visible:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent Skill não encontrada.")
     return skill
 

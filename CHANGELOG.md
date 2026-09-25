@@ -2,6 +2,28 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-25 - Clas: grupos auto-servico, terceira visibilidade de Agent Skill
+
+### Adicionado
+
+- Migration `0013_clans`: tabelas `clans` e `clan_memberships` (M:N), coluna `agent_skills.clan_id` (`ondelete=SET NULL` -- uma skill sobrevive a apagar o cla, so fica orfa ate ser re-escopada).
+- `app/services/clan_service.py`: `create_clan` (criador vira membro automaticamente), `add_member`/`remove_member` (so um membro atual do cla, ou ADMIN, pode gerenciar -- sem fluxo de convite/aceite nesta primeira versao), `list_user_clans`, `is_member`.
+- `GET/POST /api/v1/clans`, `GET /api/v1/clans/{id}`, `POST /api/v1/clans/{id}/members` (por e-mail), `DELETE /api/v1/clans/{id}/members/{user_id}` -- todas exigem `get_current_user` (qualquer usuario autenticado, criacao de cla nao e restrita a ADMIN/TECHNICIAN).
+- `agent_catalog/registry.py::_visibility_filter` ganha uma terceira condicao: skill `CLAN` visivel a quem e membro do `clan_id` dela. Mesma regra replicada no segundo ponto de checagem de visibilidade (`GET /agent-skills/{id}`, fora do registry).
+- Formularios de criar/importar Agent Skill (`AgentSkillCreatePage.tsx`, `AgentSkillImportPage.tsx`) ganham selecao de visibilidade (Privada/Cla/Oficial) com seletor de cla (`clansApi.listMine()`), em vez de sempre mandar o padrao do backend sem escolha nenhuma.
+- Nova pagina `ClansPage.tsx` (`/clans`, nav em "ECOSSISTEMA"): lista todos os clas, cria novo, abre detalhe com membros e adicionar/remover por e-mail.
+- 8 testes novos em `test_clans.py`: criacao com auto-join, nome duplicado (409), membro adiciona/remove, nao-membro tenta adicionar (403), ADMIN gerencia sem ser membro, skill CLAN visivel so a membros (cenario completo com 3 contas), criar skill CLAN exige ser membro do cla alvo, `clan_id` obrigatorio quando `visibility=CLAN` (422).
+
+### Corrigido
+
+- Achado ao implementar: `AgentSkillCreatePage.tsx` dizia na propria tela "Ela nasce **privada**", mas a chamada `agentSkillsApi.createSkill(...)` nunca mandava `visibility` nenhum -- toda skill criada por esse formulario sempre virou `OFFICIAL` de verdade, nunca `PRIVATE` como o texto prometia. Corrigido junto com a adicao do seletor (agora o valor enviado é sempre explicito, nunca implicito).
+
+### Contexto
+
+- a pedido da autora: retomada de uma ideia mais antiga, ja prevista no enum de `visibility` desde a migration 0010 (`OFFICIAL/PRIVATE/CLAN/PUBLIC`), mas nunca implementada alem das duas primeiras. `PUBLIC` continua fora de escopo, sem uso definido.
+- tres decisoes de escopo perguntadas e confirmadas antes de implementar: cla gate skill de Agent Skill (nao solicitacoes/historico); qualquer usuario cria e gerencia membros (nao so ADMIN); usuario pode estar em varios clas (M:N, nao 1:1).
+- adicao de membro e direta, sem convite/aceite -- destacado como ponto de atencao pro review: e a leitura mais literal de "qualquer membro pode adicionar", mas significa que alguem pode ser colocado num cla sem consentimento previo.
+
 ## 2026-09-25 - Ranking de Agent Skills oficiais mais usadas
 
 ### Adicionado

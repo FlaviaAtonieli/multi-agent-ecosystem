@@ -24,6 +24,7 @@ A base implementa:
 - registro de invocações com identificador próprio, hashes, latência e uso de tokens;
 - ingestão e recuperação de contexto (RAG) sobre uma base de conhecimento indexada;
 - catálogo funcional de Agent Skills, com importação do manifesto `modelo.md` e aprovação humana obrigatória;
+- clãs: grupos auto-serviço (qualquer usuário cria um e vira membro automaticamente; qualquer membro adiciona/remove outros) que servem de escopo para uma terceira visibilidade de Agent Skill, `CLAN` — visível só a quem participa daquele clã, entre `OFFICIAL` (todo o ecossistema) e `PRIVATE` (só o dono);
 - execução de Agent Skills via MCP e avaliação por Quality Gate;
 - quatro Agent Skills com executor real (Código Legado, Regras de Negócio, Arquitetura de Software e Segurança da Informação), acionáveis em conjunto numa mesma análise;
 - revisão humana de solicitações sinalizadas pelo Quality Gate (perfil `REVIEWER` ou `ADMIN`, aprovação ou rejeição com justificativa, `POST /api/v1/requests/{id}/review`);
@@ -124,7 +125,7 @@ docker compose exec backend alembic current
 Na base atual, o resultado esperado é:
 
 ```text
-0012_request_attachments (head)
+0013_clans (head)
 ```
 
 ## Fluxo disponível
@@ -146,7 +147,7 @@ A execução exige um usuário autenticado com qualquer papel exceto `REVIEWER` 
 São três verificações separadas, aplicadas nesta ordem — cada uma só é avaliada se a anterior já passou:
 
 1. **Papel do usuário** (controla *se* a pessoa pode executar). Todo cadastro novo nasce como `USER` e já consegue executar orquestrações — `USER`, `TECHNICIAN` e `ADMIN` podem; só `REVIEWER` não pode (seu papel é avaliar o que foi produzido, não produzir). Importar/criar uma nova Agent Skill continua restrito a `TECHNICIAN`/`ADMIN` — rodar uma skill já existente é um nível de confiança diferente de decidir quais skills entram no catálogo. Só um `ADMIN` pode promover alguém de papel, pela página `/admin` (menu "ADMINISTRAÇÃO", visível só para quem já é admin) — não existe autopromoção nem fluxo de aprovação automática. A conta admin de bootstrap (`BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` no `.env`) é o ponto de partida para promover as primeiras contas.
-2. **Visibilidade da Agent Skill** (controla *o que* existe pra executar). Toda skill nova nasce `OFFICIAL` — visível e executável por qualquer usuário autenticado, não só por quem a importou — pra que o catálogo não fique vazio para todo mundo além do `TECHNICIAN`/`ADMIN` que importou cada skill. `owner_id` continua registrado para atribuição/auditoria, mesmo não controlando mais visibilidade por padrão; `visibility="PRIVATE"` ainda existe no modelo para quem quiser registrar uma skill em teste, visível só ao próprio dono (e a `ADMIN`), mas não é o padrão.
+2. **Visibilidade da Agent Skill** (controla *o que* existe pra executar). Toda skill nova nasce `OFFICIAL` — visível e executável por qualquer usuário autenticado, não só por quem a importou — pra que o catálogo não fique vazio para todo mundo além do `TECHNICIAN`/`ADMIN` que importou cada skill. `owner_id` continua registrado para atribuição/auditoria, mesmo não controlando mais visibilidade por padrão; `visibility="PRIVATE"` ainda existe no modelo para quem quiser registrar uma skill em teste, visível só ao próprio dono (e a `ADMIN`), mas não é o padrão. Uma terceira opção, `visibility="CLAN"`, escopa a skill a um clã (`clan_id`) — visível só a quem participa daquele clã.
 3. **Cota diária de tokens** (controla *quanto* uma pessoa já autorizada pode executar naquele dia; desligada por padrão — `LLM_DAILY_TOKEN_LIMIT_PER_USER=0`). Ver [Integração com provedores de modelo](docs/integrations/model-provider.md#cota-diária-de-tokens-por-usuário) para os detalhes — `LLM_DAILY_TOKEN_LIMIT_PER_USER` no `.env`, contas `ADMIN` sempre isentas.
 
 > Como o cadastro é aberto por padrão (`ALLOW_REGISTRATION=true`) e agora `USER` executa sem precisar de promoção, um deploy real exposto publicamente deve considerar reativar a cota diária de tokens (item 3) e/ou fechar o cadastro — sem isso, qualquer pessoa que se cadastre pode gerar chamadas de LLM sem limite algum.

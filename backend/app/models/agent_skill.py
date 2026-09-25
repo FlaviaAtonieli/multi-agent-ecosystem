@@ -42,6 +42,13 @@ class AgentSkill(Base):
     visibility: Mapped[str] = mapped_column(
         String(20), index=True, nullable=False, default="OFFICIAL"
     )
+    # Only set when visibility == "CLAN" -- which clan the skill is scoped to.
+    # SET NULL on clan deletion rather than CASCADE: a skill outliving its clan
+    # just becomes orphaned-CLAN (invisible to everyone but the owner/ADMIN
+    # until re-scoped), not silently deleted along with the clan.
+    clan_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("clans.id", ondelete="SET NULL"), index=True, nullable=True
+    )
     # Free-text "voice"/focus for a user-created skill, fed into the shared
     # planner prompt (see app/llm/prompts.py) instead of domain-specific Python
     # logic -- the 4 official skills don't use this, they keep their own

@@ -12,6 +12,7 @@ const principalNavigation = [
 
 const ecosystemNavigation = [
   { to: '/agent-skills', label: 'Agent Skills', symbol: '◇' },
+  { to: '/clans', label: 'Clãs', symbol: '⬡' },
 ]
 
 const roleLabels: Record<User['role'], string> = {

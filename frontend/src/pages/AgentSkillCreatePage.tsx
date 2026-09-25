@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AgentSkillDomain, agentSkillsApi } from '../api/agentSkillsApi'
+import { Clan, clansApi } from '../api/clansApi'
 import { ApiError } from '../api/http'
 import { TagListField } from '../components/shared/TagListField'
 import { useAuth } from '../auth/AuthContext'
@@ -27,6 +28,9 @@ export function AgentSkillCreatePage() {
   const [step, setStep] = useState(1)
   const [name, setName] = useState('')
   const [domain, setDomain] = useState<AgentSkillDomain>('codigo_legado')
+  const [visibility, setVisibility] = useState<'PRIVATE' | 'OFFICIAL' | 'CLAN'>('PRIVATE')
+  const [clanId, setClanId] = useState('')
+  const [myClans, setMyClans] = useState<Clan[]>([])
   const [objective, setObjective] = useState('')
   const [personaInstructions, setPersonaInstructions] = useState('')
   const [capabilities, setCapabilities] = useState<string[]>([])
@@ -44,6 +48,10 @@ export function AgentSkillCreatePage() {
   const nameValid = name.trim().length >= 3
   const objectiveValid = objective.trim().length >= 10
 
+  useEffect(() => {
+    clansApi.listMine().then(setMyClans).catch(() => undefined)
+  }, [])
+
   function goNext() {
     if (step === 1 && !nameValid) {
       setStepError('Dê um nome com pelo menos 3 caracteres para a skill.')
@@ -55,6 +63,10 @@ export function AgentSkillCreatePage() {
     }
     if (step === 2 && capabilities.length === 0) {
       setStepError('Adicione ao menos uma capacidade — o que essa skill sabe fazer.')
+      return
+    }
+    if (step === 1 && visibility === 'CLAN' && !clanId) {
+      setStepError('Escolha em qual clã essa skill vai ficar visível.')
       return
     }
     setStepError('')
@@ -91,6 +103,8 @@ export function AgentSkillCreatePage() {
         validation_criteria: validationCriteria,
         uses_external_services: false,
         persona_instructions: personaInstructions.trim() || null,
+        visibility,
+        clan_id: visibility === 'CLAN' ? clanId : null,
       })
       navigate(`/agent-skills?created=${created.id}`)
     } catch (caught) {
@@ -107,8 +121,7 @@ export function AgentSkillCreatePage() {
           <span className="workspace-eyebrow">NOVA AGENT SKILL</span>
           <h1>Criar uma skill sua</h1>
           <p>
-            Ela nasce <strong>privada</strong> — só você vai vê-la e usá-la até decidir compartilhar com um clã ou
-            com a rede.
+            Escolha quem pode ver e executar essa skill: só você, um clã específico, ou todo o ecossistema.
           </p>
         </div>
       </section>
@@ -154,6 +167,40 @@ export function AgentSkillCreatePage() {
                 </select>
                 <small>Pode coexistir com outras skills do mesmo domínio — cada uma com sua própria persona.</small>
               </label>
+
+              <label className="workspace-field workspace-field-full">
+                Visibilidade
+                <select
+                  value={visibility}
+                  onChange={(event) => setVisibility(event.target.value as 'PRIVATE' | 'OFFICIAL' | 'CLAN')}
+                >
+                  <option value="PRIVATE">Privada — só eu vejo</option>
+                  <option value="CLAN">Clã — visível pros membros de um clã</option>
+                  <option value="OFFICIAL">Oficial — visível a todo o ecossistema</option>
+                </select>
+                <small>Dá pra mudar depois, contate um ADMIN.</small>
+              </label>
+
+              {visibility === 'CLAN' && (
+                <label className="workspace-field workspace-field-full">
+                  Clã
+                  {myClans.length === 0 ? (
+                    <small>
+                      Você ainda não faz parte de nenhum clã. <a href="/clans">Crie ou entre em um</a> antes de
+                      continuar.
+                    </small>
+                  ) : (
+                    <select value={clanId} onChange={(event) => setClanId(event.target.value)}>
+                      <option value="">Selecione um clã...</option>
+                      {myClans.map((clan) => (
+                        <option key={clan.id} value={clan.id}>
+                          {clan.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </label>
+              )}
 
               <label className="workspace-field workspace-field-full">
                 Objetivo
