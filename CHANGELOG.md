@@ -2,17 +2,17 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
-## 2026-09-17 - Resposta a revisao (Pedro): limite de corpo HTTP ignorava requisicao chunked
+## 2026-09-17 - Resposta a revisao (Pedro): contagem de skills no dashboard vazava skill PRIVATE alheia
 
 ### Corrigido
 
-- `MaxBodySizeMiddleware` (`app/core/middleware.py`): a primeira versao so checava o cabecalho `Content-Length` declarado -- uma requisicao com `Transfer-Encoding: chunked` (sem `Content-Length`, tamanho desconhecido ate o corpo terminar de chegar) passava direto, sem limite algum. Agora o corpo e lido em stream e contado byte a byte conforme chega, entao o limite (`MAX_REQUEST_BODY_BYTES`) vale independentemente de o cliente declarar (ou mentir sobre) o tamanho.
+- `dashboard_summary` (`app/api/v1/endpoints/dashboard.py`): `registered_agent_skills` contava toda `AgentSkill` `approved`+`enabled` do sistema inteiro, sem nenhum filtro de visibilidade -- a unica metrica dessa tela sem escopo por `owner_id`, todas as outras ja eram escopadas ao usuario logado. Uma skill `PRIVATE` de outro usuario incrementava o numero mesmo assim, um vazamento observavel (sem detalhes, mas perceptivel) de atividade privada alheia.
+- `app/agent_catalog/registry.py`: `_visibility_filter` renomeada pra `visibility_filter` (publica) -- passou a ser reutilizada fora do modulo, em `dashboard.py`, em vez de duplicar a mesma logica de filtro.
 
 ### Contexto
 
-- revisao do Pedro no PR #41 (ja mergeado): "O MaxBodySizeMiddleware valida só o Content-Length declarado. Isso não cobre requisições com Transfer-Encoding: chunked. Um revisor atento deveria pelo menos ter perguntado se essa limitação é intencional e aceita, ou se ficou como uma lacuna na proteção." -- era mesmo uma lacuna real, nao intencional.
-- 2 testes novos em `test_config.py`: um prova que um corpo chunked acima do limite e recusado (`413`) -- reproduzi a falha primeiro revertendo temporariamente pro codigo antigo pra confirmar que o teste realmente pegava o bug (ficava `403`, a checagem de CSRF, em vez de `413` -- ou seja, passava direto pela guarda de tamanho); outro prova que um corpo chunked dentro do limite continua chegando corretamente na rota.
-- durante a correcao, a primeira tentativa (substituir `request._receive` pelos bytes ja lidos) quebrou a suite inteira (422 em quase todo POST) -- `BaseHTTPMiddleware` do Starlette usa uma `_CachedRequest` interna que so repassa o corpo corretamente pro proximo middleware/rota se `request._body` for setado (o mesmo campo que `Request.body()` preenche), nao `_receive`. Corrigido pra setar `request._body` diretamente, replicando o que `Request.body()` faz internamente.
+- revisao do Pedro no PR #37 (ja mergeado): "A própria PR introduziu e corrigiu um bug em que ask_follow_up_question não passava viewer_id, com risco de expor skill privada. Um review mais cuidadoso deveria ter perguntado se foi feito um scan por outras chamadas de select_skills_for_domain e list_active_skills sem viewer_id." -- fiz o scan pedido: as 7 chamadas existentes a essas duas funcoes ja passam `viewer_id` corretamente (nenhuma omissao restante). O achado real ficou um passo adiante do que foi literalmente pedido: uma leitura de `AgentSkill` que nao passa por nenhuma das duas funcoes (uma contagem direta em `dashboard.py`), mas sofre do mesmo problema de fundo -- ler a tabela sem respeitar visibilidade.
+- teste novo comprovado contra o codigo antigo antes de corrigir: revertido temporariamente, o teste falhava (`1 == 0`, o outro usuario via a skill PRIVATE contada), confirmando que o vazamento era real antes de escrever a correcao.
 ## 2026-09-16 - Resposta a revisao: so aceita email verificado do GitHub
 
 ### Corrigido

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.agent_catalog.registry import visibility_filter
 from app.api.dependencies import get_current_session
 from app.core.database import get_db
 from app.core.security import ensure_utc, utc_now
@@ -130,10 +131,19 @@ def dashboard_summary(
     if current_session.user.role == "ADMIN":
         total_users = db.scalar(select(func.count(User.id))) or 0
 
+    # Auditoria de seguranca (revisao do Pedro no #37): as demais metricas
+    # desta tela sao todas escopadas a owner_id == current_session.user_id;
+    # essa contagem era a unica excecao, sem passar pelo mesmo filtro de
+    # visibilidade que list_active_skills/select_skills_for_domain usam --
+    # uma skill PRIVATE de outro usuario incrementava o numero mesmo assim,
+    # revelando (sem detalhes, mas de forma observavel) atividade privada
+    # alheia. visibility_filter e a mesma logica usada em toda leitura de
+    # AgentSkill no catalogo.
     registered_agent_skills = db.scalar(
         select(func.count(AgentSkill.id)).where(
             AgentSkill.status == "approved",
             AgentSkill.enabled.is_(True),
+            visibility_filter(owner_id),
         )
     ) or 0
 
