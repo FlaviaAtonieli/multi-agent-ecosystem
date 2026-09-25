@@ -64,3 +64,31 @@ def test_body_within_limit_reaches_normal_validation(client: TestClient) -> None
     response = client.post("/api/v1/auth/login", json={"email": "not-real", "password": "x"})
     # Rejected by request validation (bad payload shape), not by the size guard.
     assert response.status_code in (400, 401, 403, 422)
+
+
+def test_oversized_chunked_body_is_rejected_without_content_length(
+    client: TestClient, monkeypatch
+) -> None:
+    """Security review (PR #41): the first version of MaxBodySizeMiddleware
+    only checked the declared Content-Length header, so a request sent with
+    Transfer-Encoding: chunked (no Content-Length at all) bypassed the limit
+    entirely. A generator body makes httpx send exactly that -- chunked,
+    no Content-Length -- reproducing the gap the reviewer flagged."""
+    monkeypatch.setattr(settings, "max_request_body_bytes", 1024)
+
+    def oversized_chunks():
+        yield b"x" * 600
+        yield b"y" * 600
+
+    response = client.post("/api/v1/auth/login", content=oversized_chunks())
+    assert response.status_code == 413
+    assert response.json()["error"] == "PAYLOAD_TOO_LARGE"
+
+
+def test_chunked_body_within_limit_still_reaches_the_route(client: TestClient) -> None:
+    def small_chunks():
+        yield b'{"email": "not-real", '
+        yield b'"password": "x"}'
+
+    response = client.post("/api/v1/auth/login", content=small_chunks())
+    assert response.status_code in (400, 401, 403, 422)

@@ -8,20 +8,25 @@ from app.core.config import settings
 
 
 class MaxBodySizeMiddleware(BaseHTTPMiddleware):
-    """Auditoria de seguranca P2: rejeita, pelo Content-Length declarado, um corpo
-    de requisicao maior que o esperado -- antes de qualquer endpoint le-lo. A
-    aplicacao so recebe JSON (sem upload de arquivo), entao o limite de
-    MAX_REQUEST_BODY_BYTES cobre folgadamente o maior payload legitimo hoje
-    (contexto de solicitacao tecnica + listas do manifesto de uma skill)."""
+    """Auditoria de seguranca P2/P3 (correcao de 17/09/2026): rejeita um corpo de
+    requisicao maior que MAX_REQUEST_BODY_BYTES -- antes de qualquer endpoint
+    le-lo. A aplicacao so recebe JSON (sem upload de arquivo), entao o limite
+    cobre folgadamente o maior payload legitimo hoje (contexto de solicitacao
+    tecnica + listas do manifesto de uma skill).
+
+    A primeira versao so checava o cabecalho Content-Length declarado -- uma
+    requisicao com Transfer-Encoding: chunked (sem Content-Length, tamanho
+    desconhecido ate o corpo terminar de chegar) passava direto, sem limite
+    algum. Agora o corpo e lido em stream e contado byte a byte conforme
+    chega, entao o limite vale independentemente de o cliente declarar (ou
+    mentir sobre) o tamanho."""
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        content_length = request.headers.get("content-length")
-        if content_length is not None:
-            try:
-                declared_size = int(content_length)
-            except ValueError:
-                declared_size = None
-            if declared_size is not None and declared_size > settings.max_request_body_bytes:
+        limit = settings.max_request_body_bytes
+        body = bytearray()
+        async for chunk in request.stream():
+            body.extend(chunk)
+            if len(body) > limit:
                 return JSONResponse(
                     status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                     content={
@@ -29,6 +34,13 @@ class MaxBodySizeMiddleware(BaseHTTPMiddleware):
                         "message": "O corpo da requisição excede o tamanho máximo permitido.",
                     },
                 )
+
+        # request.stream() can only be drained once. Starlette's own
+        # Request.body() caches into request._body after doing exactly this
+        # same loop -- setting it here (instead of, say, replacing _receive)
+        # is what makes BaseHTTPMiddleware's _CachedRequest replay the bytes
+        # already read here to the downstream app, rather than an empty body.
+        request._body = bytes(body)
         return await call_next(request)
 
 
