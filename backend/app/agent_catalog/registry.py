@@ -78,7 +78,7 @@ def get_skill(db: Session, skill_id: str) -> AgentSkill:
     return skill
 
 
-def _visibility_filter(viewer_id: str | None):
+def visibility_filter(viewer_id: str | None):
     """Um usuário enxerga skills OFFICIAL (o padrão para toda skill nova, ver
     register_skill) e, além dessas, as que ele mesmo criou como PRIVATE --
     nunca a skill PRIVATE de outro usuário. Seguro por padrão: sem viewer_id,
@@ -95,7 +95,7 @@ def list_active_skills(db: Session, *, viewer_id: str | None = None) -> list[Age
             .where(
                 AgentSkill.status == "approved",
                 AgentSkill.enabled.is_(True),
-                _visibility_filter(viewer_id),
+                visibility_filter(viewer_id),
             )
             .order_by(AgentSkill.name)
         )
@@ -109,7 +109,7 @@ def list_all_skills(db: Session, *, viewer_id: str | None = None) -> list[AgentS
     return list(
         db.scalars(
             select(AgentSkill)
-            .where(_visibility_filter(viewer_id))
+            .where(visibility_filter(viewer_id))
             .order_by(AgentSkill.created_at.desc())
         )
     )
@@ -136,7 +136,7 @@ def select_skills_for_domain(
                 AgentSkill.domain == domain,
                 AgentSkill.status == "approved",
                 AgentSkill.enabled.is_(True),
-                _visibility_filter(viewer_id),
+                visibility_filter(viewer_id),
             )
             .order_by(AgentSkill.name)
         )
