@@ -519,6 +519,8 @@
 .workspace-field select { cursor: pointer; }
 .workspace-field input:focus, .workspace-field textarea:focus, .workspace-field select:focus { border-color: rgba(139, 92, 246, 0.8); box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12); }
 .workspace-field small { color: var(--text-muted); font-size: 0.68rem; font-weight: 400; line-height: 1.45; }
+.workspace-field-checkbox { display: flex; align-items: center; gap: 10px; color: var(--text-secondary); }
+.workspace-field-checkbox input { width: 16px; height: 16px; padding: 0; accent-color: var(--primary); cursor: pointer; }
 .workspace-form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 
 .workspace-stepper { display: flex; align-items: center; max-width: 640px; margin: 0 0 26px; padding: 0; list-style: none; }

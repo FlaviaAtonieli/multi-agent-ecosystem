@@ -16,13 +16,11 @@ class MaxBodySizeMiddleware(BaseHTTPMiddleware):
     que este teto)."""
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        content_length = request.headers.get("content-length")
-        if content_length is not None:
-            try:
-                declared_size = int(content_length)
-            except ValueError:
-                declared_size = None
-            if declared_size is not None and declared_size > settings.max_request_body_bytes:
+        limit = settings.max_request_body_bytes
+        body = bytearray()
+        async for chunk in request.stream():
+            body.extend(chunk)
+            if len(body) > limit:
                 return JSONResponse(
                     status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                     content={
@@ -30,6 +28,13 @@ class MaxBodySizeMiddleware(BaseHTTPMiddleware):
                         "message": "O corpo da requisição excede o tamanho máximo permitido.",
                     },
                 )
+
+        # request.stream() can only be drained once. Starlette's own
+        # Request.body() caches into request._body after doing exactly this
+        # same loop -- setting it here (instead of, say, replacing _receive)
+        # is what makes BaseHTTPMiddleware's _CachedRequest replay the bytes
+        # already read here to the downstream app, rather than an empty body.
+        request._body = bytes(body)
         return await call_next(request)
 
 

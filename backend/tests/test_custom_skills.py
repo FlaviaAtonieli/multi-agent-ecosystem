@@ -77,6 +77,34 @@ def test_custom_skill_is_official_and_visible_to_everyone(client: TestClient) ->
     assert other_detail.status_code == 200
 
 
+def test_custom_skill_can_opt_into_private_visibility(client: TestClient) -> None:
+    """Amanda's review on #45: OFFICIAL-by-default shouldn't remove the
+    ability to test a skill privately before publishing it. `visibility` is
+    an explicit, optional field on create/import (default OFFICIAL) --
+    TECHNICIAN/ADMIN (the only roles that reach these endpoints, gated by
+    require_skill_curator) can still opt into the old PRIVATE, owner-only
+    behavior."""
+    register(client, OWNER)
+    promote(OWNER["email"], "TECHNICIAN")
+    response = client.post(
+        "/api/v1/agent-skills",
+        json={**CUSTOM_SKILL_PAYLOAD, "visibility": "PRIVATE"},
+        headers=authenticated_csrf_headers(client),
+    )
+    assert response.status_code == 201
+    skill = response.json()
+    assert skill["visibility"] == "PRIVATE"
+
+    client.post("/api/v1/auth/logout", headers=authenticated_csrf_headers(client))
+    register(client, OTHER_USER)
+
+    other_catalog = client.get("/api/v1/agent-skills").json()
+    assert all(item["id"] != skill["id"] for item in other_catalog)
+
+    other_detail = client.get(f"/api/v1/agent-skills/{skill['id']}")
+    assert other_detail.status_code == 404
+
+
 def test_generic_executor_runs_custom_skill_end_to_end(client: TestClient, monkeypatch) -> None:
     register(client, OWNER)
     promote(OWNER["email"], "TECHNICIAN")

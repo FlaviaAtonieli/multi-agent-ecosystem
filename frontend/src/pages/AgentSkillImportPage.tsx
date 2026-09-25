@@ -6,6 +6,7 @@ import { ApiError } from '../api/http'
 export function AgentSkillImportPage() {
   const navigate = useNavigate()
   const [manifestMarkdown, setManifestMarkdown] = useState('')
+  const [keepPrivate, setKeepPrivate] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -15,7 +16,7 @@ export function AgentSkillImportPage() {
     setError('')
 
     try {
-      await agentSkillsApi.importSkill(manifestMarkdown)
+      await agentSkillsApi.importSkill(manifestMarkdown, keepPrivate ? 'PRIVATE' : 'OFFICIAL')
       navigate('/agent-skills')
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Não foi possível importar o manifesto.')
@@ -50,6 +51,11 @@ export function AgentSkillImportPage() {
               placeholder="# Nome do Agente&#10;&#10;## Identificação&#10;- Versão: 1.0&#10;- Autor/Origem: ...&#10;- Domínio de atuação: código legado&#10;..."
             />
             <small>O manifesto é validado por completo; qualquer seção ausente é reportada de uma vez.</small>
+          </label>
+
+          <label className="workspace-field workspace-field-full workspace-field-checkbox">
+            <input type="checkbox" checked={keepPrivate} onChange={(event) => setKeepPrivate(event.target.checked)} />
+            Manter privada por enquanto (só eu e administradores veremos/executaremos — importe de novo desmarcado para publicar)
           </label>
         </div>
 
