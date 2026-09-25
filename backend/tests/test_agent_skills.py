@@ -5,9 +5,11 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlalchemy import select
 
+from app.agent_catalog.registry import register_skill
 from app.agent_catalog.tool_interface import AgenteEmissor, Governanca, SkillToolResult
+from app.agent_manifest.manifest import parse_modelo_md
 from app.core.database import SessionLocal
-from app.models import LLMInvocation
+from app.models import AgentSkillInvocation, LLMInvocation, User
 from app.rag.ingestion import ingest_artifact
 from tests.conftest import (
     REAL_LLM_MODEL,
@@ -477,6 +479,68 @@ def test_execute_without_matching_skill_returns_409(client: TestClient) -> None:
         headers=authenticated_csrf_headers(client),
     )
     assert response.status_code == 409
+
+
+def test_skill_usage_ranking_counts_only_official_and_completed(client: TestClient) -> None:
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    legacy_skill = client.post(
+        "/api/v1/agent-skills/import",
+        json={"manifest_markdown": FIXTURE_MANIFEST},
+        headers=authenticated_csrf_headers(client),
+    ).json()
+    business_skill = client.post(
+        "/api/v1/agent-skills/import",
+        json={"manifest_markdown": BUSINESS_RULES_FIXTURE_MANIFEST},
+        headers=authenticated_csrf_headers(client),
+    ).json()
+
+    technical_request = create_qualified_request(client)
+
+    with SessionLocal() as db:
+        technician = db.query(User).filter(User.email == TECHNICIAN["email"]).one()
+        private_skill = register_skill(
+            db,
+            manifest=parse_modelo_md(ARCHITECTURE_FIXTURE_MANIFEST),
+            submitted_by=technician,
+            owner_id=technician.id,
+            visibility="PRIVATE",
+        )
+        db.commit()
+
+        def _insert(skill_id: str, status: str, count: int) -> None:
+            for index in range(count):
+                db.add(
+                    AgentSkillInvocation(
+                        technical_request_id=technical_request["id"],
+                        agent_skill_id=skill_id,
+                        trace_id=technical_request["trace_id"],
+                        invocation_id=f"{skill_id}-{status}-{index}",
+                        input_hash=f"hash-{skill_id}-{status}-{index}",
+                        status=status,
+                    )
+                )
+
+        # legacy: 3 COMPLETED + 1 FAILED (FAILED must not count).
+        _insert(legacy_skill["id"], "COMPLETED", 3)
+        _insert(legacy_skill["id"], "FAILED", 1)
+        # business rules: fewer COMPLETED than legacy, so it ranks second.
+        _insert(business_skill["id"], "COMPLETED", 1)
+        # private skill: most invocations of all, but must never appear (not OFFICIAL).
+        _insert(private_skill.id, "COMPLETED", 5)
+        db.commit()
+
+    response = client.get("/api/v1/agent-skills/ranking", headers=authenticated_csrf_headers(client))
+    assert response.status_code == 200
+    ranking = response.json()
+
+    ranked_ids = [entry["id"] for entry in ranking]
+    assert private_skill.id not in ranked_ids
+    assert ranked_ids[0] == legacy_skill["id"]
+    assert ranking[0]["usage_count"] == 3
+    assert ranked_ids[1] == business_skill["id"]
+    assert ranking[1]["usage_count"] == 1
 
 
 def test_skill_tool_result_rejects_invalid_confidence_level() -> None:

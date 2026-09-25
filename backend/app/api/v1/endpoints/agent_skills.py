@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -10,6 +10,7 @@ from app.agent_catalog.registry import (
     get_skill,
     list_active_skills,
     list_all_skills,
+    official_skill_usage_ranking,
     register_skill,
 )
 from app.agent_catalog.tool_interface import list_tools
@@ -28,6 +29,7 @@ from app.schemas.agent_skill import (
     AgentSkillExecutionRequest,
     AgentSkillManifestCreate,
     AgentSkillManifestImport,
+    AgentSkillRankingRead,
     AgentSkillRead,
     AgentSkillToolDescriptorRead,
     ConsolidatedResponseRead,
@@ -97,6 +99,24 @@ def list_skill_tools(
     user: User = Depends(get_current_user),
 ) -> list:
     return list_tools(list_active_skills(db, viewer_id=user.id))
+
+
+@router.get("/ranking", response_model=list[AgentSkillRankingRead])
+def skill_usage_ranking(
+    limit: int = Query(5, ge=1, le=20),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+) -> list:
+    return [
+        AgentSkillRankingRead(
+            id=skill.id,
+            name=skill.name,
+            domain=skill.domain,
+            version=skill.version,
+            usage_count=count,
+        )
+        for skill, count in official_skill_usage_ranking(db, limit=limit)
+    ]
 
 
 @router.post("", response_model=AgentSkillRead, status_code=status.HTTP_201_CREATED)

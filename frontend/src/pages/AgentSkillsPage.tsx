@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AgentSkill, AgentSkillDomain, agentSkillsApi } from '../api/agentSkillsApi'
+import { AgentSkill, AgentSkillDomain, AgentSkillRankingEntry, agentSkillsApi } from '../api/agentSkillsApi'
 import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
 
@@ -63,6 +63,7 @@ const statusFilterLabels: Record<StatusFilter, string> = {
 export function AgentSkillsPage() {
   const { user } = useAuth()
   const [skills, setSkills] = useState<AgentSkill[]>([])
+  const [ranking, setRanking] = useState<AgentSkillRankingEntry[]>([])
   const [error, setError] = useState('')
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -78,6 +79,7 @@ export function AgentSkillsPage() {
       .catch((caught) =>
         setError(caught instanceof ApiError ? caught.message : 'Não foi possível carregar o catálogo.'),
       )
+    agentSkillsApi.usageRanking(5).then(setRanking).catch(() => undefined)
   }, [])
 
   const counts = useMemo(() => {
@@ -144,6 +146,32 @@ export function AgentSkillsPage() {
           ))}
         </div>
       </section>
+
+      {ranking.length > 0 && (
+        <section className="workspace-ranking fade-up" style={{ animationDelay: '0.06s' }}>
+          <span className="workspace-card-kicker">MAIS USADAS · SKILLS OFICIAIS</span>
+          <ol className="workspace-ranking-list">
+            {ranking.map((entry, index) => (
+              <li key={entry.id} className="workspace-ranking-item">
+                <span className="workspace-ranking-position">{index + 1}</span>
+                <span
+                  className={`workspace-skill-icon workspace-skill-icon-${domainTones[entry.domain]}`}
+                  aria-hidden="true"
+                >
+                  {domainAbbreviations[entry.domain]}
+                </span>
+                <div className="workspace-ranking-info">
+                  <strong>{entry.name}</strong>
+                  <small>{domainLabels[entry.domain]}</small>
+                </div>
+                <span className="workspace-ranking-count">
+                  {entry.usage_count} execu{entry.usage_count === 1 ? 'ção' : 'ções'}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {error && <div className="alert alert-error">{error}</div>}
 
