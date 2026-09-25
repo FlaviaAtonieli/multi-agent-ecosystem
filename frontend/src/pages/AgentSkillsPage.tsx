@@ -55,9 +55,9 @@ function statusOf(skill: AgentSkill): Exclude<StatusFilter, 'ALL'> {
 
 const statusFilterLabels: Record<StatusFilter, string> = {
   ALL: 'Todas',
-  ENABLED: 'Habilitadas',
+  ENABLED: 'Disponíveis',
   PENDING: 'Pendentes',
-  DISABLED: 'Desabilitadas',
+  DISABLED: 'Indisponíveis',
 }
 
 export function AgentSkillsPage() {
@@ -116,7 +116,7 @@ export function AgentSkillsPage() {
         <div>
           <span className="workspace-eyebrow">AGENT SKILLS</span>
           <h1>Catálogo de capacidades especializadas</h1>
-          <p>Skills registradas, seus domínios de atuação e o estado de habilitação no ecossistema.</p>
+          <p>Skills registradas, seus domínios de atuação e a disponibilidade no ecossistema.</p>
         </div>
         {canImport && (
           <div className="workspace-page-heading-actions">
@@ -194,7 +194,7 @@ export function AgentSkillsPage() {
                           : 'workspace-status-failed'
                     }`}
                   >
-                    {status === 'ENABLED' ? 'Habilitada' : status === 'PENDING' ? 'Pendente de validação' : 'Desabilitada'}
+                    {status === 'ENABLED' ? 'Disponível' : status === 'PENDING' ? 'Pendente de validação' : 'Indisponível'}
                   </span>
                 </div>
 
@@ -225,7 +225,7 @@ export function AgentSkillsPage() {
                     disabled={pendingId === skill.id}
                     onClick={() => toggleSkill(skill)}
                   >
-                    {skill.enabled ? 'Desabilitar' : 'Habilitar'}
+                    {skill.enabled ? 'Remover do catálogo' : 'Disponibilizar no catálogo'}
                   </button>
                 )}
               </article>

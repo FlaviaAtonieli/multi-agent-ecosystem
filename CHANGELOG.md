@@ -2,6 +2,19 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-21 - Ajustes de UX: status da orquestracao, catalogo de skills, sidebar
+
+### Corrigido
+
+- `StatusBadge.tsx`: cada status de solicitacao (Aguardando contexto, Quality Gate, Em execucao, etc.) ganha um gatilho `(!)` ao lado, que abre um popover explicando o que aquele status significa -- antes o usuario via o rotulo sem contexto de "o que e isso e em que momento estou".
+- `AgentSkillsPage.tsx`: rotulos "Habilitada"/"Desabilitada" (badge e filtro) viram "Disponivel"/"Indisponivel" -- o rotulo antigo parecia descrever uma acao do proprio usuario, mas habilitar/desabilitar sempre foi exclusivo de ADMIN (`canManage`). O botao de ADMIN passa a dizer "Disponibilizar no catalogo"/"Remover do catalogo" em vez de repetir o mesmo verbo do rotulo.
+- `AppShell.tsx`: removido o bloco "Ecossistema operacional / Base de orquestracao v1" no rodape da sidebar -- nao carregava informacao nenhuma (texto estatico, nunca refletiu estado real).
+
+### Contexto
+
+- a pedido da autora, apos revisar a aplicacao rodando e listar uma serie de ajustes de UX espalhados por varias paginas -- este e o primeiro de uma leva de PRs pequenos e empilhados (plano registrado na sessao).
+- popover de status usa `position: fixed` calculado via `getBoundingClientRect`, mesmo padrao ja usado pelo tooltip do onboarding tour (`OnboardingTour.tsx`) -- evita ser cortado pelo `overflow` das celulas de tabela onde `StatusBadge` tambem aparece (`OrchestrationsPage.tsx`, `RecentRequestsTable.tsx`).
+
 ## 2026-09-21 - RAG nos 4 dominios de Agent Skill; correcao de documentacao desatualizada
 
 ### Adicionado
