@@ -7,13 +7,14 @@ from app.llm.security import sanitize_content
 
 
 class _FakeMessage:
-    def __init__(self, content: str) -> None:
+    def __init__(self, content: str | None) -> None:
         self.content = content
 
 
 class _FakeChoice:
-    def __init__(self, content: str) -> None:
+    def __init__(self, content: str | None, finish_reason: str = "stop") -> None:
         self.message = _FakeMessage(content)
+        self.finish_reason = finish_reason
 
 
 class _FakeUsage:
@@ -23,9 +24,9 @@ class _FakeUsage:
 
 
 class _FakeChatCompletionResponse:
-    def __init__(self, content: str) -> None:
+    def __init__(self, content: str | None = None, finish_reason: str = "stop") -> None:
         self.id = "gen-fake-id"
-        self.choices = [_FakeChoice(content)]
+        self.choices = [_FakeChoice(content, finish_reason)]
         self.usage = _FakeUsage(prompt_tokens=10, completion_tokens=20)
 
 
@@ -54,6 +55,30 @@ class _FakeChat:
 class _FakeOpenAIClient:
     def __init__(self, captured_calls: list[dict]) -> None:
         self.chat = _FakeChat(captured_calls)
+
+
+class _EmptyThenSuccessCompletions:
+    """First call: empty content, finish_reason=length (reasoning ate the
+    whole output budget) -- second call: a valid plan. Used to prove
+    LLMEmptyResponseError actually gets retried, not just documented as if
+    it did (security review, PR #35)."""
+
+    def __init__(self, captured_calls: list[dict]) -> None:
+        self._captured_calls = captured_calls
+
+    def create(self, **kwargs):
+        self._captured_calls.append(kwargs)
+        if len(self._captured_calls) == 1:
+            return _FakeChatCompletionResponse(content=None, finish_reason="length")
+        plan = {
+            "summary": "Plano gerado na segunda tentativa, após a primeira ficar vazia.",
+            "required_agents": ["technical_planner"],
+            "required_skills": ["analyze_request_context"],
+            "risks": [],
+            "missing_information": [],
+            "requires_human_approval": True,
+        }
+        return _FakeChatCompletionResponse(content=json.dumps(plan))
 
 
 def _build_settings(**overrides) -> Settings:
@@ -113,6 +138,35 @@ def test_openrouter_provider_requires_credential() -> None:
         raise AssertionError("Deveria levantar RuntimeError sem credencial.")
     except RuntimeError as exc:
         assert "OpenRouter" in str(exc)
+
+
+def test_openrouter_provider_retries_after_length_exhausted_empty_response(monkeypatch) -> None:
+    """LLMEmptyResponseError (raised when finish_reason == "length", i.e. the
+    model burned its whole output budget on hidden reasoning before writing
+    visible content) is a RuntimeError subclass, and RuntimeError was already
+    in the retry wrapper's exception tuple -- so this was already being
+    retried, contrary to what a comment on this code and LLMEmptyResponseError's
+    own docstring both claimed ("not worth retrying", "fails the same way
+    every time"). Reasoning-token consumption for the same prompt isn't
+    perfectly deterministic (sampling varies it), so a second attempt can
+    genuinely succeed where the first didn't -- this proves that actually
+    happens, not just that the code doesn't crash."""
+    monkeypatch.setattr("app.core.retry.time.sleep", lambda _seconds: None)
+
+    captured_calls: list[dict] = []
+
+    def fake_openai_factory(**_kwargs):
+        client = _FakeOpenAIClient(captured_calls)
+        client.chat.completions = _EmptyThenSuccessCompletions(captured_calls)
+        return client
+
+    monkeypatch.setattr("openai.OpenAI", fake_openai_factory)
+
+    provider = OpenRouterLLMProvider(_build_settings())
+    result = provider.generate_plan(_build_request(), llm_call_id="call-456", model="openai/gpt-5-mini")
+
+    assert len(captured_calls) == 2
+    assert result.plan.summary.startswith("Plano gerado na segunda tentativa")
 
 
 def test_openrouter_style_key_is_redacted_by_security_sanitizer() -> None:

@@ -2,17 +2,18 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
-## 2026-09-17 - Resposta a revisao (Pedro): contagem de skills no dashboard vazava skill PRIVATE alheia
+## 2026-09-17 - Resposta a revisao (Pedro): strict_json_schema so cobria o nivel raiz; retry de resposta vazia ja acontecia (mas a documentacao dizia o contrario)
 
 ### Corrigido
 
-- `dashboard_summary` (`app/api/v1/endpoints/dashboard.py`): `registered_agent_skills` contava toda `AgentSkill` `approved`+`enabled` do sistema inteiro, sem nenhum filtro de visibilidade -- a unica metrica dessa tela sem escopo por `owner_id`, todas as outras ja eram escopadas ao usuario logado. Uma skill `PRIVATE` de outro usuario incrementava o numero mesmo assim, um vazamento observavel (sem detalhes, mas perceptivel) de atividade privada alheia.
-- `app/agent_catalog/registry.py`: `_visibility_filter` renomeada pra `visibility_filter` (publica) -- passou a ser reutilizada fora do modulo, em `dashboard.py`, em vez de duplicar a mesma logica de filtro.
+- `strict_json_schema` (`app/llm/schemas.py`): so aplicava `required`/`additionalProperties: false` no nivel raiz do schema. `LLMPlan` e plano hoje (sem campo aninhado), entao isso nao quebrou nada ainda na pratica -- mas um `BaseModel` aninhado cai em `$defs` do Pydantic (todo modelo aninhado, em qualquer profundidade, fica la com `$ref` apontando de volta, verificado empiricamente), e ficaria sem o mesmo patch, reproduzindo exatamente o 400 `invalid_json_schema` que essa funcao existe pra evitar. Corrigido pra aplicar o patch tambem em cada entrada de `$defs`.
+- `LLMEmptyResponseError` (`app/llm/base.py`) e o comentario em `openrouter_provider.py`: a classe ja e uma subclasse de `RuntimeError`, e `RuntimeError` ja estava no tuple de excecoes retentaveis de `retry_on_transient_error` -- ou seja, o retry **ja acontecia**, mas o docstring da excecao e o comentario no provider afirmavam o contrario ("not worth retrying", "fails the same way every time"), uma alegacao nunca verificada empiricamente e provavelmente falsa (consumo de tokens de raciocinio pro mesmo prompt nao e perfeitamente deterministico, varia com a amostragem). Documentacao corrigida pra refletir o comportamento real; nenhuma mudanca funcional foi necessaria alem disso.
 
 ### Contexto
 
-- revisao do Pedro no PR #37 (ja mergeado): "A própria PR introduziu e corrigiu um bug em que ask_follow_up_question não passava viewer_id, com risco de expor skill privada. Um review mais cuidadoso deveria ter perguntado se foi feito um scan por outras chamadas de select_skills_for_domain e list_active_skills sem viewer_id." -- fiz o scan pedido: as 7 chamadas existentes a essas duas funcoes ja passam `viewer_id` corretamente (nenhuma omissao restante). O achado real ficou um passo adiante do que foi literalmente pedido: uma leitura de `AgentSkill` que nao passa por nenhuma das duas funcoes (uma contagem direta em `dashboard.py`), mas sofre do mesmo problema de fundo -- ler a tabela sem respeitar visibilidade.
-- teste novo comprovado contra o codigo antigo antes de corrigir: revertido temporariamente, o teste falhava (`1 == 0`, o outro usuario via a skill PRIVATE contada), confirmando que o vazamento era real antes de escrever a correcao.
+- revisao do Pedro no PR #35 (ja mergeado): "Deveria ter chamado atenção que o problema vinha de uma regra pouco óbvia do strict:true... Eu esperaria pelo menos uma pergunta sobre cobertura futura do strict_json_schema() com outros modelos strict. Também faltou questionar se LLMEmptyResponseError realmente deve ficar sem retry em todos os casos, já que resposta vazia pode ter outras causas."
+- pra confirmar o segundo ponto, escrevi um teste que efetivamente engana o provider (primeira chamada retorna vazio com `finish_reason=length`, segunda retorna um plano valido) e provei que a segunda tentativa realmente acontece e tem sucesso -- nao bastava so ler o codigo, empiricamente o retry ja funcionava.
+- teste novo em `test_llm_schemas.py` comprovado contra o codigo antigo antes de corrigir: revertido temporariamente, o `$defs` aninhado ficava sem o patch (`{'label'}` em vez de `{'label', 'weight'}` num teste com um campo com valor padrao), confirmando que a lacuna era real.
 ## 2026-09-16 - Resposta a revisao: so aceita email verificado do GitHub
 
 ### Corrigido
