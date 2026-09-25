@@ -276,7 +276,16 @@ export function NewRequestPage() {
 
               <label className="workspace-field workspace-field-full">
                 Anexar documento (opcional)
-                <input type="file" accept={ALLOWED_ATTACHMENT_EXTENSIONS} multiple onChange={handleAttachmentSelection} />
+                <label className="workspace-secondary-action workspace-attachment-trigger">
+                  + Anexar documento
+                  <input
+                    type="file"
+                    accept={ALLOWED_ATTACHMENT_EXTENSIONS}
+                    multiple
+                    onChange={handleAttachmentSelection}
+                    style={{ display: 'none' }}
+                  />
+                </label>
                 <small>
                   Texto puro (código-fonte, markdown, JSON, etc.) — até {Math.round(MAX_ATTACHMENT_BYTES / 1000)} KB
                   por arquivo. PDF e DOCX ainda não são suportados.

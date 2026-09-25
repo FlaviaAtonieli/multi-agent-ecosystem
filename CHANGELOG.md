@@ -2,6 +2,23 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-25 - Corrige popover/widget fixo posicionado errado; botao de anexo estilizado
+
+### Corrigido
+
+- **Bug real encontrado em validacao visual**: o popover do `(!)` (`StatusBadge.tsx`) e o widget de "processando" (`OrchestrationThinkingAnimation.tsx`) apareciam deslocados/sobrepondo conteudo em vez de fixos no lugar certo. Causa: `position: fixed` so e relativo ao viewport se nenhum ancestral tiver `transform` -- e a classe `fade-up` (`global.css`), usada pra animar a entrada de quase todo painel da aplicacao, termina com `transform: translateY(0)` (fill-mode `both`), que continua sendo um `transform` "ativo" pros fins da spec de CSS mesmo em repouso. Qualquer ancestral com essa classe virava o container de posicionamento errado. Corrigido renderizando os dois via `createPortal(..., document.body)` -- escapam de qualquer ancestral, fixos de verdade ao viewport.
+- `StatusBadge.tsx`: popover tambem ganhou clamping horizontal (nao passa mais da borda direita da tela).
+- `NewRequestPage.tsx` (wizard, passo 3): o campo de anexo usava o `<input type="file">` nativo do navegador, com o visual padrao ("Escolher Arquivos"). Trocado pelo mesmo padrao ja usado em `AttachmentsSection.tsx` (label estilizada como `workspace-secondary-action` escondendo o input real) -- consistencia visual entre os dois pontos de anexo do app.
+
+### Adicionado
+
+- `OrchestrationThinkingAnimation.tsx`: o marcador do cabecalho do widget vira um "orbe" com nucleo brilhante (gradiente radial violeta/ciano) e dois aneis pulsando em atraso (`workspace-orb-ring`), a pedido da autora ("uma animacao mais bonita, tipo uma rede neural"). Mantem `prefers-reduced-motion` respeitado (aneis somem, nucleo fica estatico).
+
+### Contexto
+
+- a pedido da autora, apos validar visualmente os PRs #56/#57 rodando localmente e mandar capturas de tela mostrando os dois bugs de posicionamento e o pedido de estilo do botao/animacao.
+- os dois bugs de posicionamento tem a mesma causa raiz -- vale ficar de olho em qualquer novo componente `position: fixed` daqui pra frente, sempre que puder aparecer dentro de um container `fade-up` (praticamente todo painel da aplicacao usa essa classe).
+
 ## 2026-09-21 - Animacao de processando vira widget fixo no canto da tela
 
 ### Corrigido

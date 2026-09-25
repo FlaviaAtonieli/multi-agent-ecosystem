@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { RequestStatus } from '../../api/orchestrationApi'
+
+const POPOVER_WIDTH = 240
 
 const statusLabels: Record<RequestStatus, string> = {
   RECEIVED: 'Recebida',
@@ -57,7 +60,8 @@ export function StatusBadge({ status }: { status: RequestStatus }) {
   function toggleOpen() {
     if (!open && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect()
-      setPosition({ top: rect.bottom + 8, left: rect.left })
+      const left = Math.min(rect.left, window.innerWidth - POPOVER_WIDTH - 12)
+      setPosition({ top: rect.bottom + 8, left: Math.max(12, left) })
     }
     setOpen((value) => !value)
   }
@@ -75,17 +79,20 @@ export function StatusBadge({ status }: { status: RequestStatus }) {
       >
         !
       </button>
-      {open && position && (
-        <div
-          ref={popoverRef}
-          role="tooltip"
-          className="workspace-status-info-popover"
-          style={{ top: position.top, left: position.left }}
-        >
-          <strong>{statusLabels[status]}</strong>
-          <p>{statusDescriptions[status]}</p>
-        </div>
-      )}
+      {open &&
+        position &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            role="tooltip"
+            className="workspace-status-info-popover"
+            style={{ top: position.top, left: position.left }}
+          >
+            <strong>{statusLabels[status]}</strong>
+            <p>{statusDescriptions[status]}</p>
+          </div>,
+          document.body,
+        )}
     </span>
   )
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AgentSkillDomain } from '../../api/agentSkillsApi'
 import { domainLabels } from './shared'
 
@@ -41,7 +42,7 @@ export function OrchestrationThinkingAnimation({ domains, traceId }: Props) {
 
   const currentStepLabel = steps[stepIndex]
 
-  return (
+  return createPortal(
     <div className={`workspace-thinking-float${collapsed ? ' is-collapsed' : ''}`} role="status" aria-live="polite">
       <button
         type="button"
@@ -49,7 +50,11 @@ export function OrchestrationThinkingAnimation({ domains, traceId }: Props) {
         onClick={() => setCollapsed((value) => !value)}
         aria-expanded={!collapsed}
       >
-        <span className="workspace-thinking-dot" />
+        <span className="workspace-thinking-orb" aria-hidden="true">
+          <span className="workspace-thinking-orb-core" />
+          <span className="workspace-thinking-orb-ring" />
+          <span className="workspace-thinking-orb-ring workspace-thinking-orb-ring-delay" />
+        </span>
         <span className="workspace-thinking-float-title">
           Processando orquestração
           {collapsed && <small>{currentStepLabel}</small>}
@@ -84,6 +89,7 @@ export function OrchestrationThinkingAnimation({ domains, traceId }: Props) {
           </p>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   )
 }
