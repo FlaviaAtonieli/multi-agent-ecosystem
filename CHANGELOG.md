@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-25 - Ranking de Agent Skills oficiais mais usadas
+
+### Adicionado
+
+- `GET /api/v1/agent-skills/ranking?limit=N`: agrega `agent_skill_invocations` por skill, restrito a `visibility == OFFICIAL` e `status == COMPLETED` -- skill privada nunca aparece (vazaria atividade de outro usuario) e invocacao que falhou nao conta como popularidade. `official_skill_usage_ranking()` em `registry.py`.
+- `AgentSkillsPage.tsx`: secao "Mais usadas" acima da grade do catalogo, top 5, com medalha nas 3 primeiras posicoes e contagem de execucoes por skill. So aparece se houver pelo menos uma invocacao registrada (sem estado vazio decorativo).
+- `test_skill_usage_ranking_counts_only_official_and_completed`: prova as tres regras de uma vez -- FAILED nao conta, skill PRIVATE com mais invocacoes que todas as outras juntas nunca aparece, ordenacao por contagem desc.
+
+### Contexto
+
+- a pedido da autora: contagem "todo o historico" (sem janela de tempo), so invocacoes bem-sucedidas, top 5 -- as tres decisoes de escopo foram perguntadas antes de implementar.
+- rota `/ranking` registrada antes de `/{skill_id}` no router -- caminho estatico precisa vir antes do dinamico, senao o FastAPI tentaria resolver "ranking" como um `skill_id`.
+- observado rodando a suite completa de `test_agent_skills.py` (nao investigado, pre-existente): 2 testes que fazem chamada real ao modelo gratuito falharam com `response.choices` vindo `None` da OpenRouter -- stack trace nao toca nenhum arquivo tocado nesta mudanca (é `openrouter_provider.py`/`llm_service.py`), mesma instabilidade do modelo `:free` ja documentada em outros pontos do projeto.
+
 ## 2026-09-25 - Auditoria volta a ser exclusiva de ADMIN
 
 ### Corrigido

@@ -1,10 +1,10 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.agent_manifest.manifest import AgentSkillManifest
 from app.agent_manifest.validator import validate_manifest
 from app.core.security import utc_now
-from app.models import AgentSkill, User
+from app.models import AgentSkill, AgentSkillInvocation, User
 
 
 class AgentSkillValidationError(ValueError):
@@ -141,6 +141,26 @@ def select_skills_for_domain(
             .order_by(AgentSkill.name)
         )
     )
+
+
+def official_skill_usage_ranking(db: Session, *, limit: int = 5) -> list[tuple[AgentSkill, int]]:
+    """Ranks OFFICIAL skills by successful invocation count, all-time.
+
+    Restricted to OFFICIAL (never PRIVATE) since this powers a public "most used"
+    surface in the catalog -- showing usage counts for someone else's private skill
+    would leak activity information about it. Only status == COMPLETED counts:
+    a skill that gets invoked a lot but keeps failing shouldn't rank as "popular".
+    """
+    usage_count = func.count(AgentSkillInvocation.id).label("usage_count")
+    rows = db.execute(
+        select(AgentSkill, usage_count)
+        .join(AgentSkillInvocation, AgentSkillInvocation.agent_skill_id == AgentSkill.id)
+        .where(AgentSkill.visibility == "OFFICIAL", AgentSkillInvocation.status == "COMPLETED")
+        .group_by(AgentSkill.id)
+        .order_by(usage_count.desc())
+        .limit(limit)
+    ).all()
+    return [(row[0], row[1]) for row in rows]
 
 
 def enable_skill(db: Session, skill_id: str) -> AgentSkill:

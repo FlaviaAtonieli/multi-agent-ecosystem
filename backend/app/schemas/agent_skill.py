@@ -57,6 +57,14 @@ class AgentSkillRead(BaseModel):
     updated_at: datetime
 
 
+class AgentSkillRankingRead(BaseModel):
+    id: str
+    name: str
+    domain: str
+    version: str
+    usage_count: int
+
+
 class AgentSkillToolDescriptorRead(BaseModel):
     name: str
     description: str

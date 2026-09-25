@@ -100,6 +100,14 @@ export type OrchestrationExecutionResult = {
   consolidated_response: ConsolidatedResponse
 }
 
+export type AgentSkillRankingEntry = {
+  id: string
+  name: string
+  domain: AgentSkillDomain
+  version: string
+  usage_count: number
+}
+
 export type FollowUpExchange = {
   id: string
   sequence_number: number
@@ -116,6 +124,8 @@ export type FollowUpExchange = {
 export const agentSkillsApi = {
   listSkills: (onlyActive = false) =>
     apiRequest<AgentSkill[]>(`/agent-skills?only_active=${onlyActive}`),
+  usageRanking: (limit = 5) =>
+    apiRequest<AgentSkillRankingEntry[]>(`/agent-skills/ranking?limit=${limit}`),
   importSkill: (manifestMarkdown: string) =>
     apiRequest<AgentSkill>('/agent-skills/import', {
       method: 'POST',
