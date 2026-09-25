@@ -2,6 +2,27 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-21 - RAG nos 4 dominios de Agent Skill; correcao de documentacao desatualizada
+
+### Adicionado
+
+- Base de conhecimento propria para os 3 dominios que so tinham executor real sem RAG: `backend/app/rag/fixtures/business_rules/` (`change-request-history.md`, `pricing-policy.md`), `backend/app/rag/fixtures/architecture/` (`module-dependency-map.md`, `deployment-topology.md`) e `backend/app/rag/fixtures/security/` (`access-control-notes.md`, `data-classification.md`) -- fixtures sinteticas, ancoradas no mesmo sistema legado fictício ja usado em `legacy_billing`, cada uma sob um angulo diferente (historico de decisao de negocio, acoplamento estrutural, controle de acesso/LGPD).
+- `app/rag/evaluation.py`: `GROUND_TRUTH_BY_DOMAIN`, gabarito manual por dominio (5 perguntas novas por dominio, lidas diretamente do conteudo das fixtures). `backend/tests/test_rag_quality.py` generalizado pra co-indexar os 4 dominios na mesma base (cenario real de producao -- o retriever nao filtra por dominio) e medir Precision@3/Recall@3/MRR por dominio, com limiares de regressao proprios por dominio.
+- `docs/validation/evidence/2026-09-rag-multi-domain-quality-validation.md`: resultado medido (MRR 0.875-1.000, Recall@3 0.750-1.000 conforme o dominio) com leitura honesta, incluindo a queda esperada de Recall@3 do dominio original (0.812 -> 0.750) por causa dos novos distratores.
+- `app/db/seed_knowledge_base.py`: seed de producao passa a indexar as 4 pastas de fixture, nao so `legacy_billing`.
+
+### Corrigido
+
+- `docs/architecture/overview.md`: corrigidas duas afirmacoes desatualizadas -- dizia que so "Codigo Legado" tinha executor real (hoje sao 4 skills oficiais) e listava o perfil `REVIEWER` como nao implementado (esta implementado desde a trilha de revisao humana). Achado numa revisao de arquitetura, nao numa mudanca de codigo.
+- `README.md` e `VALIDATION.md`: migration esperada corrigida pra `0012_request_attachments` (estava `0008`/`0010`); contagem de testes corrigida pra 90 (estava 63); catalogo de Agent Skills atualizado pra refletir visibilidade `OFFICIAL` por padrao (estava descrito como "escopadas por dono", default anterior a 2026-09-16).
+
+### Contexto
+
+- a pedido da autora, apos uma avaliacao do harness de RAG e da arquitetura pedida antes de iniciar o trabalho de nucleo comum de engenharia (CI/CD, Wiki): o gap mais concreto encontrado foi a validacao de RAG cobrir so 1 de 4 dominios, o que enfraquecia a defesa contra o risco de rubrica "so consome LLM via prompt, sem incorporar IA de fato" pra 3 das 4 skills oficiais.
+- decisao de escopo, perguntada explicitamente: expandir a validacao pros 3 dominios restantes de uma vez (em vez de so documentar a lacuna, ou expandir 1 dominio por vez).
+- limitacao registrada no proprio documento de evidencia: as fixtures novas foram escritas na mesma sessao que o gabarito de perguntas (ordem inversa do ideal -- gabarito extraido de documentacao pre-existente), o que provavelmente infla os numeros frente a uma base indexada organicamente ao longo do projeto.
+- nenhum teste novo (`def test_`) foi adicionado -- os 2 testes existentes em `test_rag_quality.py` foram generalizados pra cobrir os 4 dominios, entao a contagem total da suite continua 90.
+
 ## 2026-09-21 - Anexo de documentos como contexto adicional da solicitacao
 
 ### Adicionado

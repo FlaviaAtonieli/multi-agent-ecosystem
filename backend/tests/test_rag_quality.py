@@ -4,7 +4,8 @@ from fastapi.testclient import TestClient
 
 from app.core.database import SessionLocal
 from app.rag.evaluation import (
-    LEGACY_BILLING_GROUND_TRUTH,
+    GROUND_TRUTH_BY_DOMAIN,
+    RetrievalEvalCase,
     precision_at_k,
     recall_at_k,
     reciprocal_rank,
@@ -20,75 +21,111 @@ from tests.conftest import (
     register,
 )
 
-FIXTURE_DIR = Path(__file__).resolve().parent.parent / "app" / "rag" / "fixtures" / "legacy_billing"
+FIXTURES_ROOT = Path(__file__).resolve().parent.parent / "app" / "rag" / "fixtures"
 _LANGUAGE_BY_SUFFIX = {".java": "java", ".sql": "sql", ".md": "markdown"}
 TOP_K = 3
 
-# Regression bar, picked with real margin below the numbers actually measured on
-# 2026-08-30 against the live OpenRouter embedding model (see
-# docs/validation/evidence/2026-08-30-rag-quality-validation.md): MRR=0.875,
-# mean P@3=0.667, mean R@3=0.812 across the 8-query ground truth. A single
-# flipped query moves either mean by 1/8 = 0.125, so the bar leaves room for
-# one additional miss without treating normal embedding variance as a failure.
-MIN_MEAN_RECIPROCAL_RANK = 0.7
-MIN_MEAN_RECALL_AT_K = 0.65
+# Regression bars, picked with real margin below the numbers actually measured
+# on 2026-09-21 against the live OpenRouter embedding model with all four
+# fixture domains co-indexed in the same knowledge base (harder than measuring
+# each domain in isolation, since chunks from the other three domains are now
+# real distractors) -- see
+# docs/validation/evidence/2026-09-rag-multi-domain-quality-validation.md.
+#
+# Measured: Código Legado MRR=0.875 R@3=0.750 (n=8, first measured alone on
+# 2026-08-30 with R@3=0.812; the co-indexed re-measurement is honestly lower
+# because there are now real distractors, not a regression in the pipeline);
+# Regras de Negócio MRR=1.000 R@3=1.000 (n=5); Arquitetura de Software
+# MRR=0.900 R@3=0.900 (n=5); Segurança da Informação MRR=1.000 R@3=1.000 (n=5).
+#
+# Floors leave room for one flipped query without treating normal embedding
+# variance as a regression: 1/8=0.125 for the 8-query domain, 1/5=0.20 for the
+# three 5-query domains.
+MIN_MEAN_RECIPROCAL_RANK_BY_DOMAIN: dict[str, float] = {
+    "Código Legado": 0.75,
+    "Regras de Negócio": 0.80,
+    "Arquitetura de Software": 0.70,
+    "Segurança da Informação": 0.80,
+}
+MIN_MEAN_RECALL_AT_K_BY_DOMAIN: dict[str, float] = {
+    "Código Legado": 0.60,
+    "Regras de Negócio": 0.80,
+    "Arquitetura de Software": 0.70,
+    "Segurança da Informação": 0.80,
+}
 
 
-def _seed_legacy_billing_knowledge_base() -> None:
+def _seed_full_knowledge_base() -> None:
+    """Indexes every fixture domain (legacy_billing, business_rules, architecture,
+    security) into the same shared knowledge base -- mirrors production, where all
+    four official Agent Skills' knowledge lives in one `knowledge_chunks` table with
+    no domain-scoped filter (see app/rag/retriever.py). Co-indexing them here is what
+    makes this a real test of discrimination, not just recall within a single topic."""
     embedding_provider = real_embedding_provider()
     with SessionLocal() as db:
-        for path in sorted(FIXTURE_DIR.glob("*")):
-            if not path.is_file():
+        for domain_dir in sorted(FIXTURES_ROOT.iterdir()):
+            if not domain_dir.is_dir():
                 continue
-            ingest_artifact(
-                db,
-                artifact_name=path.name,
-                content=path.read_text(encoding="utf-8"),
-                language=_LANGUAGE_BY_SUFFIX.get(path.suffix),
-                embedding_provider=embedding_provider,
-            )
+            for path in sorted(domain_dir.glob("*")):
+                if not path.is_file():
+                    continue
+                ingest_artifact(
+                    db,
+                    artifact_name=path.name,
+                    content=path.read_text(encoding="utf-8"),
+                    language=_LANGUAGE_BY_SUFFIX.get(path.suffix),
+                    source_type=f"{domain_dir.name}_fixture",
+                    embedding_provider=embedding_provider,
+                )
         db.commit()
+
+
+def _measure(
+    retriever: InMemoryVectorRetriever, cases: list[RetrievalEvalCase]
+) -> tuple[float, float, float]:
+    reciprocal_ranks: list[float] = []
+    precisions: list[float] = []
+    recalls: list[float] = []
+
+    for case in cases:
+        results = retriever.retrieve(case.query, top_k=TOP_K)
+        retrieved_artifacts = [chunk.artifact_name for chunk in results]
+
+        p_at_k = precision_at_k(retrieved_artifacts, case.relevant_artifacts, TOP_K)
+        r_at_k = recall_at_k(retrieved_artifacts, case.relevant_artifacts, TOP_K)
+        rr = reciprocal_rank(retrieved_artifacts, case.relevant_artifacts)
+
+        precisions.append(p_at_k)
+        recalls.append(r_at_k)
+        reciprocal_ranks.append(rr)
+        print(f"  {case.query[:66]:<68} P@{TOP_K}={p_at_k:.2f}  R@{TOP_K}={r_at_k:.2f}  RR={rr:.2f}")
+
+    n = len(cases)
+    return sum(precisions) / n, sum(recalls) / n, sum(reciprocal_ranks) / n
 
 
 def test_retrieval_quality_against_ground_truth(client: TestClient) -> None:
     """Measures retrieval quality (Precision@k, Recall@k, MRR) against a hand-labeled
-    ground truth grounded in the real legacy_billing fixture -- not synthetic/random
-    data. Addresses the Portfolio Directions "IA" track requirement of validating the
-    model with an adequate technique (here: standard information-retrieval metrics),
-    and stands as a repeatable regression check, not just a one-off report."""
-    _seed_legacy_billing_knowledge_base()
+    ground truth grounded in the real fixture content of all four Agent Skill domains
+    -- not synthetic/random data. Addresses the Portfolio Directions "IA" track
+    requirement of validating the model with an adequate technique (here: standard
+    information-retrieval metrics), and stands as a repeatable regression check per
+    domain, not just a one-off report."""
+    _seed_full_knowledge_base()
 
     with SessionLocal() as db:
         retriever = InMemoryVectorRetriever(db, real_embedding_provider())
 
-        reciprocal_ranks: list[float] = []
-        precisions: list[float] = []
-        recalls: list[float] = []
+        for domain, cases in GROUND_TRUTH_BY_DOMAIN.items():
+            print(f"\n=== Domínio: {domain} (n={len(cases)}) ===")
+            mean_precision, mean_recall, mean_rr = _measure(retriever, cases)
+            print(
+                f"  Mean P@{TOP_K}={mean_precision:.3f}  Mean R@{TOP_K}={mean_recall:.3f}  "
+                f"MRR={mean_rr:.3f}"
+            )
 
-        print(f"\n{'query':<70} P@{TOP_K}   R@{TOP_K}   RR")
-        for case in LEGACY_BILLING_GROUND_TRUTH:
-            results = retriever.retrieve(case.query, top_k=TOP_K)
-            retrieved_artifacts = [chunk.artifact_name for chunk in results]
-
-            p_at_k = precision_at_k(retrieved_artifacts, case.relevant_artifacts, TOP_K)
-            r_at_k = recall_at_k(retrieved_artifacts, case.relevant_artifacts, TOP_K)
-            rr = reciprocal_rank(retrieved_artifacts, case.relevant_artifacts)
-
-            precisions.append(p_at_k)
-            recalls.append(r_at_k)
-            reciprocal_ranks.append(rr)
-            print(f"{case.query[:68]:<70} {p_at_k:.2f}   {r_at_k:.2f}   {rr:.2f}")
-
-        mean_precision = sum(precisions) / len(precisions)
-        mean_recall = sum(recalls) / len(recalls)
-        mean_reciprocal_rank = sum(reciprocal_ranks) / len(reciprocal_ranks)
-        print(
-            f"\nMean P@{TOP_K}={mean_precision:.3f}  Mean R@{TOP_K}={mean_recall:.3f}  "
-            f"MRR={mean_reciprocal_rank:.3f}  (n={len(LEGACY_BILLING_GROUND_TRUTH)} queries)"
-        )
-
-        assert mean_reciprocal_rank >= MIN_MEAN_RECIPROCAL_RANK
-        assert mean_recall >= MIN_MEAN_RECALL_AT_K
+            assert mean_rr >= MIN_MEAN_RECIPROCAL_RANK_BY_DOMAIN[domain], domain
+            assert mean_recall >= MIN_MEAN_RECALL_AT_K_BY_DOMAIN[domain], domain
 
 
 TECHNICIAN = {
@@ -114,7 +151,7 @@ def test_rag_enabled_plan_reflects_retrieved_context(client: TestClient, monkeyp
     review instead of pattern-matching prose -- avoiding a brittle assertion on
     free-model wording, consistent with the flakiness already documented for
     this project's free-tier model."""
-    _seed_legacy_billing_knowledge_base()
+    _seed_full_knowledge_base()
 
     register(client, TECHNICIAN)
     promote(TECHNICIAN["email"], "TECHNICIAN")

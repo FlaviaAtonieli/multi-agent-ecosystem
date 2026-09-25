@@ -46,18 +46,17 @@ O frontend adapta a experiência conforme o usuário autenticado, mas não decid
 - pipeline de recuperação aumentada de geração (RAG): indexação de artefatos em `knowledge_chunks`, recuperação por similaridade antes de cada chamada de modelo, e registro do evento `RAG_RETRIEVAL_COMPLETED` na timeline;
 - rastreabilidade individual das invocações, incluindo os trechos recuperados que fundamentaram cada resposta;
 - catálogo de Agent Skills: criação assistida (RF01), importação e validação estrutural de manifesto `modelo.md` (RF02/RF03), registro no catálogo (RF04) e habilitação/desabilitação por administrador (RF16);
-- seleção de Agent Skills por domínio da solicitação e execução coordenada (RF08/RF09/RF10), com uma primeira skill de referência ("Código Legado") operando sobre o pipeline RAG completo;
-- Quality Gate baseado em regras explicáveis (schema válido, nível de confiança, divergência entre respostas do mesmo domínio) consolidando as respostas antes da entrega (RF11).
+- seleção de Agent Skills por domínio da solicitação e execução coordenada (RF08/RF09/RF10) — quatro skills oficiais com executor real hoje (Código Legado, Regras de Negócio, Arquitetura de Software e Segurança da Informação), acionáveis em conjunto numa mesma análise, cada uma operando sobre uma base de conhecimento RAG própria e com qualidade de retrieval medida (ver "Limites arquiteturais");
+- Quality Gate baseado em regras explicáveis (schema válido, nível de confiança, divergência entre respostas do mesmo domínio) consolidando as respostas antes da entrega (RF11);
+- revisão humana de solicitações sinalizadas pelo Quality Gate, restrita ao perfil `REVIEWER` (ou `ADMIN`) — separação de funções entre quem produz e quem revisa.
 
 ## Componentes previstos no RFC
 
 Os módulos abaixo fazem parte do desenho da PoC, mas ainda não estão completos na implementação atual:
 
-- Agent Builder com editor visual (a criação assistida hoje é via API/formulário estruturado, sem UI dedicada);
-- mais de uma Agent Skill executável (só "Código Legado" tem executor real; "Regras de Negócio" e "Arquitetura" podem ser registradas no catálogo, mas ainda não têm execução implementada);
-- perfil específico de revisão (`REVIEWER`).
+- Agent Builder com editor visual (a criação assistida hoje é via API/formulário estruturado, sem UI dedicada).
 
-Já implementados (ver seção anterior): importador de `modelo.md`, validador de manifesto, catálogo de Agent Skills, camada de contratos de entrada e saída (Apêndice C), seleção dinâmica de Agent Skills por domínio, execução coordenada de especialistas e Quality Gate.
+Já implementados (ver seção anterior): importador de `modelo.md`, validador de manifesto, catálogo de Agent Skills, camada de contratos de entrada e saída (Apêndice C), seleção dinâmica de Agent Skills por domínio, execução coordenada das quatro skills oficiais, Quality Gate e revisão humana (`REVIEWER`).
 
 A documentação distingue esses dois estados para não apresentar como concluído o que ainda está em desenvolvimento.
 
@@ -98,6 +97,7 @@ Solicitação QUALIFIED
 - A PoC atua em modo consultivo e read-only.
 - A decisão final permanece sob responsabilidade humana.
 - O retrieval do pipeline RAG roda em memória (sem `pgvector`/índice ANN), adequado ao volume da fixture da PoC; é um limite conhecido, não uma limitação arquitetural permanente.
+- A base de conhecimento não é isolada por domínio: todos os `knowledge_chunks` das quatro skills competem no mesmo ranking por similaridade de cosseno (o domínio da solicitação só entra como viés de texto na query, não como filtro) — ver `docs/validation/evidence/2026-09-rag-multi-domain-quality-validation.md` para a medição de quão bem isso discrimina por assunto mesmo assim.
 
 ## Evolução prevista
 

@@ -9,7 +9,7 @@ detalhadas em [`docs/validation/evidence/`](docs/validation/evidence/) — este 
 - compilação sintática dos módulos Python e checagem de tipos (`mypy`);
 - autenticação por sessão opaca, CSRF (double-submit) e bloqueio após tentativas inválidas;
 - 4 perfis (`USER`, `TECHNICIAN`, `REVIEWER`, `ADMIN`) e restrição RBAC por endpoint;
-- migrations Alembic até `0010_agent_skill_ownership`;
+- migrations Alembic até `0012_request_attachments`;
 - integração real com a OpenRouter (Model Gateway) — **sem provedor mock**: toda
   chamada de LLM nos testes é uma chamada real, com retry para absorver a
   instabilidade conhecida do modelo gratuito compartilhado;
@@ -20,9 +20,13 @@ detalhadas em [`docs/validation/evidence/`](docs/validation/evidence/) — este 
 - redaction de e-mail, senha, token e padrões de chave antes de qualquer chamada externa;
 - cota diária de tokens por usuário não-administrador;
 - catálogo de Agent Skills: 4 skills oficiais (executores dedicados) + skills criadas
-  por usuário (executor genérico guiado por persona), escopadas por dono;
-- pipeline RAG com qualidade medida (Precision@k/Recall@k/MRR) — ver evidência específica;
-- 63 testes automatizados do backend, 100% reais (sem mock).
+  por usuário (executor genérico guiado por persona) — nascem `OFFICIAL` (visíveis a
+  qualquer usuário autenticado) por padrão, com opção de `PRIVATE` restrita ao dono/admin;
+- login com GitHub (OAuth, opcional) além de e-mail/senha;
+- anexo de documentos de texto como contexto adicional de uma solicitação;
+- pipeline RAG com qualidade medida (Precision@k/Recall@k/MRR) nos 4 domínios de Agent
+  Skill, com bases de conhecimento co-indexadas (ver evidências específicas);
+- 90 testes automatizados do backend, 100% reais (sem mock).
 
 ## Comandos locais
 
@@ -35,7 +39,7 @@ docker compose ps
 Resultado esperado do `alembic current`:
 
 ```text
-0010_agent_skill_ownership (head)
+0012_request_attachments (head)
 ```
 
 ## Testes
@@ -61,4 +65,5 @@ gratuito compartilhado (ver [`docs/integrations/model-provider.md`](docs/integra
 - [Validação da fundação](docs/validation/evidence/2026-08-foundation-validation.md)
 - [Extensibilidade plug-and-play](docs/validation/evidence/2026-08-plug-and-play-extensibility.md)
 - [Medição de KPIs (M7)](docs/validation/evidence/2026-08-m7-kpi-measurement.md)
-- [Qualidade do RAG](docs/validation/evidence/2026-08-30-rag-quality-validation.md)
+- [Qualidade do RAG (domínio Código Legado)](docs/validation/evidence/2026-08-30-rag-quality-validation.md)
+- [Qualidade do RAG nos 4 domínios de Agent Skill](docs/validation/evidence/2026-09-rag-multi-domain-quality-validation.md)
