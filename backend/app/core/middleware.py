@@ -8,18 +8,12 @@ from app.core.config import settings
 
 
 class MaxBodySizeMiddleware(BaseHTTPMiddleware):
-    """Auditoria de seguranca P2/P3 (correcao de 17/09/2026): rejeita um corpo de
-    requisicao maior que MAX_REQUEST_BODY_BYTES -- antes de qualquer endpoint
-    le-lo. A aplicacao so recebe JSON (sem upload de arquivo), entao o limite
-    cobre folgadamente o maior payload legitimo hoje (contexto de solicitacao
-    tecnica + listas do manifesto de uma skill).
-
-    A primeira versao so checava o cabecalho Content-Length declarado -- uma
-    requisicao com Transfer-Encoding: chunked (sem Content-Length, tamanho
-    desconhecido ate o corpo terminar de chegar) passava direto, sem limite
-    algum. Agora o corpo e lido em stream e contado byte a byte conforme
-    chega, entao o limite vale independentemente de o cliente declarar (ou
-    mentir sobre) o tamanho."""
+    """Auditoria de seguranca P2: rejeita, pelo Content-Length declarado, um corpo
+    de requisicao maior que o esperado -- antes de qualquer endpoint le-lo.
+    MAX_REQUEST_BODY_BYTES cobre folgadamente o maior payload legitimo hoje
+    (contexto de solicitacao tecnica, listas do manifesto de uma skill, ou um
+    documento anexado via multipart -- ver ATTACHMENT_MAX_BYTES, sempre menor
+    que este teto)."""
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         limit = settings.max_request_body_bytes

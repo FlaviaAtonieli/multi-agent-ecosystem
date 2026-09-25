@@ -1,9 +1,10 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { AgentSkillDomain, agentSkillsApi, FollowUpExchange, OrchestrationExecutionResult } from '../api/agentSkillsApi'
 import { ApiError } from '../api/http'
 import { llmApi } from '../api/llmApi'
 import { AgentSkillInvocationResult, OrchestrationDetail, orchestrationApi } from '../api/orchestrationApi'
+import { AttachmentsSection } from '../components/orchestration/AttachmentsSection'
 import { ExecutionResultPanel } from '../components/orchestration/ExecutionResultPanel'
 import { FollowUpExchangeCard } from '../components/orchestration/FollowUpExchangeCard'
 import { FollowUpForm } from '../components/orchestration/FollowUpForm'
@@ -13,6 +14,9 @@ import { TokenUsageMeter } from '../components/orchestration/TokenUsageMeter'
 
 export function OrchestrationPage() {
   const { traceId = '' } = useParams()
+  const location = useLocation()
+  const failedAttachmentUploads = (location.state as { failedAttachmentUploads?: string[] } | null)
+    ?.failedAttachmentUploads
   const [detail, setDetail] = useState<OrchestrationDetail | null>(null)
   const [pastSkillResults, setPastSkillResults] = useState<AgentSkillInvocationResult[]>([])
   const [followUps, setFollowUps] = useState<FollowUpExchange[]>([])
@@ -180,6 +184,12 @@ export function OrchestrationPage() {
 
       {error && <div className="alert alert-error">{error}</div>}
       {successMessage && <div className="alert alert-success">{successMessage}</div>}
+      {failedAttachmentUploads && failedAttachmentUploads.length > 0 && (
+        <div className="alert alert-error">
+          Não foi possível anexar: {failedAttachmentUploads.join(', ')}. A solicitação foi criada normalmente —
+          tente anexar de novo abaixo.
+        </div>
+      )}
 
       {detail && (
         <section className="workspace-detail-grid">
@@ -202,6 +212,8 @@ export function OrchestrationPage() {
               </div>
               <div><dt>Etapa atual</dt><dd>{detail.run.current_stage}</dd></div>
             </dl>
+
+            <AttachmentsSection requestId={detail.technical_request.id} />
 
             {detail.technical_request.status === 'AWAITING_CONTEXT' && (
               <form className="workspace-context-form" onSubmit={handleContextSubmit}>

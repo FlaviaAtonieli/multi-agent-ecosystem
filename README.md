@@ -16,6 +16,7 @@ A base implementa:
 - perfis `USER`, `TECHNICIAN`, `REVIEWER` e `ADMIN`;
 - criação de solicitações técnicas;
 - qualificação inicial do contexto;
+- anexo de documentos de texto (código-fonte, markdown, etc.) como contexto adicional de uma solicitação — PDF/DOCX ainda não são suportados;
 - geração de `Trace ID`;
 - histórico e timeline de eventos;
 - abstração de provedores de modelo, com OpenRouter como Model Gateway primário;
@@ -32,7 +33,8 @@ A base implementa:
 Ainda não fazem parte desta base:
 
 - seleção dinâmica de skills (hoje o roteamento é por correspondência exata de domínio — decisão deliberada de escopo);
-- publicação automática de artefatos.
+- publicação automática de artefatos;
+- extração de texto de anexos binários (PDF, DOCX) — só texto puro (UTF-8) é aceito hoje.
 
 > O perfil `REVIEWER` não está definido na RFC (a especificação principal do projeto); ele vem de `docs/Documento_de_referencia.md`, um documento à parte com uma visão arquitetural mais ampla. Foi implementado por decisão explícita, fora do escopo formal da RFC v3.1.
 

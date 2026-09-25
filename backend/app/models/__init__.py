@@ -8,6 +8,7 @@ from app.models.knowledge_chunk import KnowledgeChunk
 from app.models.llm_invocation import LLMInvocation
 from app.models.orchestration_event import OrchestrationEvent
 from app.models.orchestration_run import OrchestrationRun
+from app.models.request_attachment import RequestAttachment
 from app.models.technical_request import TechnicalRequest
 from app.models.user import User
 
@@ -22,6 +23,7 @@ __all__ = [
     "LLMInvocation",
     "OrchestrationEvent",
     "OrchestrationRun",
+    "RequestAttachment",
     "TechnicalRequest",
     "User",
 ]

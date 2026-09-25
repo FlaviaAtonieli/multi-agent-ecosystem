@@ -1,7 +1,11 @@
-import { KeyboardEvent, useMemo, useState } from 'react'
+import { ChangeEvent, KeyboardEvent, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError } from '../api/http'
 import { orchestrationApi } from '../api/orchestrationApi'
+
+const MAX_ATTACHMENT_BYTES = 300_000
+const ALLOWED_ATTACHMENT_EXTENSIONS =
+  '.txt,.md,.markdown,.py,.js,.jsx,.ts,.tsx,.java,.go,.rb,.php,.cs,.c,.cpp,.h,.hpp,.kt,.swift,.rs,.json,.yaml,.yml,.xml,.sql,.sh'
 
 type ChecklistState = 'pending' | 'current' | 'done'
 
@@ -28,8 +32,10 @@ export function NewRequestPage() {
   const [context, setContext] = useState('')
   const [restrictions, setRestrictions] = useState<string[]>(['Não executar alterações automaticamente'])
   const [restrictionDraft, setRestrictionDraft] = useState('')
+  const [attachments, setAttachments] = useState<File[]>([])
   const [stepError, setStepError] = useState('')
   const [submitError, setSubmitError] = useState('')
+  const [attachmentWarning, setAttachmentWarning] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const titleValid = title.trim().length >= 5 && title.trim().length <= 160
@@ -87,6 +93,27 @@ export function NewRequestPage() {
     setContext((current) => (current.trim() ? `${current.trim()}\n${hint}: ` : `${hint}: `))
   }
 
+  function handleAttachmentSelection(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? [])
+    event.target.value = ''
+    if (files.length === 0) return
+
+    const tooLarge = files.filter((file) => file.size > MAX_ATTACHMENT_BYTES)
+    const accepted = files.filter((file) => file.size <= MAX_ATTACHMENT_BYTES)
+    if (tooLarge.length > 0) {
+      setAttachmentWarning(
+        `${tooLarge.map((file) => file.name).join(', ')} ${tooLarge.length > 1 ? 'excedem' : 'excede'} ${Math.round(MAX_ATTACHMENT_BYTES / 1000)} KB e não ${tooLarge.length > 1 ? 'foram adicionados' : 'foi adicionado'}.`,
+      )
+    } else {
+      setAttachmentWarning('')
+    }
+    setAttachments((current) => [...current, ...accepted])
+  }
+
+  function removeAttachment(name: string) {
+    setAttachments((current) => current.filter((file) => file.name !== name))
+  }
+
   async function handleFinalSubmit() {
     setSubmitting(true)
     setSubmitError('')
@@ -98,7 +125,24 @@ export function NewRequestPage() {
         context: context.trim() || null,
         restrictions,
       })
-      navigate(`/orchestrations/${created.trace_id}`)
+
+      // The request itself is already created at this point -- an attachment
+      // failing (e.g. a duplicate-named file the extension check still
+      // rejects for some other reason) shouldn't block navigation or read as
+      // "nothing was saved". Failures are collected and surfaced on the
+      // orchestration page instead of aborting here.
+      const failedUploads: string[] = []
+      for (const file of attachments) {
+        try {
+          await orchestrationApi.uploadAttachment(created.id, file)
+        } catch {
+          failedUploads.push(file.name)
+        }
+      }
+
+      navigate(`/orchestrations/${created.trace_id}`, {
+        state: failedUploads.length > 0 ? { failedAttachmentUploads: failedUploads } : undefined,
+      })
     } catch (caught) {
       setSubmitError(caught instanceof ApiError ? caught.message : 'Não foi possível criar a solicitação.')
     } finally {
@@ -228,6 +272,28 @@ export function NewRequestPage() {
                   />
                 </div>
                 <small>Separe restrições por linha ou vírgula — cada uma vira uma tag independente.</small>
+              </label>
+
+              <label className="workspace-field workspace-field-full">
+                Anexar documento (opcional)
+                <input type="file" accept={ALLOWED_ATTACHMENT_EXTENSIONS} multiple onChange={handleAttachmentSelection} />
+                <small>
+                  Texto puro (código-fonte, markdown, JSON, etc.) — até {Math.round(MAX_ATTACHMENT_BYTES / 1000)} KB
+                  por arquivo. PDF e DOCX ainda não são suportados.
+                </small>
+                {attachmentWarning && <small style={{ color: 'var(--danger, #ef4444)' }}>{attachmentWarning}</small>}
+                {attachments.length > 0 && (
+                  <ul className="workspace-tag-input" style={{ listStyle: 'none', padding: 0, margin: '8px 0 0' }}>
+                    {attachments.map((file) => (
+                      <li key={file.name} className="workspace-tag">
+                        {file.name}
+                        <button type="button" aria-label={`Remover anexo ${file.name}`} onClick={() => removeAttachment(file.name)}>
+                          ×
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </label>
             </div>
           )}

@@ -72,6 +72,14 @@ export type CreateTechnicalRequestInput = {
   restrictions: string[]
 }
 
+export type RequestAttachment = {
+  id: string
+  filename: string
+  content_type: string | null
+  size_bytes: number
+  created_at: string
+}
+
 export const orchestrationApi = {
   listRequests: () => apiRequest<TechnicalRequest[]>('/requests'),
   createRequest: (input: CreateTechnicalRequestInput) =>
@@ -79,6 +87,21 @@ export const orchestrationApi = {
       method: 'POST',
       body: JSON.stringify(input),
     }),
+  listAttachments: (requestId: string) =>
+    apiRequest<RequestAttachment[]>(`/requests/${encodeURIComponent(requestId)}/attachments`),
+  uploadAttachment: (requestId: string, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return apiRequest<RequestAttachment>(`/requests/${encodeURIComponent(requestId)}/attachments`, {
+      method: 'POST',
+      body: formData,
+    })
+  },
+  deleteAttachment: (requestId: string, attachmentId: string) =>
+    apiRequest<void>(
+      `/requests/${encodeURIComponent(requestId)}/attachments/${encodeURIComponent(attachmentId)}`,
+      { method: 'DELETE' },
+    ),
   getOrchestration: (traceId: string) =>
     apiRequest<OrchestrationDetail>(`/orchestrations/${encodeURIComponent(traceId)}`),
   getSkillResults: (traceId: string) =>

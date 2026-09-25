@@ -22,9 +22,11 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173"
     trusted_hosts: str = "localhost,127.0.0.1"
-    # Auditoria de seguranca P2: teto de tamanho de corpo de requisicao (bytes).
-    # A aplicacao so recebe JSON, sem upload de arquivo -- 2MB cobre folgadamente
-    # o maior payload legitimo hoje (contexto de solicitacao + listas de manifesto).
+    # Auditoria de seguranca P2: teto de tamanho de corpo de requisicao (bytes),
+    # aplicado a toda requisicao HTTP independente do formato (JSON ou o
+    # upload multipart de ATTACHMENT_MAX_BYTES abaixo) -- 2MB cobre folgadamente
+    # o maior payload legitimo hoje (contexto de solicitacao, listas de
+    # manifesto, ou um documento anexado).
     max_request_body_bytes: int = 2 * 1024 * 1024
     # Auditoria de seguranca P1: IPs de reverse proxy confiaveis, cujo cabecalho
     # X-Forwarded-For sera usado para o rate limiter em vez de request.client.host.
@@ -121,6 +123,17 @@ class Settings(BaseSettings):
     # the same MCPServer object in-process (fast, used by the test suite).
     mcp_skill_transport: Literal["memory", "stdio"] = "stdio"
 
+    # Documents a user can attach to a TechnicalRequest's context (RFC UX
+    # suggestion, PR #24). Text-only for this iteration: the upload is decoded
+    # as UTF-8 and stored as text, no binary blob and no PDF/DOCX parsing --
+    # that would pull in new parsing dependencies with their own security
+    # surface (malformed PDFs, zip-bomb-style DOCX) not evaluated yet.
+    attachment_max_bytes: int = 300_000
+    attachment_allowed_extensions: str = (
+        ".txt,.md,.markdown,.py,.js,.jsx,.ts,.tsx,.java,.go,.rb,.php,.cs,.c,.cpp,.h,.hpp,"
+        ".kt,.swift,.rs,.json,.yaml,.yml,.xml,.sql,.sh"
+    )
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [item.strip() for item in self.cors_origins.split(",") if item.strip()]
@@ -136,6 +149,14 @@ class Settings(BaseSettings):
     @property
     def llm_allowed_model_list(self) -> list[str]:
         return [item.strip() for item in self.llm_allowed_models.split(",") if item.strip()]
+
+    @property
+    def attachment_allowed_extension_list(self) -> list[str]:
+        return [
+            item.strip().lower()
+            for item in self.attachment_allowed_extensions.split(",")
+            if item.strip()
+        ]
 
     @property
     def openai_api_key_value(self) -> str | None:
@@ -170,6 +191,19 @@ class Settings(BaseSettings):
             raise ValueError("GITHUB_CLIENT_ID é obrigatório quando GITHUB_OAUTH_ENABLED=true.")
         if not self.github_client_secret_value:
             raise ValueError("GITHUB_CLIENT_SECRET é obrigatório quando GITHUB_OAUTH_ENABLED=true.")
+        return self
+
+    @model_validator(mode="after")
+    def validate_attachment_configuration(self) -> "Settings":
+        if self.attachment_max_bytes < 1:
+            raise ValueError("ATTACHMENT_MAX_BYTES deve ser maior que zero.")
+        if self.attachment_max_bytes > self.max_request_body_bytes:
+            raise ValueError(
+                "ATTACHMENT_MAX_BYTES não pode ser maior que MAX_REQUEST_BODY_BYTES -- "
+                "um anexo no limite nunca caberia no corpo da requisição."
+            )
+        if not self.attachment_allowed_extension_list:
+            raise ValueError("ATTACHMENT_ALLOWED_EXTENSIONS não pode ficar vazio.")
         return self
 
     @model_validator(mode="after")

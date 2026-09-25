@@ -29,3 +29,17 @@ def test_prompt_with_domain_scopes_the_analysis() -> None:
     )
     assert "Domínio de análise: Segurança da Informação" in prompt
     assert "exclusivamente" in prompt
+
+
+def test_prompt_without_attachments_has_no_attachments_section() -> None:
+    prompt = build_technical_planner_prompt(_base_request())
+    assert "Documentos anexados" not in prompt
+
+
+def test_prompt_with_attachments_includes_their_content() -> None:
+    prompt = build_technical_planner_prompt(
+        _base_request(attachments_context="[Anexo: regras.txt]\nDesconto máximo: 15%.")
+    )
+    assert "Documentos anexados pelo usuário:" in prompt
+    assert "[Anexo: regras.txt]" in prompt
+    assert "Desconto máximo: 15%." in prompt
