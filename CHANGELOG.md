@@ -2,6 +2,19 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-25 - Reduz sobrecarga visual da pagina de orquestracao
+
+### Corrigido
+
+- `OrchestrationPage.tsx`: quando ja existe um resultado (execucao ou resposta consolidada), ele passa a aparecer **primeiro**, antes do contexto da solicitacao -- antes disso, quem voltava numa solicitacao ja concluida tinha que rolar por problema/objetivo/contexto/restricoes/anexos antes de chegar na resposta.
+- Novo componente reutilizavel `CollapsibleSection` (`components/shared/`): "Contexto da demanda" (definicao do problema, anexos, formulario de complementar contexto/executar) vira uma secao recolhivel, **fechada por padrao quando ja ha resultado** (o usuario abre se quiser reler o que pediu) e **aberta por padrao quando ainda nao ha** (é o conteudo principal nesse momento).
+- `SkillResultCard` (`shared.tsx`): os achados tecnicos de cada Agent Skill (que podem incluir blocos de codigo) viram um toggle "N achados tecnicos ▸/▾", recolhido por padrao -- antes apareciam todos abertos, e com 3-4 skills executadas a coluna de resultado ficava enorme.
+
+### Contexto
+
+- a pedido da autora, depois de um levantamento pedido explicitamente sobre o que estava "carregado" nas telas do projeto -- a pagina de detalhe da orquestracao foi identificada como o unico ponto que pesa em usabilidade de verdade (nao so estetica): sem hierarquia entre contexto, formulario de execucao e resultado, tudo competindo no mesmo nivel visual na mesma coluna.
+- os outros dois pontos levantados na mesma revisao (o card estatico "Nucleo do ecossistema" no catalogo de skills, e o `EcosystemFlowCard` decorativo no dashboard) ficaram de fora deste PR -- foram classificados como "ruido, nao bloqueio", prioridade mais baixa.
+
 ## 2026-09-25 - Corrige SECURITY.md desatualizado (papel de REVIEWER, execucao de orquestracao)
 
 ### Corrigido
