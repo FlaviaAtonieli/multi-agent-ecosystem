@@ -22,6 +22,7 @@ export type AgentSkill = {
   uses_external_services: boolean
   owner_id: string | null
   visibility: AgentSkillVisibility
+  clan_id: string | null
   persona_instructions: string | null
   validated_at: string | null
   created_at: string
@@ -45,6 +46,8 @@ export type AgentSkillCreatePayload = {
   validation_criteria: string[]
   uses_external_services: boolean
   persona_instructions: string | null
+  visibility: 'OFFICIAL' | 'PRIVATE' | 'CLAN'
+  clan_id: string | null
 }
 
 export type ConfidenceLevel = 'ALTO' | 'MEDIO' | 'BAIXO'
@@ -126,10 +129,14 @@ export const agentSkillsApi = {
     apiRequest<AgentSkill[]>(`/agent-skills?only_active=${onlyActive}`),
   usageRanking: (limit = 5) =>
     apiRequest<AgentSkillRankingEntry[]>(`/agent-skills/ranking?limit=${limit}`),
-  importSkill: (manifestMarkdown: string) =>
+  importSkill: (
+    manifestMarkdown: string,
+    visibility: 'OFFICIAL' | 'PRIVATE' | 'CLAN' = 'OFFICIAL',
+    clanId: string | null = null,
+  ) =>
     apiRequest<AgentSkill>('/agent-skills/import', {
       method: 'POST',
-      body: JSON.stringify({ manifest_markdown: manifestMarkdown }),
+      body: JSON.stringify({ manifest_markdown: manifestMarkdown, visibility, clan_id: clanId }),
     }),
   createSkill: (payload: AgentSkillCreatePayload) =>
     apiRequest<AgentSkill>('/agent-skills', {

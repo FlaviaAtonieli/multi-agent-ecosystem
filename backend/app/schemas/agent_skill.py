@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -7,16 +8,22 @@ from app.agent_manifest.manifest import DomainLiteral
 from app.quality_gate.service import QualityGateVerdict
 from app.schemas.orchestration import ConsolidatedResponseRead
 
+SkillVisibilityLiteral = Literal["OFFICIAL", "PRIVATE", "CLAN"]
+
 
 class AgentSkillManifestImport(BaseModel):
     """RF02: import an existing Agent Skill from a raw modelo.md file."""
 
     manifest_markdown: str = Field(min_length=1)
+    visibility: SkillVisibilityLiteral = "OFFICIAL"
+    clan_id: str | None = Field(default=None, description="Obrigatório quando visibility='CLAN'.")
 
 
 class AgentSkillManifestCreate(BaseModel):
     """RF01: assisted creation via a structured form, bypassing the modelo.md parser."""
 
+    visibility: SkillVisibilityLiteral = "OFFICIAL"
+    clan_id: str | None = Field(default=None, description="Obrigatório quando visibility='CLAN'.")
     name: str = Field(max_length=160)
     version: str = Field(max_length=30)
     author_origin: str
@@ -51,6 +58,7 @@ class AgentSkillRead(BaseModel):
     uses_external_services: bool
     owner_id: str | None
     visibility: str
+    clan_id: str | None
     persona_instructions: str | None
     validated_at: datetime | None
     created_at: datetime

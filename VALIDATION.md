@@ -9,7 +9,7 @@ detalhadas em [`docs/validation/evidence/`](docs/validation/evidence/) — este 
 - compilação sintática dos módulos Python e checagem de tipos (`mypy`);
 - autenticação por sessão opaca, CSRF (double-submit) e bloqueio após tentativas inválidas;
 - 4 perfis (`USER`, `TECHNICIAN`, `REVIEWER`, `ADMIN`) e restrição RBAC por endpoint;
-- migrations Alembic até `0012_request_attachments`;
+- migrations Alembic até `0013_clans`;
 - integração real com a OpenRouter (Model Gateway) — **sem provedor mock**: toda
   chamada de LLM nos testes é uma chamada real, com retry para absorver a
   instabilidade conhecida do modelo gratuito compartilhado;
@@ -21,12 +21,14 @@ detalhadas em [`docs/validation/evidence/`](docs/validation/evidence/) — este 
 - cota diária de tokens por usuário não-administrador;
 - catálogo de Agent Skills: 4 skills oficiais (executores dedicados) + skills criadas
   por usuário (executor genérico guiado por persona) — nascem `OFFICIAL` (visíveis a
-  qualquer usuário autenticado) por padrão, com opção de `PRIVATE` restrita ao dono/admin;
+  qualquer usuário autenticado) por padrão, com opção de `PRIVATE` restrita ao dono/admin
+  ou `CLAN` restrita aos membros de um clã;
+- clãs: grupos auto-serviço, qualquer usuário cria e gerencia membros;
 - login com GitHub (OAuth, opcional) além de e-mail/senha;
 - anexo de documentos de texto como contexto adicional de uma solicitação;
 - pipeline RAG com qualidade medida (Precision@k/Recall@k/MRR) nos 4 domínios de Agent
   Skill, com bases de conhecimento co-indexadas (ver evidências específicas);
-- 90 testes automatizados do backend, 100% reais (sem mock).
+- 99 testes automatizados do backend, 100% reais (sem mock).
 
 ## Comandos locais
 
@@ -39,7 +41,7 @@ docker compose ps
 Resultado esperado do `alembic current`:
 
 ```text
-0012_request_attachments (head)
+0013_clans (head)
 ```
 
 ## Testes

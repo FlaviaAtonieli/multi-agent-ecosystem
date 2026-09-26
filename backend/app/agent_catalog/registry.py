@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.agent_manifest.manifest import AgentSkillManifest
 from app.agent_manifest.validator import validate_manifest
 from app.core.security import utc_now
-from app.models import AgentSkill, AgentSkillInvocation, User
+from app.models import AgentSkill, AgentSkillInvocation, ClanMembership, User
 
 
 class AgentSkillValidationError(ValueError):
@@ -25,6 +25,7 @@ def register_skill(
     raw_markdown: str | None = None,
     owner_id: str | None = None,
     visibility: str = "OFFICIAL",
+    clan_id: str | None = None,
 ) -> AgentSkill:
     """Registers a new Agent Skill (RF01/RF02/RF04).
 
@@ -40,7 +41,8 @@ def register_skill(
     ORCHESTRATION_ROLES in app/core/roles.py) would have nothing to run.
     owner_id is still recorded for attribution/audit; pass visibility="PRIVATE"
     explicitly for a skill still being drafted/tested that shouldn't be
-    executable by anyone but its owner (and ADMIN) yet.
+    executable by anyone but its owner (and ADMIN) yet, or visibility="CLAN"
+    with clan_id set for a skill scoped to a specific clan's members.
     """
     result = validate_manifest(manifest)
     if not result.is_valid:
@@ -64,6 +66,7 @@ def register_skill(
         validated_at=now,
         owner_id=owner_id,
         visibility=visibility,
+        clan_id=clan_id,
         persona_instructions=manifest.persona_instructions,
     )
     db.add(skill)
@@ -80,12 +83,18 @@ def get_skill(db: Session, skill_id: str) -> AgentSkill:
 
 def _visibility_filter(viewer_id: str | None):
     """Um usuário enxerga skills OFFICIAL (o padrão para toda skill nova, ver
-    register_skill) e, além dessas, as que ele mesmo criou como PRIVATE --
-    nunca a skill PRIVATE de outro usuário. Seguro por padrão: sem viewer_id,
-    só as oficiais aparecem (nunca vaza skill privada de ninguém)."""
+    register_skill), as que ele mesmo criou como PRIVATE (nunca a de outro
+    usuário), e as CLAN de qualquer clã do qual ele seja membro. Seguro por
+    padrão: sem viewer_id, só as oficiais aparecem (nunca vaza skill privada
+    nem de clã de ninguém)."""
     if viewer_id is None:
         return AgentSkill.visibility == "OFFICIAL"
-    return (AgentSkill.visibility == "OFFICIAL") | (AgentSkill.owner_id == viewer_id)
+    member_clan_ids = select(ClanMembership.clan_id).where(ClanMembership.user_id == viewer_id)
+    return (
+        (AgentSkill.visibility == "OFFICIAL")
+        | (AgentSkill.owner_id == viewer_id)
+        | ((AgentSkill.visibility == "CLAN") & AgentSkill.clan_id.in_(member_clan_ids))
+    )
 
 
 def list_active_skills(db: Session, *, viewer_id: str | None = None) -> list[AgentSkill]:

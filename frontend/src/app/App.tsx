@@ -7,6 +7,7 @@ import { AgentSkillCreatePage } from '../pages/AgentSkillCreatePage'
 import { AgentSkillImportPage } from '../pages/AgentSkillImportPage'
 import { AgentSkillsPage } from '../pages/AgentSkillsPage'
 import { AuditoriaPage } from '../pages/AuditoriaPage'
+import { ClansPage } from '../pages/ClansPage'
 import { DashboardPage } from '../pages/DashboardPage'
 import { LoginPage } from '../pages/LoginPage'
 import { NewRequestPage } from '../pages/NewRequestPage'
@@ -31,6 +32,7 @@ export function App() {
           <Route path="/agent-skills" element={<AgentSkillsPage />} />
           <Route path="/agent-skills/new" element={<AgentSkillCreatePage />} />
           <Route path="/agent-skills/import" element={<AgentSkillImportPage />} />
+          <Route path="/clans" element={<ClansPage />} />
           <Route path="/auditoria" element={<AuditoriaPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Route>

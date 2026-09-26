@@ -5,6 +5,7 @@ from app.api.v1.endpoints import (
     agent_skills,
     audit,
     auth,
+    clans,
     dashboard,
     health,
     llm,
@@ -22,3 +23,4 @@ api_router.include_router(llm.router)
 api_router.include_router(agent_skills.router)
 api_router.include_router(admin.router)
 api_router.include_router(audit.router)
+api_router.include_router(clans.router)
