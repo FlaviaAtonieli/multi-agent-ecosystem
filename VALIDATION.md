@@ -28,7 +28,7 @@ detalhadas em [`docs/validation/evidence/`](docs/validation/evidence/) — este 
 - anexo de documentos de texto como contexto adicional de uma solicitação;
 - pipeline RAG com qualidade medida (Precision@k/Recall@k/MRR) nos 4 domínios de Agent
   Skill, com bases de conhecimento co-indexadas (ver evidências específicas);
-- 99 testes automatizados do backend, 100% reais (sem mock).
+- 106 testes automatizados do backend, 100% reais (sem mock).
 
 ## Comandos locais
 

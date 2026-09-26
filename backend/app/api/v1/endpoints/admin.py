@@ -32,8 +32,10 @@ def _tokens_used_today_by_user(db: Session) -> dict[str, int]:
 
 
 def _to_admin_user_read(user: User, tokens_used_today: int) -> AdminUserRead:
+    data = UserRead.model_validate(user).model_dump()
+    data["has_password"] = user.password_hash is not None
     return AdminUserRead(
-        **UserRead.model_validate(user).model_dump(),
+        **data,
         tokens_used_today=tokens_used_today,
         daily_token_limit_per_user=settings.llm_daily_token_limit_per_user,
     )

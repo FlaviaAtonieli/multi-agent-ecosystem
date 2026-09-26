@@ -82,17 +82,19 @@ export function AppShell() {
             <span className="workspace-breadcrumb">MULTI-AGENT ECOSYSTEM</span>
           </div>
           <div className="workspace-user">
-            {user?.avatar_url ? (
-              <img className="workspace-avatar" src={user.avatar_url} alt="" aria-hidden="true" />
-            ) : (
-              <div className="workspace-avatar" aria-hidden="true">
-                {user?.name?.slice(0, 1).toUpperCase() ?? 'U'}
+            <Link className="workspace-account-link" to="/account" title="Minha conta">
+              {user?.avatar_url ? (
+                <img className="workspace-avatar" src={user.avatar_url} alt="" aria-hidden="true" />
+              ) : (
+                <div className="workspace-avatar" aria-hidden="true">
+                  {user?.name?.slice(0, 1).toUpperCase() ?? 'U'}
+                </div>
+              )}
+              <div>
+                <strong>{user?.name}</strong>
+                <small>{user ? roleLabels[user.role] : 'Usuário técnico'}</small>
               </div>
-            )}
-            <div>
-              <strong>{user?.name}</strong>
-              <small>{user ? roleLabels[user.role] : 'Usuário técnico'}</small>
-            </div>
+            </Link>
             <Link className="workspace-review-tour" to="/dashboard?tour=1">Rever tour</Link>
             <button className="workspace-logout" type="button" onClick={handleLogout}>Sair</button>
           </div>

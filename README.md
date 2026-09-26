@@ -25,6 +25,7 @@ A base implementa:
 - ingestão e recuperação de contexto (RAG) sobre uma base de conhecimento indexada;
 - catálogo funcional de Agent Skills, com importação do manifesto `modelo.md` e aprovação humana obrigatória;
 - clãs: grupos auto-serviço (qualquer usuário cria um e vira membro automaticamente; qualquer membro adiciona/remove outros) que servem de escopo para uma terceira visibilidade de Agent Skill, `CLAN` — visível só a quem participa daquele clã, entre `OFFICIAL` (todo o ecossistema) e `PRIVATE` (só o dono);
+- página de conta (`/account`): editar nome, trocar senha (contas por senha), ver papel e clãs, excluir a própria conta — exclusão é lógica (desativa e limpa nome/e-mail), não uma remoção definitiva da linha, já que várias outras tabelas referenciam o usuário com `ondelete=RESTRICT` (histórico de invocações, skills submetidas, clãs criados);
 - execução de Agent Skills via MCP e avaliação por Quality Gate;
 - quatro Agent Skills com executor real (Código Legado, Regras de Negócio, Arquitetura de Software e Segurança da Informação), acionáveis em conjunto numa mesma análise;
 - revisão humana de solicitações sinalizadas pelo Quality Gate (perfil `REVIEWER` ou `ADMIN`, aprovação ou rejeição com justificativa, `POST /api/v1/requests/{id}/review`);

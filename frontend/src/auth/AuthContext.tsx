@@ -10,6 +10,7 @@ type AuthContextValue = {
   register: (input: RegisterInput) => Promise<void>
   logout: () => Promise<void>
   logoutAll: () => Promise<void>
+  deleteAccount: () => Promise<void>
   refreshUser: () => Promise<void>
 }
 
@@ -59,6 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logoutAll: async () => {
         try {
           await authApi.logoutAll()
+        } finally {
+          setUser(null)
+        }
+      },
+      deleteAccount: async () => {
+        try {
+          await authApi.deleteAccount()
         } finally {
           setUser(null)
         }

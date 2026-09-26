@@ -9,6 +9,7 @@ export type User = {
   avatar_url: string | null
   created_at: string
   onboarding_completed_at: string | null
+  has_password: boolean
 }
 
 export type AuthResponse = {
@@ -48,4 +49,12 @@ export const authApi = {
   logout: () => apiRequest<void>('/auth/logout', { method: 'POST' }),
   logoutAll: () => apiRequest<void>('/auth/logout-all', { method: 'POST' }),
   completeOnboarding: () => apiRequest<User>('/auth/onboarding/complete', { method: 'POST' }),
+  updateName: (name: string) =>
+    apiRequest<User>('/auth/me', { method: 'PATCH', body: JSON.stringify({ name }) }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiRequest<User>('/auth/me/password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    }),
+  deleteAccount: () => apiRequest<void>('/auth/me', { method: 'DELETE' }),
 }
