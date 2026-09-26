@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { SkillToolResult } from '../../api/agentSkillsApi'
 
 export const confidenceLabels: Record<string, string> = { ALTO: 'Alta', MEDIO: 'Média', BAIXO: 'Baixa' }
@@ -35,6 +36,9 @@ export function SynthesisByDomain({ text }: { text: string }) {
 }
 
 export function SkillResultCard({ result }: { result: SkillToolResult }) {
+  const findings = result.analise_estruturada.descobertas_tecnicas
+  const [findingsOpen, setFindingsOpen] = useState(false)
+
   return (
     <article className="workspace-execution-skill-card">
       <header>
@@ -48,18 +52,30 @@ export function SkillResultCard({ result }: { result: SkillToolResult }) {
       </header>
       <p>{result.analise_estruturada.resumo_executivo}</p>
 
-      {result.analise_estruturada.descobertas_tecnicas.length > 0 && (
-        <div className="workspace-findings">
-          {result.analise_estruturada.descobertas_tecnicas.map((finding, findingIndex) => (
-            <div key={findingIndex} className="workspace-finding">
-              <strong>{finding.item_identificado}</strong>
-              <p>{finding.descricao_detalhada}</p>
-              {finding.trecho_referenciado && (
-                <pre className="workspace-code-block"><code>{finding.trecho_referenciado}</code></pre>
-              )}
+      {findings.length > 0 && (
+        <>
+          <button
+            type="button"
+            className="workspace-findings-toggle"
+            onClick={() => setFindingsOpen((value) => !value)}
+            aria-expanded={findingsOpen}
+          >
+            {findingsOpen ? '▾' : '▸'} {findings.length} achado{findings.length === 1 ? '' : 's'} técnico{findings.length === 1 ? '' : 's'}
+          </button>
+          {findingsOpen && (
+            <div className="workspace-findings">
+              {findings.map((finding, findingIndex) => (
+                <div key={findingIndex} className="workspace-finding">
+                  <strong>{finding.item_identificado}</strong>
+                  <p>{finding.descricao_detalhada}</p>
+                  {finding.trecho_referenciado && (
+                    <pre className="workspace-code-block"><code>{finding.trecho_referenciado}</code></pre>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       <small className="workspace-skill-card-justification">{result.governanca.justificativa_confianca}</small>
