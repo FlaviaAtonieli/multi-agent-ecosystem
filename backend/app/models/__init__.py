@@ -1,5 +1,32 @@
+from app.models.agent_skill import AgentSkill
+from app.models.agent_skill_invocation import AgentSkillInvocation
 from app.models.audit_log import AuditLog
 from app.models.auth_session import AuthSession
+from app.models.clan import Clan, ClanMembership
+from app.models.consolidated_response import ConsolidatedResponse
+from app.models.follow_up_exchange import FollowUpExchange
+from app.models.knowledge_chunk import KnowledgeChunk
+from app.models.llm_invocation import LLMInvocation
+from app.models.orchestration_event import OrchestrationEvent
+from app.models.orchestration_run import OrchestrationRun
+from app.models.request_attachment import RequestAttachment
+from app.models.technical_request import TechnicalRequest
 from app.models.user import User
 
-__all__ = ["AuditLog", "AuthSession", "User"]
+__all__ = [
+    "AgentSkill",
+    "AgentSkillInvocation",
+    "AuditLog",
+    "AuthSession",
+    "Clan",
+    "ClanMembership",
+    "ConsolidatedResponse",
+    "FollowUpExchange",
+    "KnowledgeChunk",
+    "LLMInvocation",
+    "OrchestrationEvent",
+    "OrchestrationRun",
+    "RequestAttachment",
+    "TechnicalRequest",
+    "User",
+]

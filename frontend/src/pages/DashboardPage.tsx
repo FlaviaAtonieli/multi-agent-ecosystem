@@ -1,147 +1,144 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { authApi } from '../api/authApi'
 import { DashboardSummary, dashboardApi } from '../api/dashboardApi'
 import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
-import { Brand } from '../components/Brand'
-
-const eventLabels: Record<string, string> = {
-  AUTH_REGISTER_SUCCESS: 'Conta criada',
-  AUTH_LOGIN_SUCCESS: 'Login realizado',
-  AUTH_LOGOUT: 'Sessão encerrada',
-  AUTH_LOGOUT_ALL: 'Todas as sessões encerradas',
-  AUTH_SESSION_RENEWED: 'Sessão renovada',
-  AUTH_SESSION_REVOKED: 'Sessão revogada',
-  ADMIN_USER_STATUS_CHANGED: 'Status de usuário alterado',
-}
+import { ActionBanner } from '../components/dashboard/ActionBanner'
+import { ActivityFeed } from '../components/dashboard/ActivityFeed'
+import { EcosystemFlowCard } from '../components/dashboard/EcosystemFlowCard'
+import { MetricCard } from '../components/dashboard/MetricCard'
+import { RecentRequestsTable } from '../components/dashboard/RecentRequestsTable'
+import { OnboardingTour } from '../components/onboarding/OnboardingTour'
 
 export function DashboardPage() {
-  const navigate = useNavigate()
-  const { user, logout, logoutAll } = useAuth()
+  const { user, refreshUser } = useAuth()
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [showTour, setShowTour] = useState(false)
 
   useEffect(() => {
     dashboardApi
       .summary()
       .then(setSummary)
-      .catch((caught) => setError(caught instanceof ApiError ? caught.message : 'Não foi possível carregar o painel.'))
+      .catch((caught) => {
+        setError(caught instanceof ApiError ? caught.message : 'Não foi possível carregar o painel.')
+      })
   }, [])
 
-  async function handleLogout(allSessions: boolean) {
-    setBusy(true)
-    try {
-      if (allSessions) await logoutAll()
-      else await logout()
-      navigate('/login', { replace: true })
-    } finally {
-      setBusy(false)
+  // Auto-show on first-ever dashboard visit for a user who hasn't completed onboarding.
+  useEffect(() => {
+    if (user && !user.onboarding_completed_at) setShowTour(true)
+  }, [user])
+
+  // Manually reopened via "Rever tour" (?tour=1) -- its own effect so it fires even
+  // when already on /dashboard, where `user` alone wouldn't change to retrigger it.
+  useEffect(() => {
+    if (searchParams.get('tour') !== '1') return
+    setShowTour(true)
+    const next = new URLSearchParams(searchParams)
+    next.delete('tour')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
+
+  function finishTour() {
+    setShowTour(false)
+    if (!user?.onboarding_completed_at) {
+      authApi.completeOnboarding().then(refreshUser).catch(() => undefined)
     }
   }
 
+  const successRate = summary ? `${Math.round(summary.success_rate * 100)}%` : '—'
+  const awaitingContext = summary?.awaiting_context ?? 0
+  const recentRequests = (summary?.recent_requests ?? []).slice(0, 5)
+
   return (
-    <main className="dashboard-page">
-      <header className="topbar">
-        <Brand />
-        <div className="topbar-user">
-          <div>
-            <strong>{user?.name}</strong>
-            <small>{user?.role === 'ADMIN' ? 'Administrador' : 'Usuário técnico'}</small>
-          </div>
-          <button className="ghost-button" onClick={() => handleLogout(false)} disabled={busy}>Sair</button>
+    <div className="workspace-page">
+      {showTour && <OnboardingTour onFinish={finishTour} />}
+
+      <section className="workspace-page-heading fade-up">
+        <div>
+          <span className="workspace-eyebrow">VISÃO GERAL</span>
+          <h1>Olá, {user?.name.split(' ')[0]}.</h1>
+          <p>Acompanhe solicitações, estados e eventos do ecossistema de agentes.</p>
         </div>
-      </header>
+        <Link className="workspace-primary-action" to="/requests/new" data-tour="new-request-button">
+          + Nova solicitação
+        </Link>
+      </section>
 
-      <div className="dashboard-shell">
-        <section className="welcome-row">
-          <div>
-            <span className="eyebrow">VISÃO GERAL</span>
-            <h1>Olá, {user?.name.split(' ')[0]}.</h1>
-            <p className="muted">A base de autenticação está funcionando. O próximo passo é acoplar o catálogo de Agent Skills.</p>
+      {error && <div className="alert alert-error">{error}</div>}
+
+      {summary && (
+        <div className="fade-up" style={{ animationDelay: '0.06s' }} data-tour="pending-highlight">
+          <ActionBanner requests={summary.recent_requests} />
+        </div>
+      )}
+
+      <section
+        className="workspace-metric-grid fade-up"
+        style={{ animationDelay: '0.12s' }}
+        aria-label="Indicadores da orquestração"
+        data-tour="pending-highlight"
+      >
+        <MetricCard
+          icon="◎"
+          label="Orquestrações em execução"
+          value={summary?.running_orchestrations ?? '—'}
+          helper="Qualificadas ou em processamento"
+          tone="accent"
+        />
+        <MetricCard
+          icon="◷"
+          label="Aguardando contexto"
+          value={summary?.awaiting_context ?? '—'}
+          helper="Dependem de complementação"
+          tone="warning"
+          highlight={awaitingContext > 0}
+        />
+        <MetricCard
+          icon="▤"
+          label="Solicitações registradas"
+          value={summary?.orchestration_executions ?? '—'}
+          helper="Cada uma possui Trace ID"
+          tone="info"
+        />
+        <MetricCard
+          icon="✓"
+          label="Taxa de sucesso"
+          value={successRate}
+          helper="Calculada após fluxos concluídos"
+          tone="success"
+        />
+      </section>
+
+      <section className="workspace-dashboard-grid fade-up" style={{ animationDelay: '0.18s' }}>
+        <article className="workspace-panel">
+          <div className="workspace-panel-heading">
+            <div>
+              <span className="workspace-card-kicker">FLUXOS RECENTES</span>
+              <h2>Solicitações técnicas</h2>
+            </div>
+            <Link to="/orchestrations">Ver todas →</Link>
           </div>
-          <div className="secure-badge"><span /> Sessão protegida</div>
-        </section>
+          <RecentRequestsTable requests={recentRequests} showToolbar />
+        </article>
 
-        {error && <div className="alert alert-error">{error}</div>}
-
-        <section className="metric-grid" aria-label="Resumo do ambiente">
-          <article className="metric-card">
-            <span>Sessões ativas</span>
-            <strong>{summary?.active_sessions ?? '—'}</strong>
-            <small>Persistidas e revogáveis</small>
-          </article>
-          <article className="metric-card">
-            <span>Agent Skills</span>
-            <strong>{summary?.registered_agent_skills ?? '—'}</strong>
-            <small>Catálogo será o próximo módulo</small>
-          </article>
-          <article className="metric-card">
-            <span>Execuções</span>
-            <strong>{summary?.orchestration_executions ?? '—'}</strong>
-            <small>Nenhuma simulação exibida</small>
-          </article>
-          {summary?.total_users !== null && summary?.total_users !== undefined && (
-            <article className="metric-card">
-              <span>Usuários</span>
-              <strong>{summary.total_users}</strong>
-              <small>Visível para administradores</small>
-            </article>
-          )}
-        </section>
-
-        <section className="dashboard-grid">
-          <article className="panel">
-            <div className="panel-heading">
+        <div className="workspace-side-column">
+          <article className="workspace-panel" data-tour="activity-feed">
+            <div className="workspace-panel-heading">
               <div>
-                <span className="card-kicker">Próxima evolução</span>
-                <h2>Catálogo de Agent Skills</h2>
-              </div>
-              <span className="status-pill">Planejado</span>
-            </div>
-            <p>
-              Esta base já entrega identidade, sessão e auditoria. O próximo módulo pode reutilizar o usuário autenticado
-              para importar o <code>modelo.md</code>, validar contratos e registrar a skill.
-            </p>
-            <div className="flow-preview">
-              <span>Login</span><b>→</b><span>Catálogo</span><b>→</b><span>Orquestração</span><b>→</b><span>Trace ID</span>
-            </div>
-            <button className="secondary-button" disabled>Ambiente de orquestração em construção</button>
-          </article>
-
-          <article className="panel">
-            <div className="panel-heading">
-              <div>
-                <span className="card-kicker">Segurança</span>
-                <h2>Eventos recentes</h2>
+                <span className="workspace-card-kicker">RASTREABILIDADE</span>
+                <h2>Atividade recente</h2>
               </div>
             </div>
-            <div className="event-list">
-              {summary?.recent_security_events.length ? (
-                summary.recent_security_events.map((event, index) => (
-                  <div className="event-item" key={`${event.event_type}-${event.created_at}-${index}`}>
-                    <span className="event-dot" />
-                    <div>
-                      <strong>{eventLabels[event.event_type] ?? event.event_type}</strong>
-                      <small>{new Date(event.created_at).toLocaleString('pt-BR')}</small>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="muted">Os eventos desta conta aparecerão aqui.</p>
-              )}
-            </div>
+            <ActivityFeed events={summary?.recent_orchestration_events ?? []} />
           </article>
-        </section>
 
-        <section className="security-strip">
-          <div><strong>Argon2</strong><small>Hash de senhas</small></div>
-          <div><strong>HttpOnly</strong><small>Cookie de sessão</small></div>
-          <div><strong>CSRF</strong><small>Proteção em operações</small></div>
-          <div><strong>RBAC</strong><small>Perfis USER e ADMIN</small></div>
-          <button className="danger-link" onClick={() => handleLogout(true)} disabled={busy}>Encerrar todas as sessões</button>
-        </section>
-      </div>
-    </main>
+          <EcosystemFlowCard />
+        </div>
+      </section>
+    </div>
   )
 }

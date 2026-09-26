@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
 
 # Python
 __pycache__/
@@ -25,6 +26,7 @@ node_modules/
 dist/
 .vite/
 coverage/
+*.tsbuildinfo
 
 # IDE / OS
 .vscode/

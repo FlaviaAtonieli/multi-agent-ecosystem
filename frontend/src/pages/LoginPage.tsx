@@ -1,15 +1,24 @@
 import { FormEvent, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
 import { AgentNetworkHero } from '../components/AgentNetworkHero'
+import { GitHubLoginButton } from '../components/GitHubLoginButton'
+
+const GITHUB_ERROR_MESSAGES: Record<string, string> = {
+  github_oauth_failed: 'Não foi possível concluir o login com GitHub. Tente novamente.',
+  github_email_in_use: 'Já existe uma conta com este e-mail. Entre com e-mail e senha.',
+  account_inactive: 'Esta conta está desativada.',
+}
 
 export function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
+  const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const githubError = searchParams.get('error')
+  const [error, setError] = useState(githubError ? GITHUB_ERROR_MESSAGES[githubError] ?? 'Não foi possível entrar com o GitHub.' : '')
   const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -69,9 +78,12 @@ export function LoginPage() {
             )}
 
             <button className="primary-button" type="submit" disabled={submitting}>
-              {submitting ? 'Validando acesso…' : 'Entrar com segurança'}
+              {submitting ? 'Validando acesso…' : 'Entrar'}
             </button>
           </form>
+
+          <div className="auth-divider">ou</div>
+          <GitHubLoginButton />
 
           <p className="form-footer">
             Ainda não possui conta? <Link to="/register">Criar conta</Link>

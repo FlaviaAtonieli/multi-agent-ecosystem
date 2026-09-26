@@ -1,5 +1,7 @@
 from functools import lru_cache
+from typing import Literal
 
+from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +22,18 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173"
     trusted_hosts: str = "localhost,127.0.0.1"
+    # Auditoria de seguranca P2: teto de tamanho de corpo de requisicao (bytes),
+    # aplicado a toda requisicao HTTP independente do formato (JSON ou o
+    # upload multipart de ATTACHMENT_MAX_BYTES abaixo) -- 2MB cobre folgadamente
+    # o maior payload legitimo hoje (contexto de solicitacao, listas de
+    # manifesto, ou um documento anexado).
+    max_request_body_bytes: int = 2 * 1024 * 1024
+    # Auditoria de seguranca P1: IPs de reverse proxy confiaveis, cujo cabecalho
+    # X-Forwarded-For sera usado para o rate limiter em vez de request.client.host.
+    # Vazio por padrao -- so ativa a confianca quando o operador do deploy real
+    # configurar explicitamente o IP do proxy; sem isso, qualquer requisicao
+    # direta poderia forjar X-Forwarded-For e furtar o limite por IP.
+    trusted_proxy_ips: str = ""
 
     session_cookie_name: str = "agenthub_session"
     csrf_cookie_name: str = "agenthub_csrf"
@@ -35,6 +49,91 @@ class Settings(BaseSettings):
     bootstrap_admin_email: str | None = None
     bootstrap_admin_password: str | None = None
 
+    # GitHub OAuth: login adicional, ao lado do fluxo de email/senha (nao o
+    # substitui). Disabled by default so the project boots without um OAuth
+    # App configurado -- ver docs/integrations/github-oauth.md.
+    github_oauth_enabled: bool = False
+    github_client_id: str | None = None
+    github_client_secret: SecretStr | None = None
+    # Precisa bater exatamente com a "Authorization callback URL" cadastrada
+    # no GitHub OAuth App.
+    github_oauth_redirect_uri: str = "http://localhost:8000/api/v1/auth/github/callback"
+    # Para onde o navegador volta depois do callback (sucesso ou erro).
+    frontend_base_url: str = "http://localhost:5173"
+
+    # LLM foundation. Disabled by default so the project boots without an API key;
+    # once enabled, OpenRouter is the primary Model Gateway (no mock provider).
+    llm_enabled: bool = False
+    llm_provider: Literal["openai", "openrouter"] = "openrouter"
+    llm_model: str = "nvidia/nemotron-3-super-120b-a12b:free"
+    # Free models below declare structured_outputs support in the OpenRouter catalog
+    # (GET /api/v1/models); only the default was empirically validated end-to-end
+    # (see docs/integrations/model-provider.md). openai/gpt-5-mini is paid (needs
+    # purchased OpenRouter credits) and a genuine reasoning model -- validated
+    # end-to-end on 2026-08-30 after fixing the strict-mode JSON schema (see
+    # strict_json_schema in app/llm/schemas.py) and raising llm_max_output_tokens.
+    llm_allowed_models: str = (
+        "nvidia/nemotron-3-super-120b-a12b:free,"
+        "z-ai/glm-5.2:free,"
+        "dots-studio/dots-3-note-preview:free,"
+        "openai/gpt-5-mini"
+    )
+    llm_timeout_seconds: int = 45
+    # Reasoning models (e.g. openai/gpt-5-mini) spend part of this budget on
+    # hidden chain-of-thought tokens before writing visible output; fixed caps
+    # (1200, then 3000) kept leaving content=None (finish_reason "length") on
+    # rich schemas -- see docs/integrations/model-provider.md. 0 disables the
+    # cap entirely (the provider call omits max_tokens/max_output_tokens and
+    # the model's own maximum applies), which is now the default so it never
+    # bottlenecks multi-agent orchestration output.
+    llm_max_output_tokens: int = 0
+    llm_max_input_chars: int = 12000
+    llm_requests_per_hour_technician: int = 20
+    # Caps total input+output tokens (LLMInvocation.input_tokens + output_tokens,
+    # summed across every "COMPLETED" call the same day) per non-admin user, to
+    # protect the account's OpenRouter subscription from a single user's usage.
+    # 0 disables the cap (default). ADMIN accounts are always exempt regardless.
+    llm_daily_token_limit_per_user: int = 0
+
+    # Privacy-safe defaults.
+    llm_store_provider_response: bool = False
+    llm_store_result_content: bool = False
+    llm_log_content: bool = False
+    llm_redact_sensitive_data: bool = True
+
+    openai_api_key: SecretStr | None = None
+    openai_base_url: str = "https://api.openai.com/v1"
+
+    # OpenRouter is the primary Model Gateway: a single credential exposes many
+    # providers/models (e.g. "openai/gpt-5-mini", "anthropic/claude-sonnet-4.5"),
+    # useful to compare models without recoding the LLM abstraction.
+    openrouter_api_key: SecretStr | None = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_app_url: str = "http://localhost:5173"
+
+    # Retrieval-augmented generation. Independent from llm_enabled: retrieval can
+    # run (and be tested) even while the model call itself stays mocked/disabled.
+    rag_enabled: bool = True
+    rag_top_k: int = 3
+    rag_chunk_max_chars: int = 800
+    rag_chunk_overlap: int = 100
+
+    # Real MCP transport used to invoke Agent Skills. "stdio" spawns each skill's
+    # server as a genuine subprocess (JSON-RPC over stdio); "memory" connects to
+    # the same MCPServer object in-process (fast, used by the test suite).
+    mcp_skill_transport: Literal["memory", "stdio"] = "stdio"
+
+    # Documents a user can attach to a TechnicalRequest's context (RFC UX
+    # suggestion, PR #24). Text-only for this iteration: the upload is decoded
+    # as UTF-8 and stored as text, no binary blob and no PDF/DOCX parsing --
+    # that would pull in new parsing dependencies with their own security
+    # surface (malformed PDFs, zip-bomb-style DOCX) not evaluated yet.
+    attachment_max_bytes: int = 300_000
+    attachment_allowed_extensions: str = (
+        ".txt,.md,.markdown,.py,.js,.jsx,.ts,.tsx,.java,.go,.rb,.php,.cs,.c,.cpp,.h,.hpp,"
+        ".kt,.swift,.rs,.json,.yaml,.yml,.xml,.sql,.sh"
+    )
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [item.strip() for item in self.cors_origins.split(",") if item.strip()]
@@ -44,8 +143,113 @@ class Settings(BaseSettings):
         return [item.strip() for item in self.trusted_hosts.split(",") if item.strip()]
 
     @property
+    def trusted_proxy_ip_list(self) -> list[str]:
+        return [item.strip() for item in self.trusted_proxy_ips.split(",") if item.strip()]
+
+    @property
+    def llm_allowed_model_list(self) -> list[str]:
+        return [item.strip() for item in self.llm_allowed_models.split(",") if item.strip()]
+
+    @property
+    def attachment_allowed_extension_list(self) -> list[str]:
+        return [
+            item.strip().lower()
+            for item in self.attachment_allowed_extensions.split(",")
+            if item.strip()
+        ]
+
+    @property
+    def openai_api_key_value(self) -> str | None:
+        if self.openai_api_key is None:
+            return None
+        value = self.openai_api_key.get_secret_value().strip()
+        return value or None
+
+    @property
+    def openrouter_api_key_value(self) -> str | None:
+        if self.openrouter_api_key is None:
+            return None
+        value = self.openrouter_api_key.get_secret_value().strip()
+        return value or None
+
+    @property
+    def github_client_secret_value(self) -> str | None:
+        if self.github_client_secret is None:
+            return None
+        value = self.github_client_secret.get_secret_value().strip()
+        return value or None
+
+    @property
     def is_production(self) -> bool:
         return self.environment.lower() == "production"
+
+    @model_validator(mode="after")
+    def validate_github_oauth_configuration(self) -> "Settings":
+        if not self.github_oauth_enabled:
+            return self
+        if not self.github_client_id:
+            raise ValueError("GITHUB_CLIENT_ID é obrigatório quando GITHUB_OAUTH_ENABLED=true.")
+        if not self.github_client_secret_value:
+            raise ValueError("GITHUB_CLIENT_SECRET é obrigatório quando GITHUB_OAUTH_ENABLED=true.")
+        return self
+
+    @model_validator(mode="after")
+    def validate_attachment_configuration(self) -> "Settings":
+        if self.attachment_max_bytes < 1:
+            raise ValueError("ATTACHMENT_MAX_BYTES deve ser maior que zero.")
+        if self.attachment_max_bytes > self.max_request_body_bytes:
+            raise ValueError(
+                "ATTACHMENT_MAX_BYTES não pode ser maior que MAX_REQUEST_BODY_BYTES -- "
+                "um anexo no limite nunca caberia no corpo da requisição."
+            )
+        if not self.attachment_allowed_extension_list:
+            raise ValueError("ATTACHMENT_ALLOWED_EXTENSIONS não pode ficar vazio.")
+        return self
+
+    @model_validator(mode="after")
+    def validate_llm_configuration(self) -> "Settings":
+        if self.llm_max_input_chars < 1000:
+            raise ValueError("LLM_MAX_INPUT_CHARS deve ser maior ou igual a 1000.")
+        if self.llm_max_output_tokens != 0 and self.llm_max_output_tokens < 128:
+            raise ValueError("LLM_MAX_OUTPUT_TOKENS deve ser 0 (sem teto) ou maior ou igual a 128.")
+        if self.llm_requests_per_hour_technician < 1:
+            raise ValueError("LLM_REQUESTS_PER_HOUR_TECHNICIAN deve ser maior que zero.")
+        if self.llm_daily_token_limit_per_user < 0:
+            raise ValueError("LLM_DAILY_TOKEN_LIMIT_PER_USER não pode ser negativo.")
+
+        if not self.llm_enabled:
+            return self
+
+        if self.llm_model not in self.llm_allowed_model_list:
+            raise ValueError(
+                f"O modelo '{self.llm_model}' não está em LLM_ALLOWED_MODELS."
+            )
+
+        if self.llm_provider == "openai" and not self.openai_api_key_value:
+            raise ValueError(
+                "OPENAI_API_KEY é obrigatória quando LLM_ENABLED=true e LLM_PROVIDER=openai."
+            )
+
+        if self.llm_provider == "openrouter" and not self.openrouter_api_key_value:
+            raise ValueError(
+                "OPENROUTER_API_KEY é obrigatória quando LLM_ENABLED=true e LLM_PROVIDER=openrouter."
+            )
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_production_hardening(self) -> "Settings":
+        """Fail-closed check (auditoria de segurança P0): ENVIRONMENT=production
+        com COOKIE_SECURE=false enviaria o cookie de sessão e o de CSRF em texto
+        claro. SECURITY.md já documentava isso como requisito mínimo de
+        produção; isso o transforma de documentação em algo que a aplicação
+        recusa a subir sem atender."""
+        if self.is_production and not self.cookie_secure:
+            raise ValueError(
+                "ENVIRONMENT=production exige COOKIE_SECURE=true (a aplicação deve estar "
+                "atrás de HTTPS). Veja 'Requisitos de produção' em SECURITY.md."
+            )
+        return self
 
 
 @lru_cache

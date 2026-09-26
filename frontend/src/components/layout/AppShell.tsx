@@ -1,0 +1,109 @@
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../auth/AuthContext'
+import type { User } from '../../api/authApi'
+import { Brand } from '../Brand'
+import '../../styles/workspace.css'
+
+const principalNavigation = [
+  { to: '/dashboard', label: 'Visão geral', symbol: '◫' },
+  { to: '/requests/new', label: 'Nova solicitação', symbol: '+' },
+  { to: '/orchestrations', label: 'Orquestrações', symbol: '◎' },
+]
+
+const ecosystemNavigation = [
+  { to: '/agent-skills', label: 'Agent Skills', symbol: '◇' },
+  { to: '/clans', label: 'Clãs', symbol: '⬡' },
+]
+
+const roleLabels: Record<User['role'], string> = {
+  USER: 'Usuário',
+  TECHNICIAN: 'Usuário técnico',
+  REVIEWER: 'Revisor',
+  ADMIN: 'Administrador',
+}
+
+export function AppShell() {
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login', { replace: true })
+  }
+
+  return (
+    <div className="workspace-shell">
+      <aside className="workspace-sidebar" data-tour="nav">
+        <div className="workspace-brand"><Brand /></div>
+
+        <nav className="workspace-nav" aria-label="Navegação principal">
+          <span className="workspace-nav-label">PRINCIPAL</span>
+          {principalNavigation.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => `workspace-nav-link${isActive ? ' active' : ''}`}
+            >
+              <span aria-hidden="true">{item.symbol}</span>
+              {item.label}
+            </NavLink>
+          ))}
+
+          <div className="workspace-nav-divider" />
+          <span className="workspace-nav-label">ECOSSISTEMA</span>
+          {ecosystemNavigation.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => `workspace-nav-link${isActive ? ' active' : ''}`}
+            >
+              <span aria-hidden="true">{item.symbol}</span>
+              {item.label}
+            </NavLink>
+          ))}
+          {user?.role === 'ADMIN' && (
+            <>
+              <div className="workspace-nav-divider" />
+              <span className="workspace-nav-label">ADMINISTRAÇÃO</span>
+              <NavLink to="/admin" className={({ isActive }) => `workspace-nav-link${isActive ? ' active' : ''}`}>
+                <span aria-hidden="true">⚙</span> Usuários
+              </NavLink>
+              <NavLink to="/auditoria" className={({ isActive }) => `workspace-nav-link${isActive ? ' active' : ''}`}>
+                <span aria-hidden="true">⌁</span> Auditoria
+              </NavLink>
+            </>
+          )}
+        </nav>
+      </aside>
+
+      <div className="workspace-main">
+        <header className="workspace-topbar">
+          <div>
+            <span className="workspace-breadcrumb">MULTI-AGENT ECOSYSTEM</span>
+          </div>
+          <div className="workspace-user">
+            <Link className="workspace-account-link" to="/account" title="Minha conta">
+              {user?.avatar_url ? (
+                <img className="workspace-avatar" src={user.avatar_url} alt="" aria-hidden="true" />
+              ) : (
+                <div className="workspace-avatar" aria-hidden="true">
+                  {user?.name?.slice(0, 1).toUpperCase() ?? 'U'}
+                </div>
+              )}
+              <div>
+                <strong>{user?.name}</strong>
+                <small>{user ? roleLabels[user.role] : 'Usuário técnico'}</small>
+              </div>
+            </Link>
+            <Link className="workspace-review-tour" to="/dashboard?tour=1">Rever tour</Link>
+            <button className="workspace-logout" type="button" onClick={handleLogout}>Sair</button>
+          </div>
+        </header>
+
+        <main className="workspace-content">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  )
+}

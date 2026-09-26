@@ -45,6 +45,18 @@ def authenticate_user(db: Session, request: Request, email: str, password: str) 
             detail="Conta temporariamente bloqueada. Tente novamente mais tarde.",
         )
 
+    # Conta criada via GitHub OAuth (sem password_hash) -- gasta o mesmo
+    # tempo de uma verificação real para não vazar, pelo timing da resposta,
+    # se a conta existe e é GitHub-only.
+    if user.password_hash is None:
+        perform_dummy_password_check(password)
+        record_audit(db, request, "AUTH_LOGIN_FAILED", user_id=user.id)
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Esta conta usa login com GitHub. Entre pelo botão \"Continuar com GitHub\".",
+        )
+
     if not verify_password(password, user.password_hash):
         user.failed_login_attempts += 1
         if user.failed_login_attempts >= settings.login_max_attempts:

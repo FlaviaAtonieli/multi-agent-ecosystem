@@ -1,0 +1,382 @@
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.agent_catalog.registry import (
+    AgentSkillNotFoundError,
+    AgentSkillValidationError,
+    disable_skill,
+    enable_skill,
+    get_skill,
+    list_active_skills,
+    list_all_skills,
+    official_skill_usage_ranking,
+    register_skill,
+)
+from app.agent_catalog.tool_interface import list_tools
+from app.agent_manifest.manifest import AgentSkillManifest, ManifestParseError, parse_modelo_md
+from app.api.dependencies import (
+    get_current_user,
+    require_admin,
+    require_authenticated_csrf,
+    require_orchestration_access,
+    require_skill_curator,
+)
+from app.core.config import settings
+from app.core.database import get_db
+from app.models import AuthSession, TechnicalRequest, User
+from app.schemas.agent_skill import (
+    AgentSkillExecutionRequest,
+    AgentSkillManifestCreate,
+    AgentSkillManifestImport,
+    AgentSkillRankingRead,
+    AgentSkillRead,
+    AgentSkillToolDescriptorRead,
+    ConsolidatedResponseRead,
+    OrchestrationExecutionRead,
+    SkillVisibilityLiteral,
+)
+from app.schemas.orchestration import FollowUpExchangeRead, FollowUpQuestionCreate
+from app.services.agent_skill_orchestration_service import (
+    NoAgentSkillsAvailableError,
+    ask_follow_up_question,
+    execute_orchestration_step,
+)
+from app.services.audit_service import record_audit
+from app.services.clan_service import ClanNotFoundError, get_clan, is_member
+from app.services.llm_service import LLMQuotaExceededError
+
+
+def _resolve_visibility(
+    db: Session, *, visibility: SkillVisibilityLiteral, clan_id: str | None, user: User
+) -> str | None:
+    """Validates the visibility/clan_id combo from a create/import request and
+    returns the clan_id to persist (None for OFFICIAL/PRIVATE)."""
+    if visibility != "CLAN":
+        return None
+
+    if not clan_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="clan_id é obrigatório quando visibility='CLAN'.",
+        )
+    try:
+        get_clan(db, clan_id)
+    except ClanNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    if user.role != "ADMIN" and not is_member(db, clan_id=clan_id, user_id=user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Só um membro do clã pode registrar uma skill com visibilidade CLAN nele.",
+        )
+    return clan_id
+
+router = APIRouter(prefix="/agent-skills", tags=["Agent Skills"])
+
+
+def _find_qualified_request(db: Session, request_id: str, user: User) -> TechnicalRequest:
+    query = select(TechnicalRequest).where(TechnicalRequest.id == request_id)
+    if user.role != "ADMIN":
+        query = query.where(TechnicalRequest.owner_id == user.id)
+    technical_request = db.scalar(query)
+    if technical_request is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Solicitação não encontrada.")
+    if technical_request.status != "QUALIFIED":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A solicitação precisa estar qualificada antes da execução das Agent Skills.",
+        )
+    return technical_request
+
+
+def _find_executed_request(db: Session, request_id: str, user: User) -> TechnicalRequest:
+    query = select(TechnicalRequest).where(TechnicalRequest.id == request_id)
+    if user.role != "ADMIN":
+        query = query.where(TechnicalRequest.owner_id == user.id)
+    technical_request = db.scalar(query)
+    if technical_request is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Solicitação não encontrada.")
+    if technical_request.consolidated_response is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "A solicitação precisa ter sido executada ao menos uma vez "
+                "antes de perguntas de acompanhamento."
+            ),
+        )
+    return technical_request
+
+
+@router.get("", response_model=list[AgentSkillRead])
+def list_skills(
+    only_active: bool = True,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> list:
+    return (
+        list_active_skills(db, viewer_id=user.id)
+        if only_active
+        else list_all_skills(db, viewer_id=user.id)
+    )
+
+
+@router.get("/tools", response_model=list[AgentSkillToolDescriptorRead])
+def list_skill_tools(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> list:
+    return list_tools(list_active_skills(db, viewer_id=user.id))
+
+
+@router.get("/ranking", response_model=list[AgentSkillRankingRead])
+def skill_usage_ranking(
+    limit: int = Query(5, ge=1, le=20),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+) -> list:
+    return [
+        AgentSkillRankingRead(
+            id=skill.id,
+            name=skill.name,
+            domain=skill.domain,
+            version=skill.version,
+            usage_count=count,
+        )
+        for skill, count in official_skill_usage_ranking(db, limit=limit)
+    ]
+
+
+@router.post("", response_model=AgentSkillRead, status_code=status.HTTP_201_CREATED)
+def create_skill(
+    payload: AgentSkillManifestCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_skill_curator),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> object:
+    clan_id = _resolve_visibility(db, visibility=payload.visibility, clan_id=payload.clan_id, user=user)
+    manifest = AgentSkillManifest(**payload.model_dump(exclude={"visibility", "clan_id"}))
+    try:
+        skill = register_skill(
+            db,
+            manifest=manifest,
+            submitted_by=user,
+            owner_id=user.id,
+            visibility=payload.visibility,
+            clan_id=clan_id,
+        )
+    except AgentSkillValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="; ".join(exc.errors)
+        ) from exc
+
+    record_audit(
+        db,
+        request,
+        "AGENT_SKILL_REGISTERED",
+        user_id=user.id,
+        details={"agent_skill_id": skill.id, "domain": skill.domain, "source": "assisted_form"},
+    )
+    db.commit()
+    return skill
+
+
+@router.post("/import", response_model=AgentSkillRead, status_code=status.HTTP_201_CREATED)
+def import_skill(
+    payload: AgentSkillManifestImport,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_skill_curator),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> object:
+    try:
+        manifest = parse_modelo_md(payload.manifest_markdown)
+    except ManifestParseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="; ".join(exc.errors)
+        ) from exc
+
+    clan_id = _resolve_visibility(db, visibility=payload.visibility, clan_id=payload.clan_id, user=user)
+    try:
+        skill = register_skill(
+            db,
+            manifest=manifest,
+            submitted_by=user,
+            raw_markdown=payload.manifest_markdown,
+            owner_id=user.id,
+            visibility=payload.visibility,
+            clan_id=clan_id,
+        )
+    except AgentSkillValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="; ".join(exc.errors)
+        ) from exc
+
+    record_audit(
+        db,
+        request,
+        "AGENT_SKILL_REGISTERED",
+        user_id=user.id,
+        details={"agent_skill_id": skill.id, "domain": skill.domain, "source": "modelo_md_import"},
+    )
+    db.commit()
+    return skill
+
+
+@router.patch("/{skill_id}/enable", response_model=AgentSkillRead)
+def enable(
+    skill_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> object:
+    try:
+        skill = enable_skill(db, skill_id)
+    except AgentSkillNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    record_audit(db, request, "AGENT_SKILL_ENABLED", user_id=user.id, details={"agent_skill_id": skill_id})
+    db.commit()
+    return skill
+
+
+@router.patch("/{skill_id}/disable", response_model=AgentSkillRead)
+def disable(
+    skill_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> object:
+    try:
+        skill = disable_skill(db, skill_id)
+    except AgentSkillNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    record_audit(db, request, "AGENT_SKILL_DISABLED", user_id=user.id, details={"agent_skill_id": skill_id})
+    db.commit()
+    return skill
+
+
+@router.get("/{skill_id}", response_model=AgentSkillRead)
+def get_skill_detail(
+    skill_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> object:
+    try:
+        skill = get_skill(db, skill_id)
+    except AgentSkillNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    visible = (
+        skill.visibility == "OFFICIAL"
+        or skill.owner_id == user.id
+        or user.role == "ADMIN"
+        or (
+            skill.visibility == "CLAN"
+            and skill.clan_id
+            and is_member(db, clan_id=skill.clan_id, user_id=user.id)
+        )
+    )
+    if not visible:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent Skill não encontrada.")
+    return skill
+
+
+@router.post("/requests/{request_id}/execute", response_model=OrchestrationExecutionRead)
+async def execute_skills_for_request(
+    request_id: str,
+    request: Request,
+    payload: AgentSkillExecutionRequest | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_orchestration_access),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> OrchestrationExecutionRead:
+    technical_request = _find_qualified_request(db, request_id, user)
+
+    requested_model = payload.model if payload else None
+    if requested_model and requested_model not in settings.llm_allowed_model_list:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"O modelo '{requested_model}' não está em LLM_ALLOWED_MODELS.",
+        )
+
+    try:
+        execution = await execute_orchestration_step(
+            db, technical_request=technical_request, user=user, requested_model=requested_model
+        )
+    except NoAgentSkillsAvailableError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except LLMQuotaExceededError as exc:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
+
+    record_audit(
+        db,
+        request,
+        "AGENT_SKILL_ORCHESTRATION_EXECUTED",
+        user_id=user.id,
+        details={
+            "technical_request_id": technical_request.id,
+            "trace_id": technical_request.trace_id,
+            "skills_invoked": len(execution.invocations),
+            "quality_gate_approved": execution.verdict.approved,
+            "requested_model": requested_model,
+        },
+    )
+    db.commit()
+
+    return OrchestrationExecutionRead(
+        results=execution.results,
+        verdict=execution.verdict,
+        invocations_count=len(execution.invocations),
+        consolidated_response=ConsolidatedResponseRead.model_validate(execution.consolidated_response),
+    )
+
+
+@router.post("/requests/{request_id}/ask", response_model=FollowUpExchangeRead)
+async def ask_follow_up(
+    request_id: str,
+    payload: FollowUpQuestionCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_orchestration_access),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> FollowUpExchangeRead:
+    technical_request = _find_executed_request(db, request_id, user)
+
+    if payload.model and payload.model not in settings.llm_allowed_model_list:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"O modelo '{payload.model}' não está em LLM_ALLOWED_MODELS.",
+        )
+
+    try:
+        exchange = await ask_follow_up_question(
+            db,
+            technical_request=technical_request,
+            user=user,
+            question=payload.question,
+            target_domain=payload.target_domain,
+            requested_model=payload.model,
+        )
+    except NoAgentSkillsAvailableError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except LLMQuotaExceededError as exc:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
+
+    record_audit(
+        db,
+        request,
+        "FOLLOW_UP_QUESTION_ASKED",
+        user_id=user.id,
+        details={
+            "technical_request_id": technical_request.id,
+            "trace_id": technical_request.trace_id,
+            "target_domain": payload.target_domain,
+            "sequence_number": exchange.sequence_number,
+        },
+    )
+    db.commit()
+    return FollowUpExchangeRead.model_validate(exchange)
