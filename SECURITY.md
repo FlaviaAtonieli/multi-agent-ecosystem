@@ -38,10 +38,10 @@ A implementação atual possui quatro perfis:
 
 | Perfil | Permissões principais |
 |---|---|
-| `USER` | Funções gerais e solicitações próprias |
-| `TECHNICIAN` | Planejamento em solicitações próprias e consulta dos próprios rastros |
-| `REVIEWER` | Revisão humana de solicitações sinalizadas pelo Quality Gate (aprovação/rejeição com justificativa) e consulta da trilha de auditoria entre usuários |
-| `ADMIN` | Administração de usuários, perfis e consultas administrativas; isento da cota diária de tokens |
+| `USER` | Funções gerais, solicitações próprias e execução de orquestrações |
+| `TECHNICIAN` | Execução de orquestrações, curadoria do catálogo de Agent Skills (criar/importar) e consulta dos próprios rastros |
+| `REVIEWER` | Revisão humana de solicitações sinalizadas pelo Quality Gate (aprovação/rejeição com justificativa) — não executa orquestrações nem consulta a trilha de auditoria (separação de funções: quem revisa não é quem produz) |
+| `ADMIN` | Administração de usuários, perfis, trilha de auditoria completa e consultas administrativas; isento da cota diária de tokens |
 
 A promoção de perfil é restrita ao administrador. Quando o papel de outro usuário é alterado, as sessões desse usuário são revogadas.
 
@@ -50,7 +50,7 @@ A promoção de perfil é restrita ao administrador. Quando o papel de outro usu
 - Integração desabilitada por padrão.
 - Chave disponível somente no backend.
 - Modelo validado por allowlist.
-- Execução limitada a `TECHNICIAN` e `ADMIN`.
+- Execução liberada a `USER`, `TECHNICIAN` e `ADMIN` (todos exceto `REVIEWER` — separação de funções: quem revisa não é quem produz).
 - Verificação de propriedade da solicitação.
 - Limite de caracteres antes do envio.
 - Mascaramento de padrões de senha, token, chave e e-mail.

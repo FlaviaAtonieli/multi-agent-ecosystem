@@ -2,6 +2,16 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-25 - Corrige SECURITY.md desatualizado (papel de REVIEWER, execucao de orquestracao)
+
+### Corrigido
+
+- Achado numa revisao antes do nucleo comum de engenharia: `SECURITY.md` ainda dizia que `REVIEWER` podia "consultar a trilha de auditoria entre usuarios" -- nao é mais verdade desde o PR #58 (auditoria virou ADMIN-only). Tambem dizia "execucao limitada a TECHNICIAN e ADMIN" -- desatualizado desde a mudanca de 2026-09-16 que abriu a execucao pra USER tambem. Tabela de perfis e a secao de seguranca da integracao com modelos corrigidas pra refletir o estado atual.
+
+### Contexto
+
+- a pedido da autora ("mais algum ponto para ajustar antes do CI/CD e wiki?"), antes de iniciar o nucleo comum de engenharia.
+
 ## 2026-09-25 - Pagina de conta: editar nome, trocar senha, excluir conta
 
 ### Adicionado
