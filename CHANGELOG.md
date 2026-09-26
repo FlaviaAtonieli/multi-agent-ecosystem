@@ -2,6 +2,24 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-25 - Pagina de conta: editar nome, trocar senha, excluir conta
+
+### Adicionado
+
+- `PATCH /api/v1/auth/me` (editar nome), `POST /api/v1/auth/me/password` (trocar senha, exige a senha atual, recusada com 409 pra conta GitHub-only), `DELETE /api/v1/auth/me` (excluir a propria conta).
+- `UserRead` ganha `has_password: bool` -- helper `_to_user_read()` centraliza o calculo (usado em todo endpoint de `auth.py` e em `admin.py`), pra nao repetir `user.password_hash is not None` em varios pontos e esquecer um.
+- Nova pagina `/account`: perfil (nome editavel, e-mail read-only com indicacao de origem), seguranca (trocar senha, escondida se a conta for GitHub-only), papel (somente leitura), clas em que participa (lista + link pra `/clans`), zona de risco (excluir conta, com confirmacao por e-mail digitado). Avatar/nome no topbar (`AppShell.tsx`) vira link pra essa pagina.
+- 7 testes novos em `test_account.py`: editar nome, `has_password=true` pra conta por senha, trocar senha com sucesso (login com a senha nova depois confirma), senha atual errada (401), conta GitHub-only recusa troca de senha (409), exclusao desativa e escuba a conta E revoga a sessao (confirma 401 em `/me` depois), exclusao preserva dado que o usuario criou (cla continua existindo).
+
+### Corrigido
+
+- **Achado ao implementar exclusao de conta**: o plano original previa bloquear a exclusao só quando o usuario fosse dono de uma Agent Skill com invocacao registrada (`AgentSkillInvocation.agent_skill_id`, `ondelete=RESTRICT`). Mapeando todas as FKs de `users.id` no banco, apareceram outras 4 colunas com a mesma trava `RESTRICT`: `AgentSkill.submitted_by_id`, `Clan.created_by_id`, `ClanMembership.added_by_id`, `FollowUpExchange.asked_by_id` -- e a mais decisiva, `LLMInvocation.user_id`, criada em toda orquestracao ja executada. Na pratica um `DELETE` de verdade falharia pra quase qualquer usuario que ja usou o sistema, nao so um caso de borda raro. Solucao (confirmada com a autora antes de implementar): exclusao vira **soft delete** -- desativa a conta e limpa nome/e-mail/avatar/github_id/senha, preservando a linha e todo o historico que aponta pra ela.
+
+### Contexto
+
+- a pedido da autora, ultimo item da leva de PRs combinada nesta sessao (A-F).
+- decisao de soft-delete vs hard-delete-que-sempre-falha foi perguntada e confirmada antes de implementar, depois do mapeamento das FKs mudar o entendimento do problema.
+
 ## 2026-09-25 - Clas: grupos auto-servico, terceira visibilidade de Agent Skill
 
 ### Adicionado

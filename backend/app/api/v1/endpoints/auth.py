@@ -19,10 +19,17 @@ from app.core.rate_limit import (
     register_rate_limit,
     renew_rate_limit,
 )
-from app.core.security import generate_csrf_token, hash_password, normalize_email, secure_compare, utc_now
+from app.core.security import (
+    generate_csrf_token,
+    hash_password,
+    normalize_email,
+    secure_compare,
+    utc_now,
+    verify_password,
+)
 from app.models import AuthSession, User
 from app.schemas.auth import AuthResponse, CsrfResponse, LoginRequest, SessionRead
-from app.schemas.user import UserCreate, UserRead
+from app.schemas.user import PasswordChange, UserCreate, UserNameUpdate, UserRead
 from app.services.audit_service import record_audit
 from app.services.auth_service import authenticate_user
 from app.services.github_oauth_service import (
@@ -46,6 +53,15 @@ from app.services.session_service import (
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 GITHUB_OAUTH_STATE_COOKIE = "agenthub_github_oauth_state"
+
+
+def _to_user_read(user: User) -> UserRead:
+    """UserRead.model_validate(user) alone would silently report has_password=False
+    for everyone (it isn't a real column, just a default) -- every response that
+    serializes a User must go through here instead."""
+    data = UserRead.model_validate(user).model_dump()
+    data["has_password"] = user.password_hash is not None
+    return UserRead(**data)
 
 
 @router.get("/csrf", response_model=CsrfResponse)
@@ -93,7 +109,7 @@ def register(
     db.refresh(auth_session)
 
     set_auth_cookies(response, raw_token, csrf_token)
-    return AuthResponse(user=UserRead.model_validate(user), session_expires_at=auth_session.expires_at)
+    return AuthResponse(user=_to_user_read(user), session_expires_at=auth_session.expires_at)
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -113,7 +129,7 @@ def login(
     db.refresh(auth_session)
 
     set_auth_cookies(response, raw_token, csrf_token)
-    return AuthResponse(user=UserRead.model_validate(user), session_expires_at=auth_session.expires_at)
+    return AuthResponse(user=_to_user_read(user), session_expires_at=auth_session.expires_at)
 
 
 @router.post("/renew", response_model=AuthResponse)
@@ -136,7 +152,7 @@ def renew_session(
     db.commit()
     db.refresh(renewed_session)
     set_auth_cookies(response, raw_token, csrf_token)
-    return AuthResponse(user=UserRead.model_validate(user), session_expires_at=renewed_session.expires_at)
+    return AuthResponse(user=_to_user_read(user), session_expires_at=renewed_session.expires_at)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -183,7 +199,7 @@ def logout_all(
 
 @router.get("/me", response_model=UserRead)
 def me(user: User = Depends(get_current_user)) -> UserRead:
-    return UserRead.model_validate(user)
+    return _to_user_read(user)
 
 
 @router.post("/onboarding/complete", response_model=UserRead)
@@ -196,7 +212,78 @@ def complete_onboarding(
         user.onboarding_completed_at = utc_now()
         db.commit()
         db.refresh(user)
-    return UserRead.model_validate(user)
+    return _to_user_read(user)
+
+
+@router.patch("/me", response_model=UserRead)
+def update_my_name(
+    payload: UserNameUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> UserRead:
+    user.name = payload.name
+    record_audit(db, request, "ACCOUNT_NAME_UPDATED", user_id=user.id)
+    db.commit()
+    db.refresh(user)
+    return _to_user_read(user)
+
+
+@router.post("/me/password", response_model=UserRead)
+def change_my_password(
+    payload: PasswordChange,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> UserRead:
+    if user.password_hash is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Esta conta usa login com GitHub e não tem senha própria.",
+        )
+    if not verify_password(payload.current_password, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Senha atual incorreta.")
+
+    user.password_hash = hash_password(payload.new_password)
+    record_audit(db, request, "ACCOUNT_PASSWORD_CHANGED", user_id=user.id)
+    db.commit()
+    db.refresh(user)
+    return _to_user_read(user)
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_my_account(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    current_session: AuthSession = Depends(require_authenticated_csrf),
+) -> Response:
+    """Soft delete: várias outras tabelas referenciam users.id com
+    ondelete=RESTRICT (AgentSkill.submitted_by_id, Clan.created_by_id,
+    ClanMembership.added_by_id, FollowUpExchange.asked_by_id,
+    LLMInvocation.user_id -- essa última criada por toda orquestração já
+    executada) -- um DELETE de verdade falharia pra praticamente qualquer
+    conta que já usou o sistema. Em vez disso, desativa e limpa nome/e-mail/
+    identidade, preservando a linha (e todo o histórico que aponta pra ela)."""
+    user.is_active = False
+    user.name = "Conta removida"
+    user.email = f"conta-removida-{user.id}@removida.local"
+    user.avatar_url = None
+    user.github_id = None
+    user.password_hash = None
+
+    revoked_count = revoke_all_sessions(db, user.id)
+    record_audit(
+        db, request, "ACCOUNT_SELF_DELETED", user_id=user.id, details={"revoked_sessions": revoked_count}
+    )
+    db.commit()
+
+    clear_auth_cookies(response)
+    response.status_code = status.HTTP_204_NO_CONTENT
+    return response
 
 
 @router.get("/sessions", response_model=list[SessionRead])

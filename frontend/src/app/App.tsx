@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from '../components/layout/AppShell'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { PublicRoute } from '../components/PublicRoute'
+import { AccountPage } from '../pages/AccountPage'
 import { AdminPage } from '../pages/AdminPage'
 import { AgentSkillCreatePage } from '../pages/AgentSkillCreatePage'
 import { AgentSkillImportPage } from '../pages/AgentSkillImportPage'
@@ -33,6 +34,7 @@ export function App() {
           <Route path="/agent-skills/new" element={<AgentSkillCreatePage />} />
           <Route path="/agent-skills/import" element={<AgentSkillImportPage />} />
           <Route path="/clans" element={<ClansPage />} />
+          <Route path="/account" element={<AccountPage />} />
           <Route path="/auditoria" element={<AuditoriaPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Route>
