@@ -2,6 +2,16 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-29 - Corrige tag de restricao que nao quebrava linha
+
+### Corrigido
+
+- `.workspace-tag` (`workspace.css`): usava `white-space: nowrap` com `border-radius: 999px` (estilo pilula) -- funciona bem pra restricoes curtas, mas uma frase longa (ex.: "Nao sugerir reescrita completa do modulo. Preservar o contrato de saida dos arquivos bancarios.") nao quebrava linha e estourava a largura do card. Trocado pra `white-space: normal` + `overflow-wrap: anywhere` + `max-width: 100%`, com `border-radius` reduzido de 999px pra 12px (pilula nao fica bem numa caixa de varias linhas).
+
+### Contexto
+
+- achado pela autora testando o formulario de Nova Solicitacao com uma restricao mais longa.
+
 ## 2026-09-29 - Corrige timeout do nginx que mostrava erro em execucoes normais
 
 ### Corrigido
