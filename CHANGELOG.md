@@ -2,6 +2,16 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-29 - Widget de processando muda do canto inferior direito pro topo
+
+### Corrigido
+
+- `.workspace-thinking-float`: sai de `right/bottom` (canto inferior direito) pra `top` centralizado (`left: 50%; transform: translateX(-50%)`) -- com a pagina de orquestracao agora em coluna unica e mais estreita (max-width 960px), o widget flutuando isolado no canto da tela ficava com espaco vazio ao redor, meio solto.
+
+### Contexto
+
+- a pedido da autora, testando a pagina apos os ajustes anteriores: "vamos trocar da lateral para cima".
+
 ## 2026-09-29 - Orbe de processando mais elaborado; scroll pro topo; mensagem colada
 
 ### Corrigido
