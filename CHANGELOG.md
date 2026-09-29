@@ -2,6 +2,17 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-29 - Recolhe os dois blocos decorativos restantes (catalogo, dashboard)
+
+### Corrigido
+
+- `AgentSkillsPage.tsx`: o card "Nucleo do ecossistema" (Orquestrador/Conselheiro/Orientador) -- estatico, sempre o mesmo texto em toda visita -- vira `CollapsibleSection` fechada por padrao, em vez de ocupar espaco fixo acima do ranking e do catalogo de verdade.
+- `EcosystemFlowCard.tsx` (dashboard): mesmo tratamento -- o diagrama decorativo "Orientador -> Orquestrador -> Quality Gate" vira `CollapsibleSection` fechada por padrao, parando de competir por atencao com o feed de atividade real na mesma coluna.
+
+### Contexto
+
+- a pedido da autora -- ultimos dois itens do levantamento de telas "carregadas" pedido antes do nucleo comum de engenharia, classificados na ocasiao como ruido visual de baixa prioridade (nao bloqueiam uso, so ocupam espaco). Reaproveita o `CollapsibleSection` introduzido no PR anterior (pagina de orquestracao).
+
 ## 2026-09-25 - Reduz sobrecarga visual da pagina de orquestracao
 
 ### Corrigido
