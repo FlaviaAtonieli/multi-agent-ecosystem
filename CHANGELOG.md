@@ -2,6 +2,19 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-29 - Orbe de processando mais elaborado; scroll pro topo; mensagem colada
+
+### Corrigido
+
+- `OrchestrationThinkingAnimation.tsx`: o orbe do widget de "Processando" (24px, nucleo + 2 aneis pulsando) virou um visual mais elaborado (44px) -- ganhou um halo giratorio (`conic-gradient` desfocado) e dois "satelites" orbitando o nucleo em velocidades/direcoes diferentes, mais proximo da referencia visual que a autora mandou antes (orbe com nos conectados).
+- `OrchestrationPage.tsx`: ao executar com sucesso, a pagina rola suavemente pro topo (`window.scrollTo`) -- a resposta aparece no topo da coluna unica (ver PR anterior), mas se o usuario tivesse rolado a pagina durante a espera, nao via a mensagem de sucesso nem o resultado sem rolar de volta manualmente.
+- Alertas no topo da pagina de orquestracao (erro, sucesso, falha de anexo) ganham um wrapper (`workspace-orchestration-alerts`) com espacamento proprio -- antes a mensagem de sucesso ficava colada direto no card de resultado, sem gap nenhum.
+
+### Contexto
+
+- a pedido da autora, apos testar a nova disposicao em coluna unica: "esse carregando ali no canto não está legal", "quando a resposta é gerada eu quero que vc me envie para o início da página", "ajuste a mensagem ali para não ficar colada".
+- observado durante a mudanca, nao corrigido ainda: quando o modelo devolve codigo dentro do texto livre de "sintese consolidada" (nao dentro de um achado tecnico estruturado), ele aparece como paragrafo corrido sem formatacao de codigo nem botao de copiar/baixar -- diferente do que ja existe pra `descobertas_tecnicas[].trecho_referenciado`. Fica registrado como pendencia, nao resolvido neste PR.
+
 ## 2026-09-29 - Corrige coluna do wizard invadindo a caixa de dica ao lado
 
 ### Corrigido

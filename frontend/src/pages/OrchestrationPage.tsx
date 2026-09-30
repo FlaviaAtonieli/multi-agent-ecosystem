@@ -116,6 +116,10 @@ export function OrchestrationPage() {
           ? 'Orquestração executada e aprovada pelo Quality Gate.'
           : 'Orquestração executada. O resultado aguarda revisão humana.',
       )
+      // A resposta aparece no topo da página (antes do contexto, ver
+      // hasResult) -- leva o usuário até lá em vez de deixá-lo onde estava
+      // rolado enquanto a execução (que pode levar mais de um minuto) rodava.
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (caught) {
       setExecutionError(caught instanceof ApiError ? caught.message : 'Não foi possível executar a orquestração.')
     } finally {
@@ -185,12 +189,16 @@ export function OrchestrationPage() {
         </div>
       </section>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {successMessage && <div className="alert alert-success">{successMessage}</div>}
-      {failedAttachmentUploads && failedAttachmentUploads.length > 0 && (
-        <div className="alert alert-error">
-          Não foi possível anexar: {failedAttachmentUploads.join(', ')}. A solicitação foi criada normalmente —
-          tente anexar de novo abaixo.
+      {(error || successMessage || (failedAttachmentUploads && failedAttachmentUploads.length > 0)) && (
+        <div className="workspace-orchestration-alerts">
+          {error && <div className="alert alert-error">{error}</div>}
+          {successMessage && <div className="alert alert-success">{successMessage}</div>}
+          {failedAttachmentUploads && failedAttachmentUploads.length > 0 && (
+            <div className="alert alert-error">
+              Não foi possível anexar: {failedAttachmentUploads.join(', ')}. A solicitação foi criada normalmente —
+              tente anexar de novo abaixo.
+            </div>
+          )}
         </div>
       )}
 

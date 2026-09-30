@@ -51,9 +51,16 @@ export function OrchestrationThinkingAnimation({ domains, traceId }: Props) {
         aria-expanded={!collapsed}
       >
         <span className="workspace-thinking-orb" aria-hidden="true">
-          <span className="workspace-thinking-orb-core" />
+          <span className="workspace-thinking-orb-halo" />
           <span className="workspace-thinking-orb-ring" />
           <span className="workspace-thinking-orb-ring workspace-thinking-orb-ring-delay" />
+          <span className="workspace-thinking-orb-orbit workspace-thinking-orb-orbit-1">
+            <span className="workspace-thinking-orb-satellite" />
+          </span>
+          <span className="workspace-thinking-orb-orbit workspace-thinking-orb-orbit-2">
+            <span className="workspace-thinking-orb-satellite" />
+          </span>
+          <span className="workspace-thinking-orb-core" />
         </span>
         <span className="workspace-thinking-float-title">
           Processando orquestração
