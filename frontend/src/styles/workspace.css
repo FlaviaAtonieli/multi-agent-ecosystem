@@ -649,8 +649,8 @@
 .workspace-step-done .workspace-step-label { color: var(--text-tertiary); font-weight: 500; }
 .workspace-step-done .workspace-step-line { background: rgba(34, 197, 94, 0.4); }
 
-.workspace-wizard-grid { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
-.workspace-wizard-card { padding: 26px 26px 22px; }
+.workspace-wizard-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+.workspace-wizard-card { min-width: 0; padding: 26px 26px 22px; }
 .workspace-wizard-side { display: grid; gap: 16px; }
 
 .workspace-checklist { display: grid; gap: 12px; margin: 16px 0 0; padding: 0; list-style: none; }

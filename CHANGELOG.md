@@ -2,6 +2,17 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-29 - Corrige coluna do wizard invadindo a caixa de dica ao lado
+
+### Corrigido
+
+- `.workspace-wizard-grid`: coluna esquerda usava `1fr` sem `minmax(0, 1fr)`, e `.workspace-wizard-card` nao tinha `min-width: 0` -- classico problema de CSS Grid, onde o item de grade nao encolhe abaixo do "min-content" do conteudo (mesmo com o texto da tag de restricao quebrando linha desde o PR anterior), empurrando a coluna pra largura maior e invadindo visualmente a caixa de dica da coluna da direita.
+- Corrigido nos dois pontos (`grid-template-columns: minmax(0, 1fr) 320px` + `min-width: 0` no card) -- mesmo padrao ja usado em `.workspace-detail-grid`, que nunca teve esse problema.
+
+### Contexto
+
+- achado pela autora no wizard de Nova Solicitacao, passo 3, com uma restricao longa.
+
 ## 2026-09-29 - Pagina de orquestracao vira coluna unica; letras maiores; copiar/baixar codigo
 
 ### Corrigido
