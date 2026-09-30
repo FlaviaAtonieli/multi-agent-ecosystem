@@ -11,6 +11,7 @@ import { FollowUpForm } from '../components/orchestration/FollowUpForm'
 import { OrchestrationThinkingAnimation } from '../components/orchestration/OrchestrationThinkingAnimation'
 import { StatusBadge } from '../components/orchestration/StatusBadge'
 import { TokenUsageMeter } from '../components/orchestration/TokenUsageMeter'
+import { CollapsibleSection } from '../components/shared/CollapsibleSection'
 
 export function OrchestrationPage() {
   const { traceId = '' } = useParams()
@@ -171,6 +172,8 @@ export function OrchestrationPage() {
     return <div className="workspace-loader">Carregando rastreabilidade…</div>
   }
 
+  const hasResult = Boolean(execution || detail?.technical_request.consolidated_response)
+
   return (
     <div className="workspace-page">
       <section className="workspace-page-heading workspace-detail-heading">
@@ -194,101 +197,119 @@ export function OrchestrationPage() {
       {detail && (
         <section className="workspace-detail-grid">
           <article className="workspace-panel workspace-request-summary">
-            <div className="workspace-panel-heading">
-              <div>
-                <span className="workspace-card-kicker">SOLICITAÇÃO</span>
-                <h2>Contexto da demanda</h2>
-              </div>
-              <code>{detail.technical_request.trace_id}</code>
-            </div>
-
-            <dl className="workspace-definition-list">
-              <div><dt>Problema</dt><dd>{detail.technical_request.problem}</dd></div>
-              <div><dt>Objetivo</dt><dd>{detail.technical_request.objective}</dd></div>
-              <div><dt>Contexto</dt><dd>{detail.technical_request.context || 'Ainda não informado.'}</dd></div>
-              <div>
-                <dt>Restrições</dt>
-                <dd>{detail.technical_request.restrictions.length ? detail.technical_request.restrictions.join(' · ') : 'Nenhuma'}</dd>
-              </div>
-              <div><dt>Etapa atual</dt><dd>{detail.run.current_stage}</dd></div>
-            </dl>
-
-            <AttachmentsSection requestId={detail.technical_request.id} />
-
-            {detail.technical_request.status === 'AWAITING_CONTEXT' && (
-              <form className="workspace-context-form" onSubmit={handleContextSubmit}>
-                <label className="workspace-field">
-                  Complementar contexto
-                  <textarea
-                    value={context}
-                    onChange={(event) => setContext(event.target.value)}
-                    rows={6}
-                    minLength={10}
-                    required
-                    placeholder="Inclua tecnologias, módulos, artefatos, dependências e comportamento esperado."
-                  />
-                </label>
-                <button className="workspace-primary-action" type="submit" disabled={submitting}>
-                  {submitting ? 'Validando…' : 'Enviar complementação'}
-                </button>
-              </form>
-            )}
-
-            {detail.technical_request.status === 'QUALIFIED' && (
-              <div className="workspace-execute-form">
-                <label className="workspace-field">
-                  Modelo de IA para a orquestração
-                  <select value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)}>
-                    {allowedModels.length === 0 && <option value="">Padrão configurado</option>}
-                    {allowedModels.map((model) => (
-                      <option key={model} value={model}>
-                        {model}
-                      </option>
-                    ))}
-                  </select>
-                  <small>Define qual modelo o Orquestrador usa para planejar e acionar as Agent Skills.</small>
-                </label>
-                {tokenUsage && <TokenUsageMeter used={tokenUsage.used} limit={tokenUsage.limit} />}
-                {executionError && <div className="alert alert-error">{executionError}</div>}
-                <button
-                  className="workspace-primary-action"
-                  type="button"
-                  onClick={handleExecute}
-                  disabled={executing || Boolean(tokenUsage && tokenUsage.used >= tokenUsage.limit)}
-                >
-                  {executing ? 'Executando…' : 'Executar orquestração'}
-                </button>
-                {executing && (
-                  <OrchestrationThinkingAnimation
-                    domains={
-                      detail.technical_request.requested_domains.length > 0
-                        ? (detail.technical_request.requested_domains as AgentSkillDomain[])
-                        : activeSkillDomains
-                    }
-                    traceId={detail.technical_request.trace_id}
-                  />
+            {hasResult && (
+              <div className="workspace-result-block">
+                <div className="workspace-panel-heading">
+                  <div>
+                    <span className="workspace-card-kicker">RESULTADO</span>
+                    <h2>Resposta consolidada</h2>
+                  </div>
+                  <code>{detail.technical_request.trace_id}</code>
+                </div>
+                {execution ? (
+                  <ExecutionResultPanel execution={execution} />
+                ) : (
+                  detail.technical_request.consolidated_response && (
+                    <ExecutionResultPanel
+                      execution={{
+                        results: pastSkillResults.map((item) => item.result).filter((item) => item !== null),
+                        verdict: {
+                          approved: detail.technical_request.consolidated_response.quality_gate_approved,
+                          requires_human_review: detail.technical_request.consolidated_response.requires_human_review,
+                          reasons: [],
+                        },
+                        invocations_count: pastSkillResults.length,
+                        consolidated_response: detail.technical_request.consolidated_response,
+                      }}
+                    />
+                  )
                 )}
               </div>
             )}
 
-            {execution ? (
-              <ExecutionResultPanel execution={execution} />
-            ) : (
-              detail.technical_request.consolidated_response && (
-                <ExecutionResultPanel
-                  execution={{
-                    results: pastSkillResults.map((item) => item.result).filter((item) => item !== null),
-                    verdict: {
-                      approved: detail.technical_request.consolidated_response.quality_gate_approved,
-                      requires_human_review: detail.technical_request.consolidated_response.requires_human_review,
-                      reasons: [],
-                    },
-                    invocations_count: pastSkillResults.length,
-                    consolidated_response: detail.technical_request.consolidated_response,
-                  }}
-                />
-              )
-            )}
+            <CollapsibleSection
+              title="Contexto da demanda"
+              subtitle={hasResult ? detail.technical_request.trace_id : undefined}
+              defaultOpen={!hasResult}
+            >
+              {!hasResult && (
+                <div className="workspace-panel-heading">
+                  <div>
+                    <span className="workspace-card-kicker">SOLICITAÇÃO</span>
+                  </div>
+                  <code>{detail.technical_request.trace_id}</code>
+                </div>
+              )}
+
+              <dl className="workspace-definition-list">
+                <div><dt>Problema</dt><dd>{detail.technical_request.problem}</dd></div>
+                <div><dt>Objetivo</dt><dd>{detail.technical_request.objective}</dd></div>
+                <div><dt>Contexto</dt><dd>{detail.technical_request.context || 'Ainda não informado.'}</dd></div>
+                <div>
+                  <dt>Restrições</dt>
+                  <dd>{detail.technical_request.restrictions.length ? detail.technical_request.restrictions.join(' · ') : 'Nenhuma'}</dd>
+                </div>
+                <div><dt>Etapa atual</dt><dd>{detail.run.current_stage}</dd></div>
+              </dl>
+
+              <AttachmentsSection requestId={detail.technical_request.id} />
+
+              {detail.technical_request.status === 'AWAITING_CONTEXT' && (
+                <form className="workspace-context-form" onSubmit={handleContextSubmit}>
+                  <label className="workspace-field">
+                    Complementar contexto
+                    <textarea
+                      value={context}
+                      onChange={(event) => setContext(event.target.value)}
+                      rows={6}
+                      minLength={10}
+                      required
+                      placeholder="Inclua tecnologias, módulos, artefatos, dependências e comportamento esperado."
+                    />
+                  </label>
+                  <button className="workspace-primary-action" type="submit" disabled={submitting}>
+                    {submitting ? 'Validando…' : 'Enviar complementação'}
+                  </button>
+                </form>
+              )}
+
+              {detail.technical_request.status === 'QUALIFIED' && (
+                <div className="workspace-execute-form">
+                  <label className="workspace-field">
+                    Modelo de IA para a orquestração
+                    <select value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)}>
+                      {allowedModels.length === 0 && <option value="">Padrão configurado</option>}
+                      {allowedModels.map((model) => (
+                        <option key={model} value={model}>
+                          {model}
+                        </option>
+                      ))}
+                    </select>
+                    <small>Define qual modelo o Orquestrador usa para planejar e acionar as Agent Skills.</small>
+                  </label>
+                  {tokenUsage && <TokenUsageMeter used={tokenUsage.used} limit={tokenUsage.limit} />}
+                  {executionError && <div className="alert alert-error">{executionError}</div>}
+                  <button
+                    className="workspace-primary-action"
+                    type="button"
+                    onClick={handleExecute}
+                    disabled={executing || Boolean(tokenUsage && tokenUsage.used >= tokenUsage.limit)}
+                  >
+                    {executing ? 'Executando…' : 'Executar orquestração'}
+                  </button>
+                  {executing && (
+                    <OrchestrationThinkingAnimation
+                      domains={
+                        detail.technical_request.requested_domains.length > 0
+                          ? (detail.technical_request.requested_domains as AgentSkillDomain[])
+                          : activeSkillDomains
+                      }
+                      traceId={detail.technical_request.trace_id}
+                    />
+                  )}
+                </div>
+              )}
+            </CollapsibleSection>
 
             {detail.technical_request.consolidated_response && (
               <div className="workspace-follow-up-section">
