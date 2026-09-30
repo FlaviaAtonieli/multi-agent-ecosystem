@@ -2,6 +2,21 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-29 - Pagina de orquestracao vira coluna unica; letras maiores; copiar/baixar codigo
+
+### Corrigido
+
+- `OrchestrationPage.tsx`: sai da grade de duas colunas (`workspace-detail-grid`) pra uma coluna unica (`workspace-orchestration-flow`, max-width 960px). A "Linha do tempo" (rastreabilidade) nao carregava ao vivo durante a execucao -- so tinha 1-2 eventos parados na tela, dando impressao de travado -- entao ela some da area principal enquanto executa (o widget flutuante de "Processando" ja cobre esse feedback) e volta como `CollapsibleSection` **fechada por padrao no final da pagina**, depois que a resposta carrega.
+- Resultado consolidado ocupa a largura toda da pagina, em destaque, antes do contexto da solicitacao -- que continua recolhivel.
+- Perguntas de acompanhamento ganham seu proprio card (`workspace-follow-up-panel`), tambem em coluna unica, em vez de ficar espremido dentro do card de contexto.
+- Aumentado o tamanho de fonte em toda a area de resultado, achados tecnicos, lista de definicao (contexto) e linha do tempo -- estavam entre 0.61rem e 0.85rem, a maioria virou 0.86rem-0.98rem.
+- Blocos de codigo dentro dos achados tecnicos (`CodeBlock` em `shared.tsx`) ganham uma barra com botoes **Copiar** (clipboard) e **Baixar** (arquivo `.txt`, nome derivado do titulo do achado) -- a orquestracao pode retornar trechos de codigo nas respostas, e antes so dava pra selecionar o texto manualmente.
+
+### Contexto
+
+- a pedido da autora, depois de testar uma execucao ao vivo e ver a rastreabilidade travada com so 2 eventos durante os ~100s de execucao real -- pediu pra trocar por coluna unica, resposta em destaque, timeline recolhivel no final, letras maiores e acao de copiar/baixar codigo.
+- duas decisoes perguntadas e confirmadas antes de implementar: timeline fechada por padrao (nao aberta) e blocos de codigo com copiar **e** baixar (nao so copiar).
+
 ## 2026-09-29 - Corrige tag de restricao que nao quebrava linha
 
 ### Corrigido

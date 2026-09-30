@@ -35,6 +35,58 @@ export function SynthesisByDomain({ text }: { text: string }) {
   )
 }
 
+function slugify(text: string): string {
+  return (
+    text
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') || 'trecho'
+  )
+}
+
+function CodeBlock({ code, filenameHint }: { code: string; filenameHint: string }) {
+  const [copied, setCopied] = useState(false)
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Clipboard indisponível (ex.: contexto não seguro) -- falha silenciosa,
+      // o usuário ainda pode selecionar e copiar o texto manualmente.
+    }
+  }
+
+  function handleDownload() {
+    const blob = new Blob([code], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${slugify(filenameHint)}.txt`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  return (
+    <div className="workspace-code-block-wrap">
+      <div className="workspace-code-block-toolbar">
+        <button type="button" className="workspace-code-block-action" onClick={handleCopy}>
+          {copied ? '✓ Copiado' : 'Copiar'}
+        </button>
+        <button type="button" className="workspace-code-block-action" onClick={handleDownload}>
+          Baixar
+        </button>
+      </div>
+      <pre className="workspace-code-block">
+        <code>{code}</code>
+      </pre>
+    </div>
+  )
+}
+
 export function SkillResultCard({ result }: { result: SkillToolResult }) {
   const findings = result.analise_estruturada.descobertas_tecnicas
   const [findingsOpen, setFindingsOpen] = useState(false)
@@ -69,7 +121,7 @@ export function SkillResultCard({ result }: { result: SkillToolResult }) {
                   <strong>{finding.item_identificado}</strong>
                   <p>{finding.descricao_detalhada}</p>
                   {finding.trecho_referenciado && (
-                    <pre className="workspace-code-block"><code>{finding.trecho_referenciado}</code></pre>
+                    <CodeBlock code={finding.trecho_referenciado} filenameHint={finding.item_identificado} />
                   )}
                 </div>
               ))}
