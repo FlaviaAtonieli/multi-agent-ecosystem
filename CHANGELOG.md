@@ -2,6 +2,16 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-29 - Corrige timeout do nginx que mostrava erro em execucoes normais
+
+### Corrigido
+
+- `frontend/nginx.conf`: `/api/` ganhou `proxy_connect_timeout`/`proxy_send_timeout`/`proxy_read_timeout` de 300s -- o padrao do nginx (60s) era curto demais pra `POST /agent-skills/requests/{id}/execute`, que roda ate 4 Agent Skills em sequencia, cada uma com ate `LLM_TIMEOUT_SECONDS` (45s, com retry) de chamada real ao modelo. O nginx desistia e devolvia erro pro navegador mesmo quando o backend terminava normalmente e salvava o resultado -- so visivel ao reabrir a solicitacao depois.
+
+### Contexto
+
+- achado pela autora: "por que quando a orquestracao termina aparece uma mensagem de erro, e depois de reabrir a solicitacao ela apresenta a resposta?" -- sintoma classico de timeout no meio do caminho (cliente desiste, servidor continua e termina). Ficou mais facil de reproduzir depois da troca pro gpt-5-mini (modelo de raciocinio, mais lento que o gratuito por chamada).
+
 ## 2026-09-29 - Recolhe os dois blocos decorativos restantes (catalogo, dashboard)
 
 ### Corrigido
