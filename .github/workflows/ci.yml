@@ -31,7 +31,10 @@ jobs:
           cache-dependency-path: backend/requirements-dev.txt
 
       - name: Instalar dependências
-        run: pip install --no-cache-dir -r requirements-dev.txt
+        # Sem --no-cache-dir aqui (diferente do comando de teste local em
+        # Docker no README): o cache do pip precisa ser populado pra
+        # actions/setup-python's "cache: pip" ter o que salvar no post-step.
+        run: pip install -r requirements-dev.txt
 
       - name: ruff check
         run: ruff check .
