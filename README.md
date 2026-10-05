@@ -180,6 +180,7 @@ docker compose build frontend --no-cache
 
 ## Documentação
 
+- [Wiki do projeto](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) — ponto de partida navegável (arquitetura, como rodar, domínios de Agent Skills, segurança, validação)
 - [Visão da arquitetura](docs/architecture/overview.md)
 - [Princípios de arquitetura](docs/architecture/principles.md)
 - [Integração com provedores de modelo](docs/integrations/model-provider.md)

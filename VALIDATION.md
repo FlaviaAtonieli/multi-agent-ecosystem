@@ -38,7 +38,7 @@ Itens exigidos pela rubrica independentemente da trilha (IA vs. Web Apps):
 - [x] **CI/CD** — `.github/workflows/ci.yml`, roda em todo push/PR.
 - [x] **Análise estática no pipeline** — `ruff check` + `mypy` (backend) e `tsc` (frontend),
   como etapas do mesmo workflow de CI.
-- [ ] **Wiki no GitHub** — ainda não criada.
+- [x] **Wiki no GitHub** — [wiki do repositório](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki), 6 páginas (Arquitetura, Como Rodar Localmente, Domínios de Agent Skills, Segurança, Validação e Núcleo Comum).
 - [ ] **Monitoramento/observabilidade** — ainda não implementado.
 
 A suíte de testes fica fora do CI de propósito: chama a OpenRouter de verdade, sem mock
