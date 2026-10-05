@@ -659,6 +659,83 @@ def test_data_privacy_domain_executes_with_real_rag_retrieval(client: TestClient
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+def test_infrastructure_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
+    """Quinto dos 6 dominios novos: "Infraestrutura e DevOps". Mesmo padrao
+    dos quatro anteriores."""
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="deployment-process-notes.md",
+            content=(
+                "Nao existe pipeline de CI/CD, infraestrutura como codigo ou rollback "
+                "automatizado. Deploy e manual via scp e SSH. Credencial de banco fica "
+                "num arquivo .properties copiado manualmente a cada deploy."
+            ),
+            language="markdown",
+            embedding_provider=real_embedding_provider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    create_response = client.post(
+        "/api/v1/agent-skills",
+        json={
+            "name": "Agent Skill de Infraestrutura e DevOps",
+            "version": "1.0",
+            "author_origin": "Equipe AgentHub",
+            "domain": "infraestrutura_devops",
+            "objective": (
+                "Avaliar processo de deploy, IaC e paridade de ambientes afetados por "
+                "uma mudanca solicitada."
+            ),
+            "capabilities": [
+                "Recuperar evidencia de lacunas de processo de deploy ja registradas",
+                "Identificar ausencia de automacao de build/deploy/rollback",
+                "Sinalizar risco de falta de paridade entre ambientes",
+            ],
+            "expected_inputs": ["Problema tecnico", "Objetivo", "Contexto da solicitacao"],
+            "produced_outputs": [
+                "Resumo executivo", "Lacunas de infraestrutura identificadas", "Nivel de confianca",
+            ],
+            "operating_limits": ["Nao executa deploy nem altera infraestrutura automaticamente"],
+            "input_contract_ref": "solicitacao_analise_schema.v1",
+            "output_contract_ref": "resposta_especialista_schema.v1",
+            "validation_criteria": ["Contrato de saida valido"],
+            "persona_instructions": (
+                "Voce e um especialista em infraestrutura e DevOps. Analise a "
+                "solicitacao focando em: processo de build/deploy automatizado, "
+                "infraestrutura como codigo, plano de rollback, e paridade entre "
+                "ambiente de teste e producao. Baseie-se nas evidencias recuperadas "
+                "da base de conhecimento."
+            ),
+        },
+        headers=authenticated_csrf_headers(client),
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["domain"] == "infraestrutura_devops"
+
+    technical_request = create_qualified_request(
+        client, requested_domains=["infraestrutura_devops"]
+    )
+
+    enable_real_llm(monkeypatch)
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    result = payload["results"][0]
+    assert result["agente_emissor"]["dominio"] == "infraestrutura_devops"
+    assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
+
+
 def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> None:
     """Same flow as test_execute_orchestration_step_runs_skill_and_quality_gate,
     but forces the "stdio" transport: the orchestrator spawns

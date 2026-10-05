@@ -12,6 +12,7 @@ export const domainLabels: Record<string, string> = {
   observabilidade_monitoramento: 'Observabilidade e Monitoramento',
   performance_escalabilidade: 'Performance e Escalabilidade',
   dados_privacidade: 'Dados e Privacidade (LGPD)',
+  infraestrutura_devops: 'Infraestrutura e DevOps',
 }
 
 export function parseSynthesisByDomain(text: string): Array<{ domain: string; text: string }> {

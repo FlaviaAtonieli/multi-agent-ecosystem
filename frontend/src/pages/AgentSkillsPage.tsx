@@ -14,6 +14,7 @@ const domainLabels: Record<AgentSkillDomain, string> = {
   observabilidade_monitoramento: 'Observabilidade e Monitoramento',
   performance_escalabilidade: 'Performance e Escalabilidade',
   dados_privacidade: 'Dados e Privacidade (LGPD)',
+  infraestrutura_devops: 'Infraestrutura e DevOps',
 }
 
 const domainAbbreviations: Record<AgentSkillDomain, string> = {
@@ -25,6 +26,7 @@ const domainAbbreviations: Record<AgentSkillDomain, string> = {
   observabilidade_monitoramento: 'OM',
   performance_escalabilidade: 'PE',
   dados_privacidade: 'DP',
+  infraestrutura_devops: 'ID',
 }
 
 const domainTones: Record<AgentSkillDomain, string> = {
@@ -36,6 +38,7 @@ const domainTones: Record<AgentSkillDomain, string> = {
   observabilidade_monitoramento: 'cyan',
   performance_escalabilidade: 'indigo',
   dados_privacidade: 'teal',
+  infraestrutura_devops: 'rose',
 }
 
 const CORE_AGENTS = [

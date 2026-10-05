@@ -139,6 +139,38 @@ _NEW_OFFICIAL_SKILLS: list[AgentSkillManifest] = [
             "evidências recuperadas da base de conhecimento."
         ),
     ),
+    AgentSkillManifest(
+        name="Agent Skill de Infraestrutura e DevOps",
+        version="1.0",
+        author_origin="Equipe AgentHub (PoC acadêmica)",
+        domain="infraestrutura_devops",
+        objective=(
+            "Avaliar o processo de deploy, infraestrutura como código e paridade de "
+            "ambientes de um componente afetado por uma mudança solicitada, usando "
+            "evidência recuperada da base de conhecimento indexada."
+        ),
+        capabilities=[
+            "Recuperar evidência de lacunas de processo de deploy já registradas",
+            "Identificar ausência de automação de build/deploy/rollback",
+            "Sinalizar risco de falta de paridade entre ambientes de teste e produção",
+        ],
+        expected_inputs=["Problema técnico", "Objetivo", "Contexto da solicitação"],
+        produced_outputs=[
+            "Resumo executivo", "Lacunas de infraestrutura/deploy identificadas", "Nível de confiança",
+        ],
+        operating_limits=["Não executa deploy nem altera infraestrutura automaticamente"],
+        input_contract_ref="solicitacao_analise_schema.v1",
+        output_contract_ref="resposta_especialista_schema.v1",
+        validation_criteria=["Contrato de saída válido"],
+        persona_instructions=(
+            "Você é um especialista em infraestrutura e DevOps. Analise a solicitação "
+            "focando em: se o componente tem processo de build/deploy automatizado, se "
+            "há infraestrutura como código, se existe plano de rollback, e se o "
+            "ambiente de teste tem paridade suficiente com produção (volume de dados, "
+            "versão de dependências) para validar a mudança com segurança. Baseie-se "
+            "nas evidências recuperadas da base de conhecimento."
+        ),
+    ),
 ]
 
 
