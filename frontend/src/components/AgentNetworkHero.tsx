@@ -250,8 +250,10 @@ export function AgentNetworkHero({ variant = 'login' }: AgentNetworkHeroProps) {
       <div className="network-noise" aria-hidden="true" />
       <div className="network-copy">
         <span className="network-kicker">ECOSSISTEMA MODULAR E RASTREÁVEL</span>
+        <p className="network-brand">Flav.IA</p>
         <h1>
-          <span>Flav.IA</span>
+          <span>multi-agent</span>
+          <strong>ecosystem</strong>
         </h1>
         <p>Arquitetura de Integração de Agentes Especialistas em Ambientes Corporativos</p>
       </div>

@@ -34,6 +34,17 @@
 .network-kicker { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 20px; color: #91eee7; font-size: 0.68rem; font-weight: 850; letter-spacing: 0.2em; }
 .network-kicker::before, .network-kicker::after { content: ''; width: 28px; height: 1px; background: linear-gradient(90deg, transparent, rgba(120, 235, 229, 0.72)); }
 .network-kicker::after { transform: rotate(180deg); }
+.network-brand {
+  margin: 0 0 8px;
+  font-size: clamp(1rem, 1.7vw, 1.4rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: transparent;
+  background: linear-gradient(100deg, #4fbdf2 5%, #7a70ff 48%, #54ddd4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 .network-copy h1 { display: grid; gap: 0; margin: 0; font-size: clamp(3.15rem, 6.2vw, 6.4rem); line-height: 0.98; letter-spacing: -0.065em; }
 .network-copy h1 span { color: #f6f8ff; font-weight: 780; }
 .network-copy h1 strong {
