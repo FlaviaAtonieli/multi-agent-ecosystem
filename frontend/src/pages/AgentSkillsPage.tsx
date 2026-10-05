@@ -11,6 +11,7 @@ const domainLabels: Record<AgentSkillDomain, string> = {
   arquitetura_software: 'Arquitetura de Software',
   seguranca_informacao: 'Segurança da Informação',
   qualidade_testes: 'Qualidade e Testes',
+  observabilidade_monitoramento: 'Observabilidade e Monitoramento',
 }
 
 const domainAbbreviations: Record<AgentSkillDomain, string> = {
@@ -19,6 +20,7 @@ const domainAbbreviations: Record<AgentSkillDomain, string> = {
   arquitetura_software: 'AS',
   seguranca_informacao: 'SI',
   qualidade_testes: 'QT',
+  observabilidade_monitoramento: 'OM',
 }
 
 const domainTones: Record<AgentSkillDomain, string> = {
@@ -27,6 +29,7 @@ const domainTones: Record<AgentSkillDomain, string> = {
   arquitetura_software: 'sky',
   seguranca_informacao: 'red',
   qualidade_testes: 'amber',
+  observabilidade_monitoramento: 'cyan',
 }
 
 const CORE_AGENTS = [

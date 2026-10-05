@@ -427,6 +427,85 @@ def test_quality_domain_executes_with_real_rag_retrieval(client: TestClient, mon
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+def test_observability_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
+    """Segundo dos 6 dominios novos: "Observabilidade e Monitoramento". Mesmo
+    padrao do teste de Qualidade e Testes acima -- formulario assistido (pra
+    persona_instructions), ingestao e retrieval reais, execucao real."""
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="incident-postmortem-riskbatchjob.md",
+            content=(
+                "RiskBatchJob falhou silenciosamente por 6 dias sem nenhum alerta. "
+                "Nenhum dos componentes do modulo de limite de credito emite metrica "
+                "de execucao, log estruturado ou alerta de job ausente."
+            ),
+            language="markdown",
+            embedding_provider=real_embedding_provider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    create_response = client.post(
+        "/api/v1/agent-skills",
+        json={
+            "name": "Agent Skill de Observabilidade e Monitoramento",
+            "version": "1.0",
+            "author_origin": "Equipe AgentHub",
+            "domain": "observabilidade_monitoramento",
+            "objective": (
+                "Avaliar instrumentacao (logs, metricas, alertas) afetada por uma mudanca "
+                "solicitada."
+            ),
+            "capabilities": [
+                "Recuperar evidencia de incidentes e lacunas de observabilidade ja registrados",
+                "Identificar componentes sem log estruturado, metrica ou alerta",
+                "Sinalizar risco de falha silenciosa numa mudanca proposta",
+            ],
+            "expected_inputs": ["Problema tecnico", "Objetivo", "Contexto da solicitacao"],
+            "produced_outputs": [
+                "Resumo executivo", "Lacunas de observabilidade identificadas", "Nivel de confianca",
+            ],
+            "operating_limits": ["Nao configura alertas nem dashboards automaticamente"],
+            "input_contract_ref": "solicitacao_analise_schema.v1",
+            "output_contract_ref": "resposta_especialista_schema.v1",
+            "validation_criteria": ["Contrato de saida valido"],
+            "persona_instructions": (
+                "Voce e um especialista em observabilidade e monitoramento de sistemas. "
+                "Analise a solicitacao focando em: se os componentes envolvidos emitem log "
+                "estruturado, metrica e alerta adequados, historico de incidentes causados "
+                "por falta de visibilidade (falha silenciosa), e o risco de uma mudanca "
+                "introduzir um problema que nao seria detectado proativamente. Baseie-se "
+                "nas evidencias recuperadas da base de conhecimento."
+            ),
+        },
+        headers=authenticated_csrf_headers(client),
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["domain"] == "observabilidade_monitoramento"
+
+    technical_request = create_qualified_request(
+        client, requested_domains=["observabilidade_monitoramento"]
+    )
+
+    enable_real_llm(monkeypatch)
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    result = payload["results"][0]
+    assert result["agente_emissor"]["dominio"] == "observabilidade_monitoramento"
+    assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
+
+
 def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> None:
     """Same flow as test_execute_orchestration_step_runs_skill_and_quality_gate,
     but forces the "stdio" transport: the orchestrator spawns

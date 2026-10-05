@@ -43,6 +43,38 @@ _NEW_OFFICIAL_SKILLS: list[AgentSkillManifest] = [
             "da base de conhecimento."
         ),
     ),
+    AgentSkillManifest(
+        name="Agent Skill de Observabilidade e Monitoramento",
+        version="1.0",
+        author_origin="Equipe AgentHub (PoC acadêmica)",
+        domain="observabilidade_monitoramento",
+        objective=(
+            "Avaliar a instrumentação (logs, métricas, alertas) de um componente afetado "
+            "por uma mudança solicitada, usando evidência recuperada da base de "
+            "conhecimento indexada (postmortems, levantamentos de lacunas de logging)."
+        ),
+        capabilities=[
+            "Recuperar evidência de incidentes e lacunas de observabilidade já registrados",
+            "Identificar componentes sem log estruturado, métrica ou alerta",
+            "Sinalizar risco de falha silenciosa (sem alerta) numa mudança proposta",
+        ],
+        expected_inputs=["Problema técnico", "Objetivo", "Contexto da solicitação"],
+        produced_outputs=[
+            "Resumo executivo", "Lacunas de observabilidade identificadas", "Nível de confiança",
+        ],
+        operating_limits=["Não configura alertas nem dashboards automaticamente"],
+        input_contract_ref="solicitacao_analise_schema.v1",
+        output_contract_ref="resposta_especialista_schema.v1",
+        validation_criteria=["Contrato de saída válido"],
+        persona_instructions=(
+            "Você é um especialista em observabilidade e monitoramento de sistemas. "
+            "Analise a solicitação focando em: se os componentes envolvidos emitem log "
+            "estruturado, métrica e alerta adequados, histórico de incidentes causados "
+            "por falta de visibilidade (falha silenciosa), e o risco de uma mudança "
+            "introduzir um problema que não seria detectado proativamente. Baseie-se "
+            "nas evidências recuperadas da base de conhecimento."
+        ),
+    ),
 ]
 
 
