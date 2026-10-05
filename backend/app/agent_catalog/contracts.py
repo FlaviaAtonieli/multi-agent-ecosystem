@@ -39,7 +39,7 @@ class AgenteEmissor(BaseModel):
     versao_prompt: str | None = None
     dominio: Literal[
         "codigo_legado", "regras_negocio", "arquitetura_software", "seguranca_informacao",
-        "qualidade_testes",
+        "qualidade_testes", "observabilidade_monitoramento",
     ]
 
 

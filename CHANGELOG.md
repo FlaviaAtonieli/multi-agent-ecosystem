@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-05 - Sexto domínio de Agent Skill: Observabilidade e Monitoramento
+
+### Adicionado
+
+- `observabilidade_monitoramento` como novo domínio (`contracts.py`, `manifest.py`) -- segundo de 6 domínios novos planejados, empilhado sobre o PR de Qualidade e Testes.
+- `app/rag/fixtures/observability/`: corpus fictício real -- postmortem de um incidente real do universo fictício (`RiskBatchJob` falhou 6 dias sem alerta) e um levantamento de lacunas de log/métrica/alerta nos quatro componentes do módulo de limite de crédito.
+- `app/db/seed_agent_skills.py`: segunda entrada na seed idempotente, mesmo padrão da primeira.
+- `backend/tests/test_agent_skills.py::test_observability_domain_executes_with_real_rag_retrieval`: execução real de ponta a ponta.
+- Rótulo/opção de domínio no frontend -- tom `cyan` novo em `workspace-skill-icon-cyan`.
+
+### Contexto
+
+- a pedido da autora ("sim", confirmando para seguir direto pro próximo domínio empilhado após a PR #73 do primeiro).
+
 ## 2026-10-05 - Quinto domínio de Agent Skill: Qualidade e Testes
 
 ### Adicionado
