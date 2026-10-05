@@ -2,6 +2,23 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-05 - Wiki do GitHub (núcleo comum de engenharia, 3/4)
+
+### Adicionado
+
+- [Wiki do repositório](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki), 6 páginas: Home, Arquitetura, Como Rodar Localmente, Domínios de Agent Skills, Segurança, Validação e Núcleo Comum -- navegação via `_Sidebar.md`.
+- Conteúdo condensado e com links cruzados a partir do README/SECURITY.md/VALIDATION.md/docs/architecture/overview.md existentes, não cópia literal -- inclui o achado de código morto (`GenericSkillExecutor`) e os 10 domínios atuais de forma precisa.
+- Link para o Wiki adicionado à seção "Documentação" do `README.md`; `VALIDATION.md` marca o item como feito (3/4 do núcleo comum).
+
+### Corrigido
+
+- `docs/architecture/overview.md`: mesma categoria de correção das PRs #83/#84 -- ainda falava em "quatro skills oficiais com executor real" e descrevia servidor MCP dedicado por domínio como caminho realmente usado; corrigido pros 10 domínios e pro achado do `GenericSkillExecutor`.
+
+### Contexto
+
+- a pedido da autora: "vamos focar no núcleo" -- terceiro dos 4 itens (CI/CD e análise estática já feitos na PR #81). GitHub só cria o repositório git por trás do Wiki depois que a primeira página é criada pela interface web (sem API pra isso) -- a autora criou a página inicial manualmente, e o conteúdo completo foi escrito e publicado via `git push` no repositório `.wiki.git` clonado.
+- falta 1/4: monitoramento/observabilidade (Prometheus + Grafana via docker-compose, já alinhado).
+
 ## 2026-10-05 - CI/CD + análise estática no pipeline (núcleo comum de engenharia, 1/4)
 
 ### Adicionado
