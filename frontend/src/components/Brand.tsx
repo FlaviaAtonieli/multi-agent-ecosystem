@@ -1,9 +1,9 @@
 export function Brand() {
   return (
     <div className="brand">
-      <span className="brand-mark" aria-hidden="true">A</span>
+      <span className="brand-mark" aria-hidden="true">F</span>
       <div>
-        <strong>AgentHub</strong>
+        <strong>Flav.IA</strong>
         <small>Ecossistema de Agent Skills</small>
       </div>
     </div>

@@ -30,12 +30,12 @@ async def lifespan(_: FastAPI):
     create_tables_if_enabled()
     with SessionLocal() as db:
         bootstrap_admin(db)
-    logger.info("AgentHub backend started in %s mode", settings.environment)
+    logger.info("Flav.IA backend started in %s mode", settings.environment)
     yield
 
 
 app = FastAPI(
-    title="AgentHub API",
+    title="Flav.IA API",
     description="Secure foundation for the Agent Skills orchestration ecosystem.",
     version="0.1.0",
     lifespan=lifespan,

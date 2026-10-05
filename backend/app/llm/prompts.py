@@ -1,7 +1,7 @@
 from app.llm.schemas import LLMPlanRequest
 
 TECHNICAL_PLANNER_INSTRUCTIONS = (
-    "Você é o agente planejador técnico do AgentHub. "
+    "Você é o agente planejador técnico do Flav.IA. "
     "Responda estritamente no schema solicitado e marque aprovação humana como obrigatória."
 )
 

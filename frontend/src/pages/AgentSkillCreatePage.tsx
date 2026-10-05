@@ -95,7 +95,7 @@ export function AgentSkillCreatePage() {
       const created = await agentSkillsApi.createSkill({
         name: name.trim(),
         version: '1.0',
-        author_origin: user?.name ?? 'Usuário AgentHub',
+        author_origin: user?.name ?? 'Usuário Flav.IA',
         domain,
         objective: objective.trim(),
         capabilities,

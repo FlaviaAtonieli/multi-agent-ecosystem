@@ -12,7 +12,7 @@ Cada ambiente (dev local, produção) deve ter seu próprio OAuth App -- não re
 
 1. Acesse **GitHub → foto de perfil (canto superior direito) → Settings → Developer settings → OAuth Apps → New OAuth App** (ou diretamente [github.com/settings/developers](https://github.com/settings/developers)).
 2. Preencha:
-   - **Application name**: qualquer nome identificável (ex.: `AgentHub (dev local)`).
+   - **Application name**: qualquer nome identificável (ex.: `Flav.IA (dev local)`).
    - **Homepage URL**: `http://localhost:5173` (Vite direto) ou `http://localhost:3000` (via `docker compose`).
    - **Authorization callback URL**: precisa bater **exatamente** com `GITHUB_OAUTH_REDIRECT_URI` do `.env` -- por padrão, `http://localhost:8000/api/v1/auth/github/callback`.
 3. Clique em **Register application**.

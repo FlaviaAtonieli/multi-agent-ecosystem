@@ -2,6 +2,19 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-05 - Rebranding: AgentHub vira Flav.IA
+
+### Corrigido
+
+- Nome do produto trocado de "AgentHub" para "Flav.IA" em todo lugar que aparecia pro usuário ou representava a identidade do app: título da aba e meta description (`frontend/index.html`), logo da sidebar (`Brand.tsx` -- marca muda de "A" pra "F"), passo de boas-vindas do tour guiado, placeholder de autoria no formulário de nova skill, título/descrição da API e log de inicialização do backend (`main.py`), nome configurável do app (`config.py`), identidade do agente planejador no prompt do sistema (`llm/prompts.py`), exemplo de nome de app OAuth na doc do GitHub, e o campo `author_origin` ("Equipe AgentHub" -> "Equipe Flav.IA") nos 4 manifestos de skill originais, na seed dos 6 domínios novos e nos testes.
+- `docs/design/AgentHub-Especificacoes.md` e as menções a ele no `CHANGELOG.md` e em `global.css` foram mantidos como estão -- é um documento histórico do redesign já implementado, referenciado pelo nome que tinha na época; renomear só quebraria a referência sem ganho real.
+- `README.md` (título "Multi-Agent Ecosystem", nome do projeto acadêmico/RFC) e `frontend/package.json` (`agenthub-frontend`, identificador interno de build) não foram tocados -- não são o nome de marca exibido ao usuário.
+
+### Contexto
+
+- a pedido da autora: "Inspirado no nome Flavia e em sua raiz latina flavus, Flav.IA representa um ecossistema em que diferentes inteligências se conectam para iluminar soluções." Decisão explícita: só o nome curto entra no código/docs; a frase de marca/story fica de fora do repositório, para uso em pôster/pitch.
+- validado com `pytest` (28 testes em `test_agent_skills.py`/`test_follow_up.py`/`test_human_review.py`, sem regressão), `tsc --noEmit` e `npm run build` do frontend (Docker indisponível no momento, build rodado localmente fora do container).
+
 ## 2026-10-05 - Décimo domínio de Agent Skill: APIs e Integrações (último dos 6 novos)
 
 ### Adicionado

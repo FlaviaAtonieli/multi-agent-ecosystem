@@ -3,7 +3,7 @@
 ## Identificação
 - Nome: Agent Skill de Regras de Negócio
 - Versão: 1.0
-- Autor/Origem: Equipe AgentHub (PoC acadêmica)
+- Autor/Origem: Equipe Flav.IA (PoC acadêmica)
 - Domínio de atuação: Regras de Negócio
 - Status inicial: pendente de validação
 
