@@ -10,6 +10,7 @@ export type AgentSkillDomain =
   | 'performance_escalabilidade'
   | 'dados_privacidade'
   | 'infraestrutura_devops'
+  | 'apis_integracoes'
 
 export type AgentSkillVisibility = 'OFFICIAL' | 'PRIVATE' | 'CLAN' | 'PUBLIC'
 
