@@ -5,6 +5,10 @@ addopts = "-q"
 [tool.ruff]
 line-length = 110
 target-version = "py312"
+# Migrations sao scaffolding gerado pelo Alembic (op.create_table com colunas
+# listadas verbatim, sem quebra de linha) -- nao reformatadas pro estilo do
+# app pra nao editar arquivos ja aplicados contra bancos reais so por lint.
+extend-exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
