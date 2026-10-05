@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { AgentSkillDomain } from '../../api/agentSkillsApi'
 import { domainLabels } from './shared'
 
@@ -17,10 +16,10 @@ interface Props {
 // request's real pipeline (RFC): skill selection, RAG retrieval, one step per
 // requested domain, Quality Gate, consolidation -- not decorative filler.
 //
-// Rendered as a fixed corner widget (not inline in the page flow): the
-// execute call can take a while, and pinning it to a corner keeps the rest of
-// the request's details on screen and scrollable instead of being pushed down
-// by a growing step list.
+// Rendered inline at the top of the page flow (not a floating widget): it
+// takes over the spot the result card occupies once the response is ready,
+// so the transition from "processando" to "resposta" reads as the same card
+// updating in place.
 export function OrchestrationThinkingAnimation({ domains, traceId }: Props) {
   const steps = [
     'Selecionando Agent Skills para o(s) domínio(s) solicitado(s)',
@@ -42,11 +41,11 @@ export function OrchestrationThinkingAnimation({ domains, traceId }: Props) {
 
   const currentStepLabel = steps[stepIndex]
 
-  return createPortal(
-    <div className={`workspace-thinking-float${collapsed ? ' is-collapsed' : ''}`} role="status" aria-live="polite">
+  return (
+    <article className="workspace-panel workspace-thinking-panel" role="status" aria-live="polite">
       <button
         type="button"
-        className="workspace-thinking-float-header"
+        className="workspace-thinking-panel-header"
         onClick={() => setCollapsed((value) => !value)}
         aria-expanded={!collapsed}
       >
@@ -62,18 +61,19 @@ export function OrchestrationThinkingAnimation({ domains, traceId }: Props) {
           </span>
           <span className="workspace-thinking-orb-core" />
         </span>
-        <span className="workspace-thinking-float-title">
+        <span className="workspace-thinking-panel-title">
           Processando orquestração
           {collapsed && <small>{currentStepLabel}</small>}
         </span>
-        <span className="workspace-thinking-float-toggle" aria-hidden="true">
-          {collapsed ? '▴' : '▾'}
+        <code className="workspace-thinking-panel-trace">{traceId}</code>
+        <span className="workspace-thinking-panel-toggle" aria-hidden="true">
+          {collapsed ? '▸' : '▾'}
         </span>
       </button>
 
       {!collapsed && (
-        <div className="workspace-thinking-float-body">
-          <ul className="workspace-thinking-steps">
+        <div className="workspace-thinking-panel-body">
+          <ul className="workspace-thinking-steps-grid">
             {steps.map((label, index) => (
               <li
                 key={label}
@@ -90,13 +90,8 @@ export function OrchestrationThinkingAnimation({ domains, traceId }: Props) {
               </li>
             ))}
           </ul>
-          <p className="workspace-thinking-trace">
-            Rastreado via Trace ID <code>{traceId}</code> — cada etapa fica registrada na Auditoria assim que
-            conclui, mesmo enquanto a orquestração ainda está em execução.
-          </p>
         </div>
       )}
-    </div>,
-    document.body,
+    </article>
   )
 }
