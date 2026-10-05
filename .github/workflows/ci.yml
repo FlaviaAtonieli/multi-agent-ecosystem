@@ -10,9 +10,19 @@ name: CI
 
 on:
   push:
-    branches: ['**']
+    # Só main aqui -- uma branch com PR aberta já dispara via pull_request
+    # abaixo; disparar os dois pro mesmo commit dobra os jobs concorrentes
+    # à toa (visto na prática: um job ficou preso na fila por >10min com
+    # dois runs competindo pelo mesmo commit).
+    branches: [main]
   pull_request:
     branches: [main]
+
+# Cancela um run anterior ainda em andamento pra mesma branch/PR quando um
+# push novo chega, em vez de deixar os dois competirem por runner.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend-static-analysis:
