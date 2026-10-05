@@ -584,6 +584,81 @@ def test_performance_domain_executes_with_real_rag_retrieval(client: TestClient,
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+def test_data_privacy_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
+    """Quarto dos 6 dominios novos: "Dados e Privacidade (LGPD)". Mesmo
+    padrao dos tres anteriores."""
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="lgpd-gap-audit.md",
+            content=(
+                "CUSTOMER guarda NOME e EMAIL em texto plano, sem base legal "
+                "documentada, sem politica de retencao, sem fluxo de direito do "
+                "titular para acesso, correcao ou eliminacao de dados pessoais."
+            ),
+            language="markdown",
+            embedding_provider=real_embedding_provider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    create_response = client.post(
+        "/api/v1/agent-skills",
+        json={
+            "name": "Agent Skill de Dados e Privacidade (LGPD)",
+            "version": "1.0",
+            "author_origin": "Equipe AgentHub",
+            "domain": "dados_privacidade",
+            "objective": (
+                "Avaliar lacunas de conformidade com a LGPD afetadas por uma mudanca "
+                "solicitada."
+            ),
+            "capabilities": [
+                "Recuperar evidencia de lacunas de conformidade ja registradas",
+                "Identificar ausencia de base legal, retencao ou minimizacao de dados",
+                "Sinalizar exposicao de dado pessoal alem do necessario",
+            ],
+            "expected_inputs": ["Problema tecnico", "Objetivo", "Contexto da solicitacao"],
+            "produced_outputs": [
+                "Resumo executivo", "Lacunas de conformidade identificadas", "Nivel de confianca",
+            ],
+            "operating_limits": ["Nao aprova conformidade legal final"],
+            "input_contract_ref": "solicitacao_analise_schema.v1",
+            "output_contract_ref": "resposta_especialista_schema.v1",
+            "validation_criteria": ["Contrato de saida valido"],
+            "persona_instructions": (
+                "Voce e um especialista em protecao de dados e conformidade com a "
+                "LGPD. Analise a solicitacao focando em: quais dados pessoais estao "
+                "envolvidos, se ha base legal e politica de retencao documentadas, se "
+                "ha minimizacao de dados, e risco de exposicao alem do necessario. "
+                "Baseie-se nas evidencias recuperadas da base de conhecimento."
+            ),
+        },
+        headers=authenticated_csrf_headers(client),
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["domain"] == "dados_privacidade"
+
+    technical_request = create_qualified_request(client, requested_domains=["dados_privacidade"])
+
+    enable_real_llm(monkeypatch)
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    result = payload["results"][0]
+    assert result["agente_emissor"]["dominio"] == "dados_privacidade"
+    assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
+
+
 def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> None:
     """Same flow as test_execute_orchestration_step_runs_skill_and_quality_gate,
     but forces the "stdio" transport: the orchestrator spawns

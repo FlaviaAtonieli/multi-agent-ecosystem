@@ -107,6 +107,38 @@ _NEW_OFFICIAL_SKILLS: list[AgentSkillManifest] = [
             "de conhecimento."
         ),
     ),
+    AgentSkillManifest(
+        name="Agent Skill de Dados e Privacidade (LGPD)",
+        version="1.0",
+        author_origin="Equipe AgentHub (PoC acadêmica)",
+        domain="dados_privacidade",
+        objective=(
+            "Avaliar lacunas de conformidade com a LGPD (base legal, retenção, "
+            "minimização, direitos do titular) de um componente afetado por uma mudança "
+            "solicitada, usando evidência recuperada da base de conhecimento indexada."
+        ),
+        capabilities=[
+            "Recuperar evidência de lacunas de conformidade já registradas",
+            "Identificar ausência de base legal, política de retenção ou minimização de dados",
+            "Sinalizar exposição de dado pessoal além do necessário para a finalidade",
+        ],
+        expected_inputs=["Problema técnico", "Objetivo", "Contexto da solicitação"],
+        produced_outputs=[
+            "Resumo executivo", "Lacunas de conformidade identificadas", "Nível de confiança",
+        ],
+        operating_limits=["Não aprova conformidade legal final, não substitui parecer jurídico"],
+        input_contract_ref="solicitacao_analise_schema.v1",
+        output_contract_ref="resposta_especialista_schema.v1",
+        validation_criteria=["Contrato de saída válido"],
+        persona_instructions=(
+            "Você é um especialista em proteção de dados e conformidade com a LGPD. "
+            "Analise a solicitação focando em: quais dados pessoais estão envolvidos, "
+            "se há base legal e política de retenção documentadas, se o componente "
+            "aplica minimização de dados (só expõe o necessário para a finalidade), e "
+            "risco de exposição de dado pessoal além do necessário. Baseie-se nas "
+            "evidências recuperadas da base de conhecimento."
+        ),
+    ),
 ]
 
 
