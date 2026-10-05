@@ -3,7 +3,7 @@
 ## Identificação
 - Nome: Agent Skill de Código Legado
 - Versão: 1.0
-- Autor/Origem: Equipe AgentHub (PoC acadêmica)
+- Autor/Origem: Equipe Flav.IA (PoC acadêmica)
 - Domínio de atuação: Código Legado
 - Status inicial: pendente de validação
 

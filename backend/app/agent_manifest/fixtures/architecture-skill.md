@@ -3,7 +3,7 @@
 ## Identificação
 - Nome: Agent Skill de Arquitetura de Software
 - Versão: 1.0
-- Autor/Origem: Equipe AgentHub (PoC acadêmica)
+- Autor/Origem: Equipe Flav.IA (PoC acadêmica)
 - Domínio de atuação: Arquitetura de Software
 - Status inicial: pendente de validação
 

@@ -9,7 +9,7 @@ type TourStep = {
 const steps: TourStep[] = [
   {
     selector: '[data-tour="nav"]',
-    title: 'Bem-vindo ao AgentHub',
+    title: 'Bem-vindo à Flav.IA',
     description: 'Aqui você acompanha todas as solicitações e o estado do ecossistema de agentes em tempo real.',
   },
   {

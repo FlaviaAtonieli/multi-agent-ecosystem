@@ -13,7 +13,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "AgentHub"
+    app_name: str = "Flav.IA"
     api_v1_prefix: str = "/api/v1"
     environment: str = "development"
 

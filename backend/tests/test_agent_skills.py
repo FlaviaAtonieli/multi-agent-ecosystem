@@ -84,7 +84,7 @@ def test_assisted_creation_registers_skill(client: TestClient) -> None:
         json={
             "name": "Agent Skill de Arquitetura",
             "version": "1.0",
-            "author_origin": "Equipe AgentHub",
+            "author_origin": "Equipe Flav.IA",
             "domain": "arquitetura_software",
             "objective": "Avaliar impactos arquiteturais de uma mudança.",
             "capabilities": ["Avaliar padrões arquiteturais"],
@@ -379,7 +379,7 @@ def test_quality_domain_executes_with_real_rag_retrieval(client: TestClient, mon
         json={
             "name": "Agent Skill de Qualidade e Testes",
             "version": "1.0",
-            "author_origin": "Equipe AgentHub",
+            "author_origin": "Equipe Flav.IA",
             "domain": "qualidade_testes",
             "objective": "Avaliar cobertura de testes e risco de regressao de uma mudanca solicitada.",
             "capabilities": [
@@ -455,7 +455,7 @@ def test_observability_domain_executes_with_real_rag_retrieval(client: TestClien
         json={
             "name": "Agent Skill de Observabilidade e Monitoramento",
             "version": "1.0",
-            "author_origin": "Equipe AgentHub",
+            "author_origin": "Equipe Flav.IA",
             "domain": "observabilidade_monitoramento",
             "objective": (
                 "Avaliar instrumentacao (logs, metricas, alertas) afetada por uma mudanca "
@@ -534,7 +534,7 @@ def test_performance_domain_executes_with_real_rag_retrieval(client: TestClient,
         json={
             "name": "Agent Skill de Performance e Escalabilidade",
             "version": "1.0",
-            "author_origin": "Equipe AgentHub",
+            "author_origin": "Equipe Flav.IA",
             "domain": "performance_escalabilidade",
             "objective": (
                 "Avaliar gargalos de performance e risco de escalabilidade afetados "
@@ -611,7 +611,7 @@ def test_data_privacy_domain_executes_with_real_rag_retrieval(client: TestClient
         json={
             "name": "Agent Skill de Dados e Privacidade (LGPD)",
             "version": "1.0",
-            "author_origin": "Equipe AgentHub",
+            "author_origin": "Equipe Flav.IA",
             "domain": "dados_privacidade",
             "objective": (
                 "Avaliar lacunas de conformidade com a LGPD afetadas por uma mudanca "
@@ -686,7 +686,7 @@ def test_infrastructure_domain_executes_with_real_rag_retrieval(client: TestClie
         json={
             "name": "Agent Skill de Infraestrutura e DevOps",
             "version": "1.0",
-            "author_origin": "Equipe AgentHub",
+            "author_origin": "Equipe Flav.IA",
             "domain": "infraestrutura_devops",
             "objective": (
                 "Avaliar processo de deploy, IaC e paridade de ambientes afetados por "
@@ -764,7 +764,7 @@ def test_api_integration_domain_executes_with_real_rag_retrieval(client: TestCli
         json={
             "name": "Agent Skill de APIs e Integrações",
             "version": "1.0",
-            "author_origin": "Equipe AgentHub",
+            "author_origin": "Equipe Flav.IA",
             "domain": "apis_integracoes",
             "objective": (
                 "Avaliar contratos de API e risco de integracao afetados por uma "

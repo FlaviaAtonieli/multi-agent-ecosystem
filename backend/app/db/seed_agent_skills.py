@@ -16,7 +16,7 @@ _NEW_OFFICIAL_SKILLS: list[AgentSkillManifest] = [
     AgentSkillManifest(
         name="Agent Skill de Qualidade e Testes",
         version="1.0",
-        author_origin="Equipe AgentHub (PoC acadêmica)",
+        author_origin="Equipe Flav.IA (PoC acadêmica)",
         domain="qualidade_testes",
         objective=(
             "Avaliar a cobertura de testes automatizados e o risco de regressão de uma "
@@ -46,7 +46,7 @@ _NEW_OFFICIAL_SKILLS: list[AgentSkillManifest] = [
     AgentSkillManifest(
         name="Agent Skill de Observabilidade e Monitoramento",
         version="1.0",
-        author_origin="Equipe AgentHub (PoC acadêmica)",
+        author_origin="Equipe Flav.IA (PoC acadêmica)",
         domain="observabilidade_monitoramento",
         objective=(
             "Avaliar a instrumentação (logs, métricas, alertas) de um componente afetado "
@@ -78,7 +78,7 @@ _NEW_OFFICIAL_SKILLS: list[AgentSkillManifest] = [
     AgentSkillManifest(
         name="Agent Skill de Performance e Escalabilidade",
         version="1.0",
-        author_origin="Equipe AgentHub (PoC acadêmica)",
+        author_origin="Equipe Flav.IA (PoC acadêmica)",
         domain="performance_escalabilidade",
         objective=(
             "Avaliar gargalos de performance e risco de escalabilidade de um componente "
@@ -110,7 +110,7 @@ _NEW_OFFICIAL_SKILLS: list[AgentSkillManifest] = [
     AgentSkillManifest(
         name="Agent Skill de Dados e Privacidade (LGPD)",
         version="1.0",
-        author_origin="Equipe AgentHub (PoC acadêmica)",
+        author_origin="Equipe Flav.IA (PoC acadêmica)",
         domain="dados_privacidade",
         objective=(
             "Avaliar lacunas de conformidade com a LGPD (base legal, retenção, "
@@ -142,7 +142,7 @@ _NEW_OFFICIAL_SKILLS: list[AgentSkillManifest] = [
     AgentSkillManifest(
         name="Agent Skill de Infraestrutura e DevOps",
         version="1.0",
-        author_origin="Equipe AgentHub (PoC acadêmica)",
+        author_origin="Equipe Flav.IA (PoC acadêmica)",
         domain="infraestrutura_devops",
         objective=(
             "Avaliar o processo de deploy, infraestrutura como código e paridade de "
@@ -174,7 +174,7 @@ _NEW_OFFICIAL_SKILLS: list[AgentSkillManifest] = [
     AgentSkillManifest(
         name="Agent Skill de APIs e Integrações",
         version="1.0",
-        author_origin="Equipe AgentHub (PoC acadêmica)",
+        author_origin="Equipe Flav.IA (PoC acadêmica)",
         domain="apis_integracoes",
         objective=(
             "Avaliar contratos de API e risco de integração (versionamento, timeout, "
