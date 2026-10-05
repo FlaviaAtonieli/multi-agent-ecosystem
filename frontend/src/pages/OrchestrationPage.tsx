@@ -204,6 +204,17 @@ export function OrchestrationPage() {
 
       {detail && (
         <section className="workspace-orchestration-flow">
+          {executing && (
+            <OrchestrationThinkingAnimation
+              domains={
+                detail.technical_request.requested_domains.length > 0
+                  ? (detail.technical_request.requested_domains as AgentSkillDomain[])
+                  : activeSkillDomains
+              }
+              traceId={detail.technical_request.trace_id}
+            />
+          )}
+
           {hasResult && (
             <article className="workspace-panel workspace-result-panel">
               <div className="workspace-panel-heading">
@@ -304,16 +315,6 @@ export function OrchestrationPage() {
                 >
                   {executing ? 'Executando…' : 'Executar orquestração'}
                 </button>
-                {executing && (
-                  <OrchestrationThinkingAnimation
-                    domains={
-                      detail.technical_request.requested_domains.length > 0
-                        ? (detail.technical_request.requested_domains as AgentSkillDomain[])
-                        : activeSkillDomains
-                    }
-                    traceId={detail.technical_request.trace_id}
-                  />
-                )}
               </div>
             )}
           </CollapsibleSection>
