@@ -1,12 +1,8 @@
+import { CollapsibleSection } from '../shared/CollapsibleSection'
+
 export function EcosystemFlowCard() {
   return (
-    <article className="workspace-panel workspace-panel-secondary">
-      <div className="workspace-panel-heading">
-        <div>
-          <span className="workspace-card-kicker">ARQUITETURA</span>
-          <h2>Como o ecossistema decide</h2>
-        </div>
-      </div>
+    <CollapsibleSection title="Como o ecossistema decide" defaultOpen={false}>
       <p className="workspace-flow-caption">Solicitação → contexto → planejamento → agentes → validação</p>
       <div className="workspace-flow-diagram">
         <div className="workspace-flow-node">
@@ -21,6 +17,6 @@ export function EcosystemFlowCard() {
           <span>Quality Gate</span>
         </div>
       </div>
-    </article>
+    </CollapsibleSection>
   )
 }

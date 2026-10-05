@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { AgentSkill, AgentSkillDomain, AgentSkillRankingEntry, agentSkillsApi } from '../api/agentSkillsApi'
 import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
+import { CollapsibleSection } from '../components/shared/CollapsibleSection'
 
 const domainLabels: Record<AgentSkillDomain, string> = {
   codigo_legado: 'Código Legado',
@@ -133,18 +134,19 @@ export function AgentSkillsPage() {
       </section>
 
       <section className="workspace-core-agents fade-up" style={{ animationDelay: '0.04s' }}>
-        <span className="workspace-card-kicker">NÚCLEO DO ECOSSISTEMA · SEMPRE ATIVOS</span>
-        <div className="workspace-core-agents-grid">
-          {CORE_AGENTS.map((agent) => (
-            <article key={agent.key} className="workspace-core-agent-card">
-              <span className="workspace-core-agent-icon">{agent.icon}</span>
-              <div>
-                <strong>{agent.name}</strong>
-                <p>{agent.description}</p>
-              </div>
-            </article>
-          ))}
-        </div>
+        <CollapsibleSection title="Núcleo do ecossistema" subtitle="sempre ativos" defaultOpen={false}>
+          <div className="workspace-core-agents-grid">
+            {CORE_AGENTS.map((agent) => (
+              <article key={agent.key} className="workspace-core-agent-card">
+                <span className="workspace-core-agent-icon">{agent.icon}</span>
+                <div>
+                  <strong>{agent.name}</strong>
+                  <p>{agent.description}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </CollapsibleSection>
       </section>
 
       {ranking.length > 0 && (

@@ -116,6 +116,10 @@ export function OrchestrationPage() {
           ? 'Orquestração executada e aprovada pelo Quality Gate.'
           : 'Orquestração executada. O resultado aguarda revisão humana.',
       )
+      // A resposta aparece no topo da página (antes do contexto, ver
+      // hasResult) -- leva o usuário até lá em vez de deixá-lo onde estava
+      // rolado enquanto a execução (que pode levar mais de um minuto) rodava.
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (caught) {
       setExecutionError(caught instanceof ApiError ? caught.message : 'Não foi possível executar a orquestração.')
     } finally {
@@ -185,133 +189,144 @@ export function OrchestrationPage() {
         </div>
       </section>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {successMessage && <div className="alert alert-success">{successMessage}</div>}
-      {failedAttachmentUploads && failedAttachmentUploads.length > 0 && (
-        <div className="alert alert-error">
-          Não foi possível anexar: {failedAttachmentUploads.join(', ')}. A solicitação foi criada normalmente —
-          tente anexar de novo abaixo.
+      {(error || successMessage || (failedAttachmentUploads && failedAttachmentUploads.length > 0)) && (
+        <div className="workspace-orchestration-alerts">
+          {error && <div className="alert alert-error">{error}</div>}
+          {successMessage && <div className="alert alert-success">{successMessage}</div>}
+          {failedAttachmentUploads && failedAttachmentUploads.length > 0 && (
+            <div className="alert alert-error">
+              Não foi possível anexar: {failedAttachmentUploads.join(', ')}. A solicitação foi criada normalmente —
+              tente anexar de novo abaixo.
+            </div>
+          )}
         </div>
       )}
 
       {detail && (
-        <section className="workspace-detail-grid">
-          <article className="workspace-panel workspace-request-summary">
-            {hasResult && (
-              <div className="workspace-result-block">
-                <div className="workspace-panel-heading">
-                  <div>
-                    <span className="workspace-card-kicker">RESULTADO</span>
-                    <h2>Resposta consolidada</h2>
-                  </div>
-                  <code>{detail.technical_request.trace_id}</code>
+        <section className="workspace-orchestration-flow">
+          {executing && (
+            <OrchestrationThinkingAnimation
+              domains={
+                detail.technical_request.requested_domains.length > 0
+                  ? (detail.technical_request.requested_domains as AgentSkillDomain[])
+                  : activeSkillDomains
+              }
+              traceId={detail.technical_request.trace_id}
+            />
+          )}
+
+          {hasResult && (
+            <article className="workspace-panel workspace-result-panel">
+              <div className="workspace-panel-heading">
+                <div>
+                  <span className="workspace-card-kicker">RESULTADO</span>
+                  <h2>Resposta consolidada</h2>
                 </div>
-                {execution ? (
-                  <ExecutionResultPanel execution={execution} />
-                ) : (
-                  detail.technical_request.consolidated_response && (
-                    <ExecutionResultPanel
-                      execution={{
-                        results: pastSkillResults.map((item) => item.result).filter((item) => item !== null),
-                        verdict: {
-                          approved: detail.technical_request.consolidated_response.quality_gate_approved,
-                          requires_human_review: detail.technical_request.consolidated_response.requires_human_review,
-                          reasons: [],
-                        },
-                        invocations_count: pastSkillResults.length,
-                        consolidated_response: detail.technical_request.consolidated_response,
-                      }}
-                    />
-                  )
-                )}
+                <code>{detail.technical_request.trace_id}</code>
+              </div>
+              {execution ? (
+                <ExecutionResultPanel execution={execution} />
+              ) : (
+                detail.technical_request.consolidated_response && (
+                  <ExecutionResultPanel
+                    execution={{
+                      results: pastSkillResults.map((item) => item.result).filter((item) => item !== null),
+                      verdict: {
+                        approved: detail.technical_request.consolidated_response.quality_gate_approved,
+                        requires_human_review: detail.technical_request.consolidated_response.requires_human_review,
+                        reasons: [],
+                      },
+                      invocations_count: pastSkillResults.length,
+                      consolidated_response: detail.technical_request.consolidated_response,
+                    }}
+                  />
+                )
+              )}
+            </article>
+          )}
+
+          <CollapsibleSection
+            title="Contexto da demanda"
+            subtitle={hasResult ? detail.technical_request.trace_id : undefined}
+            defaultOpen={!hasResult}
+          >
+            {!hasResult && (
+              <div className="workspace-panel-heading">
+                <div>
+                  <span className="workspace-card-kicker">SOLICITAÇÃO</span>
+                </div>
+                <code>{detail.technical_request.trace_id}</code>
               </div>
             )}
 
-            <CollapsibleSection
-              title="Contexto da demanda"
-              subtitle={hasResult ? detail.technical_request.trace_id : undefined}
-              defaultOpen={!hasResult}
-            >
-              {!hasResult && (
-                <div className="workspace-panel-heading">
-                  <div>
-                    <span className="workspace-card-kicker">SOLICITAÇÃO</span>
-                  </div>
-                  <code>{detail.technical_request.trace_id}</code>
-                </div>
-              )}
+            <dl className="workspace-definition-list">
+              <div><dt>Problema</dt><dd>{detail.technical_request.problem}</dd></div>
+              <div><dt>Objetivo</dt><dd>{detail.technical_request.objective}</dd></div>
+              <div><dt>Contexto</dt><dd>{detail.technical_request.context || 'Ainda não informado.'}</dd></div>
+              <div>
+                <dt>Restrições</dt>
+                <dd>{detail.technical_request.restrictions.length ? detail.technical_request.restrictions.join(' · ') : 'Nenhuma'}</dd>
+              </div>
+              <div><dt>Etapa atual</dt><dd>{detail.run.current_stage}</dd></div>
+            </dl>
 
-              <dl className="workspace-definition-list">
-                <div><dt>Problema</dt><dd>{detail.technical_request.problem}</dd></div>
-                <div><dt>Objetivo</dt><dd>{detail.technical_request.objective}</dd></div>
-                <div><dt>Contexto</dt><dd>{detail.technical_request.context || 'Ainda não informado.'}</dd></div>
+            <AttachmentsSection requestId={detail.technical_request.id} />
+
+            {detail.technical_request.status === 'AWAITING_CONTEXT' && (
+              <form className="workspace-context-form" onSubmit={handleContextSubmit}>
+                <label className="workspace-field">
+                  Complementar contexto
+                  <textarea
+                    value={context}
+                    onChange={(event) => setContext(event.target.value)}
+                    rows={6}
+                    minLength={10}
+                    required
+                    placeholder="Inclua tecnologias, módulos, artefatos, dependências e comportamento esperado."
+                  />
+                </label>
+                <button className="workspace-primary-action" type="submit" disabled={submitting}>
+                  {submitting ? 'Validando…' : 'Enviar complementação'}
+                </button>
+              </form>
+            )}
+
+            {detail.technical_request.status === 'QUALIFIED' && (
+              <div className="workspace-execute-form">
+                <label className="workspace-field">
+                  Modelo de IA para a orquestração
+                  <select value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)}>
+                    {allowedModels.length === 0 && <option value="">Padrão configurado</option>}
+                    {allowedModels.map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    ))}
+                  </select>
+                  <small>Define qual modelo o Orquestrador usa para planejar e acionar as Agent Skills.</small>
+                </label>
+                {tokenUsage && <TokenUsageMeter used={tokenUsage.used} limit={tokenUsage.limit} />}
+                {executionError && <div className="alert alert-error">{executionError}</div>}
+                <button
+                  className="workspace-primary-action"
+                  type="button"
+                  onClick={handleExecute}
+                  disabled={executing || Boolean(tokenUsage && tokenUsage.used >= tokenUsage.limit)}
+                >
+                  {executing ? 'Executando…' : 'Executar orquestração'}
+                </button>
+              </div>
+            )}
+          </CollapsibleSection>
+
+          {detail.technical_request.consolidated_response && (
+            <article className="workspace-panel workspace-follow-up-panel">
+              <div className="workspace-panel-heading">
                 <div>
-                  <dt>Restrições</dt>
-                  <dd>{detail.technical_request.restrictions.length ? detail.technical_request.restrictions.join(' · ') : 'Nenhuma'}</dd>
+                  <span className="workspace-card-kicker">CONTINUAR A ANÁLISE</span>
+                  <h2>Perguntas de acompanhamento</h2>
                 </div>
-                <div><dt>Etapa atual</dt><dd>{detail.run.current_stage}</dd></div>
-              </dl>
-
-              <AttachmentsSection requestId={detail.technical_request.id} />
-
-              {detail.technical_request.status === 'AWAITING_CONTEXT' && (
-                <form className="workspace-context-form" onSubmit={handleContextSubmit}>
-                  <label className="workspace-field">
-                    Complementar contexto
-                    <textarea
-                      value={context}
-                      onChange={(event) => setContext(event.target.value)}
-                      rows={6}
-                      minLength={10}
-                      required
-                      placeholder="Inclua tecnologias, módulos, artefatos, dependências e comportamento esperado."
-                    />
-                  </label>
-                  <button className="workspace-primary-action" type="submit" disabled={submitting}>
-                    {submitting ? 'Validando…' : 'Enviar complementação'}
-                  </button>
-                </form>
-              )}
-
-              {detail.technical_request.status === 'QUALIFIED' && (
-                <div className="workspace-execute-form">
-                  <label className="workspace-field">
-                    Modelo de IA para a orquestração
-                    <select value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)}>
-                      {allowedModels.length === 0 && <option value="">Padrão configurado</option>}
-                      {allowedModels.map((model) => (
-                        <option key={model} value={model}>
-                          {model}
-                        </option>
-                      ))}
-                    </select>
-                    <small>Define qual modelo o Orquestrador usa para planejar e acionar as Agent Skills.</small>
-                  </label>
-                  {tokenUsage && <TokenUsageMeter used={tokenUsage.used} limit={tokenUsage.limit} />}
-                  {executionError && <div className="alert alert-error">{executionError}</div>}
-                  <button
-                    className="workspace-primary-action"
-                    type="button"
-                    onClick={handleExecute}
-                    disabled={executing || Boolean(tokenUsage && tokenUsage.used >= tokenUsage.limit)}
-                  >
-                    {executing ? 'Executando…' : 'Executar orquestração'}
-                  </button>
-                  {executing && (
-                    <OrchestrationThinkingAnimation
-                      domains={
-                        detail.technical_request.requested_domains.length > 0
-                          ? (detail.technical_request.requested_domains as AgentSkillDomain[])
-                          : activeSkillDomains
-                      }
-                      traceId={detail.technical_request.trace_id}
-                    />
-                  )}
-                </div>
-              )}
-            </CollapsibleSection>
-
-            {detail.technical_request.consolidated_response && (
+              </div>
               <div className="workspace-follow-up-section">
                 {followUps.map((exchange) => (
                   <FollowUpExchangeCard key={exchange.id} exchange={exchange} />
@@ -323,18 +338,10 @@ export function OrchestrationPage() {
                   error={followUpError}
                 />
               </div>
-            )}
-          </article>
+            </article>
+          )}
 
-          <article className="workspace-panel workspace-timeline-panel">
-            <div className="workspace-panel-heading">
-              <div>
-                <span className="workspace-card-kicker">RASTREABILIDADE</span>
-                <h2>Linha do tempo</h2>
-              </div>
-              <span>{detail.events.length} eventos</span>
-            </div>
-
+          <CollapsibleSection title="Linha do tempo" subtitle={`${detail.events.length} eventos · rastreabilidade`} defaultOpen={false}>
             <div className="workspace-timeline">
               {detail.events.map((event) => (
                 <article key={event.id} className="workspace-timeline-event">
@@ -348,7 +355,7 @@ export function OrchestrationPage() {
                 </article>
               ))}
             </div>
-          </article>
+          </CollapsibleSection>
         </section>
       )}
     </div>

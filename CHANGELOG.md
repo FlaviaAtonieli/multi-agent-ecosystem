@@ -2,6 +2,86 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-09-29 - Widget de processando muda do canto inferior direito pro topo
+
+### Corrigido
+
+- `.workspace-thinking-float`: sai de `right/bottom` (canto inferior direito) pra `top` centralizado (`left: 50%; transform: translateX(-50%)`) -- com a pagina de orquestracao agora em coluna unica e mais estreita (max-width 960px), o widget flutuando isolado no canto da tela ficava com espaco vazio ao redor, meio solto.
+
+### Contexto
+
+- a pedido da autora, testando a pagina apos os ajustes anteriores: "vamos trocar da lateral para cima".
+
+## 2026-09-29 - Orbe de processando mais elaborado; scroll pro topo; mensagem colada
+
+### Corrigido
+
+- `OrchestrationThinkingAnimation.tsx`: o orbe do widget de "Processando" (24px, nucleo + 2 aneis pulsando) virou um visual mais elaborado (44px) -- ganhou um halo giratorio (`conic-gradient` desfocado) e dois "satelites" orbitando o nucleo em velocidades/direcoes diferentes, mais proximo da referencia visual que a autora mandou antes (orbe com nos conectados).
+- `OrchestrationPage.tsx`: ao executar com sucesso, a pagina rola suavemente pro topo (`window.scrollTo`) -- a resposta aparece no topo da coluna unica (ver PR anterior), mas se o usuario tivesse rolado a pagina durante a espera, nao via a mensagem de sucesso nem o resultado sem rolar de volta manualmente.
+- Alertas no topo da pagina de orquestracao (erro, sucesso, falha de anexo) ganham um wrapper (`workspace-orchestration-alerts`) com espacamento proprio -- antes a mensagem de sucesso ficava colada direto no card de resultado, sem gap nenhum.
+
+### Contexto
+
+- a pedido da autora, apos testar a nova disposicao em coluna unica: "esse carregando ali no canto não está legal", "quando a resposta é gerada eu quero que vc me envie para o início da página", "ajuste a mensagem ali para não ficar colada".
+- observado durante a mudanca, nao corrigido ainda: quando o modelo devolve codigo dentro do texto livre de "sintese consolidada" (nao dentro de um achado tecnico estruturado), ele aparece como paragrafo corrido sem formatacao de codigo nem botao de copiar/baixar -- diferente do que ja existe pra `descobertas_tecnicas[].trecho_referenciado`. Fica registrado como pendencia, nao resolvido neste PR.
+
+## 2026-09-29 - Corrige coluna do wizard invadindo a caixa de dica ao lado
+
+### Corrigido
+
+- `.workspace-wizard-grid`: coluna esquerda usava `1fr` sem `minmax(0, 1fr)`, e `.workspace-wizard-card` nao tinha `min-width: 0` -- classico problema de CSS Grid, onde o item de grade nao encolhe abaixo do "min-content" do conteudo (mesmo com o texto da tag de restricao quebrando linha desde o PR anterior), empurrando a coluna pra largura maior e invadindo visualmente a caixa de dica da coluna da direita.
+- Corrigido nos dois pontos (`grid-template-columns: minmax(0, 1fr) 320px` + `min-width: 0` no card) -- mesmo padrao ja usado em `.workspace-detail-grid`, que nunca teve esse problema.
+
+### Contexto
+
+- achado pela autora no wizard de Nova Solicitacao, passo 3, com uma restricao longa.
+
+## 2026-09-29 - Pagina de orquestracao vira coluna unica; letras maiores; copiar/baixar codigo
+
+### Corrigido
+
+- `OrchestrationPage.tsx`: sai da grade de duas colunas (`workspace-detail-grid`) pra uma coluna unica (`workspace-orchestration-flow`, max-width 960px). A "Linha do tempo" (rastreabilidade) nao carregava ao vivo durante a execucao -- so tinha 1-2 eventos parados na tela, dando impressao de travado -- entao ela some da area principal enquanto executa (o widget flutuante de "Processando" ja cobre esse feedback) e volta como `CollapsibleSection` **fechada por padrao no final da pagina**, depois que a resposta carrega.
+- Resultado consolidado ocupa a largura toda da pagina, em destaque, antes do contexto da solicitacao -- que continua recolhivel.
+- Perguntas de acompanhamento ganham seu proprio card (`workspace-follow-up-panel`), tambem em coluna unica, em vez de ficar espremido dentro do card de contexto.
+- Aumentado o tamanho de fonte em toda a area de resultado, achados tecnicos, lista de definicao (contexto) e linha do tempo -- estavam entre 0.61rem e 0.85rem, a maioria virou 0.86rem-0.98rem.
+- Blocos de codigo dentro dos achados tecnicos (`CodeBlock` em `shared.tsx`) ganham uma barra com botoes **Copiar** (clipboard) e **Baixar** (arquivo `.txt`, nome derivado do titulo do achado) -- a orquestracao pode retornar trechos de codigo nas respostas, e antes so dava pra selecionar o texto manualmente.
+
+### Contexto
+
+- a pedido da autora, depois de testar uma execucao ao vivo e ver a rastreabilidade travada com so 2 eventos durante os ~100s de execucao real -- pediu pra trocar por coluna unica, resposta em destaque, timeline recolhivel no final, letras maiores e acao de copiar/baixar codigo.
+- duas decisoes perguntadas e confirmadas antes de implementar: timeline fechada por padrao (nao aberta) e blocos de codigo com copiar **e** baixar (nao so copiar).
+
+## 2026-09-29 - Corrige tag de restricao que nao quebrava linha
+
+### Corrigido
+
+- `.workspace-tag` (`workspace.css`): usava `white-space: nowrap` com `border-radius: 999px` (estilo pilula) -- funciona bem pra restricoes curtas, mas uma frase longa (ex.: "Nao sugerir reescrita completa do modulo. Preservar o contrato de saida dos arquivos bancarios.") nao quebrava linha e estourava a largura do card. Trocado pra `white-space: normal` + `overflow-wrap: anywhere` + `max-width: 100%`, com `border-radius` reduzido de 999px pra 12px (pilula nao fica bem numa caixa de varias linhas).
+
+### Contexto
+
+- achado pela autora testando o formulario de Nova Solicitacao com uma restricao mais longa.
+
+## 2026-09-29 - Corrige timeout do nginx que mostrava erro em execucoes normais
+
+### Corrigido
+
+- `frontend/nginx.conf`: `/api/` ganhou `proxy_connect_timeout`/`proxy_send_timeout`/`proxy_read_timeout` de 300s -- o padrao do nginx (60s) era curto demais pra `POST /agent-skills/requests/{id}/execute`, que roda ate 4 Agent Skills em sequencia, cada uma com ate `LLM_TIMEOUT_SECONDS` (45s, com retry) de chamada real ao modelo. O nginx desistia e devolvia erro pro navegador mesmo quando o backend terminava normalmente e salvava o resultado -- so visivel ao reabrir a solicitacao depois.
+
+### Contexto
+
+- achado pela autora: "por que quando a orquestracao termina aparece uma mensagem de erro, e depois de reabrir a solicitacao ela apresenta a resposta?" -- sintoma classico de timeout no meio do caminho (cliente desiste, servidor continua e termina). Ficou mais facil de reproduzir depois da troca pro gpt-5-mini (modelo de raciocinio, mais lento que o gratuito por chamada).
+
+## 2026-09-29 - Recolhe os dois blocos decorativos restantes (catalogo, dashboard)
+
+### Corrigido
+
+- `AgentSkillsPage.tsx`: o card "Nucleo do ecossistema" (Orquestrador/Conselheiro/Orientador) -- estatico, sempre o mesmo texto em toda visita -- vira `CollapsibleSection` fechada por padrao, em vez de ocupar espaco fixo acima do ranking e do catalogo de verdade.
+- `EcosystemFlowCard.tsx` (dashboard): mesmo tratamento -- o diagrama decorativo "Orientador -> Orquestrador -> Quality Gate" vira `CollapsibleSection` fechada por padrao, parando de competir por atencao com o feed de atividade real na mesma coluna.
+
+### Contexto
+
+- a pedido da autora -- ultimos dois itens do levantamento de telas "carregadas" pedido antes do nucleo comum de engenharia, classificados na ocasiao como ruido visual de baixa prioridade (nao bloqueiam uso, so ocupam espaco). Reaproveita o `CollapsibleSection` introduzido no PR anterior (pagina de orquestracao).
+
 ## 2026-09-25 - Reduz sobrecarga visual da pagina de orquestracao
 
 ### Corrigido
