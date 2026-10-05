@@ -12,6 +12,7 @@ const domainLabels: Record<AgentSkillDomain, string> = {
   seguranca_informacao: 'Segurança da Informação',
   qualidade_testes: 'Qualidade e Testes',
   observabilidade_monitoramento: 'Observabilidade e Monitoramento',
+  performance_escalabilidade: 'Performance e Escalabilidade',
 }
 
 const domainAbbreviations: Record<AgentSkillDomain, string> = {
@@ -21,6 +22,7 @@ const domainAbbreviations: Record<AgentSkillDomain, string> = {
   seguranca_informacao: 'SI',
   qualidade_testes: 'QT',
   observabilidade_monitoramento: 'OM',
+  performance_escalabilidade: 'PE',
 }
 
 const domainTones: Record<AgentSkillDomain, string> = {
@@ -30,6 +32,7 @@ const domainTones: Record<AgentSkillDomain, string> = {
   seguranca_informacao: 'red',
   qualidade_testes: 'amber',
   observabilidade_monitoramento: 'cyan',
+  performance_escalabilidade: 'indigo',
 }
 
 const CORE_AGENTS = [

@@ -506,6 +506,84 @@ def test_observability_domain_executes_with_real_rag_retrieval(client: TestClien
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+def test_performance_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
+    """Terceiro dos 6 dominios novos: "Performance e Escalabilidade". Mesmo
+    padrao dos dois anteriores."""
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="riskbatchjob-performance-profile.md",
+            content=(
+                "RiskBatchJob itera sequencialmente sobre todos os clientes, um N+1 "
+                "classico: uma consulta separada ao banco por cliente, sem batching, "
+                "sem indice em CUSTOMER_ORDER.CUSTOMER_ID, crescendo linearmente com a "
+                "base de clientes."
+            ),
+            language="markdown",
+            embedding_provider=real_embedding_provider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    create_response = client.post(
+        "/api/v1/agent-skills",
+        json={
+            "name": "Agent Skill de Performance e Escalabilidade",
+            "version": "1.0",
+            "author_origin": "Equipe AgentHub",
+            "domain": "performance_escalabilidade",
+            "objective": (
+                "Avaliar gargalos de performance e risco de escalabilidade afetados "
+                "por uma mudanca solicitada."
+            ),
+            "capabilities": [
+                "Recuperar evidencia de gargalos de performance ja registrados",
+                "Identificar ausencia de indice, cache ou batching em componentes criticos",
+                "Sinalizar risco de escalabilidade quando o crescimento de carga e linear",
+            ],
+            "expected_inputs": ["Problema tecnico", "Objetivo", "Contexto da solicitacao"],
+            "produced_outputs": [
+                "Resumo executivo", "Gargalos de performance identificados", "Nivel de confianca",
+            ],
+            "operating_limits": ["Nao altera indices, cache ou infraestrutura automaticamente"],
+            "input_contract_ref": "solicitacao_analise_schema.v1",
+            "output_contract_ref": "resposta_especialista_schema.v1",
+            "validation_criteria": ["Contrato de saida valido"],
+            "persona_instructions": (
+                "Voce e um especialista em performance e escalabilidade de sistemas. "
+                "Analise a solicitacao focando em: padroes de consulta ineficientes "
+                "(ex.: N+1), ausencia de indice/cache/batching, risco de o componente "
+                "nao escalar com o crescimento de carga, e historico de gargalos ja "
+                "registrados. Baseie-se nas evidencias recuperadas da base de conhecimento."
+            ),
+        },
+        headers=authenticated_csrf_headers(client),
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["domain"] == "performance_escalabilidade"
+
+    technical_request = create_qualified_request(
+        client, requested_domains=["performance_escalabilidade"]
+    )
+
+    enable_real_llm(monkeypatch)
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    result = payload["results"][0]
+    assert result["agente_emissor"]["dominio"] == "performance_escalabilidade"
+    assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
+
+
 def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> None:
     """Same flow as test_execute_orchestration_step_runs_skill_and_quality_gate,
     but forces the "stdio" transport: the orchestrator spawns

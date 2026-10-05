@@ -339,6 +339,7 @@
 .workspace-skill-icon-red { color: var(--danger-light); background: rgba(239, 68, 68, 0.16); }
 .workspace-skill-icon-amber { color: var(--warning-light); background: rgba(245, 158, 11, 0.16); }
 .workspace-skill-icon-cyan { color: var(--accent); background: rgba(34, 211, 238, 0.16); }
+.workspace-skill-icon-indigo { color: #a5b4fc; background: rgba(99, 102, 241, 0.16); }
 .workspace-skill-name { margin: 0 0 6px; font-family: var(--font-heading); font-size: 0.94rem; font-weight: 700; }
 .workspace-skill-objective {
   margin: 0;
