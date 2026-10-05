@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 DomainLiteral = Literal[
     "codigo_legado", "regras_negocio", "arquitetura_software", "seguranca_informacao",
     "qualidade_testes", "observabilidade_monitoramento", "performance_escalabilidade",
-    "dados_privacidade", "infraestrutura_devops",
+    "dados_privacidade", "infraestrutura_devops", "apis_integracoes",
 ]
 
 # The RFC's two MCP-inspired schemas (Apêndice C) use two different domain
@@ -55,6 +55,10 @@ _DOMAIN_ALIASES: dict[str, DomainLiteral] = {
     "infraestrutura_devops": "infraestrutura_devops",
     "infraestrutura": "infraestrutura_devops",
     "devops": "infraestrutura_devops",
+    "apis e integracoes": "apis_integracoes",
+    "apis_integracoes": "apis_integracoes",
+    "apis": "apis_integracoes",
+    "integracoes": "apis_integracoes",
 }
 
 # RFC §6.1 "Proteção de Contexto": human-readable label used to scope both the
@@ -70,6 +74,7 @@ DOMAIN_LABELS: dict[str, str] = {
     "performance_escalabilidade": "Performance e Escalabilidade",
     "dados_privacidade": "Dados e Privacidade (LGPD)",
     "infraestrutura_devops": "Infraestrutura e DevOps",
+    "apis_integracoes": "APIs e Integrações",
 }
 
 _REQUIRED_SECTIONS = (

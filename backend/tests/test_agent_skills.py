@@ -736,6 +736,82 @@ def test_infrastructure_domain_executes_with_real_rag_retrieval(client: TestClie
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+def test_api_integration_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
+    """Sexto e ultimo dos 6 dominios novos: "APIs e Integrações". Mesmo
+    padrao dos cinco anteriores."""
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="breaking-change-incident.md",
+            content=(
+                "O servico externo de score mudou o formato da resposta sem aviso "
+                "previo, sem versionamento de URL, sem teste de contrato. O erro de "
+                "parsing foi tratado silenciosamente, escondendo a quebra de integracao "
+                "por 3 dias."
+            ),
+            language="markdown",
+            embedding_provider=real_embedding_provider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    create_response = client.post(
+        "/api/v1/agent-skills",
+        json={
+            "name": "Agent Skill de APIs e Integrações",
+            "version": "1.0",
+            "author_origin": "Equipe AgentHub",
+            "domain": "apis_integracoes",
+            "objective": (
+                "Avaliar contratos de API e risco de integracao afetados por uma "
+                "mudanca solicitada."
+            ),
+            "capabilities": [
+                "Recuperar evidencia de incidentes de integracao ja registrados",
+                "Identificar ausencia de versionamento, timeout ou circuit breaker",
+                "Sinalizar risco de quebra silenciosa de contrato de API",
+            ],
+            "expected_inputs": ["Problema tecnico", "Objetivo", "Contexto da solicitacao"],
+            "produced_outputs": [
+                "Resumo executivo", "Lacunas de contrato/integracao identificadas", "Nivel de confianca",
+            ],
+            "operating_limits": ["Nao altera contratos de API nem integracoes automaticamente"],
+            "input_contract_ref": "solicitacao_analise_schema.v1",
+            "output_contract_ref": "resposta_especialista_schema.v1",
+            "validation_criteria": ["Contrato de saida valido"],
+            "persona_instructions": (
+                "Voce e um especialista em APIs e integracoes. Analise a solicitacao "
+                "focando em: versionamento, timeout e circuit breaker em chamadas a "
+                "servicos internos ou externos, teste de contrato, e historico de "
+                "incidentes de mudanca nao anunciada. Baseie-se nas evidencias "
+                "recuperadas da base de conhecimento."
+            ),
+        },
+        headers=authenticated_csrf_headers(client),
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["domain"] == "apis_integracoes"
+
+    technical_request = create_qualified_request(client, requested_domains=["apis_integracoes"])
+
+    enable_real_llm(monkeypatch)
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    result = payload["results"][0]
+    assert result["agente_emissor"]["dominio"] == "apis_integracoes"
+    assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
+
+
 def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> None:
     """Same flow as test_execute_orchestration_step_runs_skill_and_quality_gate,
     but forces the "stdio" transport: the orchestrator spawns

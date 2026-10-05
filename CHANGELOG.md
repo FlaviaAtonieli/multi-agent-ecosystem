@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-05 - Décimo domínio de Agent Skill: APIs e Integrações (último dos 6 novos)
+
+### Adicionado
+
+- `apis_integracoes` como novo domínio (`contracts.py`, `manifest.py`) -- sexto e último dos 6 domínios novos planejados, empilhado sobre o PR de Infraestrutura e DevOps. Catálogo passa de 4 para 10 domínios de Agent Skill.
+- `app/rag/fixtures/api_integration/`: corpus fictício real -- notas da única integração externa do módulo (síncrona, sem versionamento, sem timeout/circuit breaker, sem teste de contrato) e um incidente real desse universo fictício (mudança de schema do serviço externo não anunciada, escondida por tratamento de erro "generoso demais", só descoberta 3 dias depois).
+- `app/db/seed_agent_skills.py`: sexta e última entrada na seed idempotente desta leva -- agora cobre os 6 domínios novos de ponta a ponta.
+- `backend/tests/test_agent_skills.py::test_api_integration_domain_executes_with_real_rag_retrieval`: execução real de ponta a ponta. Suíte completa de `test_agent_skills.py` em 20 testes (14 originais + 6 dos domínios novos), todos passando com chamadas reais ao OpenRouter.
+- Rótulo/opção de domínio no frontend -- tom `orange` novo em `workspace-skill-icon-orange`.
+
+### Contexto
+
+- a pedido da autora ("sim", confirmando para seguir direto pro próximo domínio empilhado após a PR #77 do quinto). Fecha a leva de 6 domínios novos aprovada em "gosto de todos" -- PRs #73 a #78, cada uma testável e revisável isoladamente, stacked sobre a PR #72 (consolidação da main com o trabalho anterior).
+
 ## 2026-10-05 - Nono domínio de Agent Skill: Infraestrutura e DevOps
 
 ### Adicionado
