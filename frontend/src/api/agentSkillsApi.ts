@@ -5,6 +5,7 @@ export type AgentSkillDomain =
   | 'regras_negocio'
   | 'arquitetura_software'
   | 'seguranca_informacao'
+  | 'qualidade_testes'
 
 export type AgentSkillVisibility = 'OFFICIAL' | 'PRIVATE' | 'CLAN' | 'PUBLIC'
 

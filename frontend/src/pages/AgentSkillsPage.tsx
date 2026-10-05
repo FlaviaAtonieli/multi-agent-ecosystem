@@ -10,6 +10,7 @@ const domainLabels: Record<AgentSkillDomain, string> = {
   regras_negocio: 'Regras de Negócio',
   arquitetura_software: 'Arquitetura de Software',
   seguranca_informacao: 'Segurança da Informação',
+  qualidade_testes: 'Qualidade e Testes',
 }
 
 const domainAbbreviations: Record<AgentSkillDomain, string> = {
@@ -17,6 +18,7 @@ const domainAbbreviations: Record<AgentSkillDomain, string> = {
   regras_negocio: 'RN',
   arquitetura_software: 'AS',
   seguranca_informacao: 'SI',
+  qualidade_testes: 'QT',
 }
 
 const domainTones: Record<AgentSkillDomain, string> = {
@@ -24,6 +26,7 @@ const domainTones: Record<AgentSkillDomain, string> = {
   regras_negocio: 'green',
   arquitetura_software: 'sky',
   seguranca_informacao: 'red',
+  qualidade_testes: 'amber',
 }
 
 const CORE_AGENTS = [

@@ -2,6 +2,26 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-05 - Quinto domínio de Agent Skill: Qualidade e Testes
+
+### Adicionado
+
+- `qualidade_testes` como novo domínio (`contracts.py`, `manifest.py`: `DomainLiteral`, `_DOMAIN_ALIASES`, `DOMAIN_LABELS`) -- primeiro de 6 domínios novos planejados, um por PR empilhado.
+- `app/rag/fixtures/test_quality/`: corpus fictício real (indexado e recuperado de verdade pelo pipeline RAG, sem mock) -- auditoria de cobertura de teste e suíte JUnit existente, no mesmo universo fictício já usado pelos outros domínios (`legacy_billing`/`CreditLimitService`).
+- `app/db/seed_agent_skills.py`: seed idempotente de Agent Skills OFFICIAL por domínio -- registra `qualidade_testes` automaticamente, sem precisar de cadastro manual pela tela a cada domínio novo (os 4 domínios originais foram cadastrados manualmente uma vez e não entram nesta seed).
+- `backend/tests/test_agent_skills.py::test_quality_domain_executes_with_real_rag_retrieval`: prova execução real de ponta a ponta (ingestão real, retrieval real, chamada real ao OpenRouter) pro domínio novo.
+- Rótulo/opção de domínio no frontend (`agentSkillsApi.ts`, `shared.tsx`, `AgentSkillCreatePage.tsx`, `AgentSkillsPage.tsx` -- tom `amber` novo em `workspace-skill-icon-amber`).
+
+### Corrigido
+
+- `parse_modelo_md`: mensagem de erro de domínio não reconhecido passa a listar os domínios válidos dinamicamente a partir de `DOMAIN_LABELS`, em vez de uma string fixa que precisava ser editada a cada domínio novo.
+- Comentários desatualizados em `manifest.py` e `tool_interface.py` que afirmavam que as Agent Skills "oficiais" usam os executores dedicados por domínio (`LegacyCodeSkillExecutor` e análogos). Achado ao investigar como ligar o domínio novo: nenhum caminho do app (nem os dois endpoints de criação de skill, nem nenhum teste) jamais cria uma Agent Skill com `owner_id=None` -- toda skill, inclusive as 4 oficiais, sempre tem dono e por isso sempre roda pelo `GenericSkillExecutor`. Os 4 executores dedicados e seus servidores MCP próprios (`legacy_code_server.py` e análogos) são código mantido mas nunca de fato selecionado por `mcp_client._module_for_skill()` em prática.
+
+### Contexto
+
+- a pedido da autora: consolidar a main (feito, PR #72) e seguir com os domínios novos que ela aprovou ("gosto de todos") -- confirmado pra sequenciar um domínio por PR, com RAG genuinamente funcional (não mockado), conteúdo de corpus podendo seguir o padrão fictício já usado.
+- decisão explícita da autora sobre o achado de código morto: os domínios novos seguem o caminho real de hoje (`GenericSkillExecutor` + `persona_instructions`), sem reativar os executores dedicados.
+
 ## 2026-09-29 - Widget de processando muda do canto inferior direito pro topo
 
 ### Corrigido

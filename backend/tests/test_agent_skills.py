@@ -348,6 +348,85 @@ def test_new_agent_skill_couples_without_orchestrator_changes(
         assert expected in event_types
 
 
+def test_quality_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
+    """First of 6 new domains (RF da expansao de dominios pos-PAC-VIII):
+    "Qualidade e Testes". Registrado via formulario assistido (nao /import),
+    ja que persona_instructions -- o que da ao GenericSkillExecutor seu
+    enquadramento de dominio -- so e aceito por esse endpoint (ver
+    AgentSkillManifestCreate vs. AgentSkillManifestImport). Prova retrieval
+    real (ingestao real, sem mock) e nao so o contrato de saida."""
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="test-coverage-audit.md",
+            content=(
+                "Nenhuma suite de teste cobre os tres consumidores de "
+                "getLimiteCredito() juntos. OrderFlowIntegrationTest e flaky "
+                "em CI por falta de isolamento de dados entre testes."
+            ),
+            language="markdown",
+            embedding_provider=real_embedding_provider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    create_response = client.post(
+        "/api/v1/agent-skills",
+        json={
+            "name": "Agent Skill de Qualidade e Testes",
+            "version": "1.0",
+            "author_origin": "Equipe AgentHub",
+            "domain": "qualidade_testes",
+            "objective": "Avaliar cobertura de testes e risco de regressao de uma mudanca solicitada.",
+            "capabilities": [
+                "Recuperar evidencia de cobertura de teste e testes existentes",
+                "Identificar lacunas de cobertura em componentes criticos",
+                "Sinalizar testes instaveis (flaky) e risco de regressao sem rede de seguranca",
+            ],
+            "expected_inputs": ["Problema tecnico", "Objetivo", "Contexto da solicitacao"],
+            "produced_outputs": [
+                "Resumo executivo", "Lacunas de cobertura identificadas", "Nivel de confianca",
+            ],
+            "operating_limits": ["Nao escreve nem executa testes automaticamente"],
+            "input_contract_ref": "solicitacao_analise_schema.v1",
+            "output_contract_ref": "resposta_especialista_schema.v1",
+            "validation_criteria": ["Contrato de saida valido"],
+            "persona_instructions": (
+                "Voce e um especialista em qualidade de software e estrategia de testes "
+                "automatizados. Analise a solicitacao focando em: cobertura de teste existente "
+                "nos componentes envolvidos, lacunas em cenarios criticos, testes instaveis "
+                "(flaky) e risco de regressao quando nao ha teste automatizado cobrindo a "
+                "mudanca. Baseie-se nas evidencias recuperadas da base de conhecimento."
+            ),
+        },
+        headers=authenticated_csrf_headers(client),
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["domain"] == "qualidade_testes"
+
+    technical_request = create_qualified_request(client, requested_domains=["qualidade_testes"])
+
+    enable_real_llm(monkeypatch)
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    result = payload["results"][0]
+    assert result["agente_emissor"]["dominio"] == "qualidade_testes"
+    # Retrieval precisa ter de fato encontrado o chunk ingerido acima -- prova
+    # que o pipeline RAG (ingestao + embeddings + retrieval) roda de verdade
+    # pro dominio novo, nao so que o contrato de saida bate.
+    assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
+
+
 def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> None:
     """Same flow as test_execute_orchestration_step_runs_skill_and_quality_gate,
     but forces the "stdio" transport: the orchestrator spawns
