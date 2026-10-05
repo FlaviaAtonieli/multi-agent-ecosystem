@@ -5,7 +5,6 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 
-  /* Design system — docs/design/AgentHub-Especificacoes.md §1 */
   --font-heading: 'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-body: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
