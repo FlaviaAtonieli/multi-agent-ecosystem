@@ -58,6 +58,17 @@ class Settings(BaseSettings):
     # Precisa bater exatamente com a "Authorization callback URL" cadastrada
     # no GitHub OAuth App.
     github_oauth_redirect_uri: str = "http://localhost:8000/api/v1/auth/github/callback"
+
+    # Google OAuth: mesmo espírito do GitHub acima -- login adicional, lado a
+    # lado com email/senha e GitHub, não os substitui. Disabled by default --
+    # ver docs/integrations/google-oauth.md.
+    google_oauth_enabled: bool = False
+    google_client_id: str | None = None
+    google_client_secret: SecretStr | None = None
+    # Precisa bater exatamente com um "Authorized redirect URI" cadastrado no
+    # Google Cloud Console (OAuth 2.0 Client ID).
+    google_oauth_redirect_uri: str = "http://localhost:8000/api/v1/auth/google/callback"
+
     # Para onde o navegador volta depois do callback (sucesso ou erro).
     frontend_base_url: str = "http://localhost:5173"
 
@@ -180,6 +191,13 @@ class Settings(BaseSettings):
         return value or None
 
     @property
+    def google_client_secret_value(self) -> str | None:
+        if self.google_client_secret is None:
+            return None
+        value = self.google_client_secret.get_secret_value().strip()
+        return value or None
+
+    @property
     def is_production(self) -> bool:
         return self.environment.lower() == "production"
 
@@ -191,6 +209,16 @@ class Settings(BaseSettings):
             raise ValueError("GITHUB_CLIENT_ID é obrigatório quando GITHUB_OAUTH_ENABLED=true.")
         if not self.github_client_secret_value:
             raise ValueError("GITHUB_CLIENT_SECRET é obrigatório quando GITHUB_OAUTH_ENABLED=true.")
+        return self
+
+    @model_validator(mode="after")
+    def validate_google_oauth_configuration(self) -> "Settings":
+        if not self.google_oauth_enabled:
+            return self
+        if not self.google_client_id:
+            raise ValueError("GOOGLE_CLIENT_ID é obrigatório quando GOOGLE_OAUTH_ENABLED=true.")
+        if not self.google_client_secret_value:
+            raise ValueError("GOOGLE_CLIENT_SECRET é obrigatório quando GOOGLE_OAUTH_ENABLED=true.")
         return self
 
     @model_validator(mode="after")

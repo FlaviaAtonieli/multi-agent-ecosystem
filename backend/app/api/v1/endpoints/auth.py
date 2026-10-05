@@ -15,6 +15,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import (
     github_oauth_rate_limit,
+    google_oauth_rate_limit,
     login_rate_limit,
     register_rate_limit,
     renew_rate_limit,
@@ -40,6 +41,16 @@ from app.services.github_oauth_service import (
     fetch_github_profile,
     find_or_create_user,
 )
+from app.services.google_oauth_service import (
+    GoogleAccountConflictError,
+    GoogleOAuthError,
+    fetch_google_profile,
+)
+from app.services.google_oauth_service import build_authorize_url as build_google_authorize_url
+from app.services.google_oauth_service import (
+    exchange_code_for_access_token as exchange_google_code_for_access_token,
+)
+from app.services.google_oauth_service import find_or_create_user as find_or_create_google_user
 from app.services.session_service import (
     clear_auth_cookies,
     create_session,
@@ -53,6 +64,7 @@ from app.services.session_service import (
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 GITHUB_OAUTH_STATE_COOKIE = "agenthub_github_oauth_state"
+GOOGLE_OAUTH_STATE_COOKIE = "agenthub_google_oauth_state"
 
 
 def _to_user_read(user: User) -> UserRead:
@@ -61,6 +73,7 @@ def _to_user_read(user: User) -> UserRead:
     serializes a User must go through here instead."""
     data = UserRead.model_validate(user).model_dump()
     data["has_password"] = user.password_hash is not None
+    data["oauth_provider"] = "github" if user.github_id else "google" if user.google_id else None
     return UserRead(**data)
 
 
@@ -273,6 +286,7 @@ def delete_my_account(
     user.email = f"conta-removida-{user.id}@removida.local"
     user.avatar_url = None
     user.github_id = None
+    user.google_id = None
     user.password_hash = None
 
     revoked_count = revoke_all_sessions(db, user.id)
@@ -441,4 +455,89 @@ def github_callback(
     redirect = _frontend_redirect("/dashboard")
     set_auth_cookies(redirect, raw_token, csrf_token)
     _clear_github_state_cookie(redirect)
+    return redirect
+
+
+def _clear_google_state_cookie(response: Response) -> None:
+    response.delete_cookie(GOOGLE_OAUTH_STATE_COOKIE, path=f"{settings.api_v1_prefix}/auth/google")
+
+
+def _require_google_oauth_enabled() -> None:
+    if not settings.google_oauth_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Login com Google não está habilitado."
+        )
+
+
+@router.get("/google/login")
+def google_login(_rate: None = Depends(google_oauth_rate_limit)) -> RedirectResponse:
+    """Mirrors github_login: `state` is Google OAuth's own CSRF protection,
+    stashed in a short-lived cookie and checked back on /google/callback."""
+    _require_google_oauth_enabled()
+
+    state = generate_csrf_token()
+    redirect = RedirectResponse(build_google_authorize_url(state), status_code=status.HTTP_302_FOUND)
+    redirect.set_cookie(
+        key=GOOGLE_OAUTH_STATE_COOKIE,
+        value=state,
+        max_age=600,
+        path=f"{settings.api_v1_prefix}/auth/google",
+        secure=settings.cookie_secure,
+        httponly=True,
+        samesite="lax",
+    )
+    return redirect
+
+
+@router.get("/google/callback")
+def google_callback(
+    request: Request,
+    db: Session = Depends(get_db),
+    code: str | None = None,
+    state: str | None = None,
+    _rate: None = Depends(google_oauth_rate_limit),
+) -> RedirectResponse:
+    _require_google_oauth_enabled()
+
+    cookie_state = request.cookies.get(GOOGLE_OAUTH_STATE_COOKIE)
+    if not code or not state or not cookie_state or not secure_compare(state, cookie_state):
+        record_audit(db, request, "AUTH_GOOGLE_STATE_MISMATCH")
+        db.commit()
+        redirect = _frontend_redirect("/login", error="google_oauth_failed")
+        _clear_google_state_cookie(redirect)
+        return redirect
+
+    try:
+        access_token = exchange_google_code_for_access_token(code)
+        profile = fetch_google_profile(access_token)
+        user, created = find_or_create_google_user(db, profile)
+    except GoogleAccountConflictError:
+        redirect = _frontend_redirect("/login", error="google_email_in_use")
+        _clear_google_state_cookie(redirect)
+        return redirect
+    except GoogleOAuthError:
+        record_audit(db, request, "AUTH_GOOGLE_OAUTH_FAILED")
+        db.commit()
+        redirect = _frontend_redirect("/login", error="google_oauth_failed")
+        _clear_google_state_cookie(redirect)
+        return redirect
+
+    if not user.is_active:
+        redirect = _frontend_redirect("/login", error="account_inactive")
+        _clear_google_state_cookie(redirect)
+        return redirect
+
+    auth_session, raw_token, csrf_token = create_session(db, user, request)
+    record_audit(
+        db,
+        request,
+        "AUTH_REGISTER_SUCCESS" if created else "AUTH_LOGIN_SUCCESS",
+        user_id=user.id,
+        details={"provider": "google", "session_id": auth_session.id},
+    )
+    db.commit()
+
+    redirect = _frontend_redirect("/dashboard")
+    set_auth_cookies(redirect, raw_token, csrf_token)
+    _clear_google_state_cookie(redirect)
     return redirect

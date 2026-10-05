@@ -34,6 +34,7 @@ def _tokens_used_today_by_user(db: Session) -> dict[str, int]:
 def _to_admin_user_read(user: User, tokens_used_today: int) -> AdminUserRead:
     data = UserRead.model_validate(user).model_dump()
     data["has_password"] = user.password_hash is not None
+    data["oauth_provider"] = "github" if user.github_id else "google" if user.google_id else None
     return AdminUserRead(
         **data,
         tokens_used_today=tokens_used_today,

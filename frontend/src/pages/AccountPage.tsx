@@ -121,7 +121,11 @@ export function AccountPage() {
             <label className="workspace-field workspace-field-full">
               E-mail
               <input value={user.email} disabled />
-              <small>{user.has_password ? 'Login por e-mail e senha.' : 'Conta vinculada ao GitHub.'}</small>
+              <small>
+                {user.has_password
+                  ? 'Login por e-mail e senha.'
+                  : `Conta vinculada ao ${user.oauth_provider === 'google' ? 'Google' : 'GitHub'}.`}
+              </small>
             </label>
             {nameError && <div className="alert alert-error">{nameError}</div>}
             {nameMessage && <div className="alert alert-success">{nameMessage}</div>}

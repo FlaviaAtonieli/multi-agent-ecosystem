@@ -4,6 +4,7 @@ import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
 import { Brand } from '../components/Brand'
 import { GitHubLoginButton } from '../components/GitHubLoginButton'
+import { GoogleLoginButton } from '../components/GoogleLoginButton'
 
 export function RegisterPage() {
   const navigate = useNavigate()
@@ -85,6 +86,7 @@ export function RegisterPage() {
 
           <div className="auth-divider">ou</div>
           <GitHubLoginButton />
+          <GoogleLoginButton />
 
           <p className="form-footer">
             Já possui conta? <Link to="/login">Voltar ao login</Link>
