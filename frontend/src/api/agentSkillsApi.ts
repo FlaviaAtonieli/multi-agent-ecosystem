@@ -7,6 +7,7 @@ export type AgentSkillDomain =
   | 'seguranca_informacao'
   | 'qualidade_testes'
   | 'observabilidade_monitoramento'
+  | 'performance_escalabilidade'
 
 export type AgentSkillVisibility = 'OFFICIAL' | 'PRIVATE' | 'CLAN' | 'PUBLIC'
 

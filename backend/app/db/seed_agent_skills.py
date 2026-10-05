@@ -75,6 +75,38 @@ _NEW_OFFICIAL_SKILLS: list[AgentSkillManifest] = [
             "nas evidências recuperadas da base de conhecimento."
         ),
     ),
+    AgentSkillManifest(
+        name="Agent Skill de Performance e Escalabilidade",
+        version="1.0",
+        author_origin="Equipe AgentHub (PoC acadêmica)",
+        domain="performance_escalabilidade",
+        objective=(
+            "Avaliar gargalos de performance e risco de escalabilidade de um componente "
+            "afetado por uma mudança solicitada, usando evidência recuperada da base de "
+            "conhecimento indexada (perfis de performance, notas de capacidade)."
+        ),
+        capabilities=[
+            "Recuperar evidência de gargalos de performance já registrados (ex.: consultas N+1)",
+            "Identificar ausência de índice, cache ou batching em componentes críticos",
+            "Sinalizar risco de escalabilidade quando o crescimento de carga é linear sem mitigação",
+        ],
+        expected_inputs=["Problema técnico", "Objetivo", "Contexto da solicitação"],
+        produced_outputs=[
+            "Resumo executivo", "Gargalos de performance identificados", "Nível de confiança",
+        ],
+        operating_limits=["Não altera índices, cache ou infraestrutura automaticamente"],
+        input_contract_ref="solicitacao_analise_schema.v1",
+        output_contract_ref="resposta_especialista_schema.v1",
+        validation_criteria=["Contrato de saída válido"],
+        persona_instructions=(
+            "Você é um especialista em performance e escalabilidade de sistemas. Analise "
+            "a solicitação focando em: padrões de consulta ineficientes (ex.: N+1), "
+            "ausência de índice/cache/batching, risco de o componente não escalar com o "
+            "crescimento de carga (linear ou pior), e histórico de gargalos já registrados "
+            "para componentes relacionados. Baseie-se nas evidências recuperadas da base "
+            "de conhecimento."
+        ),
+    ),
 ]
 
 

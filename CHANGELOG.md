@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-05 - Sétimo domínio de Agent Skill: Performance e Escalabilidade
+
+### Adicionado
+
+- `performance_escalabilidade` como novo domínio (`contracts.py`, `manifest.py`) -- terceiro de 6 domínios novos planejados, empilhado sobre o PR de Observabilidade e Monitoramento.
+- `app/rag/fixtures/performance/`: corpus fictício real -- perfil de performance do `RiskBatchJob` (consulta N+1 clássica, sem índice em `CUSTOMER_ORDER.CUSTOMER_ID`) e notas de capacidade sobre o caminho síncrono de aprovação de pedido, no mesmo universo fictício já estabelecido.
+- `app/db/seed_agent_skills.py`: terceira entrada na seed idempotente.
+- `backend/tests/test_agent_skills.py::test_performance_domain_executes_with_real_rag_retrieval`: execução real de ponta a ponta.
+- Rótulo/opção de domínio no frontend -- tom `indigo` novo em `workspace-skill-icon-indigo`.
+
+### Contexto
+
+- a pedido da autora ("sim", confirmando para seguir direto pro próximo domínio empilhado após a PR #74 do segundo).
+
 ## 2026-10-05 - Sexto domínio de Agent Skill: Observabilidade e Monitoramento
 
 ### Adicionado

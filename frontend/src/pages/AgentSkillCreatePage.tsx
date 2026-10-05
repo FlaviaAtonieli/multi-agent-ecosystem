@@ -13,6 +13,7 @@ const DOMAIN_OPTIONS: Array<{ value: AgentSkillDomain; label: string }> = [
   { value: 'seguranca_informacao', label: 'Segurança da Informação' },
   { value: 'qualidade_testes', label: 'Qualidade e Testes' },
   { value: 'observabilidade_monitoramento', label: 'Observabilidade e Monitoramento' },
+  { value: 'performance_escalabilidade', label: 'Performance e Escalabilidade' },
 ]
 
 // Todo skill hoje usa os mesmos contratos padrão (só existe um schema de
