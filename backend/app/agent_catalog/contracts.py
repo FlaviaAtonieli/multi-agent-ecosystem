@@ -40,6 +40,7 @@ class AgenteEmissor(BaseModel):
     dominio: Literal[
         "codigo_legado", "regras_negocio", "arquitetura_software", "seguranca_informacao",
         "qualidade_testes", "observabilidade_monitoramento", "performance_escalabilidade",
+        "dados_privacidade",
     ]
 
 

@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-05 - Oitavo domínio de Agent Skill: Dados e Privacidade (LGPD)
+
+### Adicionado
+
+- `dados_privacidade` como novo domínio (`contracts.py`, `manifest.py`) -- quarto de 6 domínios novos planejados, empilhado sobre o PR de Performance e Escalabilidade.
+- `app/rag/fixtures/data_privacy/`: corpus fictício real -- auditoria de lacunas de conformidade LGPD (sem base legal documentada, sem retenção, sem fluxo de direito do titular, exportação sem anonimização) e notas de minimização de dados, no mesmo universo fictício já estabelecido.
+- `app/db/seed_agent_skills.py`: quarta entrada na seed idempotente.
+- `backend/tests/test_agent_skills.py::test_data_privacy_domain_executes_with_real_rag_retrieval`: execução real de ponta a ponta.
+- Rótulo/opção de domínio no frontend -- tom `teal` novo em `workspace-skill-icon-teal`.
+
+### Contexto
+
+- a pedido da autora ("siga", confirmando para seguir direto pro próximo domínio empilhado após a PR #75 do terceiro).
+
 ## 2026-10-05 - Sétimo domínio de Agent Skill: Performance e Escalabilidade
 
 ### Adicionado

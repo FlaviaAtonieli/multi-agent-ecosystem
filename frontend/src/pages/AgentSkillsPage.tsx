@@ -13,6 +13,7 @@ const domainLabels: Record<AgentSkillDomain, string> = {
   qualidade_testes: 'Qualidade e Testes',
   observabilidade_monitoramento: 'Observabilidade e Monitoramento',
   performance_escalabilidade: 'Performance e Escalabilidade',
+  dados_privacidade: 'Dados e Privacidade (LGPD)',
 }
 
 const domainAbbreviations: Record<AgentSkillDomain, string> = {
@@ -23,6 +24,7 @@ const domainAbbreviations: Record<AgentSkillDomain, string> = {
   qualidade_testes: 'QT',
   observabilidade_monitoramento: 'OM',
   performance_escalabilidade: 'PE',
+  dados_privacidade: 'DP',
 }
 
 const domainTones: Record<AgentSkillDomain, string> = {
@@ -33,6 +35,7 @@ const domainTones: Record<AgentSkillDomain, string> = {
   qualidade_testes: 'amber',
   observabilidade_monitoramento: 'cyan',
   performance_escalabilidade: 'indigo',
+  dados_privacidade: 'teal',
 }
 
 const CORE_AGENTS = [
