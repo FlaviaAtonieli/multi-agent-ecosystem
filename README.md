@@ -6,41 +6,24 @@ Projeto acadêmico **Arquitetura de Integração de Agentes Especialistas em Amb
 
 A proposta é validar uma arquitetura modular para registrar, selecionar, coordenar e auditar capacidades especializadas. A Prova de Conceito usa solicitações técnicas como entrada e mantém o vínculo entre contexto, decisões, chamadas de modelo e eventos por meio de um `Trace ID`.
 
-## Estado atual
+## Tecnologias
 
-A base implementa:
+- **Frontend**: React, Vite, TypeScript.
+- **Backend**: FastAPI, SQLAlchemy, PostgreSQL, migrations via Alembic.
+- **Autenticação**: sessão opaca em cookie `HttpOnly` -- e-mail/senha, GitHub OAuth ou Google OAuth (ambos opcionais).
+- **Modelo de IA**: OpenRouter como Model Gateway primário (RAG + LLM), sem provedor mock.
+- **Infra**: Docker Compose; guia de deploy no Azure em [docs/deployment/azure.md](docs/deployment/azure.md).
 
-- frontend em React, Vite e TypeScript;
-- API em FastAPI com SQLAlchemy;
-- PostgreSQL e migrations Alembic;
-- autenticação por sessão opaca em cookie `HttpOnly`, por e-mail/senha, login com GitHub ou login com Google (OAuth, ambos opcionais — ver [docs/integrations/github-oauth.md](docs/integrations/github-oauth.md) e [docs/integrations/google-oauth.md](docs/integrations/google-oauth.md));
-- proteção CSRF, rate limiting e auditoria;
-- perfis `USER`, `TECHNICIAN`, `REVIEWER` e `ADMIN`;
-- criação de solicitações técnicas;
-- qualificação inicial do contexto;
-- anexo de documentos de texto (código-fonte, markdown, etc.) como contexto adicional de uma solicitação — PDF/DOCX ainda não são suportados;
-- geração de `Trace ID`;
-- histórico e timeline de eventos;
-- abstração de provedores de modelo, com OpenRouter como Model Gateway primário;
-- adaptador da OpenAI mantido como integração direta opcional;
-- registro de invocações com identificador próprio, hashes, latência e uso de tokens;
-- ingestão e recuperação de contexto (RAG) sobre uma base de conhecimento indexada;
-- catálogo funcional de Agent Skills, com importação do manifesto `modelo.md` e aprovação humana obrigatória;
-- clãs: grupos auto-serviço (qualquer usuário cria um e vira membro automaticamente; qualquer membro adiciona/remove outros) que servem de escopo para uma terceira visibilidade de Agent Skill, `CLAN` — visível só a quem participa daquele clã, entre `OFFICIAL` (todo o ecossistema) e `PRIVATE` (só o dono);
-- página de conta (`/account`): editar nome, trocar senha (contas por senha), ver papel e clãs, excluir a própria conta — exclusão é lógica (desativa e limpa nome/e-mail), não uma remoção definitiva da linha, já que várias outras tabelas referenciam o usuário com `ondelete=RESTRICT` (histórico de invocações, skills submetidas, clãs criados);
-- execução de Agent Skills via MCP e avaliação por Quality Gate;
-- dez domínios de Agent Skill oficiais (Código Legado, Regras de Negócio, Arquitetura de Software, Segurança da Informação, Qualidade e Testes, Observabilidade e Monitoramento, Performance e Escalabilidade, Dados e Privacidade/LGPD, Infraestrutura e DevOps, APIs e Integrações), acionáveis em conjunto numa mesma análise — todos rodam hoje pelo `GenericSkillExecutor` (orientado por `persona_instructions`, ver nota abaixo), não pelos executores dedicados por domínio (`LegacyCodeSkillExecutor` e análogos em `app/agent_catalog/tool_interface.py`), que ficaram sem nenhum caminho alcançável via API desde que `GenericSkillExecutor` foi introduzido;
-- revisão humana de solicitações sinalizadas pelo Quality Gate (perfil `REVIEWER` ou `ADMIN`, aprovação ou rejeição com justificativa, `POST /api/v1/requests/{id}/review`);
-- resposta final consolidada (síntese técnica, recomendações, riscos, limitações e agentes participantes), distinta das respostas parciais de cada Agent Skill;
-- extensibilidade plug-and-play comprovada: cada domínio adicionado depois dos três originais foi acoplado sem alteração do núcleo do Orquestrador — evidência em `docs/validation/evidence/2026-08-plug-and-play-extensibility.md`;
-- seed idempotente do catálogo (`app/db/seed_agent_skills.py`): garante uma Agent Skill OFFICIAL por domínio novo sem precisar de cadastro manual pela tela a cada domínio adicionado;
-- CI/CD com análise estática no pipeline (`.github/workflows/ci.yml`): `ruff`/`mypy` no backend e `tsc`/`vite build` no frontend, em todo push/PR.
+## Capacidades principais
 
-Ainda não fazem parte desta base:
+- Solicitação técnica → qualificação de contexto → execução por Agent Skills (RAG + LLM) → Quality Gate → resposta consolidada, tudo rastreado por `Trace ID`.
+- Catálogo de 10 domínios de Agent Skill oficiais, extensível por manifesto `modelo.md` sem alterar o núcleo do Orquestrador (evidência: `docs/validation/evidence/2026-08-plug-and-play-extensibility.md`).
+- Revisão humana obrigatória de solicitações sinalizadas pelo Quality Gate (perfil `REVIEWER`/`ADMIN`).
+- Clãs (grupos auto-serviço) como terceira visibilidade de Agent Skill, ao lado de `OFFICIAL`/`PRIVATE`.
+- Página de conta com exclusão lógica (preserva histórico referenciado por outras tabelas).
+- CI com análise estática em todo push/PR (`.github/workflows/ci.yml`).
 
-- seleção dinâmica de skills (hoje o roteamento é por correspondência exata de domínio — decisão deliberada de escopo);
-- publicação automática de artefatos;
-- extração de texto de anexos binários (PDF, DOCX) — só texto puro (UTF-8) é aceito hoje.
+Detalhes de arquitetura, os três níveis de controle de acesso e o que ainda não faz parte da base: [Wiki do projeto](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) e [SECURITY.md](SECURITY.md#autorização).
 
 > O perfil `REVIEWER` não está definido na RFC (a especificação principal do projeto); ele vem de `docs/Documento_de_referencia.md`, um documento à parte com uma visão arquitetural mais ampla. Foi implementado por decisão explícita, fora do escopo formal da RFC v3.1.
 
@@ -138,24 +121,13 @@ Na base atual, o resultado esperado é:
 ```text
 Usuário autenticado
   -> cria uma solicitação técnica
-  -> sistema gera o Trace ID
-  -> contexto é avaliado
-  -> status fica AWAITING_CONTEXT ou QUALIFIED
-  -> eventos são persistidos
-  -> dashboard e timeline exibem o histórico
+  -> contexto é avaliado (AWAITING_CONTEXT ou QUALIFIED)
+  -> execução aciona as Agent Skills do(s) domínio(s) pedido(s)
+  -> Quality Gate aprova ou sinaliza revisão humana
+  -> resposta final consolidada
 ```
 
-A execução exige um usuário autenticado com qualquer papel exceto `REVIEWER` (ver `ORCHESTRATION_ROLES` em `app/core/roles.py` — separação de funções: quem revisa não é quem produz), `LLM_ENABLED=true` e uma `OPENROUTER_API_KEY` válida. O resultado é estruturado e marcado para aprovação humana. A base não executa tools nem publica documentos automaticamente.
-
-### Acesso e cota de uso (três camadas independentes)
-
-São três verificações separadas, aplicadas nesta ordem — cada uma só é avaliada se a anterior já passou:
-
-1. **Papel do usuário** (controla *se* a pessoa pode executar). Todo cadastro novo nasce como `USER` e já consegue executar orquestrações — `USER`, `TECHNICIAN` e `ADMIN` podem; só `REVIEWER` não pode (seu papel é avaliar o que foi produzido, não produzir). Importar/criar uma nova Agent Skill continua restrito a `TECHNICIAN`/`ADMIN` — rodar uma skill já existente é um nível de confiança diferente de decidir quais skills entram no catálogo. Só um `ADMIN` pode promover alguém de papel, pela página `/admin` (menu "ADMINISTRAÇÃO", visível só para quem já é admin) — não existe autopromoção nem fluxo de aprovação automática. A conta admin de bootstrap (`BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` no `.env`) é o ponto de partida para promover as primeiras contas.
-2. **Visibilidade da Agent Skill** (controla *o que* existe pra executar). Toda skill nova nasce `OFFICIAL` — visível e executável por qualquer usuário autenticado, não só por quem a importou — pra que o catálogo não fique vazio para todo mundo além do `TECHNICIAN`/`ADMIN` que importou cada skill. `owner_id` continua registrado para atribuição/auditoria, mesmo não controlando mais visibilidade por padrão; `visibility="PRIVATE"` ainda existe no modelo para quem quiser registrar uma skill em teste, visível só ao próprio dono (e a `ADMIN`), mas não é o padrão. Uma terceira opção, `visibility="CLAN"`, escopa a skill a um clã (`clan_id`) — visível só a quem participa daquele clã.
-3. **Cota diária de tokens** (controla *quanto* uma pessoa já autorizada pode executar naquele dia; desligada por padrão — `LLM_DAILY_TOKEN_LIMIT_PER_USER=0`). Ver [Integração com provedores de modelo](docs/integrations/model-provider.md#cota-diária-de-tokens-por-usuário) para os detalhes — `LLM_DAILY_TOKEN_LIMIT_PER_USER` no `.env`, contas `ADMIN` sempre isentas.
-
-> Como o cadastro é aberto por padrão (`ALLOW_REGISTRATION=true`) e agora `USER` executa sem precisar de promoção, um deploy real exposto publicamente deve considerar reativar a cota diária de tokens (item 3) e/ou fechar o cadastro — sem isso, qualquer pessoa que se cadastre pode gerar chamadas de LLM sem limite algum.
+Exige usuário autenticado (qualquer papel exceto `REVIEWER`), `LLM_ENABLED=true` e `OPENROUTER_API_KEY` válida. A base não executa tools nem publica documentos automaticamente. Detalhe completo do fluxo e dos três níveis de controle de acesso (papel → visibilidade da skill → cota de tokens): [Wiki do projeto](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) e [SECURITY.md](SECURITY.md#autorização).
 
 ## Testes
 
@@ -177,6 +149,10 @@ Frontend:
 ```powershell
 docker compose build frontend --no-cache
 ```
+
+## Endereço da aplicação
+
+Ainda não implantada em produção -- guia de deploy (Azure) pronto em [docs/deployment/azure.md](docs/deployment/azure.md), execução pendente.
 
 ## Documentação
 

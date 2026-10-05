@@ -45,6 +45,16 @@ A implementação atual possui quatro perfis:
 
 A promoção de perfil é restrita ao administrador. Quando o papel de outro usuário é alterado, as sessões desse usuário são revogadas.
 
+### Três camadas de controle de acesso
+
+Independentes entre si e avaliadas nesta ordem -- cada uma só é checada se a anterior já passou:
+
+1. **Papel do usuário** (controla *se* a pessoa pode executar). Todo cadastro novo nasce `USER` e já executa orquestrações -- `USER`, `TECHNICIAN` e `ADMIN` podem; só `REVIEWER` não pode. Importar/criar Agent Skill continua restrito a `TECHNICIAN`/`ADMIN`.
+2. **Visibilidade da Agent Skill** (controla *o que* existe pra executar). Toda skill nova nasce `OFFICIAL` (visível a qualquer usuário autenticado). `PRIVATE` fica restrita ao dono (e `ADMIN`); `CLAN` fica restrita aos membros do clã (`clan_id`) associado.
+3. **Cota diária de tokens** (controla *quanto* uma pessoa já autorizada pode executar naquele dia; desligada por padrão -- `LLM_DAILY_TOKEN_LIMIT_PER_USER=0`). `ADMIN` sempre isento. Detalhes: [docs/integrations/model-provider.md](docs/integrations/model-provider.md#cota-diária-de-tokens-por-usuário).
+
+> Como o cadastro é aberto por padrão (`ALLOW_REGISTRATION=true`) e `USER` executa sem precisar de promoção, um deploy exposto publicamente deve considerar reativar a cota diária de tokens (item 3) e/ou fechar o cadastro.
+
 ## Segurança da integração com modelos
 
 - Integração desabilitada por padrão.
