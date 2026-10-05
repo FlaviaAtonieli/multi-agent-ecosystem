@@ -2,6 +2,20 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-05 - Nono domínio de Agent Skill: Infraestrutura e DevOps
+
+### Adicionado
+
+- `infraestrutura_devops` como novo domínio (`contracts.py`, `manifest.py`) -- quinto de 6 domínios novos planejados, empilhado sobre o PR de Dados e Privacidade (LGPD).
+- `app/rag/fixtures/infrastructure/`: corpus fictício real -- processo de deploy manual (sem CI/CD, sem infraestrutura como código, sem rollback automatizado, credencial em arquivo `.properties` copiado manualmente) e lacunas de paridade entre ambientes (versão de banco e volume de dados diferentes causaram um incidente de aprovação duplicada), no mesmo universo fictício já estabelecido.
+- `app/db/seed_agent_skills.py`: quinta entrada na seed idempotente.
+- `backend/tests/test_agent_skills.py::test_infrastructure_domain_executes_with_real_rag_retrieval`: execução real de ponta a ponta.
+- Rótulo/opção de domínio no frontend -- tom `rose` novo em `workspace-skill-icon-rose`.
+
+### Contexto
+
+- a pedido da autora ("sim", confirmando para seguir direto pro próximo domínio empilhado após a PR #76 do quarto).
+
 ## 2026-10-05 - Oitavo domínio de Agent Skill: Dados e Privacidade (LGPD)
 
 ### Adicionado
