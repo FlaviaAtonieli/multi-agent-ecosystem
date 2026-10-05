@@ -251,8 +251,7 @@ export function AgentNetworkHero({ variant = 'login' }: AgentNetworkHeroProps) {
       <div className="network-copy">
         <span className="network-kicker">ECOSSISTEMA MODULAR E RASTREÁVEL</span>
         <h1>
-          <span>multi-agent</span>
-          <strong>ecosystem</strong>
+          <span>Flav.IA</span>
         </h1>
         <p>Arquitetura de Integração de Agentes Especialistas em Ambientes Corporativos</p>
       </div>
