@@ -1,5 +1,7 @@
 # Multi-Agent Ecosystem
 
+[![CI](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/actions/workflows/ci.yml)
+
 Projeto acadêmico **Arquitetura de Integração de Agentes Especialistas em Ambientes Corporativos**.
 
 A proposta é validar uma arquitetura modular para registrar, selecionar, coordenar e auditar capacidades especializadas. A Prova de Conceito usa solicitações técnicas como entrada e mantém o vínculo entre contexto, decisões, chamadas de modelo e eventos por meio de um `Trace ID`.

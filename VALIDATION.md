@@ -26,9 +26,25 @@ detalhadas em [`docs/validation/evidence/`](docs/validation/evidence/) — este 
 - clãs: grupos auto-serviço, qualquer usuário cria e gerencia membros;
 - login com GitHub (OAuth, opcional) além de e-mail/senha;
 - anexo de documentos de texto como contexto adicional de uma solicitação;
-- pipeline RAG com qualidade medida (Precision@k/Recall@k/MRR) nos 4 domínios de Agent
-  Skill, com bases de conhecimento co-indexadas (ver evidências específicas);
-- 106 testes automatizados do backend, 100% reais (sem mock).
+- pipeline RAG com qualidade medida (Precision@k/Recall@k/MRR) nos 4 domínios originais
+  de Agent Skill, com bases de conhecimento co-indexadas (ver evidências específicas) —
+  catálogo hoje tem 10 domínios ao todo (ver seção "Núcleo comum de engenharia");
+- 112 testes automatizados do backend, 100% reais (sem mock).
+
+## Núcleo comum de engenharia
+
+Itens exigidos pela rubrica independentemente da trilha (IA vs. Web Apps):
+
+- [x] **CI/CD** — `.github/workflows/ci.yml`, roda em todo push/PR.
+- [x] **Análise estática no pipeline** — `ruff check` + `mypy` (backend) e `tsc` (frontend),
+  como etapas do mesmo workflow de CI.
+- [ ] **Wiki no GitHub** — ainda não criada.
+- [ ] **Monitoramento/observabilidade** — ainda não implementado.
+
+A suíte de testes fica fora do CI de propósito: chama a OpenRouter de verdade, sem mock
+(ver seção "Testes" abaixo) — rodar a cada push gastaria créditos reais e poderia ficar
+vermelho por instabilidade do provedor gratuito, não por bug de código. Continua rodando
+localmente antes de cada PR.
 
 ## Comandos locais
 

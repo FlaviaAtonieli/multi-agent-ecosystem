@@ -2,6 +2,24 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-05 - CI/CD + análise estática no pipeline (núcleo comum de engenharia, 1/4)
+
+### Adicionado
+
+- `.github/workflows/ci.yml`: pipeline de CI rodando em todo push/PR, com dois jobs em paralelo -- backend (`ruff check` + `mypy`) e frontend (`tsc -b` + `vite build`, via `npm run build`). Endereça dois dos 4 itens do "núcleo comum de engenharia" da rubrica PAC VIII (CI/CD e análise estática no pipeline) na mesma peça de infraestrutura, já que análise estática *é* o que roda nesse pipeline.
+- Badge de status do CI no topo do `README.md`.
+- `VALIDATION.md`: nova seção "Núcleo comum de engenharia", rastreando os 4 itens da rubrica (2/4 feitos: CI/CD e análise estática; faltam Wiki e monitoramento). Números de teste (106 -> 112) e a menção "4 skills oficiais" atualizados pra refletir os 10 domínios atuais.
+
+### Corrigido
+
+- `backend/pyproject.toml`: `ruff` ganha `extend-exclude = ["alembic/versions"]` -- rodar `ruff check .` (escopo completo, nunca feito antes desta PR; até aqui sempre rodado só nos arquivos tocados) achou 38 erros, todos em migrations geradas pelo Alembic (linhas longas em `op.create_table`, import não ordenado). Excluídas do lint por serem scaffolding já aplicado contra bancos reais, não código mantido à mão.
+- `backend/alembic/env.py`: import reordenado (`ruff --fix`) -- único arquivo de configuração do Alembic fora de `versions/`, mantido à mão, então corrigido em vez de excluído. Mudança cosmética, sem alteração de comportamento (confirmado rodando `alembic upgrade head` -- carrega e executa normalmente; só falha contra SQLite por sintaxe `ALTER COLUMN TYPE`, que é Postgres-only e não tem relação com esta mudança).
+
+### Contexto
+
+- a pedido da autora: "vamos focar no núcleo" (núcleo comum de engenharia, maior risco pendente da rubrica PAC VIII). Decisões confirmadas antes de implementar: CI roda só lint/type-check, não a suíte de testes completa (que chama OpenRouter de verdade -- custo e flakiness por push, inaceitável); monitoramento (item separado) será Prometheus+Grafana via docker-compose.
+- validado rodando `ruff check .`, `mypy app` e `npm run build` localmente, iguais aos comandos do workflow, antes de commitar.
+
 ## 2026-10-05 - Rebranding: AgentHub vira Flav.IA
 
 ### Corrigido
