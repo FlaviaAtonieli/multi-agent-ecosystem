@@ -337,6 +337,12 @@
 .workspace-skill-icon-green { color: var(--success-light); background: rgba(34, 197, 94, 0.16); }
 .workspace-skill-icon-sky { color: var(--info); background: rgba(56, 189, 248, 0.16); }
 .workspace-skill-icon-red { color: var(--danger-light); background: rgba(239, 68, 68, 0.16); }
+.workspace-skill-icon-amber { color: var(--warning-light); background: rgba(245, 158, 11, 0.16); }
+.workspace-skill-icon-cyan { color: var(--accent); background: rgba(34, 211, 238, 0.16); }
+.workspace-skill-icon-indigo { color: #a5b4fc; background: rgba(99, 102, 241, 0.16); }
+.workspace-skill-icon-teal { color: #5eead4; background: rgba(20, 184, 166, 0.16); }
+.workspace-skill-icon-rose { color: #fda4af; background: rgba(244, 63, 94, 0.16); }
+.workspace-skill-icon-orange { color: #fdba74; background: rgba(249, 115, 22, 0.16); }
 .workspace-skill-name { margin: 0 0 6px; font-family: var(--font-heading); font-size: 0.94rem; font-weight: 700; }
 .workspace-skill-objective {
   margin: 0;

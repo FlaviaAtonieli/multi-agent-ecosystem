@@ -5,7 +5,9 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 DomainLiteral = Literal[
-    "codigo_legado", "regras_negocio", "arquitetura_software", "seguranca_informacao"
+    "codigo_legado", "regras_negocio", "arquitetura_software", "seguranca_informacao",
+    "qualidade_testes", "observabilidade_monitoramento", "performance_escalabilidade",
+    "dados_privacidade", "infraestrutura_devops", "apis_integracoes",
 ]
 
 # The RFC's two MCP-inspired schemas (Apêndice C) use two different domain
@@ -33,6 +35,30 @@ _DOMAIN_ALIASES: dict[str, DomainLiteral] = {
     "seguranca da informacao": "seguranca_informacao",
     "seguranca_informacao": "seguranca_informacao",
     "seguranca": "seguranca_informacao",
+    "qualidade e testes": "qualidade_testes",
+    "qualidade_testes": "qualidade_testes",
+    "testes": "qualidade_testes",
+    "qualidade": "qualidade_testes",
+    "observabilidade e monitoramento": "observabilidade_monitoramento",
+    "observabilidade_monitoramento": "observabilidade_monitoramento",
+    "observabilidade": "observabilidade_monitoramento",
+    "monitoramento": "observabilidade_monitoramento",
+    "performance e escalabilidade": "performance_escalabilidade",
+    "performance_escalabilidade": "performance_escalabilidade",
+    "performance": "performance_escalabilidade",
+    "escalabilidade": "performance_escalabilidade",
+    "dados e privacidade": "dados_privacidade",
+    "dados_privacidade": "dados_privacidade",
+    "privacidade": "dados_privacidade",
+    "lgpd": "dados_privacidade",
+    "infraestrutura e devops": "infraestrutura_devops",
+    "infraestrutura_devops": "infraestrutura_devops",
+    "infraestrutura": "infraestrutura_devops",
+    "devops": "infraestrutura_devops",
+    "apis e integracoes": "apis_integracoes",
+    "apis_integracoes": "apis_integracoes",
+    "apis": "apis_integracoes",
+    "integracoes": "apis_integracoes",
 }
 
 # RFC §6.1 "Proteção de Contexto": human-readable label used to scope both the
@@ -43,6 +69,12 @@ DOMAIN_LABELS: dict[str, str] = {
     "regras_negocio": "Regras de Negócio",
     "arquitetura_software": "Arquitetura de Software",
     "seguranca_informacao": "Segurança da Informação",
+    "qualidade_testes": "Qualidade e Testes",
+    "observabilidade_monitoramento": "Observabilidade e Monitoramento",
+    "performance_escalabilidade": "Performance e Escalabilidade",
+    "dados_privacidade": "Dados e Privacidade (LGPD)",
+    "infraestrutura_devops": "Infraestrutura e DevOps",
+    "apis_integracoes": "APIs e Integrações",
 }
 
 _REQUIRED_SECTIONS = (
@@ -87,9 +119,12 @@ class AgentSkillManifest(BaseModel):
     usage_examples: list[str] = Field(default_factory=list)
     validation_criteria: list[str] = Field(default_factory=list)
     uses_external_services: bool = False
-    # Only meaningful for a user-created skill executed by GenericSkillExecutor
-    # -- the 4 official skills keep their behavior in dedicated SkillExecutor
-    # subclasses and ignore this field even if present.
+    # Drives GenericSkillExecutor, which every skill in this catalog runs
+    # through today -- register_skill() has no API-reachable path that
+    # creates a skill with owner_id=None, so the per-domain SkillExecutor
+    # subclasses in tool_interface.py (LegacyCodeSkillExecutor and friends)
+    # are never actually selected by mcp_client._module_for_skill() in
+    # practice, even for the "official" skills.
     persona_instructions: str | None = Field(default=None, max_length=4000)
 
 
@@ -172,9 +207,9 @@ def parse_modelo_md(content: str) -> AgentSkillManifest:
     else:
         domain = _resolve_domain(raw_domain)
         if domain is None:
+            valid_domains = ", ".join(DOMAIN_LABELS.values())
             errors.append(
-                f"Domínio de atuação '{raw_domain}' não reconhecido. Use um de: código legado, "
-                "regras de negócio, arquitetura de software, segurança da informação."
+                f"Domínio de atuação '{raw_domain}' não reconhecido. Use um de: {valid_domains}."
             )
 
     if errors:

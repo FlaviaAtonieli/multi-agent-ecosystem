@@ -348,6 +348,470 @@ def test_new_agent_skill_couples_without_orchestrator_changes(
         assert expected in event_types
 
 
+def test_quality_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
+    """First of 6 new domains (RF da expansao de dominios pos-PAC-VIII):
+    "Qualidade e Testes". Registrado via formulario assistido (nao /import),
+    ja que persona_instructions -- o que da ao GenericSkillExecutor seu
+    enquadramento de dominio -- so e aceito por esse endpoint (ver
+    AgentSkillManifestCreate vs. AgentSkillManifestImport). Prova retrieval
+    real (ingestao real, sem mock) e nao so o contrato de saida."""
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="test-coverage-audit.md",
+            content=(
+                "Nenhuma suite de teste cobre os tres consumidores de "
+                "getLimiteCredito() juntos. OrderFlowIntegrationTest e flaky "
+                "em CI por falta de isolamento de dados entre testes."
+            ),
+            language="markdown",
+            embedding_provider=real_embedding_provider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    create_response = client.post(
+        "/api/v1/agent-skills",
+        json={
+            "name": "Agent Skill de Qualidade e Testes",
+            "version": "1.0",
+            "author_origin": "Equipe AgentHub",
+            "domain": "qualidade_testes",
+            "objective": "Avaliar cobertura de testes e risco de regressao de uma mudanca solicitada.",
+            "capabilities": [
+                "Recuperar evidencia de cobertura de teste e testes existentes",
+                "Identificar lacunas de cobertura em componentes criticos",
+                "Sinalizar testes instaveis (flaky) e risco de regressao sem rede de seguranca",
+            ],
+            "expected_inputs": ["Problema tecnico", "Objetivo", "Contexto da solicitacao"],
+            "produced_outputs": [
+                "Resumo executivo", "Lacunas de cobertura identificadas", "Nivel de confianca",
+            ],
+            "operating_limits": ["Nao escreve nem executa testes automaticamente"],
+            "input_contract_ref": "solicitacao_analise_schema.v1",
+            "output_contract_ref": "resposta_especialista_schema.v1",
+            "validation_criteria": ["Contrato de saida valido"],
+            "persona_instructions": (
+                "Voce e um especialista em qualidade de software e estrategia de testes "
+                "automatizados. Analise a solicitacao focando em: cobertura de teste existente "
+                "nos componentes envolvidos, lacunas em cenarios criticos, testes instaveis "
+                "(flaky) e risco de regressao quando nao ha teste automatizado cobrindo a "
+                "mudanca. Baseie-se nas evidencias recuperadas da base de conhecimento."
+            ),
+        },
+        headers=authenticated_csrf_headers(client),
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["domain"] == "qualidade_testes"
+
+    technical_request = create_qualified_request(client, requested_domains=["qualidade_testes"])
+
+    enable_real_llm(monkeypatch)
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    result = payload["results"][0]
+    assert result["agente_emissor"]["dominio"] == "qualidade_testes"
+    # Retrieval precisa ter de fato encontrado o chunk ingerido acima -- prova
+    # que o pipeline RAG (ingestao + embeddings + retrieval) roda de verdade
+    # pro dominio novo, nao so que o contrato de saida bate.
+    assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
+
+
+def test_observability_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
+    """Segundo dos 6 dominios novos: "Observabilidade e Monitoramento". Mesmo
+    padrao do teste de Qualidade e Testes acima -- formulario assistido (pra
+    persona_instructions), ingestao e retrieval reais, execucao real."""
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="incident-postmortem-riskbatchjob.md",
+            content=(
+                "RiskBatchJob falhou silenciosamente por 6 dias sem nenhum alerta. "
+                "Nenhum dos componentes do modulo de limite de credito emite metrica "
+                "de execucao, log estruturado ou alerta de job ausente."
+            ),
+            language="markdown",
+            embedding_provider=real_embedding_provider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    create_response = client.post(
+        "/api/v1/agent-skills",
+        json={
+            "name": "Agent Skill de Observabilidade e Monitoramento",
+            "version": "1.0",
+            "author_origin": "Equipe AgentHub",
+            "domain": "observabilidade_monitoramento",
+            "objective": (
+                "Avaliar instrumentacao (logs, metricas, alertas) afetada por uma mudanca "
+                "solicitada."
+            ),
+            "capabilities": [
+                "Recuperar evidencia de incidentes e lacunas de observabilidade ja registrados",
+                "Identificar componentes sem log estruturado, metrica ou alerta",
+                "Sinalizar risco de falha silenciosa numa mudanca proposta",
+            ],
+            "expected_inputs": ["Problema tecnico", "Objetivo", "Contexto da solicitacao"],
+            "produced_outputs": [
+                "Resumo executivo", "Lacunas de observabilidade identificadas", "Nivel de confianca",
+            ],
+            "operating_limits": ["Nao configura alertas nem dashboards automaticamente"],
+            "input_contract_ref": "solicitacao_analise_schema.v1",
+            "output_contract_ref": "resposta_especialista_schema.v1",
+            "validation_criteria": ["Contrato de saida valido"],
+            "persona_instructions": (
+                "Voce e um especialista em observabilidade e monitoramento de sistemas. "
+                "Analise a solicitacao focando em: se os componentes envolvidos emitem log "
+                "estruturado, metrica e alerta adequados, historico de incidentes causados "
+                "por falta de visibilidade (falha silenciosa), e o risco de uma mudanca "
+                "introduzir um problema que nao seria detectado proativamente. Baseie-se "
+                "nas evidencias recuperadas da base de conhecimento."
+            ),
+        },
+        headers=authenticated_csrf_headers(client),
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["domain"] == "observabilidade_monitoramento"
+
+    technical_request = create_qualified_request(
+        client, requested_domains=["observabilidade_monitoramento"]
+    )
+
+    enable_real_llm(monkeypatch)
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    result = payload["results"][0]
+    assert result["agente_emissor"]["dominio"] == "observabilidade_monitoramento"
+    assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
+
+
+def test_performance_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
+    """Terceiro dos 6 dominios novos: "Performance e Escalabilidade". Mesmo
+    padrao dos dois anteriores."""
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="riskbatchjob-performance-profile.md",
+            content=(
+                "RiskBatchJob itera sequencialmente sobre todos os clientes, um N+1 "
+                "classico: uma consulta separada ao banco por cliente, sem batching, "
+                "sem indice em CUSTOMER_ORDER.CUSTOMER_ID, crescendo linearmente com a "
+                "base de clientes."
+            ),
+            language="markdown",
+            embedding_provider=real_embedding_provider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    create_response = client.post(
+        "/api/v1/agent-skills",
+        json={
+            "name": "Agent Skill de Performance e Escalabilidade",
+            "version": "1.0",
+            "author_origin": "Equipe AgentHub",
+            "domain": "performance_escalabilidade",
+            "objective": (
+                "Avaliar gargalos de performance e risco de escalabilidade afetados "
+                "por uma mudanca solicitada."
+            ),
+            "capabilities": [
+                "Recuperar evidencia de gargalos de performance ja registrados",
+                "Identificar ausencia de indice, cache ou batching em componentes criticos",
+                "Sinalizar risco de escalabilidade quando o crescimento de carga e linear",
+            ],
+            "expected_inputs": ["Problema tecnico", "Objetivo", "Contexto da solicitacao"],
+            "produced_outputs": [
+                "Resumo executivo", "Gargalos de performance identificados", "Nivel de confianca",
+            ],
+            "operating_limits": ["Nao altera indices, cache ou infraestrutura automaticamente"],
+            "input_contract_ref": "solicitacao_analise_schema.v1",
+            "output_contract_ref": "resposta_especialista_schema.v1",
+            "validation_criteria": ["Contrato de saida valido"],
+            "persona_instructions": (
+                "Voce e um especialista em performance e escalabilidade de sistemas. "
+                "Analise a solicitacao focando em: padroes de consulta ineficientes "
+                "(ex.: N+1), ausencia de indice/cache/batching, risco de o componente "
+                "nao escalar com o crescimento de carga, e historico de gargalos ja "
+                "registrados. Baseie-se nas evidencias recuperadas da base de conhecimento."
+            ),
+        },
+        headers=authenticated_csrf_headers(client),
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["domain"] == "performance_escalabilidade"
+
+    technical_request = create_qualified_request(
+        client, requested_domains=["performance_escalabilidade"]
+    )
+
+    enable_real_llm(monkeypatch)
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    result = payload["results"][0]
+    assert result["agente_emissor"]["dominio"] == "performance_escalabilidade"
+    assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
+
+
+def test_data_privacy_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
+    """Quarto dos 6 dominios novos: "Dados e Privacidade (LGPD)". Mesmo
+    padrao dos tres anteriores."""
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="lgpd-gap-audit.md",
+            content=(
+                "CUSTOMER guarda NOME e EMAIL em texto plano, sem base legal "
+                "documentada, sem politica de retencao, sem fluxo de direito do "
+                "titular para acesso, correcao ou eliminacao de dados pessoais."
+            ),
+            language="markdown",
+            embedding_provider=real_embedding_provider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    create_response = client.post(
+        "/api/v1/agent-skills",
+        json={
+            "name": "Agent Skill de Dados e Privacidade (LGPD)",
+            "version": "1.0",
+            "author_origin": "Equipe AgentHub",
+            "domain": "dados_privacidade",
+            "objective": (
+                "Avaliar lacunas de conformidade com a LGPD afetadas por uma mudanca "
+                "solicitada."
+            ),
+            "capabilities": [
+                "Recuperar evidencia de lacunas de conformidade ja registradas",
+                "Identificar ausencia de base legal, retencao ou minimizacao de dados",
+                "Sinalizar exposicao de dado pessoal alem do necessario",
+            ],
+            "expected_inputs": ["Problema tecnico", "Objetivo", "Contexto da solicitacao"],
+            "produced_outputs": [
+                "Resumo executivo", "Lacunas de conformidade identificadas", "Nivel de confianca",
+            ],
+            "operating_limits": ["Nao aprova conformidade legal final"],
+            "input_contract_ref": "solicitacao_analise_schema.v1",
+            "output_contract_ref": "resposta_especialista_schema.v1",
+            "validation_criteria": ["Contrato de saida valido"],
+            "persona_instructions": (
+                "Voce e um especialista em protecao de dados e conformidade com a "
+                "LGPD. Analise a solicitacao focando em: quais dados pessoais estao "
+                "envolvidos, se ha base legal e politica de retencao documentadas, se "
+                "ha minimizacao de dados, e risco de exposicao alem do necessario. "
+                "Baseie-se nas evidencias recuperadas da base de conhecimento."
+            ),
+        },
+        headers=authenticated_csrf_headers(client),
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["domain"] == "dados_privacidade"
+
+    technical_request = create_qualified_request(client, requested_domains=["dados_privacidade"])
+
+    enable_real_llm(monkeypatch)
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    result = payload["results"][0]
+    assert result["agente_emissor"]["dominio"] == "dados_privacidade"
+    assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
+
+
+def test_infrastructure_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
+    """Quinto dos 6 dominios novos: "Infraestrutura e DevOps". Mesmo padrao
+    dos quatro anteriores."""
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="deployment-process-notes.md",
+            content=(
+                "Nao existe pipeline de CI/CD, infraestrutura como codigo ou rollback "
+                "automatizado. Deploy e manual via scp e SSH. Credencial de banco fica "
+                "num arquivo .properties copiado manualmente a cada deploy."
+            ),
+            language="markdown",
+            embedding_provider=real_embedding_provider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    create_response = client.post(
+        "/api/v1/agent-skills",
+        json={
+            "name": "Agent Skill de Infraestrutura e DevOps",
+            "version": "1.0",
+            "author_origin": "Equipe AgentHub",
+            "domain": "infraestrutura_devops",
+            "objective": (
+                "Avaliar processo de deploy, IaC e paridade de ambientes afetados por "
+                "uma mudanca solicitada."
+            ),
+            "capabilities": [
+                "Recuperar evidencia de lacunas de processo de deploy ja registradas",
+                "Identificar ausencia de automacao de build/deploy/rollback",
+                "Sinalizar risco de falta de paridade entre ambientes",
+            ],
+            "expected_inputs": ["Problema tecnico", "Objetivo", "Contexto da solicitacao"],
+            "produced_outputs": [
+                "Resumo executivo", "Lacunas de infraestrutura identificadas", "Nivel de confianca",
+            ],
+            "operating_limits": ["Nao executa deploy nem altera infraestrutura automaticamente"],
+            "input_contract_ref": "solicitacao_analise_schema.v1",
+            "output_contract_ref": "resposta_especialista_schema.v1",
+            "validation_criteria": ["Contrato de saida valido"],
+            "persona_instructions": (
+                "Voce e um especialista em infraestrutura e DevOps. Analise a "
+                "solicitacao focando em: processo de build/deploy automatizado, "
+                "infraestrutura como codigo, plano de rollback, e paridade entre "
+                "ambiente de teste e producao. Baseie-se nas evidencias recuperadas "
+                "da base de conhecimento."
+            ),
+        },
+        headers=authenticated_csrf_headers(client),
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["domain"] == "infraestrutura_devops"
+
+    technical_request = create_qualified_request(
+        client, requested_domains=["infraestrutura_devops"]
+    )
+
+    enable_real_llm(monkeypatch)
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    result = payload["results"][0]
+    assert result["agente_emissor"]["dominio"] == "infraestrutura_devops"
+    assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
+
+
+def test_api_integration_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
+    """Sexto e ultimo dos 6 dominios novos: "APIs e Integrações". Mesmo
+    padrao dos cinco anteriores."""
+    with SessionLocal() as db:
+        ingest_artifact(
+            db,
+            artifact_name="breaking-change-incident.md",
+            content=(
+                "O servico externo de score mudou o formato da resposta sem aviso "
+                "previo, sem versionamento de URL, sem teste de contrato. O erro de "
+                "parsing foi tratado silenciosamente, escondendo a quebra de integracao "
+                "por 3 dias."
+            ),
+            language="markdown",
+            embedding_provider=real_embedding_provider(),
+            max_chars=1000,
+            overlap=0,
+        )
+        db.commit()
+
+    register(client, TECHNICIAN)
+    promote(TECHNICIAN["email"], "TECHNICIAN")
+
+    create_response = client.post(
+        "/api/v1/agent-skills",
+        json={
+            "name": "Agent Skill de APIs e Integrações",
+            "version": "1.0",
+            "author_origin": "Equipe AgentHub",
+            "domain": "apis_integracoes",
+            "objective": (
+                "Avaliar contratos de API e risco de integracao afetados por uma "
+                "mudanca solicitada."
+            ),
+            "capabilities": [
+                "Recuperar evidencia de incidentes de integracao ja registrados",
+                "Identificar ausencia de versionamento, timeout ou circuit breaker",
+                "Sinalizar risco de quebra silenciosa de contrato de API",
+            ],
+            "expected_inputs": ["Problema tecnico", "Objetivo", "Contexto da solicitacao"],
+            "produced_outputs": [
+                "Resumo executivo", "Lacunas de contrato/integracao identificadas", "Nivel de confianca",
+            ],
+            "operating_limits": ["Nao altera contratos de API nem integracoes automaticamente"],
+            "input_contract_ref": "solicitacao_analise_schema.v1",
+            "output_contract_ref": "resposta_especialista_schema.v1",
+            "validation_criteria": ["Contrato de saida valido"],
+            "persona_instructions": (
+                "Voce e um especialista em APIs e integracoes. Analise a solicitacao "
+                "focando em: versionamento, timeout e circuit breaker em chamadas a "
+                "servicos internos ou externos, teste de contrato, e historico de "
+                "incidentes de mudanca nao anunciada. Baseie-se nas evidencias "
+                "recuperadas da base de conhecimento."
+            ),
+        },
+        headers=authenticated_csrf_headers(client),
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["domain"] == "apis_integracoes"
+
+    technical_request = create_qualified_request(client, requested_domains=["apis_integracoes"])
+
+    enable_real_llm(monkeypatch)
+
+    execution_response = client.post(
+        f"/api/v1/agent-skills/requests/{technical_request['id']}/execute",
+        headers=authenticated_csrf_headers(client),
+    )
+    assert execution_response.status_code == 200
+    payload = execution_response.json()
+    assert payload["invocations_count"] == 1
+    result = payload["results"][0]
+    assert result["agente_emissor"]["dominio"] == "apis_integracoes"
+    assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
+
+
 def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> None:
     """Same flow as test_execute_orchestration_step_runs_skill_and_quality_gate,
     but forces the "stdio" transport: the orchestrator spawns

@@ -11,6 +11,12 @@ const DOMAIN_OPTIONS: Array<{ value: AgentSkillDomain; label: string }> = [
   { value: 'regras_negocio', label: 'Regras de Negócio' },
   { value: 'arquitetura_software', label: 'Arquitetura de Software' },
   { value: 'seguranca_informacao', label: 'Segurança da Informação' },
+  { value: 'qualidade_testes', label: 'Qualidade e Testes' },
+  { value: 'observabilidade_monitoramento', label: 'Observabilidade e Monitoramento' },
+  { value: 'performance_escalabilidade', label: 'Performance e Escalabilidade' },
+  { value: 'dados_privacidade', label: 'Dados e Privacidade (LGPD)' },
+  { value: 'infraestrutura_devops', label: 'Infraestrutura e DevOps' },
+  { value: 'apis_integracoes', label: 'APIs e Integrações' },
 ]
 
 // Todo skill hoje usa os mesmos contratos padrão (só existe um schema de

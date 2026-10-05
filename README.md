@@ -27,10 +27,11 @@ A base implementa:
 - clãs: grupos auto-serviço (qualquer usuário cria um e vira membro automaticamente; qualquer membro adiciona/remove outros) que servem de escopo para uma terceira visibilidade de Agent Skill, `CLAN` — visível só a quem participa daquele clã, entre `OFFICIAL` (todo o ecossistema) e `PRIVATE` (só o dono);
 - página de conta (`/account`): editar nome, trocar senha (contas por senha), ver papel e clãs, excluir a própria conta — exclusão é lógica (desativa e limpa nome/e-mail), não uma remoção definitiva da linha, já que várias outras tabelas referenciam o usuário com `ondelete=RESTRICT` (histórico de invocações, skills submetidas, clãs criados);
 - execução de Agent Skills via MCP e avaliação por Quality Gate;
-- quatro Agent Skills com executor real (Código Legado, Regras de Negócio, Arquitetura de Software e Segurança da Informação), acionáveis em conjunto numa mesma análise;
+- cinco domínios de Agent Skill oficiais (Código Legado, Regras de Negócio, Arquitetura de Software, Segurança da Informação e Qualidade e Testes), acionáveis em conjunto numa mesma análise — todos rodam hoje pelo `GenericSkillExecutor` (orientado por `persona_instructions`, ver nota abaixo), não pelos executores dedicados por domínio (`LegacyCodeSkillExecutor` e análogos em `app/agent_catalog/tool_interface.py`), que ficaram sem nenhum caminho alcançável via API desde que `GenericSkillExecutor` foi introduzido;
 - revisão humana de solicitações sinalizadas pelo Quality Gate (perfil `REVIEWER` ou `ADMIN`, aprovação ou rejeição com justificativa, `POST /api/v1/requests/{id}/review`);
 - resposta final consolidada (síntese técnica, recomendações, riscos, limitações e agentes participantes), distinta das respostas parciais de cada Agent Skill;
-- extensibilidade plug-and-play comprovada: a quarta Agent Skill (Segurança da Informação) foi acoplada sem alteração do núcleo do Orquestrador — evidência em `docs/validation/evidence/2026-08-plug-and-play-extensibility.md`.
+- extensibilidade plug-and-play comprovada: cada domínio adicionado depois dos três originais (Segurança da Informação, e agora Qualidade e Testes) foi acoplado sem alteração do núcleo do Orquestrador — evidência em `docs/validation/evidence/2026-08-plug-and-play-extensibility.md`;
+- seed idempotente do catálogo (`app/db/seed_agent_skills.py`): garante uma Agent Skill OFFICIAL por domínio novo sem precisar de cadastro manual pela tela a cada domínio adicionado.
 
 Ainda não fazem parte desta base:
 

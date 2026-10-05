@@ -423,12 +423,18 @@ class SecuritySkillExecutor(SkillExecutor):
 
 
 class GenericSkillExecutor(SkillExecutor):
-    """Executor for user-created skills ("rede de agentes" fase 1): a single,
-    domain-agnostic implementation driven by the skill's own
-    `persona_instructions` instead of a dedicated SkillExecutor subclass per
-    skill. The 4 official skills above predate this and keep their own
-    classes; this one is what makes "qualquer usuário cria uma skill" viable
-    without needing a developer to write code for every new skill.
+    """Domain-agnostic executor driven by the skill's own `persona_instructions`
+    instead of a dedicated SkillExecutor subclass per skill -- what makes
+    "qualquer usuário cria uma skill" viable without needing a developer to
+    write code for every new skill.
+
+    In practice this is also what every "official" skill runs through: the
+    four dedicated subclasses above (LegacyCodeSkillExecutor and friends)
+    predate this class and were meant to stay official-only, but
+    register_skill() has no API-reachable path that creates a skill with
+    owner_id=None (both /agent-skills and /agent-skills/import always pass
+    owner_id=user.id), so mcp_client._module_for_skill() never actually
+    selects them -- every skill, official or not, is routed here.
     """
 
     def execute(

@@ -5,6 +5,12 @@ export type AgentSkillDomain =
   | 'regras_negocio'
   | 'arquitetura_software'
   | 'seguranca_informacao'
+  | 'qualidade_testes'
+  | 'observabilidade_monitoramento'
+  | 'performance_escalabilidade'
+  | 'dados_privacidade'
+  | 'infraestrutura_devops'
+  | 'apis_integracoes'
 
 export type AgentSkillVisibility = 'OFFICIAL' | 'PRIVATE' | 'CLAN' | 'PUBLIC'
 

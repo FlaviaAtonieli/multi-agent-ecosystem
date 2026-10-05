@@ -8,6 +8,12 @@ export const domainLabels: Record<string, string> = {
   regras_negocio: 'Regras de Negócio',
   arquitetura_software: 'Arquitetura de Software',
   seguranca_informacao: 'Segurança da Informação',
+  qualidade_testes: 'Qualidade e Testes',
+  observabilidade_monitoramento: 'Observabilidade e Monitoramento',
+  performance_escalabilidade: 'Performance e Escalabilidade',
+  dados_privacidade: 'Dados e Privacidade (LGPD)',
+  infraestrutura_devops: 'Infraestrutura e DevOps',
+  apis_integracoes: 'APIs e Integrações',
 }
 
 export function parseSynthesisByDomain(text: string): Array<{ domain: string; text: string }> {
