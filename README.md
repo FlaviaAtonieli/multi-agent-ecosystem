@@ -184,6 +184,7 @@ docker compose build frontend --no-cache
 - [Visão da arquitetura](docs/architecture/overview.md)
 - [Princípios de arquitetura](docs/architecture/principles.md)
 - [Integração com provedores de modelo](docs/integrations/model-provider.md)
+- [Deploy no Azure](docs/deployment/azure.md)
 - [Segurança](SECURITY.md)
 - [Evidência de validação da base](docs/validation/evidence/2026-08-foundation-validation.md)
 - [Evidência de extensibilidade plug-and-play](docs/validation/evidence/2026-08-plug-and-play-extensibility.md)

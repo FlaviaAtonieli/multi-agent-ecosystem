@@ -1,0 +1,61 @@
+name: Publish images
+
+# Builda e publica as imagens Docker (backend/frontend) no GitHub Container
+# Registry a cada push na main -- pre-requisito pro deploy no Azure (App
+# Service puxa a imagem de la, ver docs/deployment/azure.md). Gratuito pra
+# imagem publica, sem precisar de Azure Container Registry pago.
+#
+# So builda/publica -- nao reinicia nada no Azure. Depois de publicada a
+# imagem, o redeploy no App Service e manual (az webapp restart) ate que a
+# automacao de deploy exista (fica pra quando os recursos do Azure jah
+# estiverem provisionados).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish-backend:
+    name: Backend image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e push
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/multi-agent-ecosystem-backend
+          IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          docker build -t "$IMAGE:latest" -t "$IMAGE:${{ github.sha }}" backend
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:${{ github.sha }}"
+
+  publish-frontend:
+    name: Frontend image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e push
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/multi-agent-ecosystem-frontend
+          IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          docker build --build-arg VITE_API_URL=/api/v1 -t "$IMAGE:latest" -t "$IMAGE:${{ github.sha }}" frontend
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:${{ github.sha }}"

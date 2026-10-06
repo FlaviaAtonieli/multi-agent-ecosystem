@@ -2,6 +2,21 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-05 - Guia de deploy no Azure
+
+### Adicionado
+
+- `docs/deployment/azure.md`: guia completo com comandos `az` CLI pra provisionar a arquitetura da estimativa de custo da autora -- Azure Front Door (roteamento por path, `/api/*` pro backend e `/*` pro frontend), dois App Service (Web App for Containers, plano B1 compartilhado) e Azure Database for PostgreSQL Flexible Server (Burstable). Inclui App Settings mapeadas de `.env.production.example`, Access Restriction travando os App Services a só aceitar tráfego do Front Door, e checklist pós-deploy.
+- `.github/workflows/publish-images.yml`: builda e publica as imagens backend/frontend no GitHub Container Registry a cada push na `main` (gratuito pra imagem pública, evita o custo de um Azure Container Registry que não estava na estimativa) -- pré-requisito do deploy, não dispara nada no Azure sozinho.
+- Link pro guia na seção "Documentação" do `README.md`.
+
+### Observação registrada (não resolvida, documentada)
+
+- `TRUSTED_PROXY_IPS` (`app/core/rate_limit.py::resolve_client_ip`) não tem um equivalente estável no App Service atrás do Front Door -- o rate limit por IP individual fica degradado (vê o IP de borda do Azure, não o do usuário real) até essa lógica de confiança ser revista. Sinalizado no guia, não é bloqueio pra subir a PoC.
+
+### Contexto
+
+- a pedido da autora: "vou fazer o deploy pelo azure então siga o padrão deles" -- ela mandou a estimativa de custo da calculadora do Azure (App Service B1 + Front Door + PostgreSQL Flexible Server) como a arquitetura alvo. GitHub/Google OAuth ficam desabilitados até ela cadastrar os apps com o domínio real, por decisão explícita dela ("vou cadastrar quando o projeto estiver no ar").
 ## 2026-10-05 - Login com Google
 
 ### Adicionado
