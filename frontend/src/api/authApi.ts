@@ -10,6 +10,7 @@ export type User = {
   created_at: string
   onboarding_completed_at: string | null
   has_password: boolean
+  oauth_provider: 'github' | 'google' | null
 }
 
 export type AuthResponse = {
@@ -29,9 +30,10 @@ export type LoginInput = {
 }
 
 // Navegacao de pagina inteira, nao uma chamada fetch: o backend precisa
-// redirecionar o navegador ate o GitHub (e o GitHub de volta) pra completar
+// redirecionar o navegador ate o GitHub/Google (e de volta) pra completar
 // o fluxo OAuth, o que uma requisicao XHR/fetch nao consegue fazer.
 export const githubLoginUrl = `${API_URL}/auth/github/login`
+export const googleLoginUrl = `${API_URL}/auth/google/login`
 
 export const authApi = {
   me: () => apiRequest<User>('/auth/me'),

@@ -13,10 +13,11 @@ class User(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     name: Mapped[str] = mapped_column(String(80), nullable=False)
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True, nullable=False)
-    # NULL para contas criadas via GitHub OAuth (login.py rejeita senha nessas
-    # contas em vez de comparar contra um hash vazio/inexistente).
+    # NULL para contas criadas via GitHub/Google OAuth (login.py rejeita senha
+    # nessas contas em vez de comparar contra um hash vazio/inexistente).
     password_hash: Mapped[str | None] = mapped_column(String(512), nullable=True)
     github_id: Mapped[str | None] = mapped_column(String(32), unique=True, index=True, nullable=True)
+    google_id: Mapped[str | None] = mapped_column(String(255), unique=True, index=True, nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="USER")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
