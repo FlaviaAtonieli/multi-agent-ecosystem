@@ -13,7 +13,7 @@ A base implementa:
 - frontend em React, Vite e TypeScript;
 - API em FastAPI com SQLAlchemy;
 - PostgreSQL e migrations Alembic;
-- autenticação por sessão opaca em cookie `HttpOnly`, por e-mail/senha ou login com GitHub (OAuth, opcional — ver [docs/integrations/github-oauth.md](docs/integrations/github-oauth.md));
+- autenticação por sessão opaca em cookie `HttpOnly`, por e-mail/senha, login com GitHub ou login com Google (OAuth, ambos opcionais — ver [docs/integrations/github-oauth.md](docs/integrations/github-oauth.md) e [docs/integrations/google-oauth.md](docs/integrations/google-oauth.md));
 - proteção CSRF, rate limiting e auditoria;
 - perfis `USER`, `TECHNICIAN`, `REVIEWER` e `ADMIN`;
 - criação de solicitações técnicas;
@@ -100,7 +100,7 @@ OPENROUTER_API_KEY=defina-sua-chave-da-openrouter
 
 O modelo acima é gratuito no catálogo da OpenRouter (limite de 50 requisições/dia sem créditos comprados). Crie uma chave em [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys).
 
-Login com GitHub é opcional e vem desabilitado por padrão (`GITHUB_OAUTH_ENABLED=false`) — sobe normalmente sem ele, só e-mail/senha continua disponível. Passo a passo pra habilitar: [docs/integrations/github-oauth.md](docs/integrations/github-oauth.md).
+Login com GitHub e login com Google são opcionais e vêm desabilitados por padrão (`GITHUB_OAUTH_ENABLED=false`, `GOOGLE_OAUTH_ENABLED=false`) — sobe normalmente sem eles, só e-mail/senha continua disponível. Passo a passo pra habilitar: [docs/integrations/github-oauth.md](docs/integrations/github-oauth.md) e [docs/integrations/google-oauth.md](docs/integrations/google-oauth.md).
 
 Suba os serviços:
 
@@ -130,7 +130,7 @@ docker compose exec backend alembic current
 Na base atual, o resultado esperado é:
 
 ```text
-0013_clans (head)
+0014_google_oauth (head)
 ```
 
 ## Fluxo disponível

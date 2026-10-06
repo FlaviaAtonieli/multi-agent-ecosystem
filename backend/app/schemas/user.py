@@ -46,6 +46,7 @@ class UserRead(BaseModel):
     created_at: datetime
     onboarding_completed_at: datetime | None
     has_password: bool = False
+    oauth_provider: Literal["github", "google"] | None = None
 
 
 class UserNameUpdate(BaseModel):

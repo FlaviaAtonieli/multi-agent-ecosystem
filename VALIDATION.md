@@ -9,7 +9,7 @@ detalhadas em [`docs/validation/evidence/`](docs/validation/evidence/) — este 
 - compilação sintática dos módulos Python e checagem de tipos (`mypy`);
 - autenticação por sessão opaca, CSRF (double-submit) e bloqueio após tentativas inválidas;
 - 4 perfis (`USER`, `TECHNICIAN`, `REVIEWER`, `ADMIN`) e restrição RBAC por endpoint;
-- migrations Alembic até `0013_clans`;
+- migrations Alembic até `0014_google_oauth`;
 - integração real com a OpenRouter (Model Gateway) — **sem provedor mock**: toda
   chamada de LLM nos testes é uma chamada real, com retry para absorver a
   instabilidade conhecida do modelo gratuito compartilhado;
@@ -57,7 +57,7 @@ docker compose ps
 Resultado esperado do `alembic current`:
 
 ```text
-0013_clans (head)
+0014_google_oauth (head)
 ```
 
 ## Testes

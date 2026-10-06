@@ -17,6 +17,23 @@ Este arquivo registra alterações relevantes da PoC. As datas correspondem ao m
 ### Contexto
 
 - a pedido da autora: "vou fazer o deploy pelo azure então siga o padrão deles" -- ela mandou a estimativa de custo da calculadora do Azure (App Service B1 + Front Door + PostgreSQL Flexible Server) como a arquitetura alvo. GitHub/Google OAuth ficam desabilitados até ela cadastrar os apps com o domínio real, por decisão explícita dela ("vou cadastrar quando o projeto estiver no ar").
+## 2026-10-05 - Login com Google
+
+### Adicionado
+
+- Login com Google (OAuth 2.0 / OpenID Connect), espelhando fielmente o login com GitHub já existente -- método adicional, lado a lado com e-mail/senha e GitHub, nenhum substitui o outro.
+- `backend/app/services/google_oauth_service.py`: `build_authorize_url`, `exchange_code_for_access_token`, `fetch_google_profile` (endpoint userinfo do OIDC, exige `email_verified`), `find_or_create_user` -- mesma lógica de resolução de conta do GitHub (match por `google_id`, depois conflito de e-mail sem auto-link silencioso, só então cria).
+- `GET /api/v1/auth/google/login` e `/google/callback`, com `state` em cookie curto (10 min) pra CSRF próprio do OAuth, mesmo padrão do GitHub.
+- `users.google_id` (único, indexado) -- migração `0014_google_oauth`, aplicada e confirmada contra Postgres real.
+- `UserRead.oauth_provider` (`"github" | "google" | null`) -- a mensagem de rejeição de senha numa conta OAuth-only (`auth_service.py`) e o texto da página de conta (`AccountPage.tsx`) agora dizem o provedor certo, em vez de sempre assumir GitHub.
+- `GoogleLoginButton.tsx`, nas telas de login e cadastro, ao lado do botão do GitHub.
+- `docs/integrations/google-oauth.md`, espelhando `github-oauth.md` -- inclui a nota de que o botão não checa se a integração está habilitada (gap pré-existente do botão do GitHub, não corrigido aqui).
+- `backend/tests/test_google_oauth.py`: 7 testes espelhando `test_github_oauth.py` (login desabilitado -> 404, redirect pra tela de autorização, criação de conta nova, reuso de conta vinculada, `state` mismatch, e-mail já usado por conta de senha, rejeição de login por senha numa conta Google-only).
+
+### Contexto
+
+- a pedido da autora: "vamos colocar a autenticação com o google", antes de fechar o último item do núcleo comum (monitoramento).
+- validado com `pytest` (119 testes, suíte completa, sem regressão), `ruff check`/`mypy` limpos, `tsc --noEmit`/`npm run build` limpos, e a migração `0014_google_oauth` aplicada de verdade contra o Postgres do `docker compose` (coluna e índice confirmados via `psql`).
 
 ## 2026-10-05 - Wiki do GitHub (núcleo comum de engenharia, 3/4)
 
