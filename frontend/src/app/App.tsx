@@ -9,11 +9,13 @@ import { AgentSkillsPage } from '../pages/AgentSkillsPage'
 import { AuditoriaPage } from '../pages/AuditoriaPage'
 import { ClansPage } from '../pages/ClansPage'
 import { DashboardPage } from '../pages/DashboardPage'
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
 import { LoginPage } from '../pages/LoginPage'
 import { NewRequestPage } from '../pages/NewRequestPage'
 import { OrchestrationPage } from '../pages/OrchestrationPage'
 import { OrchestrationsPage } from '../pages/OrchestrationsPage'
 import { RegisterPage } from '../pages/RegisterPage'
+import { ResetPasswordPage } from '../pages/ResetPasswordPage'
 
 export function App() {
   return (
@@ -21,7 +23,10 @@ export function App() {
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       </Route>
+      {/* Fora do PublicRoute: o link do e-mail precisa abrir mesmo com alguém logado neste navegador. */}
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>

@@ -16,7 +16,9 @@ from app.core.database import get_db
 from app.core.rate_limit import (
     github_oauth_rate_limit,
     google_oauth_rate_limit,
+    login_code_rate_limit,
     login_rate_limit,
+    password_reset_rate_limit,
     register_rate_limit,
     renew_rate_limit,
 )
@@ -29,10 +31,25 @@ from app.core.security import (
     verify_password,
 )
 from app.models import AuthSession, User
-from app.schemas.auth import AuthResponse, CsrfResponse, LoginRequest, SessionRead
-from app.schemas.user import PasswordChange, UserCreate, UserNameUpdate, UserRead
+from app.schemas.auth import (
+    AuthResponse,
+    CsrfResponse,
+    LoginChallengeResponse,
+    LoginCodeVerify,
+    LoginRequest,
+    SessionRead,
+)
+from app.schemas.user import (
+    PasswordChange,
+    PasswordForgot,
+    PasswordReset,
+    UserCreate,
+    UserNameUpdate,
+    UserRead,
+)
 from app.services.audit_service import record_audit
 from app.services.auth_service import authenticate_user
+from app.services.email_service import EmailDeliveryError
 from app.services.github_oauth_service import (
     GitHubAccountConflictError,
     GitHubOAuthError,
@@ -51,6 +68,28 @@ from app.services.google_oauth_service import (
     exchange_code_for_access_token as exchange_google_code_for_access_token,
 )
 from app.services.google_oauth_service import find_or_create_user as find_or_create_google_user
+from app.services.login_verification_service import (
+    LOGIN_CHALLENGE_COOKIE,
+    LoginChallengeError,
+    LoginCodeIncorrectError,
+    LoginCodeResendTooSoonError,
+    clear_login_challenge_cookie,
+    get_open_challenge,
+    mask_email,
+    requires_login_code,
+    resend_login_code,
+    revoke_trusted_devices,
+    set_login_challenge_cookie,
+    set_trusted_device_cookie,
+    start_login_challenge,
+    trust_device,
+    verify_login_code,
+)
+from app.services.password_reset_service import (
+    PasswordResetTokenError,
+    request_password_reset,
+    reset_password,
+)
 from app.services.session_service import (
     clear_auth_cookies,
     create_session,
@@ -124,7 +163,24 @@ def register(
     return AuthResponse(user=_to_user_read(user), session_expires_at=auth_session.expires_at)
 
 
-@router.post("/login", response_model=AuthResponse)
+def _open_login_challenge(db: Session, request: Request, user: User, provider: str) -> str:
+    """Abre o desafio de código por e-mail e retorna o token do cookie. Falha
+    de envio vira EmailDeliveryError para cada chamador tratar do seu jeito."""
+    try:
+        raw_token = start_login_challenge(db, user=user, provider=provider)
+    except EmailDeliveryError:
+        db.rollback()
+        raise
+    record_audit(db, request, "AUTH_LOGIN_CODE_SENT", user_id=user.id, details={"provider": provider})
+    db.commit()
+    return raw_token
+
+
+@router.post(
+    "/login",
+    response_model=AuthResponse | LoginChallengeResponse,
+    responses={202: {"model": LoginChallengeResponse}},
+)
 def login(
     request: Request,
     response: Response,
@@ -132,8 +188,17 @@ def login(
     db: Session = Depends(get_db),
     _csrf: None = Depends(require_public_csrf),
     _rate: None = Depends(login_rate_limit),
-) -> AuthResponse:
+) -> AuthResponse | LoginChallengeResponse:
     user = authenticate_user(db, request, str(payload.email), payload.password)
+    if requires_login_code(db, request, user):
+        try:
+            raw_token = _open_login_challenge(db, request, user, "password")
+        except EmailDeliveryError as exc:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        set_login_challenge_cookie(response, raw_token)
+        response.status_code = status.HTTP_202_ACCEPTED
+        return LoginChallengeResponse(email_hint=mask_email(user.email))
+
     auth_session, raw_token, csrf_token = create_session(db, user, request)
     record_audit(db, request, "AUTH_LOGIN_SUCCESS", user_id=user.id, details={"session_id": auth_session.id})
     db.commit()
@@ -142,6 +207,120 @@ def login(
 
     set_auth_cookies(response, raw_token, csrf_token)
     return AuthResponse(user=_to_user_read(user), session_expires_at=auth_session.expires_at)
+
+
+@router.get("/login/challenge", response_model=LoginChallengeResponse)
+def login_challenge_status(request: Request, db: Session = Depends(get_db)) -> LoginChallengeResponse:
+    """Usado pela tela de código depois do redirect do GitHub/Google: diz se há
+    um login pendente neste navegador e para qual e-mail o código foi."""
+    try:
+        challenge = get_open_challenge(db, request.cookies.get(LOGIN_CHALLENGE_COOKIE))
+    except LoginChallengeError as exc:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail=str(exc)) from exc
+    user = db.get(User, challenge.user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Entre novamente.")
+    return LoginChallengeResponse(email_hint=mask_email(user.email))
+
+
+@router.post("/login/verify", response_model=AuthResponse)
+def verify_login(
+    request: Request,
+    response: Response,
+    payload: LoginCodeVerify,
+    db: Session = Depends(get_db),
+    _csrf: None = Depends(require_public_csrf),
+    _rate: None = Depends(login_code_rate_limit),
+) -> AuthResponse:
+    try:
+        user, challenge = verify_login_code(
+            db, raw_token=request.cookies.get(LOGIN_CHALLENGE_COOKIE), code=payload.code
+        )
+    except LoginCodeIncorrectError as exc:
+        record_audit(db, request, "AUTH_LOGIN_CODE_FAILED")
+        db.commit()  # persiste a tentativa antes de responder
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except LoginChallengeError as exc:
+        db.commit()
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail=str(exc)) from exc
+
+    auth_session, raw_token, csrf_token = create_session(db, user, request)
+    device_token = trust_device(db, user=user, request=request)
+    record_audit(
+        db,
+        request,
+        "AUTH_LOGIN_SUCCESS",
+        user_id=user.id,
+        details={"session_id": auth_session.id, "provider": challenge.provider, "login_code": True},
+    )
+    db.commit()
+    db.refresh(user)
+    db.refresh(auth_session)
+
+    set_auth_cookies(response, raw_token, csrf_token)
+    set_trusted_device_cookie(response, device_token)
+    clear_login_challenge_cookie(response)
+    return AuthResponse(user=_to_user_read(user), session_expires_at=auth_session.expires_at)
+
+
+@router.post("/login/resend", response_model=LoginChallengeResponse)
+def resend_login(
+    request: Request,
+    db: Session = Depends(get_db),
+    _csrf: None = Depends(require_public_csrf),
+    _rate: None = Depends(login_code_rate_limit),
+) -> LoginChallengeResponse:
+    try:
+        user = resend_login_code(db, raw_token=request.cookies.get(LOGIN_CHALLENGE_COOKIE))
+    except LoginCodeResendTooSoonError as exc:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
+    except LoginChallengeError as exc:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail=str(exc)) from exc
+    except EmailDeliveryError as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    record_audit(db, request, "AUTH_LOGIN_CODE_SENT", user_id=user.id, details={"resend": True})
+    db.commit()
+    return LoginChallengeResponse(email_hint=mask_email(user.email))
+
+
+@router.post("/password/forgot", status_code=status.HTTP_202_ACCEPTED)
+def forgot_password(
+    request: Request,
+    payload: PasswordForgot,
+    db: Session = Depends(get_db),
+    _csrf: None = Depends(require_public_csrf),
+    _rate: None = Depends(password_reset_rate_limit),
+) -> dict[str, str]:
+    """Resposta sempre igual, exista ou não a conta (não revela e-mails
+    cadastrados). Contas só com GitHub/Google não têm senha para redefinir."""
+    user = db.scalar(select(User).where(User.email == normalize_email(str(payload.email))))
+    if user is not None and user.is_active and user.password_hash is not None:
+        try:
+            request_password_reset(db, user)
+        except EmailDeliveryError as exc:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        record_audit(db, request, "AUTH_PASSWORD_RESET_REQUESTED", user_id=user.id)
+        db.commit()
+    return {"message": "Se o e-mail estiver cadastrado, você vai receber um link para redefinir a senha."}
+
+
+@router.post("/password/reset", status_code=status.HTTP_204_NO_CONTENT)
+def reset_forgotten_password(
+    request: Request,
+    payload: PasswordReset,
+    db: Session = Depends(get_db),
+    _csrf: None = Depends(require_public_csrf),
+    _rate: None = Depends(password_reset_rate_limit),
+) -> Response:
+    try:
+        user = reset_password(db, raw_token=payload.token, new_password=payload.new_password)
+    except PasswordResetTokenError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    record_audit(db, request, "AUTH_PASSWORD_RESET_COMPLETED", user_id=user.id)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/renew", response_model=AuthResponse)
@@ -196,6 +375,7 @@ def logout_all(
     current_session: AuthSession = Depends(require_authenticated_csrf),
 ) -> Response:
     revoked_count = revoke_all_sessions(db, current_session.user_id)
+    revoke_trusted_devices(db, current_session.user_id)
     record_audit(
         db,
         request,
@@ -259,6 +439,7 @@ def change_my_password(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Senha atual incorreta.")
 
     user.password_hash = hash_password(payload.new_password)
+    revoke_trusted_devices(db, user.id)
     record_audit(db, request, "ACCOUNT_PASSWORD_CHANGED", user_id=user.id)
     db.commit()
     db.refresh(user)
@@ -441,6 +622,22 @@ def github_callback(
         _clear_github_state_cookie(redirect)
         return redirect
 
+    if requires_login_code(db, request, user):
+        if created:
+            record_audit(
+                db, request, "AUTH_REGISTER_SUCCESS", user_id=user.id, details={"provider": "github"}
+            )
+        try:
+            challenge_token = _open_login_challenge(db, request, user, "github")
+        except EmailDeliveryError:
+            redirect = _frontend_redirect("/login", error="login_code_failed")
+            _clear_github_state_cookie(redirect)
+            return redirect
+        redirect = _frontend_redirect("/login", verify="1")
+        set_login_challenge_cookie(redirect, challenge_token)
+        _clear_github_state_cookie(redirect)
+        return redirect
+
     auth_session, raw_token, csrf_token = create_session(db, user, request)
     record_audit(
         db,
@@ -523,6 +720,22 @@ def google_callback(
 
     if not user.is_active:
         redirect = _frontend_redirect("/login", error="account_inactive")
+        _clear_google_state_cookie(redirect)
+        return redirect
+
+    if requires_login_code(db, request, user):
+        if created:
+            record_audit(
+                db, request, "AUTH_REGISTER_SUCCESS", user_id=user.id, details={"provider": "google"}
+            )
+        try:
+            challenge_token = _open_login_challenge(db, request, user, "google")
+        except EmailDeliveryError:
+            redirect = _frontend_redirect("/login", error="login_code_failed")
+            _clear_google_state_cookie(redirect)
+            return redirect
+        redirect = _frontend_redirect("/login", verify="1")
+        set_login_challenge_cookie(redirect, challenge_token)
         _clear_google_state_cookie(redirect)
         return redirect
 

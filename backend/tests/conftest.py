@@ -17,6 +17,10 @@ os.environ["TRUSTED_HOSTS"] = "testserver,localhost,127.0.0.1"
 # Real MCP client/server round-trips over stdio (subprocess spawn) are covered by
 # one dedicated test; the rest of the suite uses the in-memory transport to stay fast.
 os.environ["MCP_SKILL_TRANSPORT"] = "memory"
+# O código de login por e-mail tem testes próprios (test_login_code.py), que o
+# religam via monkeypatch; no resto da suíte o login cria a sessão direto.
+os.environ["LOGIN_EMAIL_CODE_ENABLED"] = "false"
+os.environ["EMAIL_BACKEND"] = "console"
 
 # There is no mock LLM/embedding provider: tests that exercise planning or RAG
 # call OpenRouter for real (see REAL_LLM_MODEL below). The key must already be a

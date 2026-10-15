@@ -2,6 +2,18 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-14 - Código de login por e-mail em dispositivo novo
+
+### Adicionado
+
+- Verificação em duas etapas só em dispositivo/navegador novo: login com senha, GitHub ou Google sem cookie de dispositivo confiável responde `202` (senha) ou redireciona para `/login?verify=1` (OAuth) e envia um código de 6 dígitos ao e-mail cadastrado. `POST /auth/login/verify` cria a sessão e marca o navegador como confiável por 30 dias; `POST /auth/login/resend` reenvia (intervalo de 60 s); `GET /auth/login/challenge` informa o e-mail mascarado do login pendente.
+- `app/services/login_verification_service.py`, `app/services/email_service.py` (SMTP via `smtplib` ou `console` para dev), tabelas `login_challenges` e `trusted_devices` (migração `0017_login_email_code`).
+- Configurações `LOGIN_EMAIL_CODE_ENABLED`, `LOGIN_CODE_TTL_MINUTES`, `LOGIN_CODE_MAX_ATTEMPTS`, `LOGIN_CODE_RESEND_COOLDOWN_SECONDS`, `TRUSTED_DEVICE_DAYS`, `EMAIL_BACKEND`, `SMTP_*` -- documentadas nos `.env*.example` e no guia do Azure. Produção recusa subir com `EMAIL_BACKEND=console`.
+- Trocar a senha e "sair de todas as sessões" revogam os dispositivos confiáveis.
+- `LoginPage.tsx`: etapa do código (reenviar, voltar) e retorno do OAuth com `?verify=1`.
+- Auditoria: `AUTH_LOGIN_CODE_SENT`, `AUTH_LOGIN_CODE_FAILED`; `AUTH_LOGIN_SUCCESS` registra `login_code: true`.
+- `tests/test_login_code.py` (9 testes); o resto da suíte roda com `LOGIN_EMAIL_CODE_ENABLED=false`.
+
 ## 2026-10-14 - Remoção dos papéis de usuário e edição de Agent Skills
 
 ### Removido

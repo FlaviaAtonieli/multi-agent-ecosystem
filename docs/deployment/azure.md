@@ -124,8 +124,15 @@ az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $BACKEN
   LLM_PROVIDER=openrouter `
   OPENROUTER_API_KEY="<sua-chave-openrouter>" `
   GITHUB_OAUTH_ENABLED=false `
-  GOOGLE_OAUTH_ENABLED=false
+  GOOGLE_OAUTH_ENABLED=false `
+  EMAIL_BACKEND=smtp `
+  SMTP_HOST=smtp.gmail.com `
+  SMTP_USERNAME="<seu-gmail>" `
+  SMTP_PASSWORD="<senha-de-app-do-gmail>" `
+  SMTP_FROM="<seu-gmail>"
 ```
+
+> **SMTP é obrigatório em produção.** O login em navegador novo envia um código por e-mail, e com `ENVIRONMENT=production` a aplicação recusa subir com `EMAIL_BACKEND=console`. No Gmail, a senha de app é gerada em https://myaccount.google.com/apppasswords (exige verificação em 2 etapas na conta).
 
 > **`TRUSTED_PROXY_IPS` fica de fora de propósito.** Esse ajuste (`app/core/rate_limit.py::resolve_client_ip`) espera uma lista fixa de IPs de proxy confiável -- funciona bem com o `nginx` do `docker compose` local (IP interno estável), mas não tem um equivalente direto e estável no App Service atrás do Front Door (o IP que chega "direto" no container já passou pela infraestrutura do Azure antes). Gap conhecido: sem isso configurado, o rate limiter por IP enxerga o IP de borda do Azure pra todo mundo em vez do IP de cada usuário real -- não quebra a aplicação, mas o rate limit deixa de distinguir usuários individuais atrás do Front Door. Registrado aqui, não resolvido neste guia (é mudança de código, não de infraestrutura).
 

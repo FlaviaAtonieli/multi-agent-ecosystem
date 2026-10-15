@@ -16,6 +16,20 @@ Este documento registra os controles implementados na PoC, as limitações conhe
 
 A aplicação utiliza sessão persistida no servidor, e não JWT armazenado no navegador. A escolha facilita revogação, logout global e controle de sessões na primeira versão.
 
+### Código de login por e-mail (dispositivo novo)
+
+- Login com senha, GitHub ou Google em um navegador ainda não confiável não cria a sessão: abre um desafio e envia um código de 6 dígitos ao e-mail cadastrado (`LOGIN_EMAIL_CODE_ENABLED=true`, padrão).
+- O desafio fica amarrado ao navegador por um cookie `HttpOnly` (`agenthub_login_challenge`); o código vale `LOGIN_CODE_TTL_MINUTES` (10), aceita `LOGIN_CODE_MAX_ATTEMPTS` (5) tentativas por login -- reenviar não zera a contagem -- e só pode ser reenviado a cada 60 s. Cookie e código são guardados apenas como hash.
+- Confirmado o código, o navegador recebe `agenthub_trusted_device` (`HttpOnly`, `TRUSTED_DEVICE_DAYS`=30) e não pede código de novo nesse período. Trocar a senha ou "sair de todas as sessões" revoga todos os dispositivos confiáveis.
+- Envio por SMTP (`EMAIL_BACKEND=smtp`); `console` só escreve o código no log e é recusado com `ENVIRONMENT=production`.
+- O cadastro com e-mail e senha continua criando a sessão direto: o primeiro login seguinte em outro navegador já pede o código.
+
+### Esqueci minha senha
+
+- `POST /auth/password/forgot` responde sempre igual (`202`), exista ou não a conta -- não revela e-mails cadastrados. Contas só com GitHub/Google não recebem link (não têm senha).
+- O link (`/reset-password?token=...`) é de uso único, vale `PASSWORD_RESET_TTL_MINUTES` (30) e um pedido novo invalida os anteriores. Só o hash do token é guardado.
+- Redefinir a senha zera o bloqueio por tentativas, encerra todas as sessões e revoga os dispositivos confiáveis (o próximo login pede o código por e-mail).
+
 ### Proteção das requisições
 
 - CSRF pelo padrão double-submit, vinculado à sessão autenticada.

@@ -72,6 +72,24 @@ class Settings(BaseSettings):
     # Para onde o navegador volta depois do callback (sucesso ou erro).
     frontend_base_url: str = "http://localhost:5173"
 
+    # Código de verificação por e-mail no login (só em dispositivo/navegador
+    # novo). EMAIL_BACKEND=console escreve o código no log do backend (dev);
+    # smtp envia de verdade (ex.: Gmail com senha de app).
+    login_email_code_enabled: bool = True
+    login_code_ttl_minutes: int = 10
+    login_code_max_attempts: int = 5
+    login_code_resend_cooldown_seconds: int = 60
+    trusted_device_days: int = 30
+    password_reset_ttl_minutes: int = 30
+
+    email_backend: Literal["console", "smtp"] = "console"
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
+    smtp_from: str | None = None
+    smtp_starttls: bool = True
+
     # LLM foundation. Disabled by default so the project boots without an API key;
     # once enabled, OpenRouter is the primary Model Gateway (no mock provider).
     llm_enabled: bool = False
@@ -263,6 +281,23 @@ class Settings(BaseSettings):
                 "OPENROUTER_API_KEY é obrigatória quando LLM_ENABLED=true e LLM_PROVIDER=openrouter."
             )
 
+        return self
+
+    @property
+    def smtp_password_value(self) -> str | None:
+        if self.smtp_password is None:
+            return None
+        return self.smtp_password.get_secret_value() or None
+
+    @model_validator(mode="after")
+    def validate_email_configuration(self) -> "Settings":
+        if self.email_backend == "smtp" and (not self.smtp_host or not self.smtp_from):
+            raise ValueError("SMTP_HOST e SMTP_FROM são obrigatórios quando EMAIL_BACKEND=smtp.")
+        if self.is_production and self.login_email_code_enabled and self.email_backend == "console":
+            raise ValueError(
+                "ENVIRONMENT=production com LOGIN_EMAIL_CODE_ENABLED=true exige EMAIL_BACKEND=smtp "
+                "(o backend console só escreve o código no log)."
+            )
         return self
 
     @model_validator(mode="after")

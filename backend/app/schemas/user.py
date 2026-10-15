@@ -67,6 +67,15 @@ class PasswordChange(BaseModel):
         return _validate_password_strength(value)
 
 
+class PasswordForgot(BaseModel):
+    email: EmailStr
 
 
+class PasswordReset(BaseModel):
+    token: str = Field(min_length=20, max_length=200)
+    new_password: str = Field(min_length=12, max_length=128)
 
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password_strength(cls, value: str) -> str:
+        return _validate_password_strength(value)
