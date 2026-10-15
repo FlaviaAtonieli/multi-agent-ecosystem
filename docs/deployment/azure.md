@@ -225,6 +225,44 @@ Confira os logs se algo não subir:
 az webapp log tail --resource-group $RESOURCE_GROUP --name $BACKEND_APP
 ```
 
+## Alternativa: frontend no Azure Static Web Apps
+
+No lugar do App Service do frontend e do Front Door, o frontend pode ficar num **Static Web App** com o App Service do backend como **linked backend**. O Static Web App serve o build do Vite e repassa tudo em `/api/*` para o backend, sob o mesmo domínio. É isso que mantém o cookie de sessão e o CSRF funcionando sem mudar código: o frontend continua chamando `/api/v1` (relativo).
+
+```text
+Internet
+  -> Azure Static Web App (Standard)   frontend: build do Vite (frontend/dist)
+       /api/*  -> linked backend: App Service "backend" (container FastAPI)
+                     -> Azure Database for PostgreSQL Flexible Server
+```
+
+### O que já está no repositório
+
+- **Workflow:** `.github/workflows/azure-static-web-apps-*.yml`, criado pelo portal ao criar o recurso e ajustado depois. Ele publica `frontend/dist` a cada push na `main`. O token de deploy fica no secret `AZURE_STATIC_WEB_APPS_API_TOKEN_*`, que o portal já criou.
+- **Configuração:** `frontend/public/staticwebapp.config.json` (o Vite copia para a raiz de `dist/`, onde o Static Web Apps procura o arquivo quando há build) faz o papel do `nginx.conf`. Ele manda as rotas da SPA (`/login`, `/reset-password`, ...) para o `index.html` e aplica os mesmos cabeçalhos de segurança (CSP, `X-Frame-Options` etc.).
+
+### Passos no Azure
+
+1. **Plano:** o Static Web App precisa estar no plano **Standard**. O Free não aceita linked backend.
+2. **Linked backend:** no Static Web App, menu **APIs**, ambiente de produção, **Link**, tipo **Web App**, escolher `$BACKEND_APP`.
+3. **App Settings do backend:** o domínio público passa a ser o do Static Web App, por exemplo `https://<nome>.azurestaticapps.net`. Ajuste estas variáveis da seção 4:
+   ```powershell
+   az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $BACKEND_APP --settings `
+     CORS_ORIGINS="https://<nome>.azurestaticapps.net" `
+     TRUSTED_HOSTS="<nome>.azurestaticapps.net,$BACKEND_APP.azurewebsites.net" `
+     FRONTEND_BASE_URL="https://<nome>.azurestaticapps.net"
+   ```
+   O `TRUSTED_HOSTS` leva os dois nomes porque a documentação do Static Web Apps não diz qual cabeçalho `Host` o proxy repassa. Depois de confirmar nos logs qual deles chega, dá para deixar só esse.
+4. **OAuth:** as URLs de callback do GitHub e do Google passam a ser `https://<nome>.azurestaticapps.net/api/v1/auth/{github,google}/callback`. As variáveis `*_OAUTH_REDIRECT_URI` precisam bater exatamente com elas.
+5. **Seções que não se aplicam:** neste caminho, a seção 6 (Front Door), a seção 7 (Access Restriction) e o App Service do frontend não são necessários.
+
+### Limitações conhecidas
+
+- **Limite de 45 segundos por chamada à API.** O Static Web Apps corta qualquer requisição a `/api` depois de 45 s, e esse limite não pode ser mudado. A execução das Agent Skills (`POST /agent-skills/requests/{id}/execute`) roda as skills **em sequência**, cada uma com cerca de 14 s em média (medição de 08/2026). Com 3 ou mais domínios, a execução tende a passar do limite. O navegador mostra erro, mas o backend termina e salva o resultado, que aparece ao reabrir a solicitação. É o mesmo sintoma que o `nginx.conf` resolveu subindo o timeout para 300 s, só que aqui não há como subir. A solução definitiva é mudança de código: executar as skills em paralelo ou em segundo plano, com o frontend consultando o status.
+- **O backend fica acessível só pelo Static Web App.** Ao ligar o linked backend, o Azure adiciona ao App Service um provedor de identidade chamado "Azure Static Web Apps (Linked)", que bloqueia acesso direto a `*.azurewebsites.net`. Isso também bloqueia um Prometheus externo tentando ler `/metrics` direto no App Service. Para coletar métricas, é preciso liberar esse caminho na autenticação do App Service.
+- **Sem pré-visualização por PR.** Os ambientes de PR do Static Web Apps não aceitam linked backend, por isso o workflow só publica a partir da `main`.
+- **`TRUSTED_PROXY_IPS`:** vale a mesma ressalva da seção 4. O rate limit por IP enxerga o IP da infraestrutura do Azure.
+
 ## Checklist pós-deploy
 
 - [ ] Confirmar `https://<endpoint-do-frontdoor>/api/v1/health` responde `200`.
