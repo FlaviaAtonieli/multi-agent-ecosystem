@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from tests.conftest import (
@@ -58,6 +59,7 @@ def _create_request_pending_review(client: TestClient, monkeypatch) -> dict:
     return technical_request
 
 
+@pytest.mark.llm
 def test_requester_approves_pending_request(client: TestClient, monkeypatch) -> None:
     technical_request = _create_request_pending_review(client, monkeypatch)
 
@@ -74,6 +76,7 @@ def test_requester_approves_pending_request(client: TestClient, monkeypatch) -> 
     assert "HUMAN_REVIEW_APPROVED" in event_types
 
 
+@pytest.mark.llm
 def test_requester_rejects_pending_request(client: TestClient, monkeypatch) -> None:
     technical_request = _create_request_pending_review(client, monkeypatch)
 
@@ -103,6 +106,7 @@ def test_review_rejects_request_not_awaiting_review(client: TestClient) -> None:
     assert response.status_code == 409
 
 
+@pytest.mark.llm
 def test_other_user_cannot_review_someone_elses_request(client: TestClient, monkeypatch) -> None:
     """A revisão humana é de quem abriu a solicitação: para outra pessoa ela
     simplesmente não existe (404, mesmo padrão owner-scoped do resto da API)."""
@@ -120,7 +124,6 @@ def test_other_user_cannot_review_someone_elses_request(client: TestClient, monk
 
 
 def test_reject_requires_notes() -> None:
-    import pytest
     from pydantic import ValidationError
 
     from app.schemas.orchestration import TechnicalRequestReview

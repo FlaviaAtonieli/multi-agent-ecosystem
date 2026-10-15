@@ -108,6 +108,7 @@ def test_any_user_can_import_skill(client: TestClient) -> None:
     assert response.status_code == 201
 
 
+@pytest.mark.llm
 def test_execute_orchestration_step_runs_skill_and_quality_gate(client: TestClient, monkeypatch) -> None:
     with SessionLocal() as db:
         ingest_artifact(
@@ -175,6 +176,7 @@ def test_execute_orchestration_step_runs_skill_and_quality_gate(client: TestClie
     assert skill_results[0]["result"]["analise_estruturada"]["resumo_executivo"]
 
 
+@pytest.mark.llm
 def test_execute_orchestration_step_runs_three_skills_in_one_analysis(
     client: TestClient, monkeypatch
 ) -> None:
@@ -250,6 +252,7 @@ def test_execute_orchestration_step_runs_three_skills_in_one_analysis(
     assert detail_payload["consolidated_response"]["id"] == consolidated["id"]
 
 
+@pytest.mark.llm
 def test_new_agent_skill_couples_without_orchestrator_changes(
     client: TestClient, monkeypatch
 ) -> None:
@@ -316,6 +319,7 @@ def test_new_agent_skill_couples_without_orchestrator_changes(
         assert expected in event_types
 
 
+@pytest.mark.llm
 def test_quality_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
     """First of 6 new domains (RF da expansao de dominios pos-PAC-VIII):
     "Qualidade e Testes". Registrado via formulario assistido (nao /import),
@@ -394,6 +398,7 @@ def test_quality_domain_executes_with_real_rag_retrieval(client: TestClient, mon
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+@pytest.mark.llm
 def test_observability_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
     """Segundo dos 6 dominios novos: "Observabilidade e Monitoramento". Mesmo
     padrao do teste de Qualidade e Testes acima -- formulario assistido (pra
@@ -472,6 +477,7 @@ def test_observability_domain_executes_with_real_rag_retrieval(client: TestClien
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+@pytest.mark.llm
 def test_performance_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
     """Terceiro dos 6 dominios novos: "Performance e Escalabilidade". Mesmo
     padrao dos dois anteriores."""
@@ -549,6 +555,7 @@ def test_performance_domain_executes_with_real_rag_retrieval(client: TestClient,
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+@pytest.mark.llm
 def test_data_privacy_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
     """Quarto dos 6 dominios novos: "Dados e Privacidade (LGPD)". Mesmo
     padrao dos tres anteriores."""
@@ -623,6 +630,7 @@ def test_data_privacy_domain_executes_with_real_rag_retrieval(client: TestClient
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+@pytest.mark.llm
 def test_infrastructure_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
     """Quinto dos 6 dominios novos: "Infraestrutura e DevOps". Mesmo padrao
     dos quatro anteriores."""
@@ -699,6 +707,7 @@ def test_infrastructure_domain_executes_with_real_rag_retrieval(client: TestClie
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+@pytest.mark.llm
 def test_api_integration_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
     """Sexto e ultimo dos 6 dominios novos: "APIs e Integrações". Mesmo
     padrao dos cinco anteriores."""
@@ -774,6 +783,7 @@ def test_api_integration_domain_executes_with_real_rag_retrieval(client: TestCli
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+@pytest.mark.llm
 def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> None:
     """Same flow as test_execute_orchestration_step_runs_skill_and_quality_gate,
     but forces the "stdio" transport: the orchestrator spawns
@@ -841,6 +851,7 @@ def test_execute_rejects_model_not_in_allowlist(client: TestClient) -> None:
     assert response.status_code == 422
 
 
+@pytest.mark.llm
 def test_execute_uses_requested_model_override(client: TestClient, monkeypatch) -> None:
     """Proves the per-execution model choice actually reaches the provider call,
     not just accepted-and-ignored: picks a model other than LLM_MODEL and checks

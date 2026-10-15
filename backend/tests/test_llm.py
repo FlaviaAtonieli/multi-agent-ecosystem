@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
@@ -28,6 +29,7 @@ def test_regular_user_can_access_llm_status(client: TestClient) -> None:
     assert response.status_code == 200
 
 
+@pytest.mark.llm
 def test_openrouter_plan_is_traced_without_storing_content(
     client: TestClient,
     monkeypatch,
@@ -125,6 +127,7 @@ def _seed_completed_invocation(
         db.commit()
 
 
+@pytest.mark.llm
 def test_daily_token_quota_blocks_further_calls(client: TestClient, monkeypatch) -> None:
     register(client, TECHNICIAN)
     technician_id = user_id_for(TECHNICIAN["email"])

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.database import SessionLocal
@@ -57,6 +58,7 @@ def test_ask_follow_up_requires_prior_execution(client: TestClient) -> None:
     assert response.status_code == 409
 
 
+@pytest.mark.llm
 def test_ask_follow_up_broadcast_and_persists(client: TestClient, monkeypatch) -> None:
     _seed_knowledge_base()
     register(client, TECHNICIAN)
@@ -101,6 +103,7 @@ def test_ask_follow_up_broadcast_and_persists(client: TestClient, monkeypatch) -
     assert follow_ups[0]["id"] == exchange["id"]
 
 
+@pytest.mark.llm
 def test_ask_follow_up_targets_specific_domain(client: TestClient, monkeypatch) -> None:
     _seed_knowledge_base()
     register(client, TECHNICIAN)

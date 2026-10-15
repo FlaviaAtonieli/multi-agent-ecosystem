@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from tests.conftest import (
@@ -75,6 +76,7 @@ def test_custom_skill_is_official_and_visible_to_everyone(client: TestClient) ->
     assert other_detail.status_code == 200
 
 
+@pytest.mark.llm
 def test_generic_executor_runs_custom_skill_end_to_end(client: TestClient, monkeypatch) -> None:
     register(client, OWNER)
     skill = _create_custom_skill(client)
@@ -97,6 +99,7 @@ def test_generic_executor_runs_custom_skill_end_to_end(client: TestClient, monke
     assert result["governanca"]["nivel_confianca"] in {"ALTO", "MEDIO", "BAIXO"}
 
 
+@pytest.mark.llm
 def test_plain_user_can_execute_orchestration_on_others_official_skill(
     client: TestClient, monkeypatch
 ) -> None:
