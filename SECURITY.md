@@ -16,6 +16,20 @@ Este documento registra os controles implementados na PoC, as limitações conhe
 
 A aplicação utiliza sessão persistida no servidor, e não JWT armazenado no navegador. A escolha facilita revogação, logout global e controle de sessões na primeira versão.
 
+### Código de login por e-mail (dispositivo novo)
+
+- Login com senha, GitHub ou Google em um navegador ainda não confiável não cria a sessão: abre um desafio e envia um código de 6 dígitos ao e-mail cadastrado (`LOGIN_EMAIL_CODE_ENABLED=true`, padrão).
+- O desafio fica amarrado ao navegador por um cookie `HttpOnly` (`agenthub_login_challenge`); o código vale `LOGIN_CODE_TTL_MINUTES` (10), aceita `LOGIN_CODE_MAX_ATTEMPTS` (5) tentativas por login -- reenviar não zera a contagem -- e só pode ser reenviado a cada 60 s. Cookie e código são guardados apenas como hash.
+- Confirmado o código, o navegador recebe `agenthub_trusted_device` (`HttpOnly`, `TRUSTED_DEVICE_DAYS`=30) e não pede código de novo nesse período. Trocar a senha ou "sair de todas as sessões" revoga todos os dispositivos confiáveis.
+- Envio por SMTP (`EMAIL_BACKEND=smtp`); `console` só escreve o código no log e é recusado com `ENVIRONMENT=production`.
+- O cadastro com e-mail e senha continua criando a sessão direto: o primeiro login seguinte em outro navegador já pede o código.
+
+### Esqueci minha senha
+
+- `POST /auth/password/forgot` responde sempre igual (`202`), exista ou não a conta -- não revela e-mails cadastrados. Contas só com GitHub/Google não recebem link (não têm senha).
+- O link (`/reset-password?token=...`) é de uso único, vale `PASSWORD_RESET_TTL_MINUTES` (30) e um pedido novo invalida os anteriores. Só o hash do token é guardado.
+- Redefinir a senha zera o bloqueio por tentativas, encerra todas as sessões e revoga os dispositivos confiáveis (o próximo login pede o código por e-mail).
+
 ### Proteção das requisições
 
 - CSRF pelo padrão double-submit, vinculado à sessão autenticada.
@@ -34,23 +48,33 @@ A aplicação utiliza sessão persistida no servidor, e não JWT armazenado no n
 
 ### Autorização
 
-A implementação atual possui quatro perfis:
+Desde 14/10/2026 não há papéis de usuário (os antigos `USER`, `TECHNICIAN`, `REVIEWER` e `ADMIN` foram removidos para simplificar o uso, migração `0016_drop_user_roles`). Todo usuário autenticado tem as mesmas permissões, e o controle de acesso passa a ser por **propriedade**:
 
-| Perfil | Permissões principais |
+| Recurso | Quem pode |
 |---|---|
-| `USER` | Funções gerais, solicitações próprias e execução de orquestrações |
-| `TECHNICIAN` | Execução de orquestrações, curadoria do catálogo de Agent Skills (criar/importar) e consulta dos próprios rastros |
-| `REVIEWER` | Revisão humana de solicitações sinalizadas pelo Quality Gate (aprovação/rejeição com justificativa) — não executa orquestrações nem consulta a trilha de auditoria (separação de funções: quem revisa não é quem produz) |
-| `ADMIN` | Administração de usuários, perfis, trilha de auditoria completa e consultas administrativas; isento da cota diária de tokens |
+| Solicitações, orquestrações e revisão humana | Só quem abriu a solicitação (lookup owner-scoped, 404 para os demais) |
+| Trilha de auditoria | Cada usuário vê apenas os eventos das próprias solicitações |
+| Agent Skills | Qualquer usuário cria ou importa, inclusive `OFFICIAL`; editar, desativar e reativar fica com quem criou (numa skill `CLAN`, também com o dono do clã) |
+| Clãs | Regras por clã (`is_open`, `skills_policy`, `members_policy`); o dono (`created_by_id`) altera as configurações |
 
-A promoção de perfil é restrita ao administrador. Quando o papel de outro usuário é alterado, as sessões desse usuário são revogadas.
+Não há mais painel de administração: desativar a conta de outro usuário deixou de existir pela interface.
+
+### Três camadas de controle de acesso
+
+Independentes entre si e avaliadas nesta ordem -- cada uma só é checada se a anterior já passou:
+
+1. **Propriedade** (controla *sobre o que* a pessoa age). Toda solicitação, orquestração e revisão é do usuário que a criou.
+2. **Visibilidade da Agent Skill** (controla *o que* existe pra executar). `OFFICIAL` é visível a qualquer usuário autenticado; `PRIVATE` fica restrita ao dono; `CLAN` fica restrita aos membros do clã (`clan_id`) associado.
+3. **Cota diária de tokens** (controla *quanto* cada pessoa pode executar naquele dia; desligada por padrão -- `LLM_DAILY_TOKEN_LIMIT_PER_USER=0`). Vale para todas as contas. Detalhes: [docs/integrations/model-provider.md](docs/integrations/model-provider.md#cota-diária-de-tokens-por-usuário).
+
+> Como o cadastro é aberto por padrão (`ALLOW_REGISTRATION=true`) e todo usuário executa orquestrações e publica skills `OFFICIAL`, um deploy exposto publicamente deve considerar reativar a cota diária de tokens (item 3) e/ou fechar o cadastro.
 
 ## Segurança da integração com modelos
 
 - Integração desabilitada por padrão.
 - Chave disponível somente no backend.
 - Modelo validado por allowlist.
-- Execução liberada a `USER`, `TECHNICIAN` e `ADMIN` (todos exceto `REVIEWER` — separação de funções: quem revisa não é quem produz).
+- Execução liberada a qualquer usuário autenticado, sobre as próprias solicitações.
 - Verificação de propriedade da solicitação.
 - Limite de caracteres antes do envio.
 - Mascaramento de padrões de senha, token, chave e e-mail.

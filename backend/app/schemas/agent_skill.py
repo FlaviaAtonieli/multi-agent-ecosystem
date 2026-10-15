@@ -60,6 +60,7 @@ class AgentSkillRead(BaseModel):
     visibility: str
     clan_id: str | None
     persona_instructions: str | None
+    manifest_json: dict
     validated_at: datetime | None
     created_at: datetime
     updated_at: datetime

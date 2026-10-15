@@ -19,12 +19,28 @@ def _make_request(client_host: str, headers: dict[str, str] | None = None) -> Re
 
 def test_production_without_cookie_secure_is_rejected() -> None:
     with pytest.raises(ValueError, match="COOKIE_SECURE=true"):
-        Settings(_env_file=None, environment="production", cookie_secure=False)
+        Settings(
+            _env_file=None, environment="production", cookie_secure=False, metrics_token="t"
+        )
 
 
 def test_production_with_cookie_secure_is_accepted() -> None:
-    settings = Settings(_env_file=None, environment="production", cookie_secure=True)
+    settings = Settings(
+        _env_file=None, environment="production", cookie_secure=True, metrics_token="t"
+    )
     assert settings.is_production is True
+
+
+def test_production_with_metrics_but_no_token_is_rejected() -> None:
+    with pytest.raises(ValueError, match="METRICS_TOKEN"):
+        Settings(_env_file=None, environment="production", cookie_secure=True)
+
+
+def test_production_with_metrics_disabled_needs_no_token() -> None:
+    settings = Settings(
+        _env_file=None, environment="production", cookie_secure=True, metrics_enabled=False
+    )
+    assert settings.metrics_token_value is None
 
 
 def test_development_without_cookie_secure_is_accepted() -> None:

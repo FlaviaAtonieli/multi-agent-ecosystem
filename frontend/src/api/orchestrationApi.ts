@@ -113,4 +113,9 @@ export const orchestrationApi = {
       method: 'POST',
       body: JSON.stringify({ context }),
     }),
+  review: (requestId: string, decision: 'approve' | 'reject', notes: string | null) =>
+    apiRequest<TechnicalRequest>(`/requests/${encodeURIComponent(requestId)}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ decision, notes }),
+    }),
 }

@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from tests.conftest import authenticated_csrf_headers, create_qualified_request, promote, register
+from tests.conftest import authenticated_csrf_headers, create_qualified_request, register
 
 OWNER = {
     "name": "Dono da Solicitacao",
@@ -19,28 +19,9 @@ def test_audit_events_requires_authentication(client: TestClient) -> None:
     assert response.status_code == 401
 
 
-def test_audit_events_forbidden_for_plain_user(client: TestClient) -> None:
-    register(client, OWNER)
-    response = client.get("/api/v1/audit/events", headers=authenticated_csrf_headers(client))
-    assert response.status_code == 403
-
-
-def test_audit_events_forbidden_for_reviewer(client: TestClient) -> None:
-    """REVIEWER had system-wide access before this endpoint went admin-only --
-    confirms that door is closed too, not just USER/TECHNICIAN."""
-    register(client, AUDITOR)
-    promote(AUDITOR["email"], "REVIEWER")
-    response = client.get("/api/v1/audit/events", headers=authenticated_csrf_headers(client))
-    assert response.status_code == 403
-
-
-def test_audit_events_lists_events_across_users_for_admin(client: TestClient) -> None:
+def test_audit_events_lists_own_requests(client: TestClient) -> None:
     register(client, OWNER)
     technical_request = create_qualified_request(client, title="Investigar timeout no checkout")
-
-    client.post("/api/v1/auth/logout", headers=authenticated_csrf_headers(client))
-    register(client, AUDITOR)
-    promote(AUDITOR["email"], "ADMIN")
 
     response = client.get("/api/v1/audit/events", headers=authenticated_csrf_headers(client))
     assert response.status_code == 200
@@ -57,13 +38,26 @@ def test_audit_events_lists_events_across_users_for_admin(client: TestClient) ->
     assert payload["stats"]["manual_interventions_today"] >= 1
 
 
-def test_audit_events_filters_by_actor(client: TestClient) -> None:
+def test_audit_events_hide_other_users_requests(client: TestClient) -> None:
+    """Sem papel de ADMIN, ninguém enxerga a trilha de outra pessoa -- nem os
+    eventos, nem as contagens do dia."""
     register(client, OWNER)
-    create_qualified_request(client)
+    create_qualified_request(client, title="Solicitacao privada do dono")
 
     client.post("/api/v1/auth/logout", headers=authenticated_csrf_headers(client))
     register(client, AUDITOR)
-    promote(AUDITOR["email"], "ADMIN")
+
+    response = client.get("/api/v1/audit/events", headers=authenticated_csrf_headers(client))
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["items"] == []
+    assert payload["total"] == 0
+    assert payload["stats"]["events_today"] == 0
+
+
+def test_audit_events_filters_by_actor(client: TestClient) -> None:
+    register(client, OWNER)
+    create_qualified_request(client)
 
     response = client.get(
         "/api/v1/audit/events", params={"actor": "USER"}, headers=authenticated_csrf_headers(client)
@@ -77,10 +71,6 @@ def test_audit_events_filters_by_actor(client: TestClient) -> None:
 def test_audit_events_filters_by_search(client: TestClient) -> None:
     register(client, OWNER)
     technical_request = create_qualified_request(client, title="Corrigir vazamento de memória no worker")
-
-    client.post("/api/v1/auth/logout", headers=authenticated_csrf_headers(client))
-    register(client, AUDITOR)
-    promote(AUDITOR["email"], "ADMIN")
 
     response = client.get(
         "/api/v1/audit/events",

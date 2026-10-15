@@ -35,13 +35,10 @@ def register_skill(
     everything wrong at once instead of failing on the first field.
 
     visibility defaults to OFFICIAL (visible/executable by every authenticated
-    user, not just its owner) -- otherwise the catalog would stay empty for
-    everyone except whichever TECHNICIAN/ADMIN happened to import each skill,
-    and a plain USER (allowed to execute orchestrations, see
-    ORCHESTRATION_ROLES in app/core/roles.py) would have nothing to run.
+    user, not just its owner).
     owner_id is still recorded for attribution/audit; pass visibility="PRIVATE"
     explicitly for a skill still being drafted/tested that shouldn't be
-    executable by anyone but its owner (and ADMIN) yet, or visibility="CLAN"
+    executable by anyone but its owner yet, or visibility="CLAN"
     with clan_id set for a skill scoped to a specific clan's members.
     """
     result = validate_manifest(manifest)
@@ -182,5 +179,38 @@ def enable_skill(db: Session, skill_id: str) -> AgentSkill:
 def disable_skill(db: Session, skill_id: str) -> AgentSkill:
     skill = get_skill(db, skill_id)
     skill.enabled = False
+    db.flush()
+    return skill
+
+
+def update_skill(
+    db: Session,
+    *,
+    skill: AgentSkill,
+    manifest: AgentSkillManifest,
+    visibility: str,
+    clan_id: str | None,
+) -> AgentSkill:
+    """Edits a skill in place (same id), re-running the same governance
+    validation as register_skill. manifest_markdown is cleared: the stored
+    content now comes from the form, not from the originally imported file."""
+    result = validate_manifest(manifest)
+    if not result.is_valid:
+        raise AgentSkillValidationError(result.errors)
+
+    skill.name = manifest.name
+    skill.version = manifest.version
+    skill.domain = manifest.domain
+    skill.author_origin = manifest.author_origin
+    skill.objective = manifest.objective
+    skill.manifest_markdown = None
+    skill.manifest_json = manifest.model_dump(mode="json")
+    skill.input_contract_ref = manifest.input_contract_ref
+    skill.output_contract_ref = manifest.output_contract_ref
+    skill.uses_external_services = manifest.uses_external_services
+    skill.persona_instructions = manifest.persona_instructions
+    skill.visibility = visibility
+    skill.clan_id = clan_id
+    skill.validated_at = utc_now()
     db.flush()
     return skill

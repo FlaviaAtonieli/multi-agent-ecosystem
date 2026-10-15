@@ -126,9 +126,7 @@ def dashboard_summary(
         )
     )
 
-    total_users = None
-    if current_session.user.role == "ADMIN":
-        total_users = db.scalar(select(func.count(User.id))) or 0
+    total_users = db.scalar(select(func.count(User.id))) or 0
 
     registered_agent_skills = db.scalar(
         select(func.count(AgentSkill.id)).where(

@@ -30,6 +30,9 @@ export type AgentSkill = {
   visibility: AgentSkillVisibility
   clan_id: string | null
   persona_instructions: string | null
+  // Manifesto validado (mesmos campos de AgentSkillCreatePayload) -- usado pra
+  // pré-preencher a edição.
+  manifest_json: Partial<Record<keyof AgentSkillCreatePayload, unknown>>
   validated_at: string | null
   created_at: string
   updated_at: string
@@ -147,6 +150,12 @@ export const agentSkillsApi = {
   createSkill: (payload: AgentSkillCreatePayload) =>
     apiRequest<AgentSkill>('/agent-skills', {
       method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getSkill: (id: string) => apiRequest<AgentSkill>(`/agent-skills/${encodeURIComponent(id)}`),
+  updateSkill: (id: string, payload: AgentSkillCreatePayload) =>
+    apiRequest<AgentSkill>(`/agent-skills/${encodeURIComponent(id)}`, {
+      method: 'PUT',
       body: JSON.stringify(payload),
     }),
   enableSkill: (id: string) =>

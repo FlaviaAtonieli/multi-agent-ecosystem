@@ -7,6 +7,7 @@ from app.models.consolidated_response import ConsolidatedResponse
 from app.models.follow_up_exchange import FollowUpExchange
 from app.models.knowledge_chunk import KnowledgeChunk
 from app.models.llm_invocation import LLMInvocation
+from app.models.login_verification import LoginChallenge, PasswordResetToken, TrustedDevice
 from app.models.orchestration_event import OrchestrationEvent
 from app.models.orchestration_run import OrchestrationRun
 from app.models.request_attachment import RequestAttachment
@@ -24,9 +25,12 @@ __all__ = [
     "FollowUpExchange",
     "KnowledgeChunk",
     "LLMInvocation",
+    "LoginChallenge",
     "OrchestrationEvent",
     "OrchestrationRun",
+    "PasswordResetToken",
     "RequestAttachment",
     "TechnicalRequest",
+    "TrustedDevice",
     "User",
 ]

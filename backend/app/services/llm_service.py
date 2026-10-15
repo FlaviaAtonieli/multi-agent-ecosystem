@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.roles import ROLE_ADMIN
+from app.core.metrics import LLM_INVOCATIONS, LLM_LATENCY, LLM_TOKENS
 from app.core.security import utc_now
 from app.llm.base import LLMEmptyResponseError
 from app.llm.factory import create_llm_provider
@@ -134,7 +134,7 @@ def generate_technical_plan(
         )
     resolved_model = requested_model or settings.llm_model
 
-    if user.role != ROLE_ADMIN and settings.llm_daily_token_limit_per_user > 0:
+    if settings.llm_daily_token_limit_per_user > 0:
         used = tokens_used_today(db, user.id)
         if used >= settings.llm_daily_token_limit_per_user:
             raise LLMQuotaExceededError(
@@ -223,6 +223,11 @@ def generate_technical_plan(
         invocation.latency_ms = latency_ms
         invocation.status = "COMPLETED"
         invocation.completed_at = completed_at
+        LLM_INVOCATIONS.labels(provider.name, resolved_model, "COMPLETED").inc()
+        LLM_LATENCY.labels(provider.name, resolved_model).observe(latency_ms / 1000)
+        usage = provider_result.usage
+        LLM_TOKENS.labels(provider.name, resolved_model, "input").inc(usage.input_tokens or 0)
+        LLM_TOKENS.labels(provider.name, resolved_model, "output").inc(usage.output_tokens or 0)
         if settings.llm_store_result_content:
             invocation.result_payload = provider_result.plan.model_dump(mode="json")
 
@@ -260,6 +265,8 @@ def generate_technical_plan(
         error_code = "EMPTY_RESPONSE_TOKEN_BUDGET" if is_empty_response else "PROVIDER_ERROR"
         invocation.status = "FAILED"
         invocation.error_code = error_code
+        LLM_INVOCATIONS.labels(provider.name, resolved_model, "FAILED").inc()
+        LLM_LATENCY.labels(provider.name, resolved_model).observe(latency_ms / 1000)
         invocation.latency_ms = latency_ms
         invocation.completed_at = utc_now()
         append_event(

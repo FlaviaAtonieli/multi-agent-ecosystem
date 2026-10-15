@@ -14,6 +14,9 @@ def create_tables_if_enabled() -> None:
 
 
 def bootstrap_admin(db: Session) -> None:
+    """Cria a conta inicial (BOOTSTRAP_ADMIN_*), dona das Agent Skills oficiais
+    da seed. O nome das variáveis ficou por compatibilidade com os .env já
+    existentes: desde a remoção dos papéis, é uma conta comum."""
     email = settings.bootstrap_admin_email
     password = settings.bootstrap_admin_password
     name = settings.bootstrap_admin_name or "Administrador"
@@ -31,7 +34,6 @@ def bootstrap_admin(db: Session) -> None:
         name=validated.name,
         email=normalized_email,
         password_hash=hash_password(validated.password),
-        role="ADMIN",
         is_active=True,
     )
     db.add(admin)

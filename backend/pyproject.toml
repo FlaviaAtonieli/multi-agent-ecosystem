@@ -1,6 +1,9 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = [
+    "llm: chama a OpenRouter de verdade (LLM ou embeddings); fica fora do CI, rodar com uma OPENROUTER_API_KEY real",
+]
 
 [tool.ruff]
 line-length = 110

@@ -4,7 +4,6 @@ export type User = {
   id: string
   name: string
   email: string
-  role: 'USER' | 'TECHNICIAN' | 'REVIEWER' | 'ADMIN'
   is_active: boolean
   avatar_url: string | null
   created_at: string
@@ -16,6 +15,13 @@ export type User = {
 export type AuthResponse = {
   user: User
   session_expires_at: string
+}
+
+// Login em dispositivo/navegador novo: a sessão só é criada depois de
+// confirmar o código enviado ao e-mail (POST /auth/login/verify).
+export type LoginChallenge = {
+  verification_required: true
+  email_hint: string
 }
 
 export type RegisterInput = {
@@ -38,9 +44,20 @@ export const googleLoginUrl = `${API_URL}/auth/google/login`
 export const authApi = {
   me: () => apiRequest<User>('/auth/me'),
   login: (input: LoginInput) =>
-    apiRequest<AuthResponse>('/auth/login', {
+    apiRequest<AuthResponse | LoginChallenge>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(input),
+    }),
+  loginChallenge: () => apiRequest<LoginChallenge>('/auth/login/challenge'),
+  verifyLoginCode: (code: string) =>
+    apiRequest<AuthResponse>('/auth/login/verify', { method: 'POST', body: JSON.stringify({ code }) }),
+  resendLoginCode: () => apiRequest<LoginChallenge>('/auth/login/resend', { method: 'POST' }),
+  forgotPassword: (email: string) =>
+    apiRequest<{ message: string }>('/auth/password/forgot', { method: 'POST', body: JSON.stringify({ email }) }),
+  resetPassword: (token: string, newPassword: string) =>
+    apiRequest<void>('/auth/password/reset', {
+      method: 'POST',
+      body: JSON.stringify({ token, new_password: newPassword }),
     }),
   register: (input: RegisterInput) =>
     apiRequest<AuthResponse>('/auth/register', {

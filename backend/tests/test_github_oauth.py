@@ -86,7 +86,6 @@ def test_github_callback_creates_new_user_and_starts_session(client: TestClient,
     payload = me.json()
     assert payload["email"] == "nova.conta@example.com"
     assert payload["name"] == "Dev GitHub"
-    assert payload["role"] == "USER"
     assert payload["avatar_url"] == "https://avatars.example/dev.png"
 
 

@@ -86,7 +86,6 @@ def test_google_callback_creates_new_user_and_starts_session(client: TestClient,
     payload = me.json()
     assert payload["email"] == "nova.conta.google@example.com"
     assert payload["name"] == "Dev Google"
-    assert payload["role"] == "USER"
     assert payload["avatar_url"] == "https://avatars.example/dev-google.png"
     assert payload["oauth_provider"] == "google"
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { AgentSkillDomain, agentSkillsApi } from '../api/agentSkillsApi'
-import { Clan, clansApi } from '../api/clansApi'
+import { useNavigate, useParams } from 'react-router-dom'
+import { AgentSkillCreatePayload, AgentSkillDomain, agentSkillsApi } from '../api/agentSkillsApi'
+import { Clan, canRegisterSkillsIn, clansApi } from '../api/clansApi'
 import { ApiError } from '../api/http'
 import { TagListField } from '../components/shared/TagListField'
 import { useAuth } from '../auth/AuthContext'
@@ -27,11 +27,21 @@ const DEFAULT_OUTPUT_CONTRACT = 'resposta_especialista_schema.v1'
 
 const STEP_LABELS = ['Identidade', 'Persona', 'Comportamento esperado']
 
+function asStringList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+}
+
 export function AgentSkillCreatePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  // Mesma tela para criar (/agent-skills/new) e editar (/agent-skills/:skillId/edit).
+  const { skillId } = useParams()
+  const isEdit = Boolean(skillId)
 
   const [step, setStep] = useState(1)
+  const [version, setVersion] = useState('1.0')
+  const [authorOrigin, setAuthorOrigin] = useState('')
+  const [loadingSkill, setLoadingSkill] = useState(isEdit)
   const [name, setName] = useState('')
   const [domain, setDomain] = useState<AgentSkillDomain>('codigo_legado')
   const [visibility, setVisibility] = useState<'PRIVATE' | 'OFFICIAL' | 'CLAN'>('PRIVATE')
@@ -55,12 +65,45 @@ export function AgentSkillCreatePage() {
   const objectiveValid = objective.trim().length >= 10
 
   useEffect(() => {
-    clansApi.listMine().then(setMyClans).catch(() => undefined)
-  }, [])
+    clansApi
+      .listMine()
+      .then((clans) => setMyClans(clans.filter((clan) => canRegisterSkillsIn(clan, user))))
+      .catch(() => undefined)
+  }, [user])
+
+  useEffect(() => {
+    if (!skillId) return
+    agentSkillsApi
+      .getSkill(skillId)
+      .then((skill) => {
+        const manifest = skill.manifest_json
+        setName(skill.name)
+        setVersion(skill.version)
+        setAuthorOrigin(skill.author_origin)
+        setDomain(skill.domain)
+        setVisibility(skill.visibility === 'PUBLIC' ? 'OFFICIAL' : skill.visibility)
+        setClanId(skill.clan_id ?? '')
+        setObjective(skill.objective)
+        setPersonaInstructions(skill.persona_instructions ?? '')
+        setCapabilities(asStringList(manifest.capabilities))
+        setExpectedInputs(asStringList(manifest.expected_inputs))
+        setProducedOutputs(asStringList(manifest.produced_outputs))
+        setOperatingLimits(asStringList(manifest.operating_limits))
+        setValidationCriteria(asStringList(manifest.validation_criteria))
+        setSecurityRules(asStringList(manifest.security_rules))
+        setUsageExamples(asStringList(manifest.usage_examples))
+      })
+      .catch((caught) => setSubmitError(caught instanceof ApiError ? caught.message : 'Não foi possível carregar a skill.'))
+      .finally(() => setLoadingSkill(false))
+  }, [skillId])
 
   function goNext() {
     if (step === 1 && !nameValid) {
       setStepError('Dê um nome com pelo menos 3 caracteres para a skill.')
+      return
+    }
+    if (step === 1 && !version.trim()) {
+      setStepError('Informe a versão da skill (ex.: 1.1).')
       return
     }
     if (step === 1 && !objectiveValid) {
@@ -86,16 +129,16 @@ export function AgentSkillCreatePage() {
 
   async function handleFinalSubmit() {
     if (expectedInputs.length === 0 || producedOutputs.length === 0 || operatingLimits.length === 0 || validationCriteria.length === 0) {
-      setStepError('Preencha entradas esperadas, saídas produzidas, limites de atuação e critérios de validação antes de criar a skill.')
+      setStepError('Preencha entradas esperadas, saídas produzidas, limites de atuação e critérios de validação antes de salvar a skill.')
       return
     }
     setSubmitting(true)
     setSubmitError('')
     try {
-      const created = await agentSkillsApi.createSkill({
+      const payload: AgentSkillCreatePayload = {
         name: name.trim(),
-        version: '1.0',
-        author_origin: user?.name ?? 'Usuário Flav.IA',
+        version: version.trim(),
+        author_origin: authorOrigin || user?.name || 'Usuário Flav.IA',
         domain,
         objective: objective.trim(),
         capabilities,
@@ -111,10 +154,15 @@ export function AgentSkillCreatePage() {
         persona_instructions: personaInstructions.trim() || null,
         visibility,
         clan_id: visibility === 'CLAN' ? clanId : null,
-      })
-      navigate(`/agent-skills?created=${created.id}`)
+      }
+      const saved = skillId
+        ? await agentSkillsApi.updateSkill(skillId, payload)
+        : await agentSkillsApi.createSkill(payload)
+      navigate(`/agent-skills?${skillId ? 'updated' : 'created'}=${saved.id}`)
     } catch (caught) {
-      setSubmitError(caught instanceof ApiError ? caught.message : 'Não foi possível criar a skill.')
+      setSubmitError(
+        caught instanceof ApiError ? caught.message : `Não foi possível ${skillId ? 'salvar' : 'criar'} a skill.`,
+      )
     } finally {
       setSubmitting(false)
     }
@@ -124,10 +172,12 @@ export function AgentSkillCreatePage() {
     <div className="workspace-page workspace-page-narrow">
       <section className="workspace-page-heading fade-up">
         <div>
-          <span className="workspace-eyebrow">NOVA AGENT SKILL</span>
-          <h1>Criar uma skill sua</h1>
+          <span className="workspace-eyebrow">{isEdit ? 'EDITAR AGENT SKILL' : 'NOVA AGENT SKILL'}</span>
+          <h1>{isEdit ? 'Editar skill' : 'Criar uma skill sua'}</h1>
           <p>
-            Escolha quem pode ver e executar essa skill: só você, um clã específico, ou todo o ecossistema.
+            {isEdit
+              ? 'As alterações valem para as próximas execuções. Lembre de aumentar a versão quando mudar o comportamento.'
+              : 'Escolha quem pode ver e executar essa skill: só você, um clã específico, ou todo o ecossistema.'}
           </p>
         </div>
       </section>
@@ -149,7 +199,9 @@ export function AgentSkillCreatePage() {
 
       <div className="workspace-wizard-grid fade-up" style={{ animationDelay: '0.12s' }}>
         <div className="workspace-form-panel workspace-wizard-card">
-          {step === 1 && (
+          {loadingSkill && <div className="workspace-empty">Carregando skill…</div>}
+
+          {!loadingSkill && step === 1 && (
             <div className="workspace-form-grid">
               <label className="workspace-field workspace-field-full">
                 Nome da skill
@@ -161,6 +213,14 @@ export function AgentSkillCreatePage() {
                 />
                 <small>É assim que ela vai aparecer nos cards de resultado e na rede de agentes.</small>
               </label>
+
+              {isEdit && (
+                <label className="workspace-field workspace-field-full">
+                  Versão
+                  <input value={version} onChange={(event) => setVersion(event.target.value)} maxLength={30} />
+                  <small>Ex.: de 1.0 para 1.1 numa melhoria, para 2.0 numa mudança grande de comportamento.</small>
+                </label>
+              )}
 
               <label className="workspace-field workspace-field-full">
                 Domínio de atuação
@@ -184,7 +244,7 @@ export function AgentSkillCreatePage() {
                   <option value="CLAN">Clã — visível pros membros de um clã</option>
                   <option value="OFFICIAL">Oficial — visível a todo o ecossistema</option>
                 </select>
-                <small>Dá pra mudar depois, contate um ADMIN.</small>
+                <small>Dá pra mudar depois, editando a skill.</small>
               </label>
 
               {visibility === 'CLAN' && (
@@ -192,7 +252,7 @@ export function AgentSkillCreatePage() {
                   Clã
                   {myClans.length === 0 ? (
                     <small>
-                      Você ainda não faz parte de nenhum clã. <a href="/clans">Crie ou entre em um</a> antes de
+                      Você não faz parte de nenhum clã onde possa adicionar Agent Skills. <a href="/clans">Crie ou entre em um</a> antes de
                       continuar.
                     </small>
                   ) : (
@@ -220,7 +280,7 @@ export function AgentSkillCreatePage() {
             </div>
           )}
 
-          {step === 2 && (
+          {!loadingSkill && step === 2 && (
             <div className="workspace-form-grid">
               <label className="workspace-field workspace-field-full">
                 Persona e instruções
@@ -247,7 +307,7 @@ export function AgentSkillCreatePage() {
             </div>
           )}
 
-          {step === 3 && (
+          {!loadingSkill && step === 3 && (
             <div className="workspace-form-grid">
               <TagListField
                 label="Entradas esperadas"
@@ -307,7 +367,7 @@ export function AgentSkillCreatePage() {
             )}
 
             {step < 3 ? (
-              <button type="button" className="workspace-primary-action" onClick={goNext}>
+              <button type="button" className="workspace-primary-action" onClick={goNext} disabled={loadingSkill}>
                 Continuar →
               </button>
             ) : (
@@ -317,7 +377,7 @@ export function AgentSkillCreatePage() {
                 onClick={handleFinalSubmit}
                 disabled={submitting}
               >
-                {submitting ? 'Criando…' : 'Criar skill'}
+                {submitting ? (isEdit ? 'Salvando…' : 'Criando…') : isEdit ? 'Salvar alterações' : 'Criar skill'}
               </button>
             )}
           </div>

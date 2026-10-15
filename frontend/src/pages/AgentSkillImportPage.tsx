@@ -1,11 +1,13 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { agentSkillsApi } from '../api/agentSkillsApi'
-import { Clan, clansApi } from '../api/clansApi'
+import { Clan, canRegisterSkillsIn, clansApi } from '../api/clansApi'
 import { ApiError } from '../api/http'
+import { useAuth } from '../auth/AuthContext'
 
 export function AgentSkillImportPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [manifestMarkdown, setManifestMarkdown] = useState('')
   const [visibility, setVisibility] = useState<'OFFICIAL' | 'PRIVATE' | 'CLAN'>('OFFICIAL')
   const [clanId, setClanId] = useState('')
@@ -14,8 +16,11 @@ export function AgentSkillImportPage() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    clansApi.listMine().then(setMyClans).catch(() => undefined)
-  }, [])
+    clansApi
+      .listMine()
+      .then((clans) => setMyClans(clans.filter((clan) => canRegisterSkillsIn(clan, user))))
+      .catch(() => undefined)
+  }, [user])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -81,7 +86,7 @@ export function AgentSkillImportPage() {
               Clã
               {myClans.length === 0 ? (
                 <small>
-                  Você ainda não faz parte de nenhum clã. <a href="/clans">Crie ou entre em um</a> antes de
+                  Você não faz parte de nenhum clã onde possa adicionar Agent Skills. <a href="/clans">Crie ou entre em um</a> antes de
                   continuar.
                 </small>
               ) : (

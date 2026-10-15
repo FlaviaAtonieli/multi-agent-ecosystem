@@ -135,7 +135,6 @@ def find_or_create_user(db: Session, profile: GoogleProfile) -> tuple[User, bool
         password_hash=None,
         google_id=profile.google_id,
         avatar_url=profile.avatar_url,
-        role="USER",
         is_active=True,
     )
     db.add(user)

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.database import SessionLocal
@@ -8,7 +9,6 @@ from tests.conftest import (
     authenticated_csrf_headers,
     create_qualified_request,
     enable_real_llm,
-    promote,
     real_embedding_provider,
     register,
 )
@@ -43,7 +43,6 @@ def _seed_knowledge_base() -> None:
 
 def test_ask_follow_up_requires_prior_execution(client: TestClient) -> None:
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
     client.post(
         "/api/v1/agent-skills/import",
         json={"manifest_markdown": FIXTURE_MANIFEST},
@@ -59,10 +58,10 @@ def test_ask_follow_up_requires_prior_execution(client: TestClient) -> None:
     assert response.status_code == 409
 
 
+@pytest.mark.llm
 def test_ask_follow_up_broadcast_and_persists(client: TestClient, monkeypatch) -> None:
     _seed_knowledge_base()
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
     client.post(
         "/api/v1/agent-skills/import",
         json={"manifest_markdown": FIXTURE_MANIFEST},
@@ -104,10 +103,10 @@ def test_ask_follow_up_broadcast_and_persists(client: TestClient, monkeypatch) -
     assert follow_ups[0]["id"] == exchange["id"]
 
 
+@pytest.mark.llm
 def test_ask_follow_up_targets_specific_domain(client: TestClient, monkeypatch) -> None:
     _seed_knowledge_base()
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
     for manifest in (FIXTURE_MANIFEST, BUSINESS_RULES_FIXTURE_MANIFEST):
         import_response = client.post(
             "/api/v1/agent-skills/import",

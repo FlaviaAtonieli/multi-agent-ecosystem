@@ -1,12 +1,14 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { authApi, LoginInput, RegisterInput, User } from '../api/authApi'
+import { authApi, LoginChallenge, LoginInput, RegisterInput, User } from '../api/authApi'
 import { ApiError } from '../api/http'
 
 
 type AuthContextValue = {
   user: User | null
   loading: boolean
-  login: (input: LoginInput) => Promise<void>
+  /** Retorna o desafio quando o navegador é novo e o login precisa do código do e-mail. */
+  login: (input: LoginInput) => Promise<LoginChallenge | null>
+  verifyLoginCode: (code: string) => Promise<void>
   register: (input: RegisterInput) => Promise<void>
   logout: () => Promise<void>
   logoutAll: () => Promise<void>
@@ -44,6 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       login: async (input) => {
         const result = await authApi.login(input)
+        if ('verification_required' in result) return result
+        setUser(result.user)
+        return null
+      },
+      verifyLoginCode: async (code) => {
+        const result = await authApi.verifyLoginCode(code)
         setUser(result.user)
       },
       register: async (input) => {

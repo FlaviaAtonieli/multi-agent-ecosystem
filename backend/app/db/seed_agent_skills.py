@@ -2,8 +2,9 @@ from sqlalchemy import select
 
 from app.agent_catalog.registry import register_skill
 from app.agent_manifest.manifest import AgentSkillManifest
+from app.core.config import settings
 from app.core.database import SessionLocal
-from app.core.roles import ROLE_ADMIN
+from app.core.security import normalize_email
 from app.models import AgentSkill, User
 
 # Cada entrada aqui é um domínio que ainda não tem uma Agent Skill OFFICIAL no
@@ -208,13 +209,19 @@ _NEW_OFFICIAL_SKILLS: list[AgentSkillManifest] = [
 def seed_agent_skills() -> None:
     """Garante uma Agent Skill OFFICIAL por domínio em _NEW_OFFICIAL_SKILLS,
     sem duplicar se já existir (idempotente, mesmo espírito de
-    seed_knowledge_base.py). Precisa de pelo menos um usuário ADMIN já
-    existente (ver bootstrap_admin em app/db/init_db.py) para atribuir como
-    submitted_by/owner -- sem ADMIN, pula com um aviso."""
+    seed_knowledge_base.py). Atribui como submitted_by/owner a conta inicial
+    (BOOTSTRAP_ADMIN_EMAIL, ver bootstrap_admin em app/db/init_db.py) ou, sem
+    ela, o usuário mais antigo -- sem nenhum usuário, pula com um aviso."""
     with SessionLocal() as db:
-        admin = db.scalar(select(User).where(User.role == ROLE_ADMIN).order_by(User.created_at))
+        admin = None
+        if settings.bootstrap_admin_email:
+            admin = db.scalar(
+                select(User).where(User.email == normalize_email(settings.bootstrap_admin_email))
+            )
         if admin is None:
-            print("Nenhum usuário ADMIN encontrado -- rode bootstrap_admin antes desta seed.")
+            admin = db.scalar(select(User).order_by(User.created_at))
+        if admin is None:
+            print("Nenhum usuário encontrado -- rode bootstrap_admin antes desta seed.")
             return
 
         for manifest in _NEW_OFFICIAL_SKILLS:

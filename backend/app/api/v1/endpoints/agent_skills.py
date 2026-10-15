@@ -12,19 +12,14 @@ from app.agent_catalog.registry import (
     list_all_skills,
     official_skill_usage_ranking,
     register_skill,
+    update_skill,
 )
 from app.agent_catalog.tool_interface import list_tools
 from app.agent_manifest.manifest import AgentSkillManifest, ManifestParseError, parse_modelo_md
-from app.api.dependencies import (
-    get_current_user,
-    require_admin,
-    require_authenticated_csrf,
-    require_orchestration_access,
-    require_skill_curator,
-)
+from app.api.dependencies import get_current_user, require_authenticated_csrf
 from app.core.config import settings
 from app.core.database import get_db
-from app.models import AuthSession, TechnicalRequest, User
+from app.models import AgentSkill, AuthSession, TechnicalRequest, User
 from app.schemas.agent_skill import (
     AgentSkillExecutionRequest,
     AgentSkillManifestCreate,
@@ -43,7 +38,13 @@ from app.services.agent_skill_orchestration_service import (
     execute_orchestration_step,
 )
 from app.services.audit_service import record_audit
-from app.services.clan_service import ClanNotFoundError, get_clan, is_member
+from app.services.clan_service import (
+    ClanNotFoundError,
+    ClanPermissionError,
+    ensure_can_register_skills,
+    get_clan,
+    is_member,
+)
 from app.services.llm_service import LLMQuotaExceededError
 
 
@@ -61,23 +62,46 @@ def _resolve_visibility(
             detail="clan_id é obrigatório quando visibility='CLAN'.",
         )
     try:
-        get_clan(db, clan_id)
+        ensure_can_register_skills(db, clan=get_clan(db, clan_id), user=user)
     except ClanNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    if user.role != "ADMIN" and not is_member(db, clan_id=clan_id, user_id=user.id):
+    except ClanPermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    return clan_id
+
+def _can_manage_skill(db: Session, skill: AgentSkill, user: User) -> bool:
+    """Quem criou a skill a gerencia (editar, ativar, desativar). Numa skill de
+    clã, o dono do clã também pode -- é quem responde pelo catálogo do clã."""
+    if skill.owner_id == user.id:
+        return True
+    if skill.visibility == "CLAN" and skill.clan_id:
+        try:
+            return get_clan(db, skill.clan_id).created_by_id == user.id
+        except ClanNotFoundError:
+            return False
+    return False
+
+
+def _find_manageable_skill(db: Session, skill_id: str, user: User) -> AgentSkill:
+    try:
+        skill = get_skill(db, skill_id)
+    except AgentSkillNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    if not _can_manage_skill(db, skill, user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Só um membro do clã pode registrar uma skill com visibilidade CLAN nele.",
+            detail="Só quem criou a skill (ou o dono do clã, numa skill de clã) pode alterá-la.",
         )
-    return clan_id
+    return skill
+
 
 router = APIRouter(prefix="/agent-skills", tags=["Agent Skills"])
 
 
 def _find_qualified_request(db: Session, request_id: str, user: User) -> TechnicalRequest:
-    query = select(TechnicalRequest).where(TechnicalRequest.id == request_id)
-    if user.role != "ADMIN":
-        query = query.where(TechnicalRequest.owner_id == user.id)
+    query = select(TechnicalRequest).where(
+        TechnicalRequest.id == request_id, TechnicalRequest.owner_id == user.id
+    )
     technical_request = db.scalar(query)
     if technical_request is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Solicitação não encontrada.")
@@ -90,9 +114,9 @@ def _find_qualified_request(db: Session, request_id: str, user: User) -> Technic
 
 
 def _find_executed_request(db: Session, request_id: str, user: User) -> TechnicalRequest:
-    query = select(TechnicalRequest).where(TechnicalRequest.id == request_id)
-    if user.role != "ADMIN":
-        query = query.where(TechnicalRequest.owner_id == user.id)
+    query = select(TechnicalRequest).where(
+        TechnicalRequest.id == request_id, TechnicalRequest.owner_id == user.id
+    )
     technical_request = db.scalar(query)
     if technical_request is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Solicitação não encontrada.")
@@ -151,7 +175,7 @@ def create_skill(
     payload: AgentSkillManifestCreate,
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(require_skill_curator),
+    user: User = Depends(get_current_user),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> object:
     clan_id = _resolve_visibility(db, visibility=payload.visibility, clan_id=payload.clan_id, user=user)
@@ -186,7 +210,7 @@ def import_skill(
     payload: AgentSkillManifestImport,
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(require_skill_curator),
+    user: User = Depends(get_current_user),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> object:
     try:
@@ -223,18 +247,46 @@ def import_skill(
     return skill
 
 
+@router.put("/{skill_id}", response_model=AgentSkillRead)
+def update(
+    skill_id: str,
+    payload: AgentSkillManifestCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> object:
+    skill = _find_manageable_skill(db, skill_id, user)
+    clan_id = _resolve_visibility(db, visibility=payload.visibility, clan_id=payload.clan_id, user=user)
+    manifest = AgentSkillManifest(**payload.model_dump(exclude={"visibility", "clan_id"}))
+    try:
+        update_skill(db, skill=skill, manifest=manifest, visibility=payload.visibility, clan_id=clan_id)
+    except AgentSkillValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="; ".join(exc.errors)
+        ) from exc
+
+    record_audit(
+        db,
+        request,
+        "AGENT_SKILL_UPDATED",
+        user_id=user.id,
+        details={"agent_skill_id": skill.id, "version": skill.version},
+    )
+    db.commit()
+    return skill
+
+
 @router.patch("/{skill_id}/enable", response_model=AgentSkillRead)
 def enable(
     skill_id: str,
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(get_current_user),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> object:
-    try:
-        skill = enable_skill(db, skill_id)
-    except AgentSkillNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    _find_manageable_skill(db, skill_id, user)
+    skill = enable_skill(db, skill_id)
 
     record_audit(db, request, "AGENT_SKILL_ENABLED", user_id=user.id, details={"agent_skill_id": skill_id})
     db.commit()
@@ -246,13 +298,11 @@ def disable(
     skill_id: str,
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(get_current_user),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> object:
-    try:
-        skill = disable_skill(db, skill_id)
-    except AgentSkillNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    _find_manageable_skill(db, skill_id, user)
+    skill = disable_skill(db, skill_id)
 
     record_audit(db, request, "AGENT_SKILL_DISABLED", user_id=user.id, details={"agent_skill_id": skill_id})
     db.commit()
@@ -273,7 +323,6 @@ def get_skill_detail(
     visible = (
         skill.visibility == "OFFICIAL"
         or skill.owner_id == user.id
-        or user.role == "ADMIN"
         or (
             skill.visibility == "CLAN"
             and skill.clan_id
@@ -291,7 +340,7 @@ async def execute_skills_for_request(
     request: Request,
     payload: AgentSkillExecutionRequest | None = None,
     db: Session = Depends(get_db),
-    user: User = Depends(require_orchestration_access),
+    user: User = Depends(get_current_user),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> OrchestrationExecutionRead:
     technical_request = _find_qualified_request(db, request_id, user)
@@ -341,7 +390,7 @@ async def ask_follow_up(
     payload: FollowUpQuestionCreate,
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(require_orchestration_access),
+    user: User = Depends(get_current_user),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> FollowUpExchangeRead:
     technical_request = _find_executed_request(db, request_id, user)

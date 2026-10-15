@@ -148,7 +148,6 @@ def find_or_create_user(db: Session, profile: GitHubProfile) -> tuple[User, bool
         password_hash=None,
         github_id=profile.github_id,
         avatar_url=profile.avatar_url,
-        role="USER",
         is_active=True,
     )
     db.add(user)

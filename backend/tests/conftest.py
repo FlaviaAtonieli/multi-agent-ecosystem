@@ -17,6 +17,10 @@ os.environ["TRUSTED_HOSTS"] = "testserver,localhost,127.0.0.1"
 # Real MCP client/server round-trips over stdio (subprocess spawn) are covered by
 # one dedicated test; the rest of the suite uses the in-memory transport to stay fast.
 os.environ["MCP_SKILL_TRANSPORT"] = "memory"
+# O código de login por e-mail tem testes próprios (test_login_code.py), que o
+# religam via monkeypatch; no resto da suíte o login cria a sessão direto.
+os.environ["LOGIN_EMAIL_CODE_ENABLED"] = "false"
+os.environ["EMAIL_BACKEND"] = "console"
 
 # There is no mock LLM/embedding provider: tests that exercise planning or RAG
 # call OpenRouter for real (see REAL_LLM_MODEL below). The key must already be a
@@ -80,18 +84,10 @@ def register(client: TestClient, user: dict) -> None:
     assert response.status_code == 201
 
 
-def promote(email: str, role: str) -> str:
-    """Writes the role directly to the DB, bypassing the admin HTTP endpoint.
-
-    The active session isn't revoked (unlike the real ADMIN-driven role-change
-    endpoint), so the same logged-in test client immediately acts under the
-    new role on its next request -- no re-login needed mid-test.
-    """
+def user_id_for(email: str) -> str:
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.email == email))
         assert user is not None
-        user.role = role
-        db.commit()
         return user.id
 
 

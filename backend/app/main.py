@@ -4,18 +4,23 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse, JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from app.api.openapi_docs import SWAGGER_CSRF_INTERCEPTOR, build_openapi
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.database import SessionLocal
+from app.core.metrics import MetricsMiddleware, register_database_collector
 from app.core.middleware import (
     MaxBodySizeMiddleware,
     RequestIdMiddleware,
     SecurityHeadersMiddleware,
 )
+from app.core.security import secure_compare
 from app.db.init_db import bootstrap_admin, create_tables_if_enabled
 
 logging.basicConfig(
@@ -36,16 +41,17 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(
     title="Flav.IA API",
-    description="Secure foundation for the Agent Skills orchestration ecosystem.",
     version="0.1.0",
     lifespan=lifespan,
     # Auditoria de seguranca P1: Swagger/Redoc/schema nao ficam servidos em
     # producao, independente de a porta do backend estar ou nao acessivel
-    # diretamente do host.
-    docs_url=None if settings.is_production else "/docs",
+    # diretamente do host. O schema exportado fica em docs/api/openapi.json.
+    # /docs e servido pela rota swagger_ui abaixo (com o CSRF automatico).
+    docs_url=None,
     redoc_url=None if settings.is_production else "/redoc",
     openapi_url=None if settings.is_production else "/openapi.json",
 )
+app.openapi = lambda: build_openapi(app)  # type: ignore[method-assign]
 
 app.add_middleware(RequestIdMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
@@ -60,6 +66,9 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "X-CSRF-Token", "X-Request-ID"],
 )
+if settings.metrics_enabled:
+    register_database_collector()
+    app.add_middleware(MetricsMiddleware)
 # Added last so it runs first (Starlette wraps outward) -- rejects an
 # oversized body via Content-Length before any other middleware or route
 # handler touches the request.
@@ -114,11 +123,39 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     )
 
 
+if not settings.is_production:
+
+    @app.get("/docs", include_in_schema=False)
+    def swagger_ui() -> HTMLResponse:
+        page = get_swagger_ui_html(openapi_url="/openapi.json", title=f"{app.title} - Swagger")
+        html = bytes(page.body).decode()
+        # Injeta o requestInterceptor que copia o cookie CSRF para o cabeçalho,
+        # para as rotas protegidas funcionarem direto pelo "Try it out".
+        html = html.replace("SwaggerUIBundle({", "SwaggerUIBundle({\n  " + SWAGGER_CSRF_INTERCEPTOR, 1)
+        return HTMLResponse(html)
+
+
+if settings.metrics_enabled:
+
+    @app.get("/metrics", include_in_schema=False)
+    def metrics(request: Request) -> Response:
+        """Scrape do Prometheus. Fora do prefixo /api, então o nginx do
+        frontend não o expõe; com METRICS_TOKEN, exige Bearer token."""
+        token = settings.metrics_token_value
+        if token and not secure_compare(request.headers.get("Authorization", ""), f"Bearer {token}"):
+            return JSONResponse(
+                status_code=401,
+                content={"error": "HTTP_ERROR", "message": "Token de métricas inválido."},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
 @app.get("/", include_in_schema=False)
 def root() -> dict[str, str]:
     payload = {"name": settings.app_name, "status": "online"}
-    if app.docs_url:
-        payload["docs"] = app.docs_url
+    if not settings.is_production:
+        payload["docs"] = "/docs"
     return payload
 
 

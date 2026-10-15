@@ -1,12 +1,12 @@
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from tests.conftest import (
     authenticated_csrf_headers,
     create_qualified_request,
     enable_real_llm,
-    promote,
     register,
 )
 
@@ -36,7 +36,6 @@ def _create_request_pending_review(client: TestClient, monkeypatch) -> dict:
     rejects and flags requires_human_review — a deterministic way to land a
     request in VALIDATING without depending on LLM output variance."""
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     client.post(
         "/api/v1/agent-skills/import",
@@ -60,10 +59,10 @@ def _create_request_pending_review(client: TestClient, monkeypatch) -> dict:
     return technical_request
 
 
-def test_reviewer_approves_pending_request(client: TestClient, monkeypatch) -> None:
+@pytest.mark.llm
+def test_requester_approves_pending_request(client: TestClient, monkeypatch) -> None:
     technical_request = _create_request_pending_review(client, monkeypatch)
 
-    promote(TECHNICIAN["email"], "REVIEWER")
     response = client.post(
         f"/api/v1/requests/{technical_request['id']}/review",
         json={"decision": "approve", "notes": "Evidência suficiente apesar da confiança baixa."},
@@ -77,10 +76,10 @@ def test_reviewer_approves_pending_request(client: TestClient, monkeypatch) -> N
     assert "HUMAN_REVIEW_APPROVED" in event_types
 
 
-def test_reviewer_rejects_pending_request(client: TestClient, monkeypatch) -> None:
+@pytest.mark.llm
+def test_requester_rejects_pending_request(client: TestClient, monkeypatch) -> None:
     technical_request = _create_request_pending_review(client, monkeypatch)
 
-    promote(TECHNICIAN["email"], "REVIEWER")
     response = client.post(
         f"/api/v1/requests/{technical_request['id']}/review",
         json={"decision": "reject", "notes": "Evidência insuficiente para prosseguir."},
@@ -94,21 +93,8 @@ def test_reviewer_rejects_pending_request(client: TestClient, monkeypatch) -> No
     assert "HUMAN_REVIEW_REJECTED" in event_types
 
 
-def test_review_requires_reviewer_or_admin_role(client: TestClient, monkeypatch) -> None:
-    technical_request = _create_request_pending_review(client, monkeypatch)
-
-    # Still TECHNICIAN, never promoted to REVIEWER/ADMIN.
-    response = client.post(
-        f"/api/v1/requests/{technical_request['id']}/review",
-        json={"decision": "approve"},
-        headers=authenticated_csrf_headers(client),
-    )
-    assert response.status_code == 403
-
-
 def test_review_rejects_request_not_awaiting_review(client: TestClient) -> None:
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "REVIEWER")
 
     technical_request = create_qualified_request(client, requested_domains=["codigo_legado"])
 
@@ -120,17 +106,29 @@ def test_review_rejects_request_not_awaiting_review(client: TestClient) -> None:
     assert response.status_code == 409
 
 
-def test_reviewer_can_review_another_users_request(client: TestClient, monkeypatch) -> None:
+@pytest.mark.llm
+def test_other_user_cannot_review_someone_elses_request(client: TestClient, monkeypatch) -> None:
+    """A revisão humana é de quem abriu a solicitação: para outra pessoa ela
+    simplesmente não existe (404, mesmo padrão owner-scoped do resto da API)."""
     technical_request = _create_request_pending_review(client, monkeypatch)
 
     client.post("/api/v1/auth/logout", headers=authenticated_csrf_headers(client))
     register(client, OUTSIDER)
-    promote(OUTSIDER["email"], "REVIEWER")
 
     response = client.post(
         f"/api/v1/requests/{technical_request['id']}/review",
         json={"decision": "approve"},
         headers=authenticated_csrf_headers(client),
     )
-    assert response.status_code == 200
-    assert response.json()["status"] == "COMPLETED"
+    assert response.status_code == 404
+
+
+def test_reject_requires_notes() -> None:
+    from pydantic import ValidationError
+
+    from app.schemas.orchestration import TechnicalRequestReview
+
+    with pytest.raises(ValidationError):
+        TechnicalRequestReview(decision="reject", notes="   ")
+    assert TechnicalRequestReview(decision="approve").notes is None
+    assert TechnicalRequestReview(decision="reject", notes="Sem evidência").notes == "Sem evidência"

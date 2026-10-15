@@ -6,18 +6,27 @@ from app.api.dependencies import get_current_user, require_authenticated_csrf
 from app.core.database import get_db
 from app.core.security import normalize_email
 from app.models import AuthSession, Clan, User
-from app.schemas.clan import ClanCreate, ClanDetailRead, ClanMemberAdd, ClanMemberRead, ClanRead
+from app.schemas.clan import (
+    ClanCreate,
+    ClanDetailRead,
+    ClanMemberAdd,
+    ClanMemberRead,
+    ClanRead,
+    ClanSettingsUpdate,
+)
 from app.services.audit_service import record_audit
 from app.services.clan_service import (
     ClanNameConflictError,
     ClanNotFoundError,
-    NotClanMemberError,
+    ClanPermissionError,
     add_member,
     create_clan,
     get_clan,
+    join_clan,
     list_clans,
     list_user_clans,
     remove_member,
+    update_clan_settings,
 )
 
 router = APIRouter(prefix="/clans", tags=["Clãs"])
@@ -35,6 +44,9 @@ def _to_detail(clan: Clan) -> ClanDetailRead:
             )
             for m in clan.memberships
         ],
+        is_open=clan.is_open,
+        skills_policy=clan.skills_policy,
+        members_policy=clan.members_policy,
     )
 
 
@@ -52,6 +64,9 @@ def list_all_clans(
             created_by_id=clan.created_by_id,
             created_at=clan.created_at,
             member_count=len(clan.memberships),
+            is_open=clan.is_open,
+            skills_policy=clan.skills_policy,
+            members_policy=clan.members_policy,
         )
         for clan in clans
     ]
@@ -66,12 +81,29 @@ def create_new_clan(
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> ClanDetailRead:
     try:
-        clan = create_clan(db, name=payload.name, created_by=user)
+        clan = create_clan(
+            db,
+            name=payload.name,
+            created_by=user,
+            is_open=payload.is_open,
+            skills_policy=payload.skills_policy,
+            members_policy=payload.members_policy,
+        )
     except ClanNameConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     record_audit(
-        db, request, "CLAN_CREATED", user_id=user.id, details={"clan_id": clan.id, "name": clan.name}
+        db,
+        request,
+        "CLAN_CREATED",
+        user_id=user.id,
+        details={
+            "clan_id": clan.id,
+            "name": clan.name,
+            "is_open": clan.is_open,
+            "skills_policy": clan.skills_policy,
+            "members_policy": clan.members_policy,
+        },
     )
     db.commit()
     return _to_detail(get_clan(db, clan.id))
@@ -88,6 +120,63 @@ def get_clan_detail(
     except ClanNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return _to_detail(clan)
+
+
+@router.patch("/{clan_id}/settings", response_model=ClanDetailRead)
+def update_settings(
+    clan_id: str,
+    payload: ClanSettingsUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> ClanDetailRead:
+    try:
+        update_clan_settings(
+            db,
+            clan_id=clan_id,
+            updated_by=user,
+            name=payload.name,
+            is_open=payload.is_open,
+            skills_policy=payload.skills_policy,
+            members_policy=payload.members_policy,
+        )
+    except ClanNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ClanNameConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except ClanPermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    record_audit(
+        db,
+        request,
+        "CLAN_SETTINGS_UPDATED",
+        user_id=user.id,
+        details={"clan_id": clan_id, **payload.model_dump(exclude_none=True)},
+    )
+    db.commit()
+    return _to_detail(get_clan(db, clan_id))
+
+
+@router.post("/{clan_id}/join", response_model=ClanDetailRead)
+def join(
+    clan_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> ClanDetailRead:
+    try:
+        join_clan(db, clan_id=clan_id, user=user)
+    except ClanNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ClanPermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    record_audit(db, request, "CLAN_JOINED", user_id=user.id, details={"clan_id": clan_id})
+    db.commit()
+    return _to_detail(get_clan(db, clan_id))
 
 
 @router.post("/{clan_id}/members", response_model=ClanDetailRead, status_code=status.HTTP_201_CREATED)
@@ -107,7 +196,7 @@ def add_clan_member(
         add_member(db, clan_id=clan_id, user_to_add=target, added_by=user)
     except ClanNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except NotClanMemberError as exc:
+    except ClanPermissionError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
 
     record_audit(
@@ -134,7 +223,7 @@ def remove_clan_member(
         remove_member(db, clan_id=clan_id, user_id=user_id, removed_by=user)
     except ClanNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except NotClanMemberError as exc:
+    except ClanPermissionError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
 
     record_audit(

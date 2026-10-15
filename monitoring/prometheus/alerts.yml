@@ -1,0 +1,35 @@
+# Regras de alerta avaliadas pelo Prometheus (visíveis em http://localhost:9090/alerts).
+groups:
+  - name: agenthub
+    rules:
+      - alert: BackendFora
+        expr: up{job="agenthub-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend não responde ao scrape do Prometheus há 1 minuto."
+
+      - alert: TaxaDeErro5xxAlta
+        expr: |
+          sum(rate(agenthub_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(agenthub_http_requests_total[5m])), 1e-9) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Mais de 5% das requisições estão terminando em erro 5xx."
+
+      - alert: FalhasNoLLM
+        expr: sum(increase(agenthub_llm_invocations_total{status="FAILED"}[15m])) >= 3
+        labels:
+          severity: warning
+        annotations:
+          summary: "3 ou mais chamadas ao LLM falharam nos últimos 15 minutos."
+
+      - alert: PossivelForcaBrutaNoLogin
+        expr: sum(increase(agenthub_audit_events_total{event_type=~"AUTH_LOGIN_FAILED|AUTH_LOGIN_CODE_FAILED"}[10m])) > 20
+        labels:
+          severity: warning
+        annotations:
+          summary: "Mais de 20 falhas de login ou de código em 10 minutos."

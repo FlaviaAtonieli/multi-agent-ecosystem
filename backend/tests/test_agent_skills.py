@@ -16,7 +16,6 @@ from tests.conftest import (
     authenticated_csrf_headers,
     create_qualified_request,
     enable_real_llm,
-    promote,
     real_embedding_provider,
     register,
 )
@@ -41,7 +40,6 @@ REGULAR_USER = {
 
 def test_import_valid_manifest_registers_and_enables_skill(client: TestClient) -> None:
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     response = client.post(
         "/api/v1/agent-skills/import",
@@ -61,7 +59,6 @@ def test_import_valid_manifest_registers_and_enables_skill(client: TestClient) -
 
 def test_import_invalid_manifest_is_rejected_with_reasons(client: TestClient) -> None:
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     incomplete_manifest = "# Agente Incompleto\n\n## Identificação\n- Nome: Incompleto\n"
     response = client.post(
@@ -77,7 +74,6 @@ def test_import_invalid_manifest_is_rejected_with_reasons(client: TestClient) ->
 
 def test_assisted_creation_registers_skill(client: TestClient) -> None:
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     response = client.post(
         "/api/v1/agent-skills",
@@ -101,7 +97,7 @@ def test_assisted_creation_registers_skill(client: TestClient) -> None:
     assert response.json()["domain"] == "arquitetura_software"
 
 
-def test_regular_user_cannot_manage_skills(client: TestClient) -> None:
+def test_any_user_can_import_skill(client: TestClient) -> None:
     register(client, REGULAR_USER)
 
     response = client.post(
@@ -109,34 +105,10 @@ def test_regular_user_cannot_manage_skills(client: TestClient) -> None:
         json={"manifest_markdown": FIXTURE_MANIFEST},
         headers=authenticated_csrf_headers(client),
     )
-    assert response.status_code == 403
+    assert response.status_code == 201
 
 
-def test_enable_disable_requires_admin(client: TestClient) -> None:
-    register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
-
-    imported = client.post(
-        "/api/v1/agent-skills/import",
-        json={"manifest_markdown": FIXTURE_MANIFEST},
-        headers=authenticated_csrf_headers(client),
-    ).json()
-
-    technician_attempt = client.patch(
-        f"/api/v1/agent-skills/{imported['id']}/disable",
-        headers=authenticated_csrf_headers(client),
-    )
-    assert technician_attempt.status_code == 403
-
-    promote(TECHNICIAN["email"], "ADMIN")
-    admin_attempt = client.patch(
-        f"/api/v1/agent-skills/{imported['id']}/disable",
-        headers=authenticated_csrf_headers(client),
-    )
-    assert admin_attempt.status_code == 200
-    assert admin_attempt.json()["enabled"] is False
-
-
+@pytest.mark.llm
 def test_execute_orchestration_step_runs_skill_and_quality_gate(client: TestClient, monkeypatch) -> None:
     with SessionLocal() as db:
         ingest_artifact(
@@ -154,7 +126,6 @@ def test_execute_orchestration_step_runs_skill_and_quality_gate(client: TestClie
         db.commit()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     client.post(
         "/api/v1/agent-skills/import",
@@ -205,6 +176,7 @@ def test_execute_orchestration_step_runs_skill_and_quality_gate(client: TestClie
     assert skill_results[0]["result"]["analise_estruturada"]["resumo_executivo"]
 
 
+@pytest.mark.llm
 def test_execute_orchestration_step_runs_three_skills_in_one_analysis(
     client: TestClient, monkeypatch
 ) -> None:
@@ -227,7 +199,6 @@ def test_execute_orchestration_step_runs_three_skills_in_one_analysis(
         db.commit()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     for manifest in (FIXTURE_MANIFEST, BUSINESS_RULES_FIXTURE_MANIFEST, ARCHITECTURE_FIXTURE_MANIFEST):
         import_response = client.post(
@@ -281,6 +252,7 @@ def test_execute_orchestration_step_runs_three_skills_in_one_analysis(
     assert detail_payload["consolidated_response"]["id"] == consolidated["id"]
 
 
+@pytest.mark.llm
 def test_new_agent_skill_couples_without_orchestrator_changes(
     client: TestClient, monkeypatch
 ) -> None:
@@ -309,7 +281,6 @@ def test_new_agent_skill_couples_without_orchestrator_changes(
         db.commit()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     import_response = client.post(
         "/api/v1/agent-skills/import",
@@ -348,6 +319,7 @@ def test_new_agent_skill_couples_without_orchestrator_changes(
         assert expected in event_types
 
 
+@pytest.mark.llm
 def test_quality_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
     """First of 6 new domains (RF da expansao de dominios pos-PAC-VIII):
     "Qualidade e Testes". Registrado via formulario assistido (nao /import),
@@ -372,7 +344,6 @@ def test_quality_domain_executes_with_real_rag_retrieval(client: TestClient, mon
         db.commit()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     create_response = client.post(
         "/api/v1/agent-skills",
@@ -427,6 +398,7 @@ def test_quality_domain_executes_with_real_rag_retrieval(client: TestClient, mon
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+@pytest.mark.llm
 def test_observability_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
     """Segundo dos 6 dominios novos: "Observabilidade e Monitoramento". Mesmo
     padrao do teste de Qualidade e Testes acima -- formulario assistido (pra
@@ -448,7 +420,6 @@ def test_observability_domain_executes_with_real_rag_retrieval(client: TestClien
         db.commit()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     create_response = client.post(
         "/api/v1/agent-skills",
@@ -506,6 +477,7 @@ def test_observability_domain_executes_with_real_rag_retrieval(client: TestClien
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+@pytest.mark.llm
 def test_performance_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
     """Terceiro dos 6 dominios novos: "Performance e Escalabilidade". Mesmo
     padrao dos dois anteriores."""
@@ -527,7 +499,6 @@ def test_performance_domain_executes_with_real_rag_retrieval(client: TestClient,
         db.commit()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     create_response = client.post(
         "/api/v1/agent-skills",
@@ -584,6 +555,7 @@ def test_performance_domain_executes_with_real_rag_retrieval(client: TestClient,
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+@pytest.mark.llm
 def test_data_privacy_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
     """Quarto dos 6 dominios novos: "Dados e Privacidade (LGPD)". Mesmo
     padrao dos tres anteriores."""
@@ -604,7 +576,6 @@ def test_data_privacy_domain_executes_with_real_rag_retrieval(client: TestClient
         db.commit()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     create_response = client.post(
         "/api/v1/agent-skills",
@@ -659,6 +630,7 @@ def test_data_privacy_domain_executes_with_real_rag_retrieval(client: TestClient
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+@pytest.mark.llm
 def test_infrastructure_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
     """Quinto dos 6 dominios novos: "Infraestrutura e DevOps". Mesmo padrao
     dos quatro anteriores."""
@@ -679,7 +651,6 @@ def test_infrastructure_domain_executes_with_real_rag_retrieval(client: TestClie
         db.commit()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     create_response = client.post(
         "/api/v1/agent-skills",
@@ -736,6 +707,7 @@ def test_infrastructure_domain_executes_with_real_rag_retrieval(client: TestClie
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+@pytest.mark.llm
 def test_api_integration_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
     """Sexto e ultimo dos 6 dominios novos: "APIs e Integrações". Mesmo
     padrao dos cinco anteriores."""
@@ -757,7 +729,6 @@ def test_api_integration_domain_executes_with_real_rag_retrieval(client: TestCli
         db.commit()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     create_response = client.post(
         "/api/v1/agent-skills",
@@ -812,6 +783,7 @@ def test_api_integration_domain_executes_with_real_rag_retrieval(client: TestCli
     assert len(result["analise_estruturada"]["descobertas_tecnicas"]) > 0
 
 
+@pytest.mark.llm
 def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> None:
     """Same flow as test_execute_orchestration_step_runs_skill_and_quality_gate,
     but forces the "stdio" transport: the orchestrator spawns
@@ -838,7 +810,6 @@ def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> 
         db.commit()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     client.post(
         "/api/v1/agent-skills/import",
@@ -864,7 +835,6 @@ def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> 
 
 def test_execute_rejects_model_not_in_allowlist(client: TestClient) -> None:
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     client.post(
         "/api/v1/agent-skills/import",
@@ -881,6 +851,7 @@ def test_execute_rejects_model_not_in_allowlist(client: TestClient) -> None:
     assert response.status_code == 422
 
 
+@pytest.mark.llm
 def test_execute_uses_requested_model_override(client: TestClient, monkeypatch) -> None:
     """Proves the per-execution model choice actually reaches the provider call,
     not just accepted-and-ignored: picks a model other than LLM_MODEL and checks
@@ -901,7 +872,6 @@ def test_execute_uses_requested_model_override(client: TestClient, monkeypatch) 
         db.commit()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     client.post(
         "/api/v1/agent-skills/import",
@@ -934,7 +904,6 @@ def test_execute_uses_requested_model_override(client: TestClient, monkeypatch) 
 
 def test_execute_without_matching_skill_returns_409(client: TestClient) -> None:
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     technical_request = create_qualified_request(client, requested_domains=["regras_negocio"])
 
@@ -947,7 +916,6 @@ def test_execute_without_matching_skill_returns_409(client: TestClient) -> None:
 
 def test_skill_usage_ranking_counts_only_official_and_completed(client: TestClient) -> None:
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
 
     legacy_skill = client.post(
         "/api/v1/agent-skills/import",

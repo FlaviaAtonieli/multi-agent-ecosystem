@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.database import SessionLocal
@@ -16,7 +17,6 @@ from tests.conftest import (
     authenticated_csrf_headers,
     create_qualified_request,
     enable_real_llm,
-    promote,
     real_embedding_provider,
     register,
 )
@@ -104,6 +104,7 @@ def _measure(
     return sum(precisions) / n, sum(recalls) / n, sum(reciprocal_ranks) / n
 
 
+@pytest.mark.llm
 def test_retrieval_quality_against_ground_truth(client: TestClient) -> None:
     """Measures retrieval quality (Precision@k, Recall@k, MRR) against a hand-labeled
     ground truth grounded in the real fixture content of all four Agent Skill domains
@@ -135,6 +136,7 @@ TECHNICIAN = {
 }
 
 
+@pytest.mark.llm
 def test_rag_enabled_plan_reflects_retrieved_context(client: TestClient, monkeypatch) -> None:
     """Closes the loop already proven mechanically by
     test_rag.py::test_generate_plan_runs_retrieval_before_llm_call (retrieval runs
@@ -154,7 +156,6 @@ def test_rag_enabled_plan_reflects_retrieved_context(client: TestClient, monkeyp
     _seed_full_knowledge_base()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
     technical_request = create_qualified_request(
         client,
         title="Revisar cálculo de limite de crédito",

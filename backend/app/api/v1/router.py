@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
-    admin,
     agent_skills,
     audit,
     auth,
@@ -21,6 +20,5 @@ api_router.include_router(requests.router)
 api_router.include_router(orchestrations.router)
 api_router.include_router(llm.router)
 api_router.include_router(agent_skills.router)
-api_router.include_router(admin.router)
 api_router.include_router(audit.router)
 api_router.include_router(clans.router)

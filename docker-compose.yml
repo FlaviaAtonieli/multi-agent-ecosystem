@@ -40,5 +40,40 @@ services:
     ports:
       - "3000:80"
 
+  # Monitoramento (ver docs/monitoring.md): Prometheus coleta GET /metrics do
+  # backend; Grafana já sobe com a fonte de dados e o painel provisionados.
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus:ro
+      - agenthub_prometheus_data:/prometheus
+    depends_on:
+      - backend
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-this-grafana-password}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/agenthub-overview.json
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - agenthub_grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "3001:3000"
+
 volumes:
   agenthub_postgres_data:
+  agenthub_prometheus_data:
+  agenthub_grafana_data:

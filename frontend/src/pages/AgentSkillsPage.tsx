@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AgentSkill, AgentSkillDomain, AgentSkillRankingEntry, agentSkillsApi } from '../api/agentSkillsApi'
+import { Clan, clansApi } from '../api/clansApi'
 import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
 import { CollapsibleSection } from '../components/shared/CollapsibleSection'
@@ -72,6 +73,16 @@ function statusOf(skill: AgentSkill): Exclude<StatusFilter, 'ALL'> {
   return skill.status === 'approved' ? 'ENABLED' : 'PENDING'
 }
 
+// 'ALL' | 'OFFICIAL' | 'MINE' | `clan:<id>`
+type OriginFilter = string
+
+function matchesOrigin(skill: AgentSkill, origin: OriginFilter, userId: string | undefined): boolean {
+  if (origin === 'ALL') return true
+  if (origin === 'OFFICIAL') return skill.visibility === 'OFFICIAL'
+  if (origin === 'MINE') return skill.visibility === 'PRIVATE' && skill.owner_id === userId
+  return skill.visibility === 'CLAN' && origin === `clan:${skill.clan_id}`
+}
+
 const statusFilterLabels: Record<StatusFilter, string> = {
   ALL: 'Todas',
   ENABLED: 'Disponíveis',
@@ -87,9 +98,9 @@ export function AgentSkillsPage() {
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
+  const [originFilter, setOriginFilter] = useState<OriginFilter>('ALL')
+  const [myClans, setMyClans] = useState<Clan[]>([])
 
-  const canImport = user?.role === 'TECHNICIAN' || user?.role === 'ADMIN'
-  const canManage = user?.role === 'ADMIN'
 
   useEffect(() => {
     agentSkillsApi
@@ -99,22 +110,36 @@ export function AgentSkillsPage() {
         setError(caught instanceof ApiError ? caught.message : 'Não foi possível carregar o catálogo.'),
       )
     agentSkillsApi.usageRanking(5).then(setRanking).catch(() => undefined)
+    clansApi.listMine().then(setMyClans).catch(() => undefined)
   }, [])
 
+  const clanNames = useMemo(() => new Map(myClans.map((clan) => [clan.id, clan.name])), [myClans])
+
+  // Espelha agent_skills._can_manage_skill: quem criou, ou o dono do clã numa skill de clã.
+  function canManage(skill: AgentSkill): boolean {
+    if (skill.owner_id === user?.id) return true
+    if (skill.visibility !== 'CLAN' || !skill.clan_id) return false
+    return myClans.some((clan) => clan.id === skill.clan_id && clan.created_by_id === user?.id)
+  }
+
   const counts = useMemo(() => {
-    const result: Record<StatusFilter, number> = { ALL: skills.length, ENABLED: 0, PENDING: 0, DISABLED: 0 }
-    for (const skill of skills) result[statusOf(skill)] += 1
+    const result: Record<StatusFilter, number> = { ALL: 0, ENABLED: 0, PENDING: 0, DISABLED: 0 }
+    for (const skill of skills) {
+      if (!matchesOrigin(skill, originFilter, user?.id)) continue
+      result.ALL += 1
+      result[statusOf(skill)] += 1
+    }
     return result
-  }, [skills])
+  }, [skills, originFilter, user?.id])
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
     return skills.filter((skill) => {
       const matchesStatus = statusFilter === 'ALL' || statusOf(skill) === statusFilter
       const matchesQuery = !query || skill.name.toLowerCase().includes(query)
-      return matchesStatus && matchesQuery
+      return matchesStatus && matchesQuery && matchesOrigin(skill, originFilter, user?.id)
     })
-  }, [skills, search, statusFilter])
+  }, [skills, search, statusFilter, originFilter, user?.id])
 
   async function toggleSkill(skill: AgentSkill) {
     setPendingId(skill.id)
@@ -139,16 +164,14 @@ export function AgentSkillsPage() {
           <h1>Catálogo de capacidades especializadas</h1>
           <p>Skills registradas, seus domínios de atuação e a disponibilidade no ecossistema.</p>
         </div>
-        {canImport && (
-          <div className="workspace-page-heading-actions">
-            <Link className="workspace-secondary-action" to="/agent-skills/import">
-              Importar manifesto
-            </Link>
-            <Link className="workspace-primary-action" to="/agent-skills/new">
-              + Criar skill
-            </Link>
-          </div>
-        )}
+        <div className="workspace-page-heading-actions">
+          <Link className="workspace-secondary-action" to="/agent-skills/import">
+            Importar manifesto
+          </Link>
+          <Link className="workspace-primary-action" to="/agent-skills/new">
+            + Criar skill
+          </Link>
+        </div>
       </section>
 
       <section className="workspace-core-agents fade-up" style={{ animationDelay: '0.04s' }}>
@@ -215,6 +238,21 @@ export function AgentSkillsPage() {
             </button>
           ))}
         </div>
+
+        <select
+          value={originFilter}
+          onChange={(event) => setOriginFilter(event.target.value)}
+          aria-label="Filtrar por origem"
+        >
+          <option value="ALL">Todas as origens</option>
+          <option value="OFFICIAL">Oficiais do ecossistema</option>
+          <option value="MINE">Minhas privadas</option>
+          {myClans.map((clan) => (
+            <option key={clan.id} value={`clan:${clan.id}`}>
+              Clã · {clan.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {filtered.length === 0 ? (
@@ -256,25 +294,32 @@ export function AgentSkillsPage() {
 
                 <span
                   className={`workspace-ownership-badge workspace-ownership-badge-${
-                    skill.visibility === 'OFFICIAL' ? 'official' : 'private'
+                    skill.visibility === 'OFFICIAL' ? 'official' : skill.visibility === 'CLAN' ? 'clan' : 'private'
                   }`}
                 >
                   {skill.visibility === 'OFFICIAL'
                     ? 'Oficial do ecossistema'
-                    : skill.owner_id === user?.id
-                      ? 'Minha skill · privada'
-                      : 'Skill privada'}
+                    : skill.visibility === 'CLAN'
+                      ? `Clã · ${(skill.clan_id && clanNames.get(skill.clan_id)) || 'outro clã'}`
+                      : skill.owner_id === user?.id
+                        ? 'Minha skill · privada'
+                        : 'Skill privada'}
                 </span>
 
-                {canManage && (
-                  <button
-                    type="button"
-                    className="workspace-secondary-action workspace-skill-toggle"
-                    disabled={pendingId === skill.id}
-                    onClick={() => toggleSkill(skill)}
-                  >
-                    {skill.enabled ? 'Remover do catálogo' : 'Disponibilizar no catálogo'}
-                  </button>
+                {canManage(skill) && (
+                  <div className="workspace-skill-actions">
+                    <Link className="workspace-secondary-action" to={`/agent-skills/${skill.id}/edit`}>
+                      Editar
+                    </Link>
+                    <button
+                      type="button"
+                      className="workspace-secondary-action"
+                      disabled={pendingId === skill.id}
+                      onClick={() => toggleSkill(skill)}
+                    >
+                      {skill.enabled ? 'Desativar' : 'Reativar'}
+                    </button>
+                  </div>
                 )}
               </article>
             )

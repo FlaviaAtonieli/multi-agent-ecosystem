@@ -8,6 +8,7 @@ import { AttachmentsSection } from '../components/orchestration/AttachmentsSecti
 import { ExecutionResultPanel } from '../components/orchestration/ExecutionResultPanel'
 import { FollowUpExchangeCard } from '../components/orchestration/FollowUpExchangeCard'
 import { FollowUpForm } from '../components/orchestration/FollowUpForm'
+import { HumanReviewPanel } from '../components/orchestration/HumanReviewPanel'
 import { OrchestrationThinkingAnimation } from '../components/orchestration/OrchestrationThinkingAnimation'
 import { StatusBadge } from '../components/orchestration/StatusBadge'
 import { TokenUsageMeter } from '../components/orchestration/TokenUsageMeter'
@@ -243,6 +244,21 @@ export function OrchestrationPage() {
                 )
               )}
             </article>
+          )}
+
+          {detail.technical_request.status === 'VALIDATING' && (
+            <HumanReviewPanel
+              requestId={detail.technical_request.id}
+              onReviewed={async (decision) => {
+                await load()
+                setSuccessMessage(
+                  decision === 'approve'
+                    ? 'Resposta aprovada. A orquestração foi concluída.'
+                    : 'Resposta rejeitada. A justificativa ficou registrada na linha do tempo.',
+                )
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+            />
           )}
 
           <CollapsibleSection

@@ -44,7 +44,7 @@ class AgentSkill(Base):
     )
     # Only set when visibility == "CLAN" -- which clan the skill is scoped to.
     # SET NULL on clan deletion rather than CASCADE: a skill outliving its clan
-    # just becomes orphaned-CLAN (invisible to everyone but the owner/ADMIN
+    # just becomes orphaned-CLAN (invisible to everyone but the owner
     # until re-scoped), not silently deleted along with the clan.
     clan_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("clans.id", ondelete="SET NULL"), index=True, nullable=True

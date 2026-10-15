@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.agent_catalog.mcp_client import SkillServerNotImplementedError, call_skill_tool
 from app.agent_catalog.registry import list_active_skills, select_skills_for_domain
 from app.agent_catalog.tool_interface import SkillToolCall, SkillToolResult
+from app.core.metrics import QUALITY_GATE_VERDICTS, SKILL_INVOCATIONS, SKILL_LATENCY
 from app.core.security import utc_now
 from app.llm.security import content_sha256
 from app.models import (
@@ -192,6 +193,8 @@ async def _invoke_skill(
 
         invocation.status = "COMPLETED"
         invocation.output_hash = content_sha256(result.model_dump_json())
+        SKILL_INVOCATIONS.labels(skill.domain, "COMPLETED").inc()
+        SKILL_LATENCY.labels(skill.domain).observe(latency_ms / 1000)
         invocation.confidence_level = result.governanca.nivel_confianca
         invocation.latency_ms = latency_ms
         invocation.completed_at = utc_now()
@@ -215,6 +218,7 @@ async def _invoke_skill(
         latency_ms = round((time.perf_counter() - started) * 1000)
         invocation.status = "FAILED"
         invocation.error_code = "EXECUTOR_NOT_IMPLEMENTED"
+        SKILL_INVOCATIONS.labels(skill.domain, "FAILED").inc()
         invocation.latency_ms = latency_ms
         invocation.completed_at = utc_now()
         append_event(
@@ -232,6 +236,7 @@ async def _invoke_skill(
         latency_ms = round((time.perf_counter() - started) * 1000)
         invocation.status = "FAILED"
         invocation.error_code = "EXECUTOR_ERROR"
+        SKILL_INVOCATIONS.labels(skill.domain, "FAILED").inc()
         invocation.latency_ms = latency_ms
         invocation.completed_at = utc_now()
         append_event(
@@ -294,6 +299,9 @@ async def execute_orchestration_step(
             results.append(result)
 
     verdict = evaluate(results)
+    QUALITY_GATE_VERDICTS.labels(
+        "approved" if verdict.approved and not verdict.requires_human_review else "human_review"
+    ).inc()
     append_event(
         db,
         technical_request,

@@ -365,7 +365,8 @@
   font-weight: 650;
 }
 .workspace-skill-card-footer code { color: var(--text-muted); font-size: 0.74rem; }
-.workspace-skill-toggle { margin-top: 14px; width: 100%; }
+.workspace-skill-actions { display: flex; gap: 8px; margin-top: 14px; }
+.workspace-skill-actions > * { flex: 1; justify-content: center; text-align: center; }
 
 .workspace-ownership-badge {
   align-self: flex-start;
@@ -378,6 +379,7 @@
 }
 .workspace-ownership-badge-official { color: var(--accent); background: rgba(34, 211, 238, 0.1); }
 .workspace-ownership-badge-private { color: var(--primary-light); background: rgba(139, 92, 246, 0.12); }
+.workspace-ownership-badge-clan { color: #34d399; background: rgba(52, 211, 153, 0.12); }
 
 .workspace-page-heading-actions { display: flex; align-items: center; gap: 10px; }
 
@@ -1127,6 +1129,54 @@
 }
 .workspace-clan-add-member input:focus { outline: none; border-color: rgba(139, 92, 246, 0.7); box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12); }
 
+.workspace-clan-create-form { margin: 14px 0 18px; }
+.workspace-clan-create-form .workspace-clan-create { margin: 0 0 10px; }
+.workspace-clan-settings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+.workspace-clan-create-form .workspace-clan-settings { margin-bottom: 0; }
+.workspace-clan-settings label { display: grid; gap: 4px; min-width: 0; }
+.workspace-clan-settings span { color: var(--text-tertiary); font-size: 0.68rem; font-weight: 600; }
+.workspace-clan-settings select {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  font-size: 0.74rem;
+}
+.workspace-clan-settings select:focus { outline: none; border-color: rgba(139, 92, 246, 0.7); box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12); }
+.workspace-clan-rules { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; padding: 0; list-style: none; }
+.workspace-clan-rules li { padding: 3px 9px; border-radius: 999px; color: var(--text-secondary); background: var(--bg-card); font-size: 0.7rem; }
+.workspace-clan-join { margin-bottom: 14px; }
+.workspace-clan-title { display: flex; align-items: center; gap: 10px; }
+.workspace-clan-rename-trigger {
+  padding: 2px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  color: var(--text-tertiary);
+  background: transparent;
+  font-size: 0.66rem;
+  cursor: pointer;
+}
+.workspace-clan-rename-trigger:hover { border-color: rgba(139, 92, 246, 0.35); color: var(--primary-light); }
+.workspace-clan-rename { display: flex; flex-wrap: wrap; gap: 8px; }
+.workspace-clan-rename input {
+  flex: 1;
+  min-width: 160px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  font-size: 0.82rem;
+}
+.workspace-clan-rename input:focus { outline: none; border-color: rgba(139, 92, 246, 0.7); box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12); }
+@media (max-width: 720px) {
+  .workspace-clan-settings { grid-template-columns: 1fr; }
+}
+
+.workspace-clan-skills-kicker { display: block; margin-top: 22px; margin-bottom: 10px; }
 .workspace-clan-hint { display: block; color: var(--text-tertiary); font-size: 0.76rem; line-height: 1.5; }
 
 .workspace-account-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
@@ -1225,3 +1275,7 @@
   .workspace-definition-list > div { grid-template-columns: 1fr; gap: 7px; }
   .workspace-nav-link > span { display: none; }
 }
+
+.workspace-review-panel { display: grid; gap: 14px; border-color: rgba(245, 158, 11, 0.35); }
+.workspace-review-hint { margin: 0; color: var(--text-secondary); font-size: 0.84rem; line-height: 1.55; }
+.workspace-review-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }

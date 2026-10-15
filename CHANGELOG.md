@@ -2,6 +2,92 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-14 - Documentação Swagger da API e monitoramento com Prometheus
+
+### Adicionado
+
+- Swagger/OpenAPI completo (`backend/app/api/openapi_docs.py`): descrição geral com o fluxo de autenticação (cookie de sessão + CSRF), descrição de todas as tags, resumo e descrição em português das 58 operações, esquemas de segurança (`sessionCookie`, `csrfHeader`) aplicados a cada rota a partir das dependências reais, e o formato de erro `ErrorResponse` nas respostas 4xx/5xx. Tags renomeadas para português (`Status`, `Autenticação`, `Auditoria`, `Integração com LLM`).
+- `/docs` preenche sozinho o cabeçalho `X-CSRF-Token` a partir do cookie, então as rotas protegidas funcionam pelo "Try it out". Continua desligado em produção.
+- `docs/api/openapi.json` exportado por `backend/scripts/export_openapi.py`, e `docs/api/README.md`. `tests/test_openapi_docs.py` falha se uma rota nova ficar sem documentação ou se o arquivo exportado estiver desatualizado.
+- Prometheus: `GET /metrics` (`prometheus-client`) com métricas de HTTP por template de rota, chamadas/latência/tokens do LLM, execuções de Agent Skills, veredito do Quality Gate, revisões humanas, eventos de auditoria (logins, falhas, código por e-mail, redefinição de senha) e estado do banco (solicitações por status, skills ativas, usuários, clãs). `app/core/metrics.py`, `tests/test_metrics.py`.
+- `docker compose` sobe Prometheus (`:9090`, com 4 regras de alerta) e Grafana (`:3001`, fonte de dados e painel "Multi-Agent Ecosystem — Visão geral" provisionados). `monitoring/`, `docs/monitoring.md`. Validado de ponta a ponta: Prometheus coletando o backend, regras carregadas, Grafana consultando o Prometheus.
+- `METRICS_ENABLED`, `METRICS_TOKEN` (Bearer no scrape; obrigatório em produção, a aplicação recusa subir sem ele), `GRAFANA_ADMIN_*`.
+
+### Observação registrada
+
+- Completa o "núcleo comum de engenharia" da rubrica do PAC VIII: CI com análise estática, CD das imagens, Wiki e, agora, monitoramento.
+- Os alertas aparecem só no Prometheus: não há Alertmanager para enviar notificações.
+
+## 2026-10-14 - Tela de revisão humana e "esqueci minha senha"
+
+### Adicionado
+
+- `HumanReviewPanel.tsx` na tela da orquestração: quando a solicitação está em `VALIDATING`, quem a abriu aprova ou rejeita a resposta, com observações. Antes o endpoint existia mas nenhuma tela o chamava, e a solicitação ficava parada nesse estado.
+- "Esqueci minha senha": `POST /auth/password/forgot` (resposta sempre igual, não revela e-mails) e `POST /auth/password/reset` (link de uso único, 30 min). Redefinir zera o bloqueio, encerra as sessões e revoga os dispositivos confiáveis. Tabela `password_reset_tokens` (migração `0018_password_reset`), `app/services/password_reset_service.py`, telas `/forgot-password` e `/reset-password`, link "Esqueci minha senha" no login.
+- `tests/test_password_reset.py` (7 testes) e teste de justificativa obrigatória na rejeição.
+
+### Alterado
+
+- Rejeitar na revisão humana exige justificativa (`TechnicalRequestReview`), como pede a RFC §5.3.
+- Selo do status `VALIDATING` passa de "Quality Gate" para "Aguardando sua revisão" -- é o estado em que o resultado espera a decisão humana, não uma validação automática em andamento.
+
+## 2026-10-14 - Código de login por e-mail em dispositivo novo
+
+### Adicionado
+
+- Verificação em duas etapas só em dispositivo/navegador novo: login com senha, GitHub ou Google sem cookie de dispositivo confiável responde `202` (senha) ou redireciona para `/login?verify=1` (OAuth) e envia um código de 6 dígitos ao e-mail cadastrado. `POST /auth/login/verify` cria a sessão e marca o navegador como confiável por 30 dias; `POST /auth/login/resend` reenvia (intervalo de 60 s); `GET /auth/login/challenge` informa o e-mail mascarado do login pendente.
+- `app/services/login_verification_service.py`, `app/services/email_service.py` (SMTP via `smtplib` ou `console` para dev), tabelas `login_challenges` e `trusted_devices` (migração `0017_login_email_code`).
+- Configurações `LOGIN_EMAIL_CODE_ENABLED`, `LOGIN_CODE_TTL_MINUTES`, `LOGIN_CODE_MAX_ATTEMPTS`, `LOGIN_CODE_RESEND_COOLDOWN_SECONDS`, `TRUSTED_DEVICE_DAYS`, `EMAIL_BACKEND`, `SMTP_*` -- documentadas nos `.env*.example` e no guia do Azure. Produção recusa subir com `EMAIL_BACKEND=console`.
+- Trocar a senha e "sair de todas as sessões" revogam os dispositivos confiáveis.
+- `LoginPage.tsx`: etapa do código (reenviar, voltar) e retorno do OAuth com `?verify=1`.
+- Auditoria: `AUTH_LOGIN_CODE_SENT`, `AUTH_LOGIN_CODE_FAILED`; `AUTH_LOGIN_SUCCESS` registra `login_code: true`.
+- `tests/test_login_code.py` (9 testes); o resto da suíte roda com `LOGIN_EMAIL_CODE_ENABLED=false`.
+
+## 2026-10-14 - Remoção dos papéis de usuário e edição de Agent Skills
+
+### Removido
+
+- Papéis `USER`/`TECHNICIAN`/`REVIEWER`/`ADMIN` (coluna `users.role`, `app/core/roles.py`, dependências `require_admin`/`require_skill_curator`/`require_reviewer`/`require_orchestration_access`). Migração `0016_drop_user_roles`; o downgrade recria a coluna com todo mundo como `USER`.
+- Painel de administração (`/api/v1/admin/*`, `AdminPage.tsx`, `adminApi.ts`) -- listar usuários, ativar/desativar contas e trocar papel deixam de existir.
+- Isenção de `ADMIN` na cota diária de tokens e o bypass de `ADMIN` nas regras de clã (a entrada anterior deste mesmo dia ainda cita esse bypass).
+
+### Alterado
+
+- Qualquer usuário cria e importa Agent Skills, inclusive `OFFICIAL`.
+- Revisão humana (`POST /requests/{id}/review`) passa a ser de quem abriu a solicitação, com lookup owner-scoped (404 para os demais).
+- Trilha de auditoria (`GET /audit/events`) liberada a todos, mas owner-scoped: cada usuário vê só eventos e contagens das próprias solicitações. Item "Auditoria" no menu principal.
+- `bootstrap_admin` continua criando a conta inicial (`BOOTSTRAP_ADMIN_*`, nomes mantidos por compatibilidade de `.env`), agora como conta comum; a seed de skills oficiais usa essa conta, ou o usuário mais antigo, como dona.
+
+### Adicionado
+
+- `PUT /api/v1/agent-skills/{id}`: edita a skill no lugar (mesmo id), revalidando o manifesto. Editar, desativar e reativar ficam com quem criou a skill ou, numa skill `CLAN`, com o dono do clã.
+- `AgentSkillRead.manifest_json`, para pré-preencher a edição.
+- Tela `/agent-skills/:skillId/edit` (reaproveita o assistente de criação, com campo de versão) e botões "Editar" / "Desativar" nos cards de quem pode gerenciar a skill.
+
+### Observação registrada
+
+- `docs/Documento_de_referencia.md` e `VALIDATION.md` ainda descrevem os quatro perfis e o RBAC por endpoint -- não foram alterados por serem registro acadêmico/de validação.
+- Ainda não há tela para a revisão humana: o endpoint existe, mas uma solicitação em `VALIDATING` só sai desse estado pela API.
+
+## 2026-10-14 - Configurações do clã e Agent Skills por clã
+
+### Adicionado
+
+- Clãs passam a ser configurados na criação (e editáveis depois pelo dono ou ADMIN): **aberto/fechado** (`is_open` -- aberto, qualquer usuário entra sozinho via `POST /api/v1/clans/{id}/join`), **quem adiciona Agent Skills** (`skills_policy`) e **quem adiciona/remove membros** (`members_policy`), ambos `ALL_MEMBERS` ou `OWNER_ONLY`. O dono é quem criou o clã (`created_by_id`); ADMIN sempre pode tudo. Migração `0015_clan_settings` -- os defaults (fechado, `ALL_MEMBERS`) preservam o comportamento de todo clã já existente.
+- `PATCH /api/v1/clans/{id}/settings` (só dono/ADMIN). Também renomeia o clã (campo `name`, 409 se o nome já existir) -- botão "Renomear" ao lado do nome, visível só pro dono/ADMIN. Auditoria: `CLAN_SETTINGS_UPDATED`, `CLAN_JOINED`.
+- Regras novas no `clan_service`: sair do clã é sempre permitido; o dono não pode ser removido por outro membro (só por ADMIN); registrar skill `CLAN` respeita `skills_policy` (`ensure_can_register_skills`).
+- `ClansPage.tsx`: formulário de criação com as três configurações, botão "Entrar no clã" em clãs abertos, edição das regras pelo dono e lista das Agent Skills do clã selecionado.
+- `AgentSkillsPage.tsx`: filtro por origem (Oficiais / Minhas privadas / Clã · nome) e selo "Clã · nome" -- antes uma skill de clã aparecia como "Skill privada".
+- Criar/importar skill só oferece os clãs em que o usuário pode adicionar Agent Skills.
+
+### Corrigido
+
+- `clan_service.get_clan` usa `populate_existing=True`: com `expire_on_commit=False`, um clã já carregado na request voltava com a lista de membros antiga depois de remover alguém.
+
+### Observação registrada
+
+- A migração `0015` foi validada pelos testes (`tests/test_clans.py`), não contra Postgres real -- a cadeia completa de migrações não roda em SQLite (`ALTER COLUMN` de migrações anteriores).
+
 ## 2026-10-05 - Guia de deploy no Azure
 
 ### Adicionado

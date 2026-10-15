@@ -29,3 +29,15 @@ class SessionRead(BaseModel):
     last_seen_at: datetime
     created_at: datetime
     current: bool = False
+
+
+class LoginChallengeResponse(BaseModel):
+    """Resposta do login (202) quando o navegador não é confiável: a sessão só
+    é criada depois de POST /auth/login/verify com o código enviado por e-mail."""
+
+    verification_required: bool = True
+    email_hint: str
+
+
+class LoginCodeVerify(BaseModel):
+    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")

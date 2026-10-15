@@ -40,7 +40,6 @@ class UserRead(BaseModel):
     id: str
     name: str
     email: EmailStr
-    role: str
     is_active: bool
     avatar_url: str | None
     created_at: datetime
@@ -68,14 +67,15 @@ class PasswordChange(BaseModel):
         return _validate_password_strength(value)
 
 
-class AdminUserRead(UserRead):
-    tokens_used_today: int
-    daily_token_limit_per_user: int
+class PasswordForgot(BaseModel):
+    email: EmailStr
 
 
-class UserStatusUpdate(BaseModel):
-    is_active: bool
+class PasswordReset(BaseModel):
+    token: str = Field(min_length=20, max_length=200)
+    new_password: str = Field(min_length=12, max_length=128)
 
-
-class UserRoleUpdate(BaseModel):
-    role: Literal["USER", "TECHNICIAN", "REVIEWER", "ADMIN"]
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password_strength(cls, value: str) -> str:
+        return _validate_password_strength(value)
