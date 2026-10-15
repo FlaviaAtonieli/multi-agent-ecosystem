@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.agent_catalog.contracts import SkillToolResult
 from app.agent_manifest.manifest import DomainLiteral
@@ -111,6 +111,13 @@ class TechnicalRequestReview(BaseModel):
             return None
         normalized = value.strip()
         return normalized or None
+
+    @model_validator(mode="after")
+    def require_notes_on_reject(self) -> "TechnicalRequestReview":
+        # RFC §5.3 "Validação": rejeição sempre com justificativa.
+        if self.decision == "reject" and not self.notes:
+            raise ValueError("Informe a justificativa da rejeição.")
+        return self
 
 
 class OrchestrationRunRead(BaseModel):

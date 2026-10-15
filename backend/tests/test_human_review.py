@@ -117,3 +117,15 @@ def test_other_user_cannot_review_someone_elses_request(client: TestClient, monk
         headers=authenticated_csrf_headers(client),
     )
     assert response.status_code == 404
+
+
+def test_reject_requires_notes() -> None:
+    import pytest
+    from pydantic import ValidationError
+
+    from app.schemas.orchestration import TechnicalRequestReview
+
+    with pytest.raises(ValidationError):
+        TechnicalRequestReview(decision="reject", notes="   ")
+    assert TechnicalRequestReview(decision="approve").notes is None
+    assert TechnicalRequestReview(decision="reject", notes="Sem evidência").notes == "Sem evidência"

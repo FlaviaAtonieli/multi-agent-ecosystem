@@ -2,6 +2,19 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-14 - Tela de revisão humana e "esqueci minha senha"
+
+### Adicionado
+
+- `HumanReviewPanel.tsx` na tela da orquestração: quando a solicitação está em `VALIDATING`, quem a abriu aprova ou rejeita a resposta, com observações. Antes o endpoint existia mas nenhuma tela o chamava, e a solicitação ficava parada nesse estado.
+- "Esqueci minha senha": `POST /auth/password/forgot` (resposta sempre igual, não revela e-mails) e `POST /auth/password/reset` (link de uso único, 30 min). Redefinir zera o bloqueio, encerra as sessões e revoga os dispositivos confiáveis. Tabela `password_reset_tokens` (migração `0018_password_reset`), `app/services/password_reset_service.py`, telas `/forgot-password` e `/reset-password`, link "Esqueci minha senha" no login.
+- `tests/test_password_reset.py` (7 testes) e teste de justificativa obrigatória na rejeição.
+
+### Alterado
+
+- Rejeitar na revisão humana exige justificativa (`TechnicalRequestReview`), como pede a RFC §5.3.
+- Selo do status `VALIDATING` passa de "Quality Gate" para "Aguardando sua revisão" -- é o estado em que o resultado espera a decisão humana, não uma validação automática em andamento.
+
 ## 2026-10-14 - Código de login por e-mail em dispositivo novo
 
 ### Adicionado

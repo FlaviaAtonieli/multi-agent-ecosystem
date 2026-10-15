@@ -1275,3 +1275,7 @@
   .workspace-definition-list > div { grid-template-columns: 1fr; gap: 7px; }
   .workspace-nav-link > span { display: none; }
 }
+
+.workspace-review-panel { display: grid; gap: 14px; border-color: rgba(245, 158, 11, 0.35); }
+.workspace-review-hint { margin: 0; color: var(--text-secondary); font-size: 0.84rem; line-height: 1.55; }
+.workspace-review-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
