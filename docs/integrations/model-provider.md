@@ -64,9 +64,8 @@ A chave não deve ser registrada em:
 Uma solicitação só pode ser planejada quando:
 
 - o usuário está autenticado;
-- o perfil não é `REVIEWER` (`ORCHESTRATION_ROLES` em `app/core/roles.py` -- desde 2026-09-16, `USER`, `TECHNICIAN` e `ADMIN` podem, só `REVIEWER` fica de fora por separação de funções);
 - o token CSRF é válido;
-- a solicitação pertence ao usuário, salvo acesso administrativo;
+- a solicitação pertence ao usuário;
 - o estado da solicitação é `QUALIFIED`;
 - a integração está habilitada;
 - o limite individual ainda não foi atingido.
@@ -127,7 +126,7 @@ LLM_REDACT_SENSITIVE_DATA=true
 
 `generate_technical_plan` (`app/services/llm_service.py`) pode opcionalmente recusar chamadas com `429 Too Many Requests` quando a soma de `input_tokens + output_tokens` das invocações `COMPLETED` do usuário no dia corrente (UTC) atinge `LLM_DAILY_TOKEN_LIMIT_PER_USER`. **A partir de 14/09/2026 o padrão é `0` (sem limite)** — a checagem existe mas fica desligada por padrão, para não impor um teto arbitrário à orquestração; quem fizer deploy real e quiser reativar a proteção de custo da conta OpenRouter define um valor positivo nessa variável.
 
-- Contas `ADMIN` são sempre isentas, independentemente do valor configurado.
+- Vale para todas as contas (desde 14/10/2026 não existe mais papel isento).
 - A checagem cobre os dois pontos de entrada que acionam o LLM: `POST /llm/requests/{id}/plan` e `POST /agent-skills/requests/{id}/execute` (cada Agent Skill invocada também chama `generate_technical_plan` internamente).
 - `GET /llm/status` expõe `daily_token_limit_per_user` e `tokens_used_today` (do usuário autenticado), consumido pela tela de Orquestração para mostrar o uso e desabilitar o botão "Executar orquestração" preventivamente quando a cota já foi atingida (só relevante quando o limite é > 0).
 - É uma cota simples de uso (contagem de tokens), não um modelo de negócio de créditos/planos — não há hoje distinção entre usuários "free" e "pro"; ficou registrado como possível evolução futura, não implementada.

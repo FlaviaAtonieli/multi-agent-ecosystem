@@ -8,8 +8,8 @@ from tests.conftest import (
     authenticated_csrf_headers,
     create_qualified_request,
     enable_real_llm,
-    promote,
     register,
+    user_id_for,
 )
 
 TECHNICIAN = {
@@ -28,24 +28,12 @@ def test_regular_user_can_access_llm_status(client: TestClient) -> None:
     assert response.status_code == 200
 
 
-def test_reviewer_cannot_access_llm_status(client: TestClient) -> None:
-    reviewer = {
-        "name": "Revisora Sem Execucao",
-        "email": "revisora.sem.execucao@example.com",
-        "password": "StrongPassword!123",
-    }
-    register(client, reviewer)
-    promote(reviewer["email"], "REVIEWER")
-    response = client.get("/api/v1/llm/status")
-    assert response.status_code == 403
-
-
 def test_openrouter_plan_is_traced_without_storing_content(
     client: TestClient,
     monkeypatch,
 ) -> None:
     register(client, TECHNICIAN)
-    technician_id = promote(TECHNICIAN["email"], "TECHNICIAN")
+    technician_id = user_id_for(TECHNICIAN["email"])
     technical_request = create_qualified_request(
         client,
         title="Planejar análise técnica rastreável",
@@ -139,7 +127,7 @@ def _seed_completed_invocation(
 
 def test_daily_token_quota_blocks_further_calls(client: TestClient, monkeypatch) -> None:
     register(client, TECHNICIAN)
-    technician_id = promote(TECHNICIAN["email"], "TECHNICIAN")
+    technician_id = user_id_for(TECHNICIAN["email"])
     technical_request = create_qualified_request(client)
 
     enable_real_llm(monkeypatch)
@@ -162,30 +150,3 @@ def test_daily_token_quota_blocks_further_calls(client: TestClient, monkeypatch)
     status_response = client.get("/api/v1/llm/status")
     assert status_response.json()["tokens_used_today"] == 110
     assert status_response.json()["daily_token_limit_per_user"] == 100
-
-
-def test_admin_is_exempt_from_daily_token_quota(client: TestClient, monkeypatch) -> None:
-    admin = {
-        "name": "Admin Cotas",
-        "email": "admin.cotas@example.com",
-        "password": "StrongPassword!123",
-    }
-    register(client, admin)
-    admin_id = promote(admin["email"], "ADMIN")
-    technical_request = create_qualified_request(client)
-
-    enable_real_llm(monkeypatch)
-    monkeypatch.setattr(settings, "llm_daily_token_limit_per_user", 100)
-    _seed_completed_invocation(
-        admin_id,
-        technical_request["id"],
-        technical_request["trace_id"],
-        input_tokens=10_000,
-        output_tokens=10_000,
-    )
-
-    plan_response = client.post(
-        f"/api/v1/llm/requests/{technical_request['id']}/plan",
-        headers=authenticated_csrf_headers(client),
-    )
-    assert plan_response.status_code == 200

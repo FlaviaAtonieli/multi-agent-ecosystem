@@ -18,14 +18,14 @@ A proposta é validar uma arquitetura modular para registrar, selecionar, coorde
 
 - Solicitação técnica → qualificação de contexto → execução por Agent Skills (RAG + LLM) → Quality Gate → resposta consolidada, tudo rastreado por `Trace ID`.
 - Catálogo de 10 domínios de Agent Skill oficiais, extensível por manifesto `modelo.md` sem alterar o núcleo do Orquestrador (evidência: `docs/validation/evidence/2026-08-plug-and-play-extensibility.md`).
-- Revisão humana obrigatória de solicitações sinalizadas pelo Quality Gate (perfil `REVIEWER`/`ADMIN`).
+- Revisão humana obrigatória de solicitações sinalizadas pelo Quality Gate, feita por quem abriu a solicitação.
 - Clãs (grupos auto-serviço) como terceira visibilidade de Agent Skill, ao lado de `OFFICIAL`/`PRIVATE`.
 - Página de conta com exclusão lógica (preserva histórico referenciado por outras tabelas).
 - CI com análise estática em todo push/PR (`.github/workflows/ci.yml`).
 
 Detalhes de arquitetura, os três níveis de controle de acesso e o que ainda não faz parte da base: [Wiki do projeto](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) e [SECURITY.md](SECURITY.md#autorização).
 
-> O perfil `REVIEWER` não está definido na RFC (a especificação principal do projeto); ele vem de `docs/Documento_de_referencia.md`, um documento à parte com uma visão arquitetural mais ampla. Foi implementado por decisão explícita, fora do escopo formal da RFC v3.1.
+> Desde 14/10/2026 não há papéis de usuário: todos têm as mesmas permissões e o acesso é controlado por propriedade (ver [SECURITY.md](SECURITY.md#autorização)).
 
 ## Estrutura
 
@@ -127,7 +127,7 @@ Usuário autenticado
   -> resposta final consolidada
 ```
 
-Exige usuário autenticado (qualquer papel exceto `REVIEWER`), `LLM_ENABLED=true` e `OPENROUTER_API_KEY` válida. A base não executa tools nem publica documentos automaticamente. Detalhe completo do fluxo e dos três níveis de controle de acesso (papel → visibilidade da skill → cota de tokens): [Wiki do projeto](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) e [SECURITY.md](SECURITY.md#autorização).
+Exige usuário autenticado, `LLM_ENABLED=true` e `OPENROUTER_API_KEY` válida. A base não executa tools nem publica documentos automaticamente. Detalhe completo do fluxo e dos três níveis de controle de acesso (propriedade → visibilidade da skill → cota de tokens): [Wiki do projeto](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) e [SECURITY.md](SECURITY.md#autorização).
 
 ## Testes
 

@@ -7,7 +7,6 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.roles import ROLE_ADMIN
 from app.core.security import utc_now
 from app.llm.base import LLMEmptyResponseError
 from app.llm.factory import create_llm_provider
@@ -134,7 +133,7 @@ def generate_technical_plan(
         )
     resolved_model = requested_model or settings.llm_model
 
-    if user.role != ROLE_ADMIN and settings.llm_daily_token_limit_per_user > 0:
+    if settings.llm_daily_token_limit_per_user > 0:
         used = tokens_used_today(db, user.id)
         if used >= settings.llm_daily_token_limit_per_user:
             raise LLMQuotaExceededError(

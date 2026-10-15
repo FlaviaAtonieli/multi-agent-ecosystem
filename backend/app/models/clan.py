@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, false, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -10,9 +10,9 @@ from app.core.database import Base
 class Clan(Base):
     """A self-service group any user can create (RFC visibility tier `CLAN` on
     AgentSkill, planned since migration 0010 but never built out). No approval
-    flow: the creator becomes a member automatically, and any current member
-    can add/remove others (see ClanMembership) -- confirmed as the intended
-    scope with the project author, not a leftover placeholder."""
+    flow: the creator becomes a member automatically (and is the clan owner).
+    Who can add/remove members or register CLAN skills is configurable per
+    clan (members_policy / skills_policy), and an open clan lets anyone join."""
 
     __tablename__ = "clans"
 
@@ -20,6 +20,17 @@ class Clan(Base):
     name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     created_by_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    # Regras configuradas na criação (migration 0015). O "dono" é created_by_id.
+    # is_open: qualquer usuário pode entrar sozinho (POST /clans/{id}/join).
+    # skills_policy / members_policy: "ALL_MEMBERS" ou "OWNER_ONLY" -- quem pode
+    # registrar Agent Skills CLAN / adicionar e remover membros. O dono sempre pode.
+    is_open: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false(), nullable=False)
+    skills_policy: Mapped[str] = mapped_column(
+        String(20), default="ALL_MEMBERS", server_default="ALL_MEMBERS", nullable=False
+    )
+    members_policy: Mapped[str] = mapped_column(
+        String(20), default="ALL_MEMBERS", server_default="ALL_MEMBERS", nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

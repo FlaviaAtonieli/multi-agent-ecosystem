@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import require_authenticated_csrf, require_orchestration_access
+from app.api.dependencies import get_current_user, require_authenticated_csrf
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import limiter
@@ -31,8 +31,7 @@ def _find_request(
     else:
         raise ValueError("request_id ou trace_id é obrigatório")
 
-    if user.role != "ADMIN":
-        query = query.where(TechnicalRequest.owner_id == user.id)
+    query = query.where(TechnicalRequest.owner_id == user.id)
 
     technical_request = db.scalar(query)
     if technical_request is None:
@@ -60,7 +59,7 @@ def _provider_configured() -> bool:
 
 @router.get("/status", response_model=LLMStatusRead)
 def llm_status(
-    db: Session = Depends(get_db), user: User = Depends(require_orchestration_access)
+    db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ) -> LLMStatusRead:
     configured = _provider_configured()
     return LLMStatusRead(
@@ -83,7 +82,7 @@ def llm_status(
 def list_invocations(
     trace_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(require_orchestration_access),
+    user: User = Depends(get_current_user),
 ) -> list[LLMInvocation]:
     technical_request = _find_request(db, user=user, trace_id=trace_id)
     return list(
@@ -100,7 +99,7 @@ def create_plan(
     request_id: str,
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(require_orchestration_access),
+    user: User = Depends(get_current_user),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> LLMPlanResponse:
     limiter.check(

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import require_admin
+from app.api.dependencies import get_current_user
 from app.core.database import get_db
 from app.models import OrchestrationEvent, TechnicalRequest, User
 from app.schemas.audit import AuditEventPage, AuditEventRead, AuditStats
@@ -29,22 +29,26 @@ _COMPLIANCE_EVENT_TYPES = {
 @router.get("/events", response_model=AuditEventPage)
 def list_audit_events(
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    user: User = Depends(get_current_user),
     days: int = Query(7, ge=1, le=90),
     actor: str | None = Query(None),
     search: str | None = Query(None, max_length=160),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ) -> AuditEventPage:
-    # Admin-only: the audit trail spans every user's requests, so it stays
-    # restricted to the role whose job is system-wide oversight rather than
-    # scoped per-owner (see CHANGELOG for the 2026-09-14 owner-scoped
-    # experiment this reverts).
+    # Sem papéis de usuário, a trilha é owner-scoped: cada um vê só os eventos
+    # das próprias solicitações (abrir tudo para todos exporia dados alheios).
     start_of_today = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
 
     def _count_today(*conditions: ColumnElement[bool]) -> int:
-        query = select(func.count(OrchestrationEvent.id)).where(
-            OrchestrationEvent.created_at >= start_of_today, *conditions
+        query = (
+            select(func.count(OrchestrationEvent.id))
+            .join(TechnicalRequest, OrchestrationEvent.technical_request_id == TechnicalRequest.id)
+            .where(
+                TechnicalRequest.owner_id == user.id,
+                OrchestrationEvent.created_at >= start_of_today,
+                *conditions,
+            )
         )
         return db.scalar(query) or 0
 
@@ -57,7 +61,7 @@ def list_audit_events(
     query = (
         select(OrchestrationEvent, TechnicalRequest)
         .join(TechnicalRequest, OrchestrationEvent.technical_request_id == TechnicalRequest.id)
-        .where(OrchestrationEvent.created_at >= since)
+        .where(OrchestrationEvent.created_at >= since, TechnicalRequest.owner_id == user.id)
     )
     if actor:
         query = query.where(OrchestrationEvent.actor == actor)

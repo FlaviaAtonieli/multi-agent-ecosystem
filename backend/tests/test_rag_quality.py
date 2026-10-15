@@ -16,7 +16,6 @@ from tests.conftest import (
     authenticated_csrf_headers,
     create_qualified_request,
     enable_real_llm,
-    promote,
     real_embedding_provider,
     register,
 )
@@ -154,7 +153,6 @@ def test_rag_enabled_plan_reflects_retrieved_context(client: TestClient, monkeyp
     _seed_full_knowledge_base()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
     technical_request = create_qualified_request(
         client,
         title="Revisar cálculo de limite de crédito",

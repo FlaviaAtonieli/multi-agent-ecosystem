@@ -80,18 +80,10 @@ def register(client: TestClient, user: dict) -> None:
     assert response.status_code == 201
 
 
-def promote(email: str, role: str) -> str:
-    """Writes the role directly to the DB, bypassing the admin HTTP endpoint.
-
-    The active session isn't revoked (unlike the real ADMIN-driven role-change
-    endpoint), so the same logged-in test client immediately acts under the
-    new role on its next request -- no re-login needed mid-test.
-    """
+def user_id_for(email: str) -> str:
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.email == email))
         assert user is not None
-        user.role = role
-        db.commit()
         return user.id
 
 

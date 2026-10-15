@@ -48,7 +48,7 @@ O frontend adapta a experiência conforme o usuário autenticado, mas não decid
 - catálogo de Agent Skills: criação assistida (RF01), importação e validação estrutural de manifesto `modelo.md` (RF02/RF03), registro no catálogo (RF04) e habilitação/desabilitação por administrador (RF16);
 - seleção de Agent Skills por domínio da solicitação e execução coordenada (RF08/RF09/RF10) — dez domínios de Agent Skill oficiais hoje (Código Legado, Regras de Negócio, Arquitetura de Software, Segurança da Informação, Qualidade e Testes, Observabilidade e Monitoramento, Performance e Escalabilidade, Dados e Privacidade/LGPD, Infraestrutura e DevOps, APIs e Integrações), acionáveis em conjunto numa mesma análise, todas rodando pelo `GenericSkillExecutor` (orientado por `persona_instructions` do manifesto) e operando sobre uma base de conhecimento RAG própria, com qualidade de retrieval medida nos 4 domínios originais (ver "Limites arquiteturais");
 - Quality Gate baseado em regras explicáveis (schema válido, nível de confiança, divergência entre respostas do mesmo domínio) consolidando as respostas antes da entrega (RF11);
-- revisão humana de solicitações sinalizadas pelo Quality Gate, restrita ao perfil `REVIEWER` (ou `ADMIN`) — separação de funções entre quem produz e quem revisa.
+- revisão humana de solicitações sinalizadas pelo Quality Gate, feita por quem abriu a solicitação (desde 14/10/2026 não há papéis de usuário).
 
 ## Componentes previstos no RFC
 
@@ -56,7 +56,7 @@ Os módulos abaixo fazem parte do desenho da PoC, mas ainda não estão completo
 
 - Agent Builder com editor visual (a criação assistida hoje é via API/formulário estruturado, sem UI dedicada).
 
-Já implementados (ver seção anterior): importador de `modelo.md`, validador de manifesto, catálogo de Agent Skills, camada de contratos de entrada e saída (Apêndice C), seleção dinâmica de Agent Skills por domínio, execução coordenada das dez skills oficiais, Quality Gate e revisão humana (`REVIEWER`).
+Já implementados (ver seção anterior): importador de `modelo.md`, validador de manifesto, catálogo de Agent Skills, camada de contratos de entrada e saída (Apêndice C), seleção dinâmica de Agent Skills por domínio, execução coordenada das dez skills oficiais, Quality Gate e revisão humana.
 
 A documentação distingue esses dois estados para não apresentar como concluído o que ainda está em desenvolvimento.
 

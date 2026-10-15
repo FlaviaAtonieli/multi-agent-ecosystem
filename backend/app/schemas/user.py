@@ -40,7 +40,6 @@ class UserRead(BaseModel):
     id: str
     name: str
     email: EmailStr
-    role: str
     is_active: bool
     avatar_url: str | None
     created_at: datetime
@@ -68,14 +67,6 @@ class PasswordChange(BaseModel):
         return _validate_password_strength(value)
 
 
-class AdminUserRead(UserRead):
-    tokens_used_today: int
-    daily_token_limit_per_user: int
 
 
-class UserStatusUpdate(BaseModel):
-    is_active: bool
 
-
-class UserRoleUpdate(BaseModel):
-    role: Literal["USER", "TECHNICIAN", "REVIEWER", "ADMIN"]

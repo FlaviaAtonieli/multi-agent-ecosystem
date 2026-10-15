@@ -168,7 +168,7 @@ def record_human_review(
     decision: str,
     notes: str | None = None,
 ) -> TechnicalRequest:
-    """Applies a REVIEWER/ADMIN decision to a request pending human review (RF11,
+    """Applies the requester's human-review decision to a request pending human review (RF11,
     RFC §5.3 "Validação": aprovação ou rejeição com justificativa).
 
     Only requests the Quality Gate actually flagged (status VALIDATING) can be

@@ -103,7 +103,7 @@ class Settings(BaseSettings):
     # Caps total input+output tokens (LLMInvocation.input_tokens + output_tokens,
     # summed across every "COMPLETED" call the same day) per non-admin user, to
     # protect the account's OpenRouter subscription from a single user's usage.
-    # 0 disables the cap (default). ADMIN accounts are always exempt regardless.
+    # 0 disables the cap (default). Applies to every account (no role is exempt).
     llm_daily_token_limit_per_user: int = 0
 
     # Privacy-safe defaults.

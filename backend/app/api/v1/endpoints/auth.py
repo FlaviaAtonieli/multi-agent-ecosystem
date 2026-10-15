@@ -109,7 +109,6 @@ def register(
         name=payload.name,
         email=email,
         password_hash=hash_password(payload.password),
-        role="USER",
         is_active=True,
     )
     db.add(user)

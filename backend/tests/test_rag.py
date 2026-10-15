@@ -9,7 +9,6 @@ from tests.conftest import (
     authenticated_csrf_headers,
     create_qualified_request,
     enable_real_llm,
-    promote,
     real_embedding_provider,
     register,
 )
@@ -110,7 +109,6 @@ def test_generate_plan_runs_retrieval_before_llm_call(client: TestClient, monkey
         db.commit()
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
     technical_request = create_qualified_request(client)
 
     enable_real_llm(monkeypatch)
@@ -156,7 +154,6 @@ def test_rag_disabled_skips_retrieval(client: TestClient, monkeypatch) -> None:
     from app.core.config import settings
 
     register(client, TECHNICIAN)
-    promote(TECHNICIAN["email"], "TECHNICIAN")
     technical_request = create_qualified_request(client)
 
     enable_real_llm(monkeypatch)

@@ -1,6 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
-import type { User } from '../../api/authApi'
 import { Brand } from '../Brand'
 import '../../styles/workspace.css'
 
@@ -13,14 +12,8 @@ const principalNavigation = [
 const ecosystemNavigation = [
   { to: '/agent-skills', label: 'Agent Skills', symbol: '◇' },
   { to: '/clans', label: 'Clãs', symbol: '⬡' },
+  { to: '/auditoria', label: 'Auditoria', symbol: '⌁' },
 ]
-
-const roleLabels: Record<User['role'], string> = {
-  USER: 'Usuário',
-  TECHNICIAN: 'Usuário técnico',
-  REVIEWER: 'Revisor',
-  ADMIN: 'Administrador',
-}
 
 export function AppShell() {
   const navigate = useNavigate()
@@ -61,18 +54,6 @@ export function AppShell() {
               {item.label}
             </NavLink>
           ))}
-          {user?.role === 'ADMIN' && (
-            <>
-              <div className="workspace-nav-divider" />
-              <span className="workspace-nav-label">ADMINISTRAÇÃO</span>
-              <NavLink to="/admin" className={({ isActive }) => `workspace-nav-link${isActive ? ' active' : ''}`}>
-                <span aria-hidden="true">⚙</span> Usuários
-              </NavLink>
-              <NavLink to="/auditoria" className={({ isActive }) => `workspace-nav-link${isActive ? ' active' : ''}`}>
-                <span aria-hidden="true">⌁</span> Auditoria
-              </NavLink>
-            </>
-          )}
         </nav>
       </aside>
 
@@ -92,7 +73,7 @@ export function AppShell() {
               )}
               <div>
                 <strong>{user?.name}</strong>
-                <small>{user ? roleLabels[user.role] : 'Usuário técnico'}</small>
+                <small>{user?.email}</small>
               </div>
             </Link>
             <Link className="workspace-review-tour" to="/dashboard?tour=1">Rever tour</Link>

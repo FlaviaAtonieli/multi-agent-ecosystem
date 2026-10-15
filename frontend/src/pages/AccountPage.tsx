@@ -1,16 +1,9 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { authApi, User } from '../api/authApi'
+import { authApi } from '../api/authApi'
 import { Clan, clansApi } from '../api/clansApi'
 import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
-
-const roleLabels: Record<User['role'], string> = {
-  USER: 'Usuário',
-  TECHNICIAN: 'Usuário técnico',
-  REVIEWER: 'Revisor',
-  ADMIN: 'Administrador',
-}
 
 export function AccountPage() {
   const { user, refreshUser, deleteAccount } = useAuth()
@@ -180,16 +173,6 @@ export function AccountPage() {
             </form>
           </article>
         )}
-
-        <article className="workspace-panel">
-          <span className="workspace-card-kicker">PAPEL</span>
-          <p className="workspace-account-role">
-            <span className={`workspace-status workspace-status-${user.role === 'ADMIN' ? 'completed' : 'received'}`}>
-              {roleLabels[user.role]}
-            </span>
-          </p>
-          <small>Só um ADMIN pode alterar seu papel, pela página de Administração.</small>
-        </article>
 
         <article className="workspace-panel">
           <span className="workspace-card-kicker">CLÃS · {myClans.length}</span>

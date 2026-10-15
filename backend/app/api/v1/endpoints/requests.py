@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.api.dependencies import (
     get_current_session,
+    get_current_user,
     require_authenticated_csrf,
-    require_reviewer,
 )
 from app.core.config import settings
 from app.core.database import get_db
@@ -98,15 +98,13 @@ def get_request(
     return find_owned_request(db, request_id, current_session.user_id)
 
 
-def find_request_for_review(db: Session, request_id: str) -> TechnicalRequest:
-    """A reviewer decides on other users' requests (RF11 human-in-the-loop), so
-    lookup here is deliberately not owner-scoped — access is gated by the
-    require_reviewer dependency instead, same pattern used for ADMIN in
-    agent_skills._find_qualified_request."""
+def find_request_for_review(db: Session, request_id: str, user_id: str) -> TechnicalRequest:
+    """Revisão humana (RF11) feita por quem abriu a solicitação: não há mais
+    papel de revisor, então o lookup é owner-scoped como o resto da API."""
     technical_request = db.scalar(
         select(TechnicalRequest)
         .options(selectinload(TechnicalRequest.orchestration_run))
-        .where(TechnicalRequest.id == request_id)
+        .where(TechnicalRequest.id == request_id, TechnicalRequest.owner_id == user_id)
     )
     if technical_request is None:
         raise HTTPException(
@@ -122,10 +120,10 @@ def review_request(
     payload: TechnicalRequestReview,
     request: Request,
     db: Session = Depends(get_db),
-    reviewer: User = Depends(require_reviewer),
+    reviewer: User = Depends(get_current_user),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> TechnicalRequest:
-    technical_request = find_request_for_review(db, request_id)
+    technical_request = find_request_for_review(db, request_id, reviewer.id)
     try:
         reviewed = record_human_review(
             db,

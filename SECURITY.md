@@ -34,33 +34,33 @@ A aplicação utiliza sessão persistida no servidor, e não JWT armazenado no n
 
 ### Autorização
 
-A implementação atual possui quatro perfis:
+Desde 14/10/2026 não há papéis de usuário (os antigos `USER`, `TECHNICIAN`, `REVIEWER` e `ADMIN` foram removidos para simplificar o uso, migração `0016_drop_user_roles`). Todo usuário autenticado tem as mesmas permissões, e o controle de acesso passa a ser por **propriedade**:
 
-| Perfil | Permissões principais |
+| Recurso | Quem pode |
 |---|---|
-| `USER` | Funções gerais, solicitações próprias e execução de orquestrações |
-| `TECHNICIAN` | Execução de orquestrações, curadoria do catálogo de Agent Skills (criar/importar) e consulta dos próprios rastros |
-| `REVIEWER` | Revisão humana de solicitações sinalizadas pelo Quality Gate (aprovação/rejeição com justificativa) — não executa orquestrações nem consulta a trilha de auditoria (separação de funções: quem revisa não é quem produz) |
-| `ADMIN` | Administração de usuários, perfis, trilha de auditoria completa e consultas administrativas; isento da cota diária de tokens |
+| Solicitações, orquestrações e revisão humana | Só quem abriu a solicitação (lookup owner-scoped, 404 para os demais) |
+| Trilha de auditoria | Cada usuário vê apenas os eventos das próprias solicitações |
+| Agent Skills | Qualquer usuário cria ou importa, inclusive `OFFICIAL`; editar, desativar e reativar fica com quem criou (numa skill `CLAN`, também com o dono do clã) |
+| Clãs | Regras por clã (`is_open`, `skills_policy`, `members_policy`); o dono (`created_by_id`) altera as configurações |
 
-A promoção de perfil é restrita ao administrador. Quando o papel de outro usuário é alterado, as sessões desse usuário são revogadas.
+Não há mais painel de administração: desativar a conta de outro usuário deixou de existir pela interface.
 
 ### Três camadas de controle de acesso
 
 Independentes entre si e avaliadas nesta ordem -- cada uma só é checada se a anterior já passou:
 
-1. **Papel do usuário** (controla *se* a pessoa pode executar). Todo cadastro novo nasce `USER` e já executa orquestrações -- `USER`, `TECHNICIAN` e `ADMIN` podem; só `REVIEWER` não pode. Importar/criar Agent Skill continua restrito a `TECHNICIAN`/`ADMIN`.
-2. **Visibilidade da Agent Skill** (controla *o que* existe pra executar). Toda skill nova nasce `OFFICIAL` (visível a qualquer usuário autenticado). `PRIVATE` fica restrita ao dono (e `ADMIN`); `CLAN` fica restrita aos membros do clã (`clan_id`) associado.
-3. **Cota diária de tokens** (controla *quanto* uma pessoa já autorizada pode executar naquele dia; desligada por padrão -- `LLM_DAILY_TOKEN_LIMIT_PER_USER=0`). `ADMIN` sempre isento. Detalhes: [docs/integrations/model-provider.md](docs/integrations/model-provider.md#cota-diária-de-tokens-por-usuário).
+1. **Propriedade** (controla *sobre o que* a pessoa age). Toda solicitação, orquestração e revisão é do usuário que a criou.
+2. **Visibilidade da Agent Skill** (controla *o que* existe pra executar). `OFFICIAL` é visível a qualquer usuário autenticado; `PRIVATE` fica restrita ao dono; `CLAN` fica restrita aos membros do clã (`clan_id`) associado.
+3. **Cota diária de tokens** (controla *quanto* cada pessoa pode executar naquele dia; desligada por padrão -- `LLM_DAILY_TOKEN_LIMIT_PER_USER=0`). Vale para todas as contas. Detalhes: [docs/integrations/model-provider.md](docs/integrations/model-provider.md#cota-diária-de-tokens-por-usuário).
 
-> Como o cadastro é aberto por padrão (`ALLOW_REGISTRATION=true`) e `USER` executa sem precisar de promoção, um deploy exposto publicamente deve considerar reativar a cota diária de tokens (item 3) e/ou fechar o cadastro.
+> Como o cadastro é aberto por padrão (`ALLOW_REGISTRATION=true`) e todo usuário executa orquestrações e publica skills `OFFICIAL`, um deploy exposto publicamente deve considerar reativar a cota diária de tokens (item 3) e/ou fechar o cadastro.
 
 ## Segurança da integração com modelos
 
 - Integração desabilitada por padrão.
 - Chave disponível somente no backend.
 - Modelo validado por allowlist.
-- Execução liberada a `USER`, `TECHNICIAN` e `ADMIN` (todos exceto `REVIEWER` — separação de funções: quem revisa não é quem produz).
+- Execução liberada a qualquer usuário autenticado, sobre as próprias solicitações.
 - Verificação de propriedade da solicitação.
 - Limite de caracteres antes do envio.
 - Mascaramento de padrões de senha, token, chave e e-mail.

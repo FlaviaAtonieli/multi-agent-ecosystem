@@ -2,6 +2,51 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-14 - Remoção dos papéis de usuário e edição de Agent Skills
+
+### Removido
+
+- Papéis `USER`/`TECHNICIAN`/`REVIEWER`/`ADMIN` (coluna `users.role`, `app/core/roles.py`, dependências `require_admin`/`require_skill_curator`/`require_reviewer`/`require_orchestration_access`). Migração `0016_drop_user_roles`; o downgrade recria a coluna com todo mundo como `USER`.
+- Painel de administração (`/api/v1/admin/*`, `AdminPage.tsx`, `adminApi.ts`) -- listar usuários, ativar/desativar contas e trocar papel deixam de existir.
+- Isenção de `ADMIN` na cota diária de tokens e o bypass de `ADMIN` nas regras de clã (a entrada anterior deste mesmo dia ainda cita esse bypass).
+
+### Alterado
+
+- Qualquer usuário cria e importa Agent Skills, inclusive `OFFICIAL`.
+- Revisão humana (`POST /requests/{id}/review`) passa a ser de quem abriu a solicitação, com lookup owner-scoped (404 para os demais).
+- Trilha de auditoria (`GET /audit/events`) liberada a todos, mas owner-scoped: cada usuário vê só eventos e contagens das próprias solicitações. Item "Auditoria" no menu principal.
+- `bootstrap_admin` continua criando a conta inicial (`BOOTSTRAP_ADMIN_*`, nomes mantidos por compatibilidade de `.env`), agora como conta comum; a seed de skills oficiais usa essa conta, ou o usuário mais antigo, como dona.
+
+### Adicionado
+
+- `PUT /api/v1/agent-skills/{id}`: edita a skill no lugar (mesmo id), revalidando o manifesto. Editar, desativar e reativar ficam com quem criou a skill ou, numa skill `CLAN`, com o dono do clã.
+- `AgentSkillRead.manifest_json`, para pré-preencher a edição.
+- Tela `/agent-skills/:skillId/edit` (reaproveita o assistente de criação, com campo de versão) e botões "Editar" / "Desativar" nos cards de quem pode gerenciar a skill.
+
+### Observação registrada
+
+- `docs/Documento_de_referencia.md` e `VALIDATION.md` ainda descrevem os quatro perfis e o RBAC por endpoint -- não foram alterados por serem registro acadêmico/de validação.
+- Ainda não há tela para a revisão humana: o endpoint existe, mas uma solicitação em `VALIDATING` só sai desse estado pela API.
+
+## 2026-10-14 - Configurações do clã e Agent Skills por clã
+
+### Adicionado
+
+- Clãs passam a ser configurados na criação (e editáveis depois pelo dono ou ADMIN): **aberto/fechado** (`is_open` -- aberto, qualquer usuário entra sozinho via `POST /api/v1/clans/{id}/join`), **quem adiciona Agent Skills** (`skills_policy`) e **quem adiciona/remove membros** (`members_policy`), ambos `ALL_MEMBERS` ou `OWNER_ONLY`. O dono é quem criou o clã (`created_by_id`); ADMIN sempre pode tudo. Migração `0015_clan_settings` -- os defaults (fechado, `ALL_MEMBERS`) preservam o comportamento de todo clã já existente.
+- `PATCH /api/v1/clans/{id}/settings` (só dono/ADMIN). Também renomeia o clã (campo `name`, 409 se o nome já existir) -- botão "Renomear" ao lado do nome, visível só pro dono/ADMIN. Auditoria: `CLAN_SETTINGS_UPDATED`, `CLAN_JOINED`.
+- Regras novas no `clan_service`: sair do clã é sempre permitido; o dono não pode ser removido por outro membro (só por ADMIN); registrar skill `CLAN` respeita `skills_policy` (`ensure_can_register_skills`).
+- `ClansPage.tsx`: formulário de criação com as três configurações, botão "Entrar no clã" em clãs abertos, edição das regras pelo dono e lista das Agent Skills do clã selecionado.
+- `AgentSkillsPage.tsx`: filtro por origem (Oficiais / Minhas privadas / Clã · nome) e selo "Clã · nome" -- antes uma skill de clã aparecia como "Skill privada".
+- Criar/importar skill só oferece os clãs em que o usuário pode adicionar Agent Skills.
+
+### Corrigido
+
+- `clan_service.get_clan` usa `populate_existing=True`: com `expire_on_commit=False`, um clã já carregado na request voltava com a lista de membros antiga depois de remover alguém.
+
+### Observação registrada
+
+- A migração `0015` foi validada pelos testes (`tests/test_clans.py`), não contra Postgres real -- a cadeia completa de migrações não roda em SQLite (`ALTER COLUMN` de migrações anteriores).
+
 ## 2026-10-05 - Guia de deploy no Azure
 
 ### Adicionado

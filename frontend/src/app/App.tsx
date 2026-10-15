@@ -3,7 +3,6 @@ import { AppShell } from '../components/layout/AppShell'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { PublicRoute } from '../components/PublicRoute'
 import { AccountPage } from '../pages/AccountPage'
-import { AdminPage } from '../pages/AdminPage'
 import { AgentSkillCreatePage } from '../pages/AgentSkillCreatePage'
 import { AgentSkillImportPage } from '../pages/AgentSkillImportPage'
 import { AgentSkillsPage } from '../pages/AgentSkillsPage'
@@ -33,10 +32,10 @@ export function App() {
           <Route path="/agent-skills" element={<AgentSkillsPage />} />
           <Route path="/agent-skills/new" element={<AgentSkillCreatePage />} />
           <Route path="/agent-skills/import" element={<AgentSkillImportPage />} />
+          <Route path="/agent-skills/:skillId/edit" element={<AgentSkillCreatePage />} />
           <Route path="/clans" element={<ClansPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/auditoria" element={<AuditoriaPage />} />
-          <Route path="/admin" element={<AdminPage />} />
         </Route>
       </Route>
 
