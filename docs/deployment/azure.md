@@ -129,8 +129,11 @@ az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $BACKEN
   SMTP_HOST=smtp.gmail.com `
   SMTP_USERNAME="<seu-gmail>" `
   SMTP_PASSWORD="<senha-de-app-do-gmail>" `
-  SMTP_FROM="<seu-gmail>"
+  SMTP_FROM="<seu-gmail>" `
+  METRICS_TOKEN="<gere-com-openssl-rand-hex-32>"
 ```
+
+> **`METRICS_TOKEN` é obrigatório em produção.** Sem ele a aplicação recusa subir, porque `/metrics` ficaria público no App Service. Para coletar as métricas no Azure, aponte um Prometheus (ou o Azure Monitor managed Prometheus) para `https://<backend>/metrics` com `Authorization: Bearer <token>`. Ver [docs/monitoring.md](../monitoring.md).
 
 > **SMTP é obrigatório em produção.** O login em navegador novo envia um código por e-mail, e com `ENVIRONMENT=production` a aplicação recusa subir com `EMAIL_BACKEND=console`. No Gmail, a senha de app é gerada em https://myaccount.google.com/apppasswords (exige verificação em 2 etapas na conta).
 

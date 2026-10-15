@@ -1,0 +1,6542 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Flav.IA API",
+    "description": "\nAPI do **Multi-Agent Ecosystem**: um Orquestrador recebe solicitações técnicas,\nseleciona as Agent Skills de cada domínio, consolida as respostas e passa o\nresultado pelo Conselheiro (Quality Gate) antes da entrega.\n\n## Autenticação\n\nA API usa **cookie de sessão `HttpOnly`** (`agenthub_session`) e **proteção CSRF\npor double-submit**: toda requisição que altera dados (`POST`, `PUT`, `PATCH`,\n`DELETE`) precisa enviar o cabeçalho `X-CSRF-Token` com o mesmo valor do cookie\n`agenthub_csrf`.\n\nPara testar por aqui:\n\n1. `GET /api/v1/auth/csrf` — cria o cookie `agenthub_csrf`.\n2. `POST /api/v1/auth/login` (ou `/register`) — cria a sessão. Em navegador novo,\n   o login responde `202` e envia um código ao e-mail; confirme em\n   `POST /api/v1/auth/login/verify`.\n3. Nesta página, o cabeçalho `X-CSRF-Token` é preenchido automaticamente a partir\n   do cookie — não é preciso clicar em *Authorize*.\n\n## Erros\n\nTodo erro segue o mesmo formato (`ErrorResponse`): `error` (código), `message`\n(texto para o usuário), `request_id` (para cruzar com os logs) e, em erros de\nvalidação (`422`), `details` com o campo e o problema.\n\n## Acesso\n\nNão há papéis de usuário: cada pessoa acessa as próprias solicitações,\norquestrações e trilha de auditoria. Agent Skills seguem a visibilidade\n`OFFICIAL` / `PRIVATE` / `CLAN`.\n",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Status da API",
+        "operationId": "health_check_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Check Api V1 Health Get"
+                }
+              }
+            }
+          }
+        },
+        "description": "Retorna se a API está no ar. Não exige autenticação.",
+        "security": []
+      }
+    },
+    "/api/v1/auth/csrf": {
+      "get": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Preparar token CSRF",
+        "operationId": "prepare_csrf_api_v1_auth_csrf_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Cria o cookie `agenthub_csrf`, cujo valor deve ir no cabeçalho `X-CSRF-Token` das requisições que alteram dados.",
+        "security": []
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Criar conta",
+        "operationId": "register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Cria a conta com e-mail e senha e já inicia a sessão. A senha precisa de 12+ caracteres com maiúscula, minúscula, número e caractere especial. Desligado com `ALLOW_REGISTRATION=false`.",
+        "security": [
+          {
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Entrar com e-mail e senha",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AuthResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LoginChallengeResponse"
+                    }
+                  ],
+                  "title": "Response Login Api V1 Auth Login Post"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginChallengeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Em navegador já confiável, cria a sessão (`200`). Em navegador novo, responde `202` com `verification_required` e envia um código de 6 dígitos ao e-mail cadastrado — confirme em `POST /auth/login/verify`. Bloqueia a conta temporariamente após tentativas erradas seguidas.",
+        "security": [
+          {
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/login/challenge": {
+      "get": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Consultar login pendente",
+        "description": "Informa se há um login aguardando o código neste navegador e para qual e-mail (mascarado) ele foi enviado. Usado depois do retorno do GitHub/Google. `410` se não houver login pendente.",
+        "operationId": "login_challenge_status_api_v1_auth_login_challenge_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginChallengeResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/login/verify": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Confirmar código de login",
+        "operationId": "verify_login_api_v1_auth_login_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginCodeVerify"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Valida o código enviado por e-mail, cria a sessão e marca o navegador como confiável por `TRUSTED_DEVICE_DAYS`. `400` com as tentativas restantes se o código estiver errado; `410` se o login expirou ou as tentativas acabaram.",
+        "security": [
+          {
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/login/resend": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Reenviar código de login",
+        "operationId": "resend_login_api_v1_auth_login_resend_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginChallengeResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Envia um novo código para o login pendente. Respeita o intervalo mínimo entre envios (`429`) e não zera as tentativas já usadas.",
+        "security": [
+          {
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/password/forgot": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Esqueci minha senha",
+        "description": "Envia um link de redefinição ao e-mail, se ele estiver cadastrado. A resposta é sempre a mesma, exista ou não a conta, para não revelar e-mails cadastrados.",
+        "operationId": "forgot_password_api_v1_auth_password_forgot_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordForgot"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Forgot Password Api V1 Auth Password Forgot Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/password/reset": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Redefinir senha",
+        "operationId": "reset_forgotten_password_api_v1_auth_password_reset_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordReset"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Troca a senha usando o token do link enviado por e-mail (uso único, válido por `PASSWORD_RESET_TTL_MINUTES`). Encerra todas as sessões e revoga os navegadores confiáveis.",
+        "security": [
+          {
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/renew": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Renovar sessão",
+        "operationId": "renew_session_api_v1_auth_renew_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Troca o token da sessão atual por um novo, estendendo a validade.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Sair",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Encerra a sessão atual e remove os cookies.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/logout-all": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Sair de todas as sessões",
+        "operationId": "logout_all_api_v1_auth_logout_all_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Encerra todas as sessões da conta e revoga os navegadores confiáveis (o próximo login pede código).",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Minha conta",
+        "operationId": "me_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Dados do usuário autenticado.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Excluir minha conta",
+        "description": "Exclui a conta do usuário autenticado e encerra a sessão.",
+        "operationId": "delete_my_account_api_v1_auth_me_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Alterar meu nome",
+        "operationId": "update_my_name_api_v1_auth_me_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserNameUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Atualiza o nome exibido do usuário autenticado.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/onboarding/complete": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Concluir tour inicial",
+        "operationId": "complete_onboarding_api_v1_auth_onboarding_complete_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Marca o tour de boas-vindas como concluído.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/me/password": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Trocar minha senha",
+        "operationId": "change_my_password_api_v1_auth_me_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Troca a senha informando a atual. Revoga os navegadores confiáveis. `409` em contas só com GitHub/Google.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/sessions": {
+      "get": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Minhas sessões",
+        "operationId": "list_sessions_api_v1_auth_sessions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SessionRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Sessions Api V1 Auth Sessions Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Lista as sessões ativas da conta, indicando a atual.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/sessions/{session_id}": {
+      "delete": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Encerrar uma sessão",
+        "operationId": "revoke_own_session_api_v1_auth_sessions__session_id__delete",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Revoga uma sessão específica da própria conta.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/github/login": {
+      "get": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Entrar com GitHub",
+        "description": "Redireciona o navegador para a autorização do GitHub. Abra pela barra de endereço, não por fetch.",
+        "operationId": "github_login_api_v1_auth_github_login_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/github/callback": {
+      "get": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Retorno do GitHub",
+        "operationId": "github_callback_api_v1_auth_github_callback_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Chamado pelo GitHub após a autorização. Cria a sessão e redireciona ao dashboard ou, em navegador novo, envia o código por e-mail e redireciona para `/login?verify=1`.",
+        "security": []
+      }
+    },
+    "/api/v1/auth/google/login": {
+      "get": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Entrar com Google",
+        "description": "Redireciona o navegador para a autorização do Google. Abra pela barra de endereço, não por fetch.",
+        "operationId": "google_login_api_v1_auth_google_login_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/google/callback": {
+      "get": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Retorno do Google",
+        "operationId": "google_callback_api_v1_auth_google_callback_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Chamado pelo Google após a autorização. Mesmo comportamento do retorno do GitHub.",
+        "security": []
+      }
+    },
+    "/api/v1/dashboard/summary": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Resumo do dashboard",
+        "operationId": "dashboard_summary_api_v1_dashboard_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Indicadores do usuário (execuções, taxa de sucesso, solicitações recentes, eventos) e totais do ecossistema.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/requests": {
+      "get": {
+        "tags": [
+          "Solicitações técnicas"
+        ],
+        "summary": "Minhas solicitações",
+        "operationId": "list_requests_api_v1_requests_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TechnicalRequestRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Requests Api V1 Requests Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Lista as solicitações técnicas do usuário autenticado.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Solicitações técnicas"
+        ],
+        "summary": "Criar solicitação",
+        "operationId": "create_request_api_v1_requests_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TechnicalRequestCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicalRequestRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Registra uma solicitação técnica. O Orientador de Interação verifica se o contexto é suficiente: a solicitação fica `QUALIFIED` ou `AWAITING_CONTEXT`.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/requests/{request_id}": {
+      "get": {
+        "tags": [
+          "Solicitações técnicas"
+        ],
+        "summary": "Detalhe da solicitação",
+        "operationId": "get_request_api_v1_requests__request_id__get",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicalRequestRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Retorna uma solicitação do próprio usuário.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/requests/{request_id}/review": {
+      "post": {
+        "tags": [
+          "Solicitações técnicas"
+        ],
+        "summary": "Revisão humana",
+        "operationId": "review_request_api_v1_requests__request_id__review_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TechnicalRequestReview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicalRequestRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Aprova ou rejeita o resultado de uma solicitação em `VALIDATING` (sinalizada pelo Conselheiro). Só quem abriu a solicitação revisa. Rejeitar exige justificativa em `notes`.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/requests/{request_id}/context": {
+      "post": {
+        "tags": [
+          "Solicitações técnicas"
+        ],
+        "summary": "Complementar contexto",
+        "operationId": "add_request_context_api_v1_requests__request_id__context_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TechnicalRequestContextUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicalRequestRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Acrescenta contexto a uma solicitação em `AWAITING_CONTEXT` e a reavalia.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/requests/{request_id}/attachments": {
+      "post": {
+        "tags": [
+          "Solicitações técnicas"
+        ],
+        "summary": "Anexar arquivo",
+        "operationId": "upload_request_attachment_api_v1_requests__request_id__attachments_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_request_attachment_api_v1_requests__request_id__attachments_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestAttachmentRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Envia um arquivo de apoio (multipart). Tipos e tamanho máximo são validados no servidor.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Solicitações técnicas"
+        ],
+        "summary": "Listar anexos",
+        "operationId": "list_request_attachments_api_v1_requests__request_id__attachments_get",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RequestAttachmentRead"
+                  },
+                  "title": "Response List Request Attachments Api V1 Requests  Request Id  Attachments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Lista os anexos da solicitação.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/requests/{request_id}/attachments/{attachment_id}": {
+      "delete": {
+        "tags": [
+          "Solicitações técnicas"
+        ],
+        "summary": "Remover anexo",
+        "operationId": "delete_request_attachment_api_v1_requests__request_id__attachments__attachment_id__delete",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          },
+          {
+            "name": "attachment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Attachment Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Remove um anexo da solicitação.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orchestrations/{trace_id}": {
+      "get": {
+        "tags": [
+          "Orquestrações"
+        ],
+        "summary": "Detalhe da orquestração",
+        "operationId": "get_orchestration_api_v1_orchestrations__trace_id__get",
+        "parameters": [
+          {
+            "name": "trace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrchestrationDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Solicitação, execução e eventos de uma orquestração, pelo Trace ID.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orchestrations/{trace_id}/events": {
+      "get": {
+        "tags": [
+          "Orquestrações"
+        ],
+        "summary": "Linha do tempo",
+        "operationId": "get_orchestration_events_api_v1_orchestrations__trace_id__events_get",
+        "parameters": [
+          {
+            "name": "trace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrchestrationEventRead"
+                  },
+                  "title": "Response Get Orchestration Events Api V1 Orchestrations  Trace Id  Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Eventos da orquestração em ordem.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orchestrations/{trace_id}/skill-results": {
+      "get": {
+        "tags": [
+          "Orquestrações"
+        ],
+        "summary": "Resultados das Agent Skills",
+        "operationId": "get_orchestration_skill_results_api_v1_orchestrations__trace_id__skill_results_get",
+        "parameters": [
+          {
+            "name": "trace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentSkillInvocationResultRead"
+                  },
+                  "title": "Response Get Orchestration Skill Results Api V1 Orchestrations  Trace Id  Skill Results Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Resposta estruturada de cada Agent Skill executada na orquestração.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orchestrations/{trace_id}/follow-ups": {
+      "get": {
+        "tags": [
+          "Orquestrações"
+        ],
+        "summary": "Perguntas de acompanhamento",
+        "operationId": "get_orchestration_follow_ups_api_v1_orchestrations__trace_id__follow_ups_get",
+        "parameters": [
+          {
+            "name": "trace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FollowUpExchangeRead"
+                  },
+                  "title": "Response Get Orchestration Follow Ups Api V1 Orchestrations  Trace Id  Follow Ups Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Perguntas feitas depois da execução e as respostas das Agent Skills.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/llm/status": {
+      "get": {
+        "tags": [
+          "Integração com LLM"
+        ],
+        "summary": "Status do LLM",
+        "operationId": "llm_status_api_v1_llm_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMStatusRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Provedor, modelo padrão, modelos permitidos e uso de tokens do dia pelo usuário.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/llm/invocations/{trace_id}": {
+      "get": {
+        "tags": [
+          "Integração com LLM"
+        ],
+        "summary": "Invocações do LLM",
+        "operationId": "list_invocations_api_v1_llm_invocations__trace_id__get",
+        "parameters": [
+          {
+            "name": "trace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LLMInvocationRead"
+                  },
+                  "title": "Response List Invocations Api V1 Llm Invocations  Trace Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Rastro das chamadas ao modelo de uma orquestração (status, tokens, latência). O conteúdo integral não é armazenado por padrão.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/llm/requests/{request_id}/plan": {
+      "post": {
+        "tags": [
+          "Integração com LLM"
+        ],
+        "summary": "Gerar plano técnico",
+        "operationId": "create_plan_api_v1_llm_requests__request_id__plan_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMPlanResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Pede ao modelo um plano técnico estruturado para uma solicitação `QUALIFIED`. Respeita a cota diária de tokens (`429`).",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-skills": {
+      "get": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Catálogo de Agent Skills",
+        "operationId": "list_skills_api_v1_agent_skills_get",
+        "parameters": [
+          {
+            "name": "only_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Only Active"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentSkillRead"
+                  },
+                  "title": "Response List Skills Api V1 Agent Skills Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Skills visíveis ao usuário: oficiais, as próprias e as dos clãs de que participa. `only_active=false` inclui as desativadas.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Criar Agent Skill",
+        "operationId": "create_skill_api_v1_agent_skills_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSkillManifestCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSkillRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Cria uma skill pelo formulário assistido. O manifesto passa pela validação de governança (`422` lista todos os problemas). `visibility=CLAN` exige `clan_id` e permissão no clã.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-skills/tools": {
+      "get": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Skills como tools",
+        "operationId": "list_skill_tools_api_v1_agent_skills_tools_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AgentSkillToolDescriptorRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Skill Tools Api V1 Agent Skills Tools Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Descritores das skills ativas no formato de tool (nome, descrição, schema de entrada).",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-skills/ranking": {
+      "get": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Skills mais usadas",
+        "operationId": "skill_usage_ranking_api_v1_agent_skills_ranking_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentSkillRankingRead"
+                  },
+                  "title": "Response Skill Usage Ranking Api V1 Agent Skills Ranking Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Ranking das skills oficiais por número de execuções.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-skills/import": {
+      "post": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Importar `modelo.md`",
+        "operationId": "import_skill_api_v1_agent_skills_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSkillManifestImport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSkillRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Registra uma skill a partir do conteúdo de um arquivo `modelo.md`.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-skills/{skill_id}": {
+      "put": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Editar Agent Skill",
+        "operationId": "update_api_v1_agent_skills__skill_id__put",
+        "parameters": [
+          {
+            "name": "skill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Skill Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSkillManifestCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSkillRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Substitui o manifesto da skill (mesmo id), revalidando-o. Permitido a quem criou a skill ou, numa skill de clã, ao dono do clã.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Detalhe da Agent Skill",
+        "operationId": "get_skill_detail_api_v1_agent_skills__skill_id__get",
+        "parameters": [
+          {
+            "name": "skill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Skill Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSkillRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Retorna uma skill visível ao usuário.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-skills/{skill_id}/enable": {
+      "patch": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Reativar Agent Skill",
+        "operationId": "enable_api_v1_agent_skills__skill_id__enable_patch",
+        "parameters": [
+          {
+            "name": "skill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Skill Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSkillRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Volta a disponibilizar a skill para o Orquestrador. Mesma permissão da edição.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-skills/{skill_id}/disable": {
+      "patch": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Desativar Agent Skill",
+        "operationId": "disable_api_v1_agent_skills__skill_id__disable_patch",
+        "parameters": [
+          {
+            "name": "skill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Skill Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSkillRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Tira a skill do catálogo ativo sem apagá-la. Mesma permissão da edição.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-skills/requests/{request_id}/execute": {
+      "post": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Executar orquestração",
+        "operationId": "execute_skills_for_request_api_v1_agent_skills_requests__request_id__execute_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AgentSkillExecutionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrchestrationExecutionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Executa as Agent Skills sobre uma solicitação `QUALIFIED`, consolida as respostas e aplica o Quality Gate. Se o resultado não for aprovado, a solicitação vai para `VALIDATING` (revisão humana).",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-skills/requests/{request_id}/ask": {
+      "post": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Pergunta de acompanhamento",
+        "operationId": "ask_follow_up_api_v1_agent_skills_requests__request_id__ask_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowUpQuestionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowUpExchangeRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Faz uma pergunta sobre uma solicitação já executada, opcionalmente direcionada a um domínio.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/audit/events": {
+      "get": {
+        "tags": [
+          "Auditoria"
+        ],
+        "summary": "Trilha de auditoria",
+        "operationId": "list_audit_events_api_v1_audit_events_get",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "default": 7,
+              "title": "Days"
+            }
+          },
+          {
+            "name": "actor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 160
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Eventos das solicitações do próprio usuário, com filtros por período, ator e busca, e contagens do dia.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/clans": {
+      "get": {
+        "tags": [
+          "Clãs"
+        ],
+        "summary": "Listar clãs",
+        "operationId": "list_all_clans_api_v1_clans_get",
+        "parameters": [
+          {
+            "name": "mine",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Se true, retorna só os clãs do usuário autenticado.",
+              "default": false,
+              "title": "Mine"
+            },
+            "description": "Se true, retorna só os clãs do usuário autenticado."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClanRead"
+                  },
+                  "title": "Response List All Clans Api V1 Clans Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Todos os clãs, ou só os do usuário com `mine=true`.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Clãs"
+        ],
+        "summary": "Criar clã",
+        "operationId": "create_new_clan_api_v1_clans_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClanCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanDetailRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Cria um clã com as regras de acesso (`is_open`) e de quem adiciona Agent Skills e membros. Quem cria vira dono e membro.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/clans/{clan_id}": {
+      "get": {
+        "tags": [
+          "Clãs"
+        ],
+        "summary": "Detalhe do clã",
+        "operationId": "get_clan_detail_api_v1_clans__clan_id__get",
+        "parameters": [
+          {
+            "name": "clan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clan Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanDetailRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Dados, regras e membros do clã.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/clans/{clan_id}/settings": {
+      "patch": {
+        "tags": [
+          "Clãs"
+        ],
+        "summary": "Alterar clã",
+        "operationId": "update_settings_api_v1_clans__clan_id__settings_patch",
+        "parameters": [
+          {
+            "name": "clan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clan Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClanSettingsUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanDetailRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Renomeia o clã e altera as regras. Só o dono. `409` se o nome já existir.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/clans/{clan_id}/join": {
+      "post": {
+        "tags": [
+          "Clãs"
+        ],
+        "summary": "Entrar no clã",
+        "operationId": "join_api_v1_clans__clan_id__join_post",
+        "parameters": [
+          {
+            "name": "clan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clan Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanDetailRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Entra num clã aberto. `403` se o clã for fechado.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/clans/{clan_id}/members": {
+      "post": {
+        "tags": [
+          "Clãs"
+        ],
+        "summary": "Adicionar membro",
+        "operationId": "add_clan_member_api_v1_clans__clan_id__members_post",
+        "parameters": [
+          {
+            "name": "clan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clan Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClanMemberAdd"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanDetailRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Adiciona um usuário pelo e-mail, conforme a regra `members_policy` do clã.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/clans/{clan_id}/members/{user_id}": {
+      "delete": {
+        "tags": [
+          "Clãs"
+        ],
+        "summary": "Remover membro",
+        "operationId": "remove_clan_member_api_v1_clans__clan_id__members__user_id__delete",
+        "parameters": [
+          {
+            "name": "clan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clan Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanDetailRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Remove um membro conforme `members_policy`. Sair do clã (o próprio id) é sempre permitido; o dono não pode ser removido por outro membro.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AchadoTecnico": {
+        "properties": {
+          "item_identificado": {
+            "type": "string",
+            "title": "Item Identificado"
+          },
+          "descricao_detalhada": {
+            "type": "string",
+            "title": "Descricao Detalhada"
+          },
+          "trecho_referenciado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trecho Referenciado"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_identificado",
+          "descricao_detalhada"
+        ],
+        "title": "AchadoTecnico"
+      },
+      "AgentSkillExecutionRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "title": "AgentSkillExecutionRequest",
+        "description": "Optional model override for this specific execution (RFC 5.2 Model Gateway:\npicking among LLM_ALLOWED_MODELS, not an arbitrary string). None keeps the\nconfigured LLM_MODEL default."
+      },
+      "AgentSkillInvocationResultRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "agent_skill_name": {
+            "type": "string",
+            "title": "Agent Skill Name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "confidence_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Level"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SkillToolResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "agent_skill_name",
+          "status",
+          "confidence_level",
+          "result",
+          "created_at"
+        ],
+        "title": "AgentSkillInvocationResultRead",
+        "description": "Persisted per-skill result (AgentSkillInvocation.result_payload), so the\ndetailed breakdown survives a page reload -- not just the ephemeral response\nof POST /agent-skills/requests/{id}/execute."
+      },
+      "AgentSkillManifestCreate": {
+        "properties": {
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "OFFICIAL",
+              "PRIVATE",
+              "CLAN"
+            ],
+            "title": "Visibility",
+            "default": "OFFICIAL"
+          },
+          "clan_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan Id",
+            "description": "Obrigatório quando visibility='CLAN'."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 30,
+            "title": "Version"
+          },
+          "author_origin": {
+            "type": "string",
+            "title": "Author Origin"
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "codigo_legado",
+              "regras_negocio",
+              "arquitetura_software",
+              "seguranca_informacao",
+              "qualidade_testes",
+              "observabilidade_monitoramento",
+              "performance_escalabilidade",
+              "dados_privacidade",
+              "infraestrutura_devops",
+              "apis_integracoes"
+            ],
+            "title": "Domain"
+          },
+          "objective": {
+            "type": "string",
+            "title": "Objective"
+          },
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Capabilities"
+          },
+          "expected_inputs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Expected Inputs"
+          },
+          "produced_outputs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Produced Outputs"
+          },
+          "operating_limits": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Operating Limits"
+          },
+          "input_contract_ref": {
+            "type": "string",
+            "title": "Input Contract Ref"
+          },
+          "output_contract_ref": {
+            "type": "string",
+            "title": "Output Contract Ref"
+          },
+          "security_rules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Security Rules"
+          },
+          "usage_examples": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Usage Examples"
+          },
+          "validation_criteria": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Validation Criteria"
+          },
+          "uses_external_services": {
+            "type": "boolean",
+            "title": "Uses External Services",
+            "default": false
+          },
+          "persona_instructions": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona Instructions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "author_origin",
+          "domain",
+          "objective",
+          "input_contract_ref",
+          "output_contract_ref"
+        ],
+        "title": "AgentSkillManifestCreate",
+        "description": "RF01: assisted creation via a structured form, bypassing the modelo.md parser."
+      },
+      "AgentSkillManifestImport": {
+        "properties": {
+          "manifest_markdown": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Manifest Markdown"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "OFFICIAL",
+              "PRIVATE",
+              "CLAN"
+            ],
+            "title": "Visibility",
+            "default": "OFFICIAL"
+          },
+          "clan_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan Id",
+            "description": "Obrigatório quando visibility='CLAN'."
+          }
+        },
+        "type": "object",
+        "required": [
+          "manifest_markdown"
+        ],
+        "title": "AgentSkillManifestImport",
+        "description": "RF02: import an existing Agent Skill from a raw modelo.md file."
+      },
+      "AgentSkillRankingRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "usage_count": {
+            "type": "integer",
+            "title": "Usage Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "domain",
+          "version",
+          "usage_count"
+        ],
+        "title": "AgentSkillRankingRead"
+      },
+      "AgentSkillRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "author_origin": {
+            "type": "string",
+            "title": "Author Origin"
+          },
+          "objective": {
+            "type": "string",
+            "title": "Objective"
+          },
+          "input_contract_ref": {
+            "type": "string",
+            "title": "Input Contract Ref"
+          },
+          "output_contract_ref": {
+            "type": "string",
+            "title": "Output Contract Ref"
+          },
+          "uses_external_services": {
+            "type": "boolean",
+            "title": "Uses External Services"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "visibility": {
+            "type": "string",
+            "title": "Visibility"
+          },
+          "clan_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan Id"
+          },
+          "persona_instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona Instructions"
+          },
+          "manifest_json": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Manifest Json"
+          },
+          "validated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validated At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "version",
+          "domain",
+          "status",
+          "enabled",
+          "author_origin",
+          "objective",
+          "input_contract_ref",
+          "output_contract_ref",
+          "uses_external_services",
+          "owner_id",
+          "visibility",
+          "clan_id",
+          "persona_instructions",
+          "manifest_json",
+          "validated_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AgentSkillRead"
+      },
+      "AgentSkillToolDescriptorRead": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "input_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input Schema"
+          },
+          "output_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Output Schema"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "input_schema",
+          "output_schema"
+        ],
+        "title": "AgentSkillToolDescriptorRead"
+      },
+      "AgenteEmissor": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "versao_prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Versao Prompt"
+          },
+          "dominio": {
+            "type": "string",
+            "enum": [
+              "codigo_legado",
+              "regras_negocio",
+              "arquitetura_software",
+              "seguranca_informacao",
+              "qualidade_testes",
+              "observabilidade_monitoramento",
+              "performance_escalabilidade",
+              "dados_privacidade",
+              "infraestrutura_devops",
+              "apis_integracoes"
+            ],
+            "title": "Dominio"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "dominio"
+        ],
+        "title": "AgenteEmissor"
+      },
+      "AnaliseEstruturada": {
+        "properties": {
+          "resumo_executivo": {
+            "type": "string",
+            "title": "Resumo Executivo"
+          },
+          "descobertas_tecnicas": {
+            "items": {
+              "$ref": "#/components/schemas/AchadoTecnico"
+            },
+            "type": "array",
+            "title": "Descobertas Tecnicas"
+          },
+          "impactos_mapeados": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Impactos Mapeados"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resumo_executivo"
+        ],
+        "title": "AnaliseEstruturada"
+      },
+      "AuditEventPage": {
+        "properties": {
+          "stats": {
+            "$ref": "#/components/schemas/AuditStats"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEventRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stats",
+          "items",
+          "total"
+        ],
+        "title": "AuditEventPage"
+      },
+      "AuditEventRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "actor": {
+            "type": "string",
+            "title": "Actor"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "request_title": {
+            "type": "string",
+            "title": "Request Title"
+          },
+          "request_trace_id": {
+            "type": "string",
+            "title": "Request Trace Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "event_type",
+          "actor",
+          "title",
+          "message",
+          "created_at",
+          "request_id",
+          "request_title",
+          "request_trace_id"
+        ],
+        "title": "AuditEventRead"
+      },
+      "AuditStats": {
+        "properties": {
+          "events_today": {
+            "type": "integer",
+            "title": "Events Today"
+          },
+          "automated_decisions_today": {
+            "type": "integer",
+            "title": "Automated Decisions Today"
+          },
+          "manual_interventions_today": {
+            "type": "integer",
+            "title": "Manual Interventions Today"
+          },
+          "compliance_alerts_today": {
+            "type": "integer",
+            "title": "Compliance Alerts Today"
+          }
+        },
+        "type": "object",
+        "required": [
+          "events_today",
+          "automated_decisions_today",
+          "manual_interventions_today",
+          "compliance_alerts_today"
+        ],
+        "title": "AuditStats"
+      },
+      "AuthResponse": {
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserRead"
+          },
+          "session_expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Session Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user",
+          "session_expires_at"
+        ],
+        "title": "AuthResponse"
+      },
+      "Body_upload_request_attachment_api_v1_requests__request_id__attachments_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_request_attachment_api_v1_requests__request_id__attachments_post"
+      },
+      "ClanCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "is_open": {
+            "type": "boolean",
+            "title": "Is Open",
+            "description": "Se true, qualquer usuário pode entrar sozinho.",
+            "default": false
+          },
+          "skills_policy": {
+            "type": "string",
+            "enum": [
+              "ALL_MEMBERS",
+              "OWNER_ONLY"
+            ],
+            "title": "Skills Policy",
+            "description": "Quem pode registrar Agent Skills com visibilidade CLAN.",
+            "default": "ALL_MEMBERS"
+          },
+          "members_policy": {
+            "type": "string",
+            "enum": [
+              "ALL_MEMBERS",
+              "OWNER_ONLY"
+            ],
+            "title": "Members Policy",
+            "description": "Quem pode adicionar e remover membros.",
+            "default": "ALL_MEMBERS"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ClanCreate"
+      },
+      "ClanDetailRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "created_by_id": {
+            "type": "string",
+            "title": "Created By Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/ClanMemberRead"
+            },
+            "type": "array",
+            "title": "Members"
+          },
+          "is_open": {
+            "type": "boolean",
+            "title": "Is Open"
+          },
+          "skills_policy": {
+            "type": "string",
+            "enum": [
+              "ALL_MEMBERS",
+              "OWNER_ONLY"
+            ],
+            "title": "Skills Policy"
+          },
+          "members_policy": {
+            "type": "string",
+            "enum": [
+              "ALL_MEMBERS",
+              "OWNER_ONLY"
+            ],
+            "title": "Members Policy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "created_by_id",
+          "created_at",
+          "members",
+          "is_open",
+          "skills_policy",
+          "members_policy"
+        ],
+        "title": "ClanDetailRead"
+      },
+      "ClanMemberAdd": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "ClanMemberAdd"
+      },
+      "ClanMemberRead": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "joined_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Joined At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "name",
+          "email",
+          "joined_at"
+        ],
+        "title": "ClanMemberRead"
+      },
+      "ClanRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "created_by_id": {
+            "type": "string",
+            "title": "Created By Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "member_count": {
+            "type": "integer",
+            "title": "Member Count"
+          },
+          "is_open": {
+            "type": "boolean",
+            "title": "Is Open"
+          },
+          "skills_policy": {
+            "type": "string",
+            "enum": [
+              "ALL_MEMBERS",
+              "OWNER_ONLY"
+            ],
+            "title": "Skills Policy"
+          },
+          "members_policy": {
+            "type": "string",
+            "enum": [
+              "ALL_MEMBERS",
+              "OWNER_ONLY"
+            ],
+            "title": "Members Policy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "created_by_id",
+          "created_at",
+          "member_count",
+          "is_open",
+          "skills_policy",
+          "members_policy"
+        ],
+        "title": "ClanRead"
+      },
+      "ClanSettingsUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "is_open": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Open"
+          },
+          "skills_policy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ALL_MEMBERS",
+                  "OWNER_ONLY"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skills Policy"
+          },
+          "members_policy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ALL_MEMBERS",
+                  "OWNER_ONLY"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Members Policy"
+          }
+        },
+        "type": "object",
+        "title": "ClanSettingsUpdate"
+      },
+      "ConsolidatedResponseRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id"
+          },
+          "technical_synthesis": {
+            "type": "string",
+            "title": "Technical Synthesis"
+          },
+          "recommendations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recommendations"
+          },
+          "risks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Risks"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          },
+          "participating_agents": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Participating Agents"
+          },
+          "overall_confidence_level": {
+            "type": "string",
+            "title": "Overall Confidence Level"
+          },
+          "quality_gate_approved": {
+            "type": "boolean",
+            "title": "Quality Gate Approved"
+          },
+          "requires_human_review": {
+            "type": "boolean",
+            "title": "Requires Human Review"
+          },
+          "invocation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Invocation Ids"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "trace_id",
+          "technical_synthesis",
+          "recommendations",
+          "risks",
+          "limitations",
+          "participating_agents",
+          "overall_confidence_level",
+          "quality_gate_approved",
+          "requires_human_review",
+          "invocation_ids",
+          "created_at"
+        ],
+        "title": "ConsolidatedResponseRead",
+        "description": "RFC §5.3 \"Resposta Final Consolidada\": the single synthesized answer,\ndistinct from each Agent Skill's partial response."
+      },
+      "CsrfResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Token CSRF preparado."
+          }
+        },
+        "type": "object",
+        "title": "CsrfResponse"
+      },
+      "DashboardSummary": {
+        "properties": {
+          "active_sessions": {
+            "type": "integer",
+            "title": "Active Sessions"
+          },
+          "registered_agent_skills": {
+            "type": "integer",
+            "title": "Registered Agent Skills",
+            "default": 0
+          },
+          "orchestration_executions": {
+            "type": "integer",
+            "title": "Orchestration Executions",
+            "default": 0
+          },
+          "running_orchestrations": {
+            "type": "integer",
+            "title": "Running Orchestrations",
+            "default": 0
+          },
+          "awaiting_context": {
+            "type": "integer",
+            "title": "Awaiting Context",
+            "default": 0
+          },
+          "completed_today": {
+            "type": "integer",
+            "title": "Completed Today",
+            "default": 0
+          },
+          "success_rate": {
+            "type": "number",
+            "title": "Success Rate",
+            "default": 0
+          },
+          "average_duration_seconds": {
+            "type": "number",
+            "title": "Average Duration Seconds",
+            "default": 0
+          },
+          "recent_security_events": {
+            "items": {
+              "$ref": "#/components/schemas/SecurityEventRead"
+            },
+            "type": "array",
+            "title": "Recent Security Events"
+          },
+          "recent_requests": {
+            "items": {
+              "$ref": "#/components/schemas/TechnicalRequestRead"
+            },
+            "type": "array",
+            "title": "Recent Requests"
+          },
+          "recent_orchestration_events": {
+            "items": {
+              "$ref": "#/components/schemas/OrchestrationEventRead"
+            },
+            "type": "array",
+            "title": "Recent Orchestration Events"
+          },
+          "total_users": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Users"
+          }
+        },
+        "type": "object",
+        "required": [
+          "active_sessions",
+          "recent_security_events",
+          "recent_requests",
+          "recent_orchestration_events"
+        ],
+        "title": "DashboardSummary"
+      },
+      "FollowUpExchangeRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "sequence_number": {
+            "type": "integer",
+            "title": "Sequence Number"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "target_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Domain"
+          },
+          "synthesis": {
+            "type": "string",
+            "title": "Synthesis"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/SkillToolResult"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "overall_confidence_level": {
+            "type": "string",
+            "title": "Overall Confidence Level"
+          },
+          "quality_gate_approved": {
+            "type": "boolean",
+            "title": "Quality Gate Approved"
+          },
+          "requires_human_review": {
+            "type": "boolean",
+            "title": "Requires Human Review"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sequence_number",
+          "question",
+          "target_domain",
+          "synthesis",
+          "results",
+          "overall_confidence_level",
+          "quality_gate_approved",
+          "requires_human_review",
+          "created_at"
+        ],
+        "title": "FollowUpExchangeRead"
+      },
+      "FollowUpQuestionCreate": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 5,
+            "title": "Question"
+          },
+          "target_domain": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "codigo_legado",
+                  "regras_negocio",
+                  "arquitetura_software",
+                  "seguranca_informacao",
+                  "qualidade_testes",
+                  "observabilidade_monitoramento",
+                  "performance_escalabilidade",
+                  "dados_privacidade",
+                  "infraestrutura_devops",
+                  "apis_integracoes"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Domain"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "FollowUpQuestionCreate",
+        "description": "A question asked after the initial execution, continuing the same\norchestration chain (trace_id). target_domain=None broadcasts to every\ndomain the original execution used; set it to aim the question at one\nspecific Agent Skill domain instead."
+      },
+      "Governanca": {
+        "properties": {
+          "nivel_confianca": {
+            "type": "string",
+            "enum": [
+              "ALTO",
+              "MEDIO",
+              "BAIXO"
+            ],
+            "title": "Nivel Confianca"
+          },
+          "justificativa_confianca": {
+            "type": "string",
+            "title": "Justificativa Confianca"
+          },
+          "referencias_catalogo": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Referencias Catalogo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nivel_confianca",
+          "justificativa_confianca"
+        ],
+        "title": "Governanca"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LLMInvocationRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id"
+          },
+          "llm_call_id": {
+            "type": "string",
+            "title": "Llm Call Id"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "prompt_template_id": {
+            "type": "string",
+            "title": "Prompt Template Id"
+          },
+          "prompt_template_version": {
+            "type": "string",
+            "title": "Prompt Template Version"
+          },
+          "input_hash": {
+            "type": "string",
+            "title": "Input Hash"
+          },
+          "output_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Hash"
+          },
+          "provider_response_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Response Id"
+          },
+          "provider_request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Request Id"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "redacted_fields_count": {
+            "type": "integer",
+            "title": "Redacted Fields Count"
+          },
+          "input_truncated": {
+            "type": "boolean",
+            "title": "Input Truncated"
+          },
+          "retrieved_chunk_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieved Chunk Ids"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "trace_id",
+          "llm_call_id",
+          "provider",
+          "model",
+          "purpose",
+          "prompt_template_id",
+          "prompt_template_version",
+          "input_hash",
+          "output_hash",
+          "provider_response_id",
+          "provider_request_id",
+          "input_tokens",
+          "output_tokens",
+          "latency_ms",
+          "status",
+          "error_code",
+          "redacted_fields_count",
+          "input_truncated",
+          "retrieved_chunk_ids",
+          "created_at",
+          "completed_at"
+        ],
+        "title": "LLMInvocationRead"
+      },
+      "LLMPlan": {
+        "properties": {
+          "summary": {
+            "type": "string",
+            "maxLength": 3000,
+            "minLength": 1,
+            "title": "Summary"
+          },
+          "required_agents": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Required Agents"
+          },
+          "required_skills": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Required Skills"
+          },
+          "risks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Risks"
+          },
+          "missing_information": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Missing Information"
+          },
+          "requires_human_approval": {
+            "type": "boolean",
+            "title": "Requires Human Approval",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary"
+        ],
+        "title": "LLMPlan"
+      },
+      "LLMPlanResponse": {
+        "properties": {
+          "technical_request_id": {
+            "type": "string",
+            "title": "Technical Request Id"
+          },
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id"
+          },
+          "llm_call_id": {
+            "type": "string",
+            "title": "Llm Call Id"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/LLMPlan"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/LLMUsage"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "technical_request_id",
+          "trace_id",
+          "llm_call_id",
+          "provider",
+          "model",
+          "plan",
+          "usage",
+          "completed_at"
+        ],
+        "title": "LLMPlanResponse"
+      },
+      "LLMStatusRead": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "configured": {
+            "type": "boolean",
+            "title": "Configured"
+          },
+          "allowed_models": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Models"
+          },
+          "max_input_chars": {
+            "type": "integer",
+            "title": "Max Input Chars"
+          },
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens"
+          },
+          "requests_per_hour_technician": {
+            "type": "integer",
+            "title": "Requests Per Hour Technician"
+          },
+          "store_provider_response": {
+            "type": "boolean",
+            "title": "Store Provider Response"
+          },
+          "store_result_content": {
+            "type": "boolean",
+            "title": "Store Result Content"
+          },
+          "daily_token_limit_per_user": {
+            "type": "integer",
+            "title": "Daily Token Limit Per User"
+          },
+          "tokens_used_today": {
+            "type": "integer",
+            "title": "Tokens Used Today"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled",
+          "provider",
+          "model",
+          "configured",
+          "allowed_models",
+          "max_input_chars",
+          "max_output_tokens",
+          "requests_per_hour_technician",
+          "store_provider_response",
+          "store_result_content",
+          "daily_token_limit_per_user",
+          "tokens_used_today"
+        ],
+        "title": "LLMStatusRead"
+      },
+      "LLMUsage": {
+        "properties": {
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          }
+        },
+        "type": "object",
+        "title": "LLMUsage"
+      },
+      "LoginChallengeResponse": {
+        "properties": {
+          "verification_required": {
+            "type": "boolean",
+            "title": "Verification Required",
+            "default": true
+          },
+          "email_hint": {
+            "type": "string",
+            "title": "Email Hint"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email_hint"
+        ],
+        "title": "LoginChallengeResponse",
+        "description": "Resposta do login (202) quando o navegador não é confiável: a sessão só\né criada depois de POST /auth/login/verify com o código enviado por e-mail."
+      },
+      "LoginCodeVerify": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 6,
+            "minLength": 6,
+            "pattern": "^\\d{6}$",
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "LoginCodeVerify"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest"
+      },
+      "OrchestrationDetail": {
+        "properties": {
+          "technical_request": {
+            "$ref": "#/components/schemas/TechnicalRequestRead"
+          },
+          "run": {
+            "$ref": "#/components/schemas/OrchestrationRunRead"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/OrchestrationEventRead"
+            },
+            "type": "array",
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "technical_request",
+          "run",
+          "events"
+        ],
+        "title": "OrchestrationDetail"
+      },
+      "OrchestrationEventRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "sequence_number": {
+            "type": "integer",
+            "title": "Sequence Number"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "actor": {
+            "type": "string",
+            "title": "Actor"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sequence_number",
+          "event_type",
+          "actor",
+          "title",
+          "message",
+          "payload",
+          "created_at"
+        ],
+        "title": "OrchestrationEventRead"
+      },
+      "OrchestrationExecutionRead": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/SkillToolResult"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/QualityGateVerdict"
+          },
+          "invocations_count": {
+            "type": "integer",
+            "title": "Invocations Count"
+          },
+          "consolidated_response": {
+            "$ref": "#/components/schemas/ConsolidatedResponseRead"
+          }
+        },
+        "type": "object",
+        "required": [
+          "results",
+          "verdict",
+          "invocations_count",
+          "consolidated_response"
+        ],
+        "title": "OrchestrationExecutionRead"
+      },
+      "OrchestrationRunRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "current_stage": {
+            "type": "string",
+            "title": "Current Stage"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "current_stage",
+          "started_at",
+          "completed_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "OrchestrationRunRead"
+      },
+      "PasswordChange": {
+        "properties": {
+          "current_password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Current Password"
+          },
+          "new_password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 12,
+            "title": "New Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "title": "PasswordChange"
+      },
+      "PasswordForgot": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "PasswordForgot"
+      },
+      "PasswordReset": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 20,
+            "title": "Token"
+          },
+          "new_password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 12,
+            "title": "New Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "new_password"
+        ],
+        "title": "PasswordReset"
+      },
+      "QualityGateVerdict": {
+        "properties": {
+          "approved": {
+            "type": "boolean",
+            "title": "Approved"
+          },
+          "requires_human_review": {
+            "type": "boolean",
+            "title": "Requires Human Review"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          }
+        },
+        "type": "object",
+        "required": [
+          "approved",
+          "requires_human_review"
+        ],
+        "title": "QualityGateVerdict"
+      },
+      "RequestAttachmentRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "content_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Type"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "filename",
+          "content_type",
+          "size_bytes",
+          "created_at"
+        ],
+        "title": "RequestAttachmentRead"
+      },
+      "SecurityEventRead": {
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_type",
+          "created_at"
+        ],
+        "title": "SecurityEventRead"
+      },
+      "SessionRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address"
+          },
+          "user_agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agent"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "last_seen_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "current": {
+            "type": "boolean",
+            "title": "Current",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "ip_address",
+          "user_agent",
+          "expires_at",
+          "last_seen_at",
+          "created_at"
+        ],
+        "title": "SessionRead"
+      },
+      "SkillToolResult": {
+        "properties": {
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id"
+          },
+          "agente_emissor": {
+            "$ref": "#/components/schemas/AgenteEmissor"
+          },
+          "analise_estruturada": {
+            "$ref": "#/components/schemas/AnaliseEstruturada"
+          },
+          "governanca": {
+            "$ref": "#/components/schemas/Governanca"
+          }
+        },
+        "type": "object",
+        "required": [
+          "trace_id",
+          "agente_emissor",
+          "analise_estruturada",
+          "governanca"
+        ],
+        "title": "SkillToolResult",
+        "description": "Mirrors resposta_especialista_schema.json (Apêndice C da RFC): the\nmandatory output contract for any Agent Skill in this ecosystem."
+      },
+      "TechnicalRequestContextUpdate": {
+        "properties": {
+          "context": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 10,
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "context"
+        ],
+        "title": "TechnicalRequestContextUpdate"
+      },
+      "TechnicalRequestCreate": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 5,
+            "title": "Title"
+          },
+          "problem": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 10,
+            "title": "Problem"
+          },
+          "objective": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 5,
+            "title": "Objective"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          },
+          "restrictions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Restrictions"
+          },
+          "requested_domains": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "codigo_legado",
+                "regras_negocio",
+                "arquitetura_software",
+                "seguranca_informacao",
+                "qualidade_testes",
+                "observabilidade_monitoramento",
+                "performance_escalabilidade",
+                "dados_privacidade",
+                "infraestrutura_devops",
+                "apis_integracoes"
+              ]
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Requested Domains"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "problem",
+          "objective"
+        ],
+        "title": "TechnicalRequestCreate"
+      },
+      "TechnicalRequestRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "problem": {
+            "type": "string",
+            "title": "Problem"
+          },
+          "objective": {
+            "type": "string",
+            "title": "Objective"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          },
+          "restrictions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Restrictions"
+          },
+          "requested_domains": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Requested Domains"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "consolidated_response": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConsolidatedResponseRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "trace_id",
+          "title",
+          "problem",
+          "objective",
+          "context",
+          "restrictions",
+          "requested_domains",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "TechnicalRequestRead"
+      },
+      "TechnicalRequestReview": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject"
+            ],
+            "title": "Decision"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "title": "TechnicalRequestReview"
+      },
+      "UserCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 12,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "UserCreate"
+      },
+      "UserNameUpdate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "UserNameUpdate"
+      },
+      "UserRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "onboarding_completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onboarding Completed At"
+          },
+          "has_password": {
+            "type": "boolean",
+            "title": "Has Password",
+            "default": false
+          },
+          "oauth_provider": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "github",
+                  "google"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oauth Provider"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "is_active",
+          "avatar_url",
+          "created_at",
+          "onboarding_completed_at"
+        ],
+        "title": "UserRead"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "ErrorResponse": {
+        "title": "ErrorResponse",
+        "type": "object",
+        "required": [
+          "error",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "HTTP_ERROR",
+            "description": "Código do erro."
+          },
+          "message": {
+            "type": "string",
+            "example": "Solicitação não encontrada.",
+            "description": "Texto para o usuário."
+          },
+          "request_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Identificador para cruzar com os logs."
+          },
+          "details": {
+            "type": "array",
+            "description": "Só em erros de validação (422).",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "agenthub_session",
+        "description": "Cookie `HttpOnly` criado no login; o navegador o envia sozinho."
+      },
+      "csrfHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-CSRF-Token",
+        "description": "Mesmo valor do cookie `agenthub_csrf` (preenchido automaticamente em /docs)."
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Status",
+      "description": "Verificação de disponibilidade da API."
+    },
+    {
+      "name": "Autenticação",
+      "description": "Cadastro, login (senha, GitHub, Google), código de verificação por e-mail em navegador novo, recuperação de senha, sessões e dados da própria conta."
+    },
+    {
+      "name": "Dashboard",
+      "description": "Resumo da atividade do usuário para a tela inicial."
+    },
+    {
+      "name": "Solicitações técnicas",
+      "description": "Criação e qualificação de solicitações, complemento de contexto, anexos e revisão humana do resultado sinalizado pelo Conselheiro."
+    },
+    {
+      "name": "Orquestrações",
+      "description": "Rastreabilidade de uma orquestração pelo Trace ID: eventos, resultados e perguntas."
+    },
+    {
+      "name": "Agent Skills",
+      "description": "Catálogo de Agent Skills (criar, importar `modelo.md`, editar, ativar/desativar) e execução da orquestração sobre uma solicitação."
+    },
+    {
+      "name": "Integração com LLM",
+      "description": "Status do provedor de modelo, planejamento e rastros de invocação."
+    },
+    {
+      "name": "Clãs",
+      "description": "Grupos de usuários com regras próprias e Agent Skills visíveis só aos membros."
+    },
+    {
+      "name": "Auditoria",
+      "description": "Trilha de eventos das solicitações do próprio usuário."
+    }
+  ]
+}

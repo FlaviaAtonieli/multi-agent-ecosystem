@@ -100,7 +100,7 @@ from app.services.session_service import (
     set_public_csrf_cookie,
 )
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 GITHUB_OAUTH_STATE_COOKIE = "agenthub_github_oauth_state"
 GOOGLE_OAUTH_STATE_COOKIE = "agenthub_google_oauth_state"

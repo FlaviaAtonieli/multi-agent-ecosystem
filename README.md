@@ -156,6 +156,8 @@ Ainda não implantada em produção -- guia de deploy (Azure) pronto em [docs/de
 
 ## Documentação
 
+- [Documentação da API (Swagger/OpenAPI)](docs/api/README.md) — Swagger em `/docs` no desenvolvimento e `docs/api/openapi.json` versionado
+- [Monitoramento (Prometheus + Grafana)](docs/monitoring.md) — métricas em `/metrics`, painel pronto em http://localhost:3001
 - [Wiki do projeto](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) — ponto de partida navegável (arquitetura, como rodar, domínios de Agent Skills, segurança, validação)
 - [Visão da arquitetura](docs/architecture/overview.md)
 - [Princípios de arquitetura](docs/architecture/principles.md)

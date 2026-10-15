@@ -9,7 +9,7 @@ from app.core.database import get_db
 from app.models import OrchestrationEvent, TechnicalRequest, User
 from app.schemas.audit import AuditEventPage, AuditEventRead, AuditStats
 
-router = APIRouter(prefix="/audit", tags=["Audit"])
+router = APIRouter(prefix="/audit", tags=["Auditoria"])
 
 _AUTOMATED_ACTORS = {
     "INTERACTION_GUIDE",

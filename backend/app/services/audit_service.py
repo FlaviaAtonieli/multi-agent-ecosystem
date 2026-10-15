@@ -1,6 +1,7 @@
 from fastapi import Request
 from sqlalchemy.orm import Session
 
+from app.core.metrics import AUDIT_EVENTS
 from app.models import AuditLog
 
 
@@ -29,4 +30,5 @@ def record_audit(
         details=details or {},
     )
     db.add(event)
+    AUDIT_EVENTS.labels(event_type).inc()
     return event

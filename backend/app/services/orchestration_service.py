@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.metrics import HUMAN_REVIEWS
 from app.core.security import utc_now
 from app.models import OrchestrationEvent, OrchestrationRun, RequestAttachment, TechnicalRequest, User
 from app.schemas.orchestration import TechnicalRequestCreate
@@ -181,6 +182,7 @@ def record_human_review(
         )
 
     approved = decision == "approve"
+    HUMAN_REVIEWS.labels(decision).inc()
     next_status = RequestStatus.COMPLETED if approved else RequestStatus.REJECTED
     technical_request.status = next_status
 

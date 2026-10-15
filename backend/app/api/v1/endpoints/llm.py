@@ -17,7 +17,7 @@ from app.services.llm_service import (
     tokens_used_today,
 )
 
-router = APIRouter(prefix="/llm", tags=["LLM Integration"])
+router = APIRouter(prefix="/llm", tags=["Integração com LLM"])
 
 
 def _find_request(

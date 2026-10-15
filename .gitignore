@@ -33,3 +33,6 @@ coverage/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Token de scrape do Prometheus (docs/monitoring.md)
+monitoring/prometheus/metrics_token

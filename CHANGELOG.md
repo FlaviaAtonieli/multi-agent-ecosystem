@@ -2,6 +2,22 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-10-14 - Documentação Swagger da API e monitoramento com Prometheus
+
+### Adicionado
+
+- Swagger/OpenAPI completo (`backend/app/api/openapi_docs.py`): descrição geral com o fluxo de autenticação (cookie de sessão + CSRF), descrição de todas as tags, resumo e descrição em português das 58 operações, esquemas de segurança (`sessionCookie`, `csrfHeader`) aplicados a cada rota a partir das dependências reais, e o formato de erro `ErrorResponse` nas respostas 4xx/5xx. Tags renomeadas para português (`Status`, `Autenticação`, `Auditoria`, `Integração com LLM`).
+- `/docs` preenche sozinho o cabeçalho `X-CSRF-Token` a partir do cookie, então as rotas protegidas funcionam pelo "Try it out". Continua desligado em produção.
+- `docs/api/openapi.json` exportado por `backend/scripts/export_openapi.py`, e `docs/api/README.md`. `tests/test_openapi_docs.py` falha se uma rota nova ficar sem documentação ou se o arquivo exportado estiver desatualizado.
+- Prometheus: `GET /metrics` (`prometheus-client`) com métricas de HTTP por template de rota, chamadas/latência/tokens do LLM, execuções de Agent Skills, veredito do Quality Gate, revisões humanas, eventos de auditoria (logins, falhas, código por e-mail, redefinição de senha) e estado do banco (solicitações por status, skills ativas, usuários, clãs). `app/core/metrics.py`, `tests/test_metrics.py`.
+- `docker compose` sobe Prometheus (`:9090`, com 4 regras de alerta) e Grafana (`:3001`, fonte de dados e painel "Multi-Agent Ecosystem — Visão geral" provisionados). `monitoring/`, `docs/monitoring.md`. Validado de ponta a ponta: Prometheus coletando o backend, regras carregadas, Grafana consultando o Prometheus.
+- `METRICS_ENABLED`, `METRICS_TOKEN` (Bearer no scrape; obrigatório em produção, a aplicação recusa subir sem ele), `GRAFANA_ADMIN_*`.
+
+### Observação registrada
+
+- Completa o "núcleo comum de engenharia" da rubrica do PAC VIII: CI com análise estática, CD das imagens, Wiki e, agora, monitoramento.
+- Os alertas aparecem só no Prometheus: não há Alertmanager para enviar notificações.
+
 ## 2026-10-14 - Tela de revisão humana e "esqueci minha senha"
 
 ### Adicionado

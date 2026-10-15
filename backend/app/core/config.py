@@ -82,6 +82,11 @@ class Settings(BaseSettings):
     trusted_device_days: int = 30
     password_reset_ttl_minutes: int = 30
 
+    # Prometheus: GET /metrics. Com METRICS_TOKEN definido, o scrape precisa
+    # enviar "Authorization: Bearer <token>" (obrigatório em produção, onde o
+    # backend fica exposto).
+    metrics_enabled: bool = True
+    metrics_token: SecretStr | None = None
     email_backend: Literal["console", "smtp"] = "console"
     smtp_host: str | None = None
     smtp_port: int = 587
@@ -297,6 +302,21 @@ class Settings(BaseSettings):
             raise ValueError(
                 "ENVIRONMENT=production com LOGIN_EMAIL_CODE_ENABLED=true exige EMAIL_BACKEND=smtp "
                 "(o backend console só escreve o código no log)."
+            )
+        return self
+
+    @property
+    def metrics_token_value(self) -> str | None:
+        if self.metrics_token is None:
+            return None
+        return self.metrics_token.get_secret_value().strip() or None
+
+    @model_validator(mode="after")
+    def validate_metrics_configuration(self) -> "Settings":
+        if self.is_production and self.metrics_enabled and not self.metrics_token_value:
+            raise ValueError(
+                "ENVIRONMENT=production com METRICS_ENABLED=true exige METRICS_TOKEN "
+                "(senão /metrics fica público)."
             )
         return self
 
