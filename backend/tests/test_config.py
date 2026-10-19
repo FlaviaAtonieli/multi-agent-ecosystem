@@ -42,14 +42,25 @@ def test_production_with_metrics_but_no_token_is_rejected() -> None:
 
 def test_production_with_metrics_disabled_needs_no_token() -> None:
     settings = Settings(
-        _env_file=None, environment="production", cookie_secure=True, metrics_enabled=False
+        _env_file=None,
+        environment="production",
+        cookie_secure=True,
+        metrics_enabled=False,
+        database_url="postgresql+psycopg://agenthub:secret@db:5432/agenthub",
     )
     assert settings.metrics_token_value is None
 
 
 def test_production_with_sqlite_database_is_rejected() -> None:
     with pytest.raises(ValueError, match="DATABASE_URL configurada para PostgreSQL"):
-        Settings(_env_file=None, environment="production", cookie_secure=True)
+        Settings(
+            _env_file=None,
+            environment="production",
+            cookie_secure=True,
+            metrics_enabled=False,
+        )
+
+
 def test_development_without_cookie_secure_is_accepted() -> None:
     dev_settings = Settings(_env_file=None, environment="development", cookie_secure=False)
     assert dev_settings.is_production is False
