@@ -24,36 +24,28 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "agent_skills",
-        sa.Column("owner_id", sa.String(length=36), nullable=True),
-    )
-    op.add_column(
-        "agent_skills",
-        sa.Column(
-            "visibility", sa.String(length=20), nullable=False, server_default="OFFICIAL"
-        ),
-    )
-    op.add_column(
-        "agent_skills",
-        sa.Column("persona_instructions", sa.Text(), nullable=True),
-    )
-    op.create_index("ix_agent_skills_owner_id", "agent_skills", ["owner_id"])
-    op.create_index("ix_agent_skills_visibility", "agent_skills", ["visibility"])
-    op.create_foreign_key(
-        "fk_agent_skills_owner_id_users",
-        "agent_skills",
-        "users",
-        ["owner_id"],
-        ["id"],
-        ondelete="CASCADE",
-    )
+    with op.batch_alter_table("agent_skills") as batch_op:
+        batch_op.add_column(sa.Column("owner_id", sa.String(length=36), nullable=True))
+        batch_op.add_column(
+            sa.Column("visibility", sa.String(length=20), nullable=False, server_default="OFFICIAL")
+        )
+        batch_op.add_column(sa.Column("persona_instructions", sa.Text(), nullable=True))
+        batch_op.create_index("ix_agent_skills_owner_id", ["owner_id"])
+        batch_op.create_index("ix_agent_skills_visibility", ["visibility"])
+        batch_op.create_foreign_key(
+            "fk_agent_skills_owner_id_users",
+            "users",
+            ["owner_id"],
+            ["id"],
+            ondelete="CASCADE",
+        )
 
 
 def downgrade() -> None:
-    op.drop_constraint("fk_agent_skills_owner_id_users", "agent_skills", type_="foreignkey")
-    op.drop_index("ix_agent_skills_visibility", table_name="agent_skills")
-    op.drop_index("ix_agent_skills_owner_id", table_name="agent_skills")
-    op.drop_column("agent_skills", "persona_instructions")
-    op.drop_column("agent_skills", "visibility")
-    op.drop_column("agent_skills", "owner_id")
+    with op.batch_alter_table("agent_skills") as batch_op:
+        batch_op.drop_constraint("fk_agent_skills_owner_id_users", type_="foreignkey")
+        batch_op.drop_index("ix_agent_skills_visibility")
+        batch_op.drop_index("ix_agent_skills_owner_id")
+        batch_op.drop_column("persona_instructions")
+        batch_op.drop_column("visibility")
+        batch_op.drop_column("owner_id")

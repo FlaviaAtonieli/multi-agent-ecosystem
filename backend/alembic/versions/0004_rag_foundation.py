@@ -39,7 +39,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_column("llm_invocations", "retrieved_chunk_ids")
+    with op.batch_alter_table("llm_invocations") as batch_op:
+        batch_op.drop_column("retrieved_chunk_ids")
 
     op.drop_index("ix_knowledge_chunks_source_type", table_name="knowledge_chunks")
     op.drop_index("ix_knowledge_chunks_artifact_name", table_name="knowledge_chunks")

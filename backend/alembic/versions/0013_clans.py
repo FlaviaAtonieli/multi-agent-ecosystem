@@ -70,21 +70,26 @@ def upgrade() -> None:
     op.create_index("ix_clan_memberships_clan_id", "clan_memberships", ["clan_id"])
     op.create_index("ix_clan_memberships_user_id", "clan_memberships", ["user_id"])
 
-    op.add_column(
-        "agent_skills",
-        sa.Column(
-            "clan_id",
-            sa.String(length=36),
-            sa.ForeignKey("clans.id", ondelete="SET NULL"),
-            nullable=True,
-        ),
-    )
-    op.create_index("ix_agent_skills_clan_id", "agent_skills", ["clan_id"])
+    with op.batch_alter_table("agent_skills") as batch_op:
+        batch_op.add_column(
+            sa.Column(
+                "clan_id",
+                sa.String(length=36),
+                sa.ForeignKey(
+                    "clans.id",
+                    ondelete="SET NULL",
+                    name="fk_agent_skills_clan_id_clans",
+                ),
+                nullable=True,
+            )
+        )
+        batch_op.create_index("ix_agent_skills_clan_id", ["clan_id"])
 
 
 def downgrade() -> None:
     op.drop_index("ix_agent_skills_clan_id", table_name="agent_skills")
-    op.drop_column("agent_skills", "clan_id")
+    with op.batch_alter_table("agent_skills") as batch_op:
+        batch_op.drop_column("clan_id")
     op.drop_index("ix_clan_memberships_user_id", table_name="clan_memberships")
     op.drop_index("ix_clan_memberships_clan_id", table_name="clan_memberships")
     op.drop_table("clan_memberships")

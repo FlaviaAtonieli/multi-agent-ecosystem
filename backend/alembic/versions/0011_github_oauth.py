@@ -24,20 +24,16 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.alter_column("users", "password_hash", existing_type=sa.String(length=512), nullable=True)
-    op.add_column(
-        "users",
-        sa.Column("github_id", sa.String(length=32), nullable=True),
-    )
-    op.add_column(
-        "users",
-        sa.Column("avatar_url", sa.String(length=512), nullable=True),
-    )
-    op.create_index("ix_users_github_id", "users", ["github_id"], unique=True)
+    with op.batch_alter_table("users") as batch_op:
+        batch_op.alter_column("password_hash", existing_type=sa.String(length=512), nullable=True)
+        batch_op.add_column(sa.Column("github_id", sa.String(length=32), nullable=True))
+        batch_op.add_column(sa.Column("avatar_url", sa.String(length=512), nullable=True))
+        batch_op.create_index("ix_users_github_id", ["github_id"], unique=True)
 
 
 def downgrade() -> None:
     op.drop_index("ix_users_github_id", table_name="users")
-    op.drop_column("users", "avatar_url")
-    op.drop_column("users", "github_id")
-    op.alter_column("users", "password_hash", existing_type=sa.String(length=512), nullable=False)
+    with op.batch_alter_table("users") as batch_op:
+        batch_op.drop_column("avatar_url")
+        batch_op.drop_column("github_id")
+        batch_op.alter_column("password_hash", existing_type=sa.String(length=512), nullable=False)
