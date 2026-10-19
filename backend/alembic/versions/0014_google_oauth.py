@@ -32,4 +32,5 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index("ix_users_google_id", table_name="users")
-    op.drop_column("users", "google_id")
+    with op.batch_alter_table("users") as batch_op:
+        batch_op.drop_column("google_id")

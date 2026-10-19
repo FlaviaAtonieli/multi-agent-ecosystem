@@ -24,18 +24,28 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.alter_column(
-        "agent_skills", "input_contract_ref", existing_type=sa.String(length=200), type_=sa.String(length=500)
-    )
-    op.alter_column(
-        "agent_skills", "output_contract_ref", existing_type=sa.String(length=200), type_=sa.String(length=500)
-    )
+    with op.batch_alter_table("agent_skills") as batch_op:
+        batch_op.alter_column(
+            "input_contract_ref",
+            existing_type=sa.String(length=200),
+            type_=sa.String(length=500),
+        )
+        batch_op.alter_column(
+            "output_contract_ref",
+            existing_type=sa.String(length=200),
+            type_=sa.String(length=500),
+        )
 
 
 def downgrade() -> None:
-    op.alter_column(
-        "agent_skills", "output_contract_ref", existing_type=sa.String(length=500), type_=sa.String(length=200)
-    )
-    op.alter_column(
-        "agent_skills", "input_contract_ref", existing_type=sa.String(length=500), type_=sa.String(length=200)
-    )
+    with op.batch_alter_table("agent_skills") as batch_op:
+        batch_op.alter_column(
+            "output_contract_ref",
+            existing_type=sa.String(length=500),
+            type_=sa.String(length=200),
+        )
+        batch_op.alter_column(
+            "input_contract_ref",
+            existing_type=sa.String(length=500),
+            type_=sa.String(length=200),
+        )

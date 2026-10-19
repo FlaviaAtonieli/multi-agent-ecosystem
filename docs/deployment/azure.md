@@ -106,6 +106,8 @@ az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $FRONTE
 
 Mapeados de `.env.production.example`, com os ajustes específicos do Azure:
 
+Em `ENVIRONMENT=production`, o backend exige `DATABASE_URL` apontando para PostgreSQL; sem essa configuração, o fallback SQLite local é recusado no startup.
+
 ```powershell
 az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $BACKEND_APP --settings `
   ENVIRONMENT=production `

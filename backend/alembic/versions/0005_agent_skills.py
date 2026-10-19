@@ -94,4 +94,5 @@ def downgrade() -> None:
     op.drop_index("ix_agent_skills_domain", table_name="agent_skills")
     op.drop_table("agent_skills")
 
-    op.drop_column("technical_requests", "requested_domains")
+    with op.batch_alter_table("technical_requests") as batch_op:
+        batch_op.drop_column("requested_domains")

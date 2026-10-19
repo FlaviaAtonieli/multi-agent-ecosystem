@@ -23,8 +23,18 @@ def test_production_without_cookie_secure_is_rejected() -> None:
 
 
 def test_production_with_cookie_secure_is_accepted() -> None:
-    settings = Settings(_env_file=None, environment="production", cookie_secure=True)
+    settings = Settings(
+        _env_file=None,
+        environment="production",
+        cookie_secure=True,
+        database_url="postgresql+psycopg://agenthub:secret@db:5432/agenthub",
+    )
     assert settings.is_production is True
+
+
+def test_production_with_sqlite_database_is_rejected() -> None:
+    with pytest.raises(ValueError, match="DATABASE_URL configurada para PostgreSQL"):
+        Settings(_env_file=None, environment="production", cookie_secure=True)
 
 
 def test_development_without_cookie_secure_is_accepted() -> None:

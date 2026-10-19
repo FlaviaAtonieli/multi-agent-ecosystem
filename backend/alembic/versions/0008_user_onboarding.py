@@ -29,4 +29,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_column("users", "onboarding_completed_at")
+    with op.batch_alter_table("users") as batch_op:
+        batch_op.drop_column("onboarding_completed_at")
