@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
@@ -331,6 +332,10 @@ class Settings(BaseSettings):
             raise ValueError(
                 "ENVIRONMENT=production exige COOKIE_SECURE=true (a aplicação deve estar "
                 "atrás de HTTPS). Veja 'Requisitos de produção' em SECURITY.md."
+            )
+        if self.is_production and make_url(self.database_url).get_backend_name() != "postgresql":
+            raise ValueError(
+                "ENVIRONMENT=production exige DATABASE_URL configurada para PostgreSQL."
             )
         return self
 
