@@ -7,8 +7,16 @@ export const confidenceLabels: Record<string, string> = { ALTO: 'Alta', MEDIO: '
 // tempo real da execução para calcular a estimativa.
 export const DEFAULT_SECONDS_PER_SKILL = 45
 
-export function estimateRunSeconds(skillCount: number, secondsPerSkill = DEFAULT_SECONDS_PER_SKILL) {
-  return Math.round(skillCount * secondsPerSkill)
+// Mesmo valor padrão de ORCHESTRATION_MAX_PARALLEL_SKILLS no backend. Durante a
+// execução, vale o que vier no evento de início.
+export const DEFAULT_MAX_PARALLEL_SKILLS = 3
+
+export function estimateRunSeconds(
+  skillCount: number,
+  secondsPerSkill = DEFAULT_SECONDS_PER_SKILL,
+  maxParallel = DEFAULT_MAX_PARALLEL_SKILLS,
+) {
+  return Math.round(Math.ceil(skillCount / maxParallel) * secondsPerSkill)
 }
 
 export function formatEstimate(totalSeconds: number) {

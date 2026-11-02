@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { OrchestrationEvent } from '../../api/orchestrationApi'
-import { DEFAULT_SECONDS_PER_SKILL, domainLabels, estimateRunSeconds, formatEstimate } from './shared'
+import {
+  DEFAULT_MAX_PARALLEL_SKILLS,
+  DEFAULT_SECONDS_PER_SKILL,
+  domainLabels,
+  estimateRunSeconds,
+  formatEstimate,
+} from './shared'
 
 interface Props {
   events: OrchestrationEvent[]
@@ -40,7 +46,9 @@ export function OrchestrationThinkingAnimation({ events, traceId }: Props) {
   const finished = [...completed, ...eventsOfType('AGENT_SKILL_INVOCATION_FAILED')]
 
   const finishedIds = new Set(finished.map((event) => event.payload.agent_skill_id))
-  const activeId = started.map((event) => event.payload.agent_skill_id).find((id) => !finishedIds.has(id))
+  const activeIds = new Set(
+    started.map((event) => event.payload.agent_skill_id).filter((id) => !finishedIds.has(id)),
+  )
 
   const skillSteps = selected.map((event) => {
     const domain = String(event.payload.domain)
@@ -48,7 +56,7 @@ export function OrchestrationThinkingAnimation({ events, traceId }: Props) {
     return {
       key: String(skillId),
       label: `Consultando ${domainLabels[domain] ?? domain}`,
-      state: finishedIds.has(skillId) ? 'is-done' : skillId === activeId ? 'is-active' : '',
+      state: finishedIds.has(skillId) ? 'is-done' : activeIds.has(skillId) ? 'is-active' : '',
     }
   })
   const allFinished = selected.length > 0 && finished.length >= selected.length
@@ -67,8 +75,9 @@ export function OrchestrationThinkingAnimation({ events, traceId }: Props) {
     latencies.length > 0
       ? latencies.reduce((sum, value) => sum + value, 0) / latencies.length / 1000
       : DEFAULT_SECONDS_PER_SKILL
-  const remainingSeconds = estimateRunSeconds(selected.length - finished.length, secondsPerSkill)
-  const totalSeconds = estimateRunSeconds(selected.length, secondsPerSkill)
+  const maxParallel = Number(runEvents[0]?.payload.max_parallel) || DEFAULT_MAX_PARALLEL_SKILLS
+  const remainingSeconds = estimateRunSeconds(selected.length - finished.length, secondsPerSkill, maxParallel)
+  const totalSeconds = estimateRunSeconds(selected.length, secondsPerSkill, maxParallel)
 
   return (
     <article className="workspace-panel workspace-thinking-panel" role="status" aria-live="polite">

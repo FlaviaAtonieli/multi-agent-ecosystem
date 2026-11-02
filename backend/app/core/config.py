@@ -158,6 +158,11 @@ class Settings(BaseSettings):
     # the same MCPServer object in-process (fast, used by the test suite).
     mcp_skill_transport: Literal["memory", "stdio"] = "stdio"
 
+    # Agent Skills consulted at once by one orchestration. Each one is a subprocess
+    # (stdio transport) with its own memory use, so this can't grow freely on a
+    # small App Service plan.
+    orchestration_max_parallel_skills: int = 3
+
     # Documents a user can attach to a TechnicalRequest's context (RFC UX
     # suggestion, PR #24). Text-only for this iteration: the upload is decoded
     # as UTF-8 and stored as text, no binary blob and no PDF/DOCX parsing --
@@ -247,6 +252,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_attachment_configuration(self) -> "Settings":
+        if self.orchestration_max_parallel_skills < 1:
+            raise ValueError("ORCHESTRATION_MAX_PARALLEL_SKILLS deve ser maior que zero.")
         if self.attachment_max_bytes < 1:
             raise ValueError("ATTACHMENT_MAX_BYTES deve ser maior que zero.")
         if self.attachment_max_bytes > self.max_request_body_bytes:

@@ -9,6 +9,8 @@ Este arquivo registra alterações relevantes da PoC. As datas correspondem ao m
 - `POST /agent-skills/requests/{id}/start`: inicia a orquestração em segundo plano e responde `202`, sem depender do limite de 45 s do Static Web Apps.
 - A tela de orquestração mostra o andamento real, a partir da linha do tempo, com tempo decorrido e estimativa de tempo restante.
 - Execuções interrompidas por um reinício do backend passam a `FAILED` e podem ser repetidas pela tela.
+- A nova solicitação permite escolher os agentes, com estimativa de tempo.
+- As skills rodam em paralelo, até `ORCHESTRATION_MAX_PARALLEL_SKILLS` (3 por padrão), inclusive nas perguntas de acompanhamento.
 
 ### Observação registrada
 

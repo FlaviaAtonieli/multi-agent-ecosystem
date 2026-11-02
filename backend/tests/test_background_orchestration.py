@@ -69,7 +69,7 @@ def test_start_runs_orchestration_in_background(client: TestClient, monkeypatch)
 
     events = client.get(f"/api/v1/orchestrations/{technical_request['trace_id']}").json()["events"]
     started = [event for event in events if event["event_type"] == "ORCHESTRATION_EXECUTION_STARTED"]
-    assert started[0]["payload"] == {"total_skills": 1}
+    assert started[0]["payload"] == {"total_skills": 1, "max_parallel": 3}
     assert any(event["event_type"] == "AGENT_SKILL_INVOCATION_COMPLETED" for event in events)
 
     with SessionLocal() as db:

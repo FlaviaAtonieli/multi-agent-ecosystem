@@ -1,8 +1,11 @@
+import random
 import secrets
+import time
 from datetime import datetime
 from pathlib import Path
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -26,6 +29,8 @@ class RequestStatus:
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
 
+
+_APPEND_EVENT_MAX_ATTEMPTS = 10
 
 ACTIVE_STATUSES = {
     RequestStatus.QUALIFIED,
@@ -54,27 +59,38 @@ def append_event(
     message: str,
     payload: dict | None = None,
 ) -> OrchestrationEvent:
-    last_sequence = db.scalar(
-        select(func.max(OrchestrationEvent.sequence_number)).where(
-            OrchestrationEvent.technical_request_id == technical_request.id
-        )
-    ) or 0
+    # Skills running in parallel append from separate processes (MCP over stdio),
+    # so two of them can read the same max and collide on the unique constraint.
+    # The savepoint keeps a collision from discarding the caller's pending work.
+    for attempt in range(1, _APPEND_EVENT_MAX_ATTEMPTS + 1):
+        last_sequence = db.scalar(
+            select(func.max(OrchestrationEvent.sequence_number)).where(
+                OrchestrationEvent.technical_request_id == technical_request.id
+            )
+        ) or 0
 
-    event = OrchestrationEvent(
-        technical_request_id=technical_request.id,
-        orchestration_run_id=(
-            technical_request.orchestration_run.id if technical_request.orchestration_run else None
-        ),
-        sequence_number=last_sequence + 1,
-        event_type=event_type,
-        actor=actor,
-        title=title,
-        message=message,
-        payload=payload or {},
-    )
-    db.add(event)
-    db.flush()
-    return event
+        event = OrchestrationEvent(
+            technical_request_id=technical_request.id,
+            orchestration_run_id=(
+                technical_request.orchestration_run.id if technical_request.orchestration_run else None
+            ),
+            sequence_number=last_sequence + 1,
+            event_type=event_type,
+            actor=actor,
+            title=title,
+            message=message,
+            payload=payload or {},
+        )
+        try:
+            with db.begin_nested():
+                db.add(event)
+                db.flush()
+            return event
+        except IntegrityError:
+            if attempt == _APPEND_EVENT_MAX_ATTEMPTS:
+                raise
+            time.sleep(random.uniform(0.01, 0.05) * attempt)
+    raise AssertionError("unreachable")
 
 
 def create_technical_request(

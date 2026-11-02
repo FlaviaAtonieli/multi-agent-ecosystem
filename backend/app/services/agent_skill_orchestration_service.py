@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.agent_catalog.mcp_client import SkillServerNotImplementedError, call_skill_tool
 from app.agent_catalog.registry import list_active_skills, select_skills_for_domain
 from app.agent_catalog.tool_interface import SkillToolCall, SkillToolResult
+from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.metrics import QUALITY_GATE_VERDICTS, SKILL_INVOCATIONS, SKILL_LATENCY
 from app.core.security import utc_now
@@ -262,6 +263,41 @@ async def _invoke_skill(
         return invocation, None
 
 
+async def _invoke_skills(
+    db: Session,
+    *,
+    skills: list[AgentSkill],
+    technical_request: TechnicalRequest,
+    user: User,
+    requested_model: str | None = None,
+    additional_question: str | None = None,
+) -> tuple[list[AgentSkillInvocation], list[SkillToolResult]]:
+    """Runs the skills concurrently, up to orchestration_max_parallel_skills.
+
+    Sharing one Session is safe here: _invoke_skill only yields to the event loop
+    while awaiting the skill call, and commits before doing so, so no two
+    coroutines ever interleave inside a database operation. Results keep the
+    order of `skills`, so the consolidated response doesn't depend on which one
+    finished first."""
+    semaphore = asyncio.Semaphore(settings.orchestration_max_parallel_skills)
+
+    async def invoke_limited(skill: AgentSkill) -> tuple[AgentSkillInvocation, SkillToolResult | None]:
+        async with semaphore:
+            return await _invoke_skill(
+                db,
+                skill=skill,
+                technical_request=technical_request,
+                user=user,
+                requested_model=requested_model,
+                additional_question=additional_question,
+            )
+
+    outcomes = await asyncio.gather(*(invoke_limited(skill) for skill in skills))
+    invocations = [invocation for invocation, _ in outcomes]
+    results = [result for _, result in outcomes if result is not None]
+    return invocations, results
+
+
 async def execute_orchestration_step(
     db: Session,
     *,
@@ -292,8 +328,8 @@ async def execute_orchestration_step(
         event_type="ORCHESTRATION_EXECUTION_STARTED",
         actor="ORCHESTRATOR",
         title="Execução da orquestração iniciada",
-        message=f"{len(skills)} Agent Skill(s) serão consultadas em sequência.",
-        payload={"total_skills": len(skills)},
+        message=f"{len(skills)} Agent Skill(s) serão consultadas.",
+        payload={"total_skills": len(skills), "max_parallel": settings.orchestration_max_parallel_skills},
     )
     for skill in skills:
         append_event(
@@ -307,15 +343,9 @@ async def execute_orchestration_step(
         )
     db.commit()
 
-    invocations: list[AgentSkillInvocation] = []
-    results: list[SkillToolResult] = []
-    for skill in skills:
-        invocation, result = await _invoke_skill(
-            db, skill=skill, technical_request=technical_request, user=user, requested_model=requested_model
-        )
-        invocations.append(invocation)
-        if result is not None:
-            results.append(result)
+    invocations, results = await _invoke_skills(
+        db, skills=skills, technical_request=technical_request, user=user, requested_model=requested_model
+    )
 
     verdict = evaluate(results)
     QUALITY_GATE_VERDICTS.labels(
@@ -442,8 +472,8 @@ async def _run_orchestration(request_id: str, user_id: str, requested_model: str
 def start_orchestration_in_background(
     *, request_id: str, user_id: str, requested_model: str | None = None
 ) -> None:
-    """Runs the orchestration detached from the HTTP request: skills run in
-    sequence and can take minutes, longer than the 45 s the Static Web Apps
+    """Runs the orchestration detached from the HTTP request: skills can take
+    minutes in total, longer than the 45 s the Static Web Apps
     proxy allows a call to /api. The frontend follows progress through the
     request's event timeline."""
     task = asyncio.create_task(_run_orchestration(request_id, user_id, requested_model))
@@ -506,20 +536,14 @@ async def ask_follow_up_question(
     )
     db.commit()
 
-    invocations: list[AgentSkillInvocation] = []
-    results: list[SkillToolResult] = []
-    for skill in skills:
-        invocation, result = await _invoke_skill(
-            db,
-            skill=skill,
-            technical_request=technical_request,
-            user=user,
-            requested_model=requested_model,
-            additional_question=question,
-        )
-        invocations.append(invocation)
-        if result is not None:
-            results.append(result)
+    _, results = await _invoke_skills(
+        db,
+        skills=skills,
+        technical_request=technical_request,
+        user=user,
+        requested_model=requested_model,
+        additional_question=question,
+    )
 
     verdict = evaluate(results)
     append_event(
