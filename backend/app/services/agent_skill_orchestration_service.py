@@ -1,13 +1,17 @@
+import asyncio
 import json
+import logging
 import time
+from typing import cast
 from uuid import uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import CursorResult, func, select, update
 from sqlalchemy.orm import Session
 
 from app.agent_catalog.mcp_client import SkillServerNotImplementedError, call_skill_tool
 from app.agent_catalog.registry import list_active_skills, select_skills_for_domain
 from app.agent_catalog.tool_interface import SkillToolCall, SkillToolResult
+from app.core.database import SessionLocal
 from app.core.metrics import QUALITY_GATE_VERDICTS, SKILL_INVOCATIONS, SKILL_LATENCY
 from app.core.security import utc_now
 from app.llm.security import content_sha256
@@ -22,7 +26,13 @@ from app.models import (
 from app.quality_gate.service import QualityGateVerdict, evaluate
 from app.services.orchestration_service import RequestStatus, append_event
 
+logger = logging.getLogger(__name__)
+
 _CONFIDENCE_RANK = {"BAIXO": 0, "MEDIO": 1, "ALTO": 2}
+
+# asyncio only keeps a weak reference to running tasks: without this set, a
+# background orchestration could be garbage-collected halfway through.
+_background_tasks: set[asyncio.Task[None]] = set()
 
 
 class NoAgentSkillsAvailableError(RuntimeError):
@@ -276,6 +286,15 @@ async def execute_orchestration_step(
         technical_request.status = RequestStatus.RUNNING
         db.commit()
 
+    append_event(
+        db,
+        technical_request,
+        event_type="ORCHESTRATION_EXECUTION_STARTED",
+        actor="ORCHESTRATOR",
+        title="Execução da orquestração iniciada",
+        message=f"{len(skills)} Agent Skill(s) serão consultadas em sequência.",
+        payload={"total_skills": len(skills)},
+    )
     for skill in skills:
         append_event(
             db,
@@ -349,6 +368,105 @@ async def execute_orchestration_step(
         invocations=invocations,
         consolidated_response=consolidated_response,
     )
+
+
+def has_target_skills(db: Session, technical_request: TechnicalRequest) -> bool:
+    return bool(_resolve_target_skills(db, technical_request))
+
+
+def claim_request_for_execution(db: Session, technical_request: TechnicalRequest) -> bool:
+    """Atomically moves a request to RUNNING, so two clicks on "Executar" can't
+    start two runs. FAILED is accepted so an interrupted run can be retried."""
+    claimed = cast(
+        CursorResult,
+        db.execute(
+            update(TechnicalRequest)
+            .where(
+                TechnicalRequest.id == technical_request.id,
+                TechnicalRequest.status.in_([RequestStatus.QUALIFIED, RequestStatus.FAILED]),
+            )
+            .values(status=RequestStatus.RUNNING)
+        ),
+    )
+    if claimed.rowcount != 1:
+        db.rollback()
+        return False
+    db.refresh(technical_request)
+    run = technical_request.orchestration_run
+    if run:
+        run.status = RequestStatus.RUNNING
+        run.completed_at = None
+    db.commit()
+    return True
+
+
+def _mark_failed(db: Session, technical_request: TechnicalRequest, *, title: str, message: str) -> None:
+    technical_request.status = RequestStatus.FAILED
+    run = technical_request.orchestration_run
+    if run:
+        run.status = RequestStatus.FAILED
+        run.completed_at = utc_now()
+    append_event(
+        db,
+        technical_request,
+        event_type="ORCHESTRATION_EXECUTION_FAILED",
+        actor="ORCHESTRATOR",
+        title=title,
+        message=message,
+    )
+    db.commit()
+
+
+async def _run_orchestration(request_id: str, user_id: str, requested_model: str | None) -> None:
+    with SessionLocal() as db:
+        technical_request = db.get(TechnicalRequest, request_id)
+        user = db.get(User, user_id)
+        if technical_request is None or user is None:
+            logger.error("Orquestração %s não iniciada: solicitação ou usuário não encontrado.", request_id)
+            return
+        try:
+            await execute_orchestration_step(
+                db, technical_request=technical_request, user=user, requested_model=requested_model
+            )
+        except Exception:  # noqa: BLE001 - no caller left to answer: record it on the request instead
+            logger.exception("Falha na orquestração em segundo plano %s", technical_request.trace_id)
+            db.rollback()
+            _mark_failed(
+                db,
+                technical_request,
+                title="Falha na execução da orquestração",
+                message="A execução foi interrompida por um erro inesperado. Tente executar novamente.",
+            )
+
+
+def start_orchestration_in_background(
+    *, request_id: str, user_id: str, requested_model: str | None = None
+) -> None:
+    """Runs the orchestration detached from the HTTP request: skills run in
+    sequence and can take minutes, longer than the 45 s the Static Web Apps
+    proxy allows a call to /api. The frontend follows progress through the
+    request's event timeline."""
+    task = asyncio.create_task(_run_orchestration(request_id, user_id, requested_model))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+
+def fail_interrupted_orchestrations(db: Session) -> int:
+    """Called on startup. A background run only lives in this process, so any
+    request still RUNNING after a restart will never finish on its own. Assumes
+    a single worker process (see the CMD in backend/Dockerfile): with several,
+    this would also fail runs that are alive in another process."""
+    interrupted = list(
+        db.scalars(select(TechnicalRequest).where(TechnicalRequest.status == RequestStatus.RUNNING))
+    )
+    for technical_request in interrupted:
+        _mark_failed(
+            db,
+            technical_request,
+            title="Execução interrompida",
+            message="O servidor reiniciou durante a execução. Tente executar novamente.",
+        )
+    return len(interrupted)
 
 
 async def ask_follow_up_question(

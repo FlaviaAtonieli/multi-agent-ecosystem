@@ -88,6 +88,11 @@ class OrchestrationExecutionRead(BaseModel):
     consolidated_response: ConsolidatedResponseRead
 
 
+class OrchestrationStartRead(BaseModel):
+    trace_id: str
+    status: str
+
+
 class AgentSkillExecutionRequest(BaseModel):
     """Optional model override for this specific execution (RFC 5.2 Model Gateway:
     picking among LLM_ALLOWED_MODELS, not an arbitrary string). None keeps the

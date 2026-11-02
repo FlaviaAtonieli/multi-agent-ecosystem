@@ -29,13 +29,17 @@ from app.schemas.agent_skill import (
     AgentSkillToolDescriptorRead,
     ConsolidatedResponseRead,
     OrchestrationExecutionRead,
+    OrchestrationStartRead,
     SkillVisibilityLiteral,
 )
 from app.schemas.orchestration import FollowUpExchangeRead, FollowUpQuestionCreate
 from app.services.agent_skill_orchestration_service import (
     NoAgentSkillsAvailableError,
     ask_follow_up_question,
+    claim_request_for_execution,
     execute_orchestration_step,
+    has_target_skills,
+    start_orchestration_in_background,
 )
 from app.services.audit_service import record_audit
 from app.services.clan_service import (
@@ -382,6 +386,64 @@ async def execute_skills_for_request(
         invocations_count=len(execution.invocations),
         consolidated_response=ConsolidatedResponseRead.model_validate(execution.consolidated_response),
     )
+
+
+@router.post(
+    "/requests/{request_id}/start",
+    response_model=OrchestrationStartRead,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def start_skills_for_request(
+    request_id: str,
+    request: Request,
+    payload: AgentSkillExecutionRequest | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> OrchestrationStartRead:
+    technical_request = db.scalar(
+        select(TechnicalRequest).where(
+            TechnicalRequest.id == request_id, TechnicalRequest.owner_id == user.id
+        )
+    )
+    if technical_request is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Solicitação não encontrada.")
+
+    requested_model = payload.model if payload else None
+    if requested_model and requested_model not in settings.llm_allowed_model_list:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"O modelo '{requested_model}' não está em LLM_ALLOWED_MODELS.",
+        )
+
+    if not has_target_skills(db, technical_request):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Nenhuma Agent Skill ativa e compatível com o domínio da solicitação foi encontrada.",
+        )
+    if not claim_request_for_execution(db, technical_request):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A solicitação já está em execução ou não está pronta para ser executada.",
+        )
+
+    record_audit(
+        db,
+        request,
+        "AGENT_SKILL_ORCHESTRATION_STARTED",
+        user_id=user.id,
+        details={
+            "technical_request_id": technical_request.id,
+            "trace_id": technical_request.trace_id,
+            "requested_model": requested_model,
+        },
+    )
+    db.commit()
+
+    start_orchestration_in_background(
+        request_id=technical_request.id, user_id=user.id, requested_model=requested_model
+    )
+    return OrchestrationStartRead(trace_id=technical_request.trace_id, status=technical_request.status)
 
 
 @router.post("/requests/{request_id}/ask", response_model=FollowUpExchangeRead)

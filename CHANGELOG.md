@@ -2,6 +2,18 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-11-02 - Orquestração em segundo plano com progresso real
+
+### Adicionado
+
+- `POST /agent-skills/requests/{id}/start`: inicia a orquestração em segundo plano e responde `202`, sem depender do limite de 45 s do Static Web Apps.
+- A tela de orquestração mostra o andamento real, a partir da linha do tempo, com tempo decorrido e estimativa de tempo restante.
+- Execuções interrompidas por um reinício do backend passam a `FAILED` e podem ser repetidas pela tela.
+
+### Observação registrada
+
+- O backend precisa rodar com um único processo. As perguntas de acompanhamento ainda são síncronas.
+
 ## 2026-10-14 - Documentação Swagger da API e monitoramento com Prometheus
 
 ### Adicionado

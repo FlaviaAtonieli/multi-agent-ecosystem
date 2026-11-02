@@ -3173,6 +3173,102 @@
         ]
       }
     },
+    "/api/v1/agent-skills/requests/{request_id}/start": {
+      "post": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Iniciar orquestração em segundo plano",
+        "operationId": "start_skills_for_request_api_v1_agent_skills_requests__request_id__start_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AgentSkillExecutionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrchestrationStartRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Inicia a mesma execução de `/execute`, mas responde `202` sem esperar as Agent Skills. O andamento fica na linha do tempo de `GET /orchestrations/{trace_id}`. Aceita solicitações `QUALIFIED` ou `FAILED` (nova tentativa) e responde `409` se a execução já estiver em andamento.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
     "/api/v1/agent-skills/requests/{request_id}/ask": {
       "post": {
         "tags": [
@@ -5851,6 +5947,24 @@
           "updated_at"
         ],
         "title": "OrchestrationRunRead"
+      },
+      "OrchestrationStartRead": {
+        "properties": {
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "trace_id",
+          "status"
+        ],
+        "title": "OrchestrationStartRead"
       },
       "PasswordChange": {
         "properties": {

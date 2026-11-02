@@ -789,12 +789,30 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.workspace-thinking-panel-timer {
+  flex: none;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.workspace-thinking-estimate {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+.workspace-thinking-estimate strong { color: var(--text-primary); font-weight: 600; }
 .workspace-thinking-panel-trace {
   flex: none;
   color: var(--accent);
   font-family: var(--font-body);
   font-size: 0.76rem;
   font-weight: 500;
+}
+/* Em tela estreita não cabe tudo no cabeçalho, e o trace já aparece no topo da página. */
+@media (max-width: 640px) {
+  .workspace-thinking-panel-trace { display: none; }
 }
 .workspace-thinking-panel-toggle { flex: none; color: var(--text-tertiary); font-size: 0.76rem; }
 .workspace-thinking-panel-body {
