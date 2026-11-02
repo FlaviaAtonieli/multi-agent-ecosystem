@@ -5,22 +5,31 @@ Três grupos:
 - HTTP (middleware): requisições por rota/status, latência e em andamento. A
   rota é o template ("/api/v1/requests/{request_id}"), nunca a URL concreta,
   para não explodir a cardinalidade.
-- Domínio (instrumentado nos serviços): chamadas ao LLM e tokens, execuções de
-  Agent Skills, veredito do Quality Gate, revisões humanas e eventos de
-  auditoria (login, falhas de login, código por e-mail, redefinição de senha).
-- Estado do banco (coletado a cada scrape): solicitações por status, Agent
-  Skills ativas, usuários e clãs.
+- Domínio (instrumentado nos serviços): execuções de Agent Skills, veredito do
+  Quality Gate, revisões humanas e eventos de auditoria (login, falhas de login,
+  código por e-mail, redefinição de senha).
+- Banco (coletado a cada scrape): solicitações por status, Agent Skills ativas,
+  usuários, clãs e o uso do LLM. O LLM é chamado dentro do processo de cada skill
+  (MCP por stdio), que termina ao fim da chamada: um contador em memória lá nunca
+  chegaria a este /metrics. A tabela llm_invocations já registra cada chamada.
 """
 
 import logging
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
+from typing import Any
 
 from fastapi import Request
 from prometheus_client import Counter, Gauge, Histogram, Info
-from prometheus_client.core import REGISTRY, GaugeMetricFamily
+from prometheus_client.core import (
+    REGISTRY,
+    CounterMetricFamily,
+    GaugeMetricFamily,
+    HistogramMetricFamily,
+)
+from prometheus_client.metrics_core import Metric
 from prometheus_client.registry import Collector
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 from starlette.routing import Match
@@ -41,18 +50,8 @@ HTTP_LATENCY = Histogram(
 )
 HTTP_IN_PROGRESS = Gauge("agenthub_http_requests_in_progress", "Requisições HTTP em andamento.")
 
-LLM_INVOCATIONS = Counter(
-    "agenthub_llm_invocations_total", "Chamadas ao provedor de LLM.", ["provider", "model", "status"]
-)
-LLM_LATENCY = Histogram(
-    "agenthub_llm_invocation_duration_seconds",
-    "Duração das chamadas ao LLM.",
-    ["provider", "model"],
-    buckets=(0.5, 1, 2, 5, 10, 20, 30, 45, 60, 90, 120),
-)
-LLM_TOKENS = Counter(
-    "agenthub_llm_tokens_total", "Tokens consumidos no LLM.", ["provider", "model", "direction"]
-)
+_LLM_LATENCY_BUCKETS = (0.5, 1, 2, 5, 10, 20, 30, 45, 60, 90, 120)
+_LLM_FINISHED_STATUSES = ("COMPLETED", "FAILED")
 
 SKILL_INVOCATIONS = Counter(
     "agenthub_agent_skill_invocations_total", "Execuções de Agent Skills.", ["domain", "status"]
@@ -116,18 +115,69 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             HTTP_LATENCY.labels(method, template).observe(time.perf_counter() - started)
 
 
+def _llm_usage_metrics(rows: Sequence[Any]) -> Iterator[Metric]:
+    """Monotônico porque vem de uma contagem no banco, então `increase()` funciona
+    como em um contador comum, e os valores sobrevivem a um reinício do backend."""
+    invocations = CounterMetricFamily(
+        "agenthub_llm_invocations", "Chamadas ao provedor de LLM.", labels=["provider", "model", "status"]
+    )
+    tokens = CounterMetricFamily(
+        "agenthub_llm_tokens", "Tokens consumidos no LLM.", labels=["provider", "model", "direction"]
+    )
+    latency = HistogramMetricFamily(
+        "agenthub_llm_invocation_duration_seconds",
+        "Duração das chamadas ao LLM.",
+        labels=["provider", "model"],
+    )
+
+    token_totals: dict[tuple[str, str], list[float]] = {}
+    latency_totals: dict[tuple[str, str], list[float]] = {}
+    for provider, model, status, count, input_tokens, output_tokens, latency_sum, *buckets in rows:
+        invocations.add_metric([provider, model, status], count)
+
+        totals = token_totals.setdefault((provider, model), [0, 0])
+        totals[0] += input_tokens or 0
+        totals[1] += output_tokens or 0
+
+        # [total de chamadas, soma das latências, contagem acumulada por bucket]
+        aggregate = latency_totals.setdefault((provider, model), [0, 0, *[0] * len(_LLM_LATENCY_BUCKETS)])
+        aggregate[0] += count
+        aggregate[1] += latency_sum or 0
+        for index, bucket_count in enumerate(buckets):
+            aggregate[index + 2] += bucket_count or 0
+
+    for (provider, model), (input_total, output_total) in token_totals.items():
+        tokens.add_metric([provider, model, "input"], input_total)
+        tokens.add_metric([provider, model, "output"], output_total)
+    for (provider, model), (total, latency_sum, *cumulative) in latency_totals.items():
+        histogram = [
+            (str(float(bucket)), value)
+            for bucket, value in zip(_LLM_LATENCY_BUCKETS, cumulative, strict=True)
+        ]
+        latency.add_metric([provider, model], [*histogram, ("+Inf", total)], sum_value=latency_sum)
+
+    yield invocations
+    yield tokens
+    yield latency
+
+
 class DatabaseStateCollector(Collector):
     """Lê o estado atual do banco a cada scrape (consultas de contagem, baratas
     nesta escala). Falha do banco não derruba o /metrics: só omite estas séries."""
 
-    def describe(self) -> Iterator[GaugeMetricFamily]:
+    def describe(self) -> Iterator[Metric]:
         # Sem isto, REGISTRY.register() chamaria collect() na importação --
         # consultando o banco antes de as tabelas existirem.
         return iter(())
 
-    def collect(self) -> Iterator[GaugeMetricFamily]:
+    def collect(self) -> Iterator[Metric]:
         from app.core.database import SessionLocal
-        from app.models import AgentSkill, Clan, TechnicalRequest, User
+        from app.models import AgentSkill, Clan, LLMInvocation, TechnicalRequest, User
+
+        latency_seconds = LLMInvocation.latency_ms / 1000.0
+        bucket_counts = [
+            func.sum(case((latency_seconds <= bucket, 1), else_=0)) for bucket in _LLM_LATENCY_BUCKETS
+        ]
 
         try:
             with SessionLocal() as db:
@@ -141,6 +191,20 @@ class DatabaseStateCollector(Collector):
                 )
                 users = db.scalar(select(func.count(User.id)))
                 clans = db.scalar(select(func.count(Clan.id)))
+                llm_usage = db.execute(
+                    select(
+                        LLMInvocation.provider,
+                        LLMInvocation.model,
+                        LLMInvocation.status,
+                        func.count(),
+                        func.sum(LLMInvocation.input_tokens),
+                        func.sum(LLMInvocation.output_tokens),
+                        func.sum(latency_seconds),
+                        *bucket_counts,
+                    )
+                    .where(LLMInvocation.status.in_(_LLM_FINISHED_STATUSES))
+                    .group_by(LLMInvocation.provider, LLMInvocation.model, LLMInvocation.status)
+                ).all()
         except Exception as exc:  # noqa: BLE001 - métricas nunca devem quebrar o scrape
             logger.warning("Não foi possível coletar métricas do banco: %s", type(exc).__name__)
             return
@@ -156,6 +220,7 @@ class DatabaseStateCollector(Collector):
         )
         yield GaugeMetricFamily("agenthub_users", "Usuários cadastrados.", value=users or 0)
         yield GaugeMetricFamily("agenthub_clans", "Clãs criados.", value=clans or 0)
+        yield from _llm_usage_metrics(llm_usage)
 
 
 _collector_registered = False

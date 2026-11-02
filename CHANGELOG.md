@@ -20,6 +20,8 @@ Este arquivo registra alterações relevantes da PoC. As datas correspondem ao m
 - A senha recusada da conta inicial e o corpo de e-mails em `EMAIL_BACKEND=console`, que pode ter um link de redefinição, não vão mais para o log em produção.
 - `seed_agent_skills` também registra as 4 skills com servidor MCP próprio, e o guia de deploy cobre os problemas encontrados no primeiro deploy.
 
+- As métricas de LLM (`agenthub_llm_*`) passam a vir do banco. Eram contadas no processo de cada skill, que termina ao fim da chamada, então os painéis de IA ficavam vazios e o alerta `FalhasNoLLM` nunca disparava.
+
 ### Observação registrada
 
 - O backend precisa rodar com um único processo.
