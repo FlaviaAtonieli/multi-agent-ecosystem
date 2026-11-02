@@ -38,7 +38,11 @@ from app.services.agent_skill_orchestration_service import (
     ask_follow_up_question,
     claim_request_for_execution,
     execute_orchestration_step,
+    has_follow_up_skills,
+    has_pending_follow_up,
     has_target_skills,
+    record_follow_up_question,
+    start_follow_up_in_background,
     start_orchestration_in_background,
 )
 from app.services.audit_service import record_audit
@@ -491,3 +495,60 @@ async def ask_follow_up(
     )
     db.commit()
     return FollowUpExchangeRead.model_validate(exchange)
+
+
+@router.post(
+    "/requests/{request_id}/ask/start",
+    response_model=OrchestrationStartRead,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def start_follow_up(
+    request_id: str,
+    payload: FollowUpQuestionCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> OrchestrationStartRead:
+    technical_request = _find_executed_request(db, request_id, user)
+
+    if payload.model and payload.model not in settings.llm_allowed_model_list:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"O modelo '{payload.model}' não está em LLM_ALLOWED_MODELS.",
+        )
+    if not has_follow_up_skills(db, technical_request, payload.target_domain):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Nenhuma Agent Skill ativa disponível para responder a esta pergunta.",
+        )
+    if has_pending_follow_up(db, technical_request):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Os agentes ainda estão respondendo a pergunta anterior.",
+        )
+
+    record_follow_up_question(
+        db, technical_request, question=payload.question, target_domain=payload.target_domain
+    )
+    record_audit(
+        db,
+        request,
+        "FOLLOW_UP_QUESTION_ASKED",
+        user_id=user.id,
+        details={
+            "technical_request_id": technical_request.id,
+            "trace_id": technical_request.trace_id,
+            "target_domain": payload.target_domain,
+        },
+    )
+    db.commit()
+
+    start_follow_up_in_background(
+        request_id=technical_request.id,
+        user_id=user.id,
+        question=payload.question,
+        target_domain=payload.target_domain,
+        requested_model=payload.model,
+    )
+    return OrchestrationStartRead(trace_id=technical_request.trace_id, status=technical_request.status)

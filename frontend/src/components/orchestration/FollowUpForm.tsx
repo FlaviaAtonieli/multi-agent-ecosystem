@@ -1,14 +1,32 @@
-import { FormEvent, useState } from 'react'
-import { domainLabels } from './shared'
+import { FormEvent, useEffect, useState } from 'react'
+import { domainLabels, formatElapsed } from './shared'
 
 type FollowUpFormProps = {
   participatingDomains: string[]
   onAsk: (question: string, targetDomain: string | null) => Promise<void>
   submitting: boolean
+  pendingSince: string | null
   error: string
 }
 
-export function FollowUpForm({ participatingDomains, onAsk, submitting, error }: FollowUpFormProps) {
+function PendingNotice({ since }: { since: string }) {
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const elapsedSeconds = Math.max(0, Math.floor((now - new Date(since).getTime()) / 1000))
+  return (
+    <p className="workspace-thinking-estimate" role="status">
+      <strong>Os agentes estão respondendo.</strong>{' '}
+      <span role="timer" aria-live="off">{formatElapsed(elapsedSeconds)}</span>. Pode sair desta página: a resposta fica salva.
+    </p>
+  )
+}
+
+export function FollowUpForm({ participatingDomains, onAsk, submitting, pendingSince, error }: FollowUpFormProps) {
   const [question, setQuestion] = useState('')
   const [targetDomain, setTargetDomain] = useState('')
 
@@ -41,9 +59,10 @@ export function FollowUpForm({ participatingDomains, onAsk, submitting, error }:
           ))}
         </select>
       </label>
+      {pendingSince && <PendingNotice since={pendingSince} />}
       {error && <div className="alert alert-error">{error}</div>}
-      <button className="workspace-primary-action" type="submit" disabled={submitting}>
-        {submitting ? 'Perguntando…' : 'Perguntar'}
+      <button className="workspace-primary-action" type="submit" disabled={submitting || Boolean(pendingSince)}>
+        {submitting || pendingSince ? 'Perguntando…' : 'Perguntar'}
       </button>
     </form>
   )

@@ -3,7 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import { AgentSkillDomain, agentSkillsApi, FollowUpExchange } from '../api/agentSkillsApi'
 import { ApiError } from '../api/http'
 import { llmApi } from '../api/llmApi'
-import { AgentSkillInvocationResult, OrchestrationDetail, orchestrationApi } from '../api/orchestrationApi'
+import { AgentSkillInvocationResult, OrchestrationDetail, OrchestrationEvent, orchestrationApi } from '../api/orchestrationApi'
 import { AttachmentsSection } from '../components/orchestration/AttachmentsSection'
 import { ExecutionResultPanel } from '../components/orchestration/ExecutionResultPanel'
 import { FollowUpExchangeCard } from '../components/orchestration/FollowUpExchangeCard'
@@ -15,6 +15,11 @@ import { TokenUsageMeter } from '../components/orchestration/TokenUsageMeter'
 import { CollapsibleSection } from '../components/shared/CollapsibleSection'
 
 const POLL_INTERVAL_MS = 4000
+const FOLLOW_UP_EVENT_TYPES = ['FOLLOW_UP_QUESTION_ASKED', 'FOLLOW_UP_RESPONSE_RECEIVED', 'FOLLOW_UP_FAILED']
+
+function latestFollowUpEvent(events: OrchestrationEvent[]) {
+  return [...events].reverse().find((event) => FOLLOW_UP_EVENT_TYPES.includes(event.event_type))
+}
 
 export function OrchestrationPage() {
   const { traceId = '' } = useParams()
@@ -37,6 +42,7 @@ export function OrchestrationPage() {
   const [askingFollowUp, setAskingFollowUp] = useState(false)
   const [followUpError, setFollowUpError] = useState('')
   const previousStatus = useRef<string | null>(null)
+  const previousFollowUpPending = useRef(false)
 
   const load = useCallback(async () => {
     try {
@@ -91,13 +97,37 @@ export function OrchestrationPage() {
   // A execução roda em segundo plano no backend: enquanto durar, acompanha o
   // andamento pela linha do tempo. Uma falha pontual de rede não interrompe o
   // acompanhamento, a próxima consulta tenta de novo.
+  const latestFollowUp = detail ? latestFollowUpEvent(detail.events) : undefined
+  const followUpPendingSince =
+    latestFollowUp?.event_type === 'FOLLOW_UP_QUESTION_ASKED' ? latestFollowUp.created_at : null
+  const followUpPending = followUpPendingSince !== null
+
   useEffect(() => {
-    if (!running) return
+    if (!running && !followUpPending) return
     const timer = window.setInterval(() => {
       orchestrationApi.getOrchestration(traceId).then(setDetail).catch(() => undefined)
     }, POLL_INTERVAL_MS)
     return () => window.clearInterval(timer)
-  }, [running, traceId])
+  }, [running, followUpPending, traceId])
+
+  const failedFollowUpMessage = latestFollowUp?.event_type === 'FOLLOW_UP_FAILED' ? latestFollowUp.message : ''
+
+  useEffect(() => {
+    const finished = previousFollowUpPending.current && !followUpPending
+    previousFollowUpPending.current = followUpPending
+    if (!finished) return
+
+    load()
+    llmApi
+      .status()
+      .then((llmStatus) => {
+        if (llmStatus.daily_token_limit_per_user > 0) {
+          setTokenUsage({ used: llmStatus.tokens_used_today, limit: llmStatus.daily_token_limit_per_user })
+        }
+      })
+      .catch(() => undefined)
+    setFollowUpError(failedFollowUpMessage)
+  }, [followUpPending, failedFollowUpMessage, load])
 
   useEffect(() => {
     const finished = previousStatus.current === 'RUNNING' && status !== undefined && status !== 'RUNNING'
@@ -147,21 +177,13 @@ export function OrchestrationPage() {
     setAskingFollowUp(true)
     setFollowUpError('')
     try {
-      const exchange = await agentSkillsApi.askFollowUp(
+      await agentSkillsApi.startFollowUp(
         detail.technical_request.id,
         question,
         targetDomain as AgentSkillDomain | null,
         selectedModel || null,
       )
-      setFollowUps((current) => [...current, exchange])
-      llmApi
-        .status()
-        .then((status) => {
-          if (status.daily_token_limit_per_user > 0) {
-            setTokenUsage({ used: status.tokens_used_today, limit: status.daily_token_limit_per_user })
-          }
-        })
-        .catch(() => undefined)
+      await load()
     } catch (caught) {
       setFollowUpError(caught instanceof ApiError ? caught.message : 'Não foi possível registrar a pergunta.')
     } finally {
@@ -354,6 +376,7 @@ export function OrchestrationPage() {
                   participatingDomains={participatingDomains}
                   onAsk={handleAskFollowUp}
                   submitting={askingFollowUp}
+                  pendingSince={followUpPendingSince}
                   error={followUpError}
                 />
               </div>

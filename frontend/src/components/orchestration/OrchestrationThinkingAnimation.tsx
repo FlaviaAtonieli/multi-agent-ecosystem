@@ -5,18 +5,13 @@ import {
   DEFAULT_SECONDS_PER_SKILL,
   domainLabels,
   estimateRunSeconds,
+  formatElapsed,
   formatEstimate,
 } from './shared'
 
 interface Props {
   events: OrchestrationEvent[]
   traceId: string
-}
-
-function formatElapsed(totalSeconds: number) {
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
 function latestRunEvents(events: OrchestrationEvent[]) {

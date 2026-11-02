@@ -291,6 +291,11 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
         "Pergunta de acompanhamento",
         "Faz uma pergunta sobre uma solicitação já executada, opcionalmente direcionada a um domínio.",
     ),
+    "POST /agent-skills/requests/{request_id}/ask/start": (
+        "Iniciar pergunta em segundo plano",
+        "Registra a pergunta e responde `202` sem esperar as Agent Skills. A resposta aparece em "
+        "`GET /orchestrations/{trace_id}/follow-ups`. Responde `409` se outra pergunta ainda estiver em andamento.",
+    ),
     # Auditoria
     "GET /audit/events": (
         "Trilha de auditoria",

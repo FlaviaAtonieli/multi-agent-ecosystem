@@ -19,6 +19,12 @@ export function estimateRunSeconds(
   return Math.round(Math.ceil(skillCount / maxParallel) * secondsPerSkill)
 }
 
+export function formatElapsed(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
 export function formatEstimate(totalSeconds: number) {
   if (totalSeconds < 60) return 'menos de 1 min'
   return `cerca de ${Math.ceil(totalSeconds / 60)} min`

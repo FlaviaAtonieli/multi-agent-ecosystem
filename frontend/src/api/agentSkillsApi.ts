@@ -178,9 +178,9 @@ export const agentSkillsApi = {
         body: JSON.stringify({ model }),
       },
     ),
-  askFollowUp: (requestId: string, question: string, targetDomain: AgentSkillDomain | null, model: string | null) =>
-    apiRequest<FollowUpExchange>(
-      `/agent-skills/requests/${encodeURIComponent(requestId)}/ask`,
+  startFollowUp: (requestId: string, question: string, targetDomain: AgentSkillDomain | null, model: string | null) =>
+    apiRequest<{ trace_id: string; status: string }>(
+      `/agent-skills/requests/${encodeURIComponent(requestId)}/ask/start`,
       {
         method: 'POST',
         body: JSON.stringify({ question, target_domain: targetDomain, model }),
