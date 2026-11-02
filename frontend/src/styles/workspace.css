@@ -696,6 +696,12 @@
 }
 .workspace-suggestion-chip:hover { color: var(--text-primary); background: rgba(139, 92, 246, 0.12); }
 
+.workspace-suggestion-chip.is-selected {
+  border-color: rgba(139, 92, 246, 0.8);
+  color: var(--text-primary);
+  background: rgba(139, 92, 246, 0.18);
+}
+
 .workspace-tag-input {
   display: flex;
   flex-wrap: wrap;

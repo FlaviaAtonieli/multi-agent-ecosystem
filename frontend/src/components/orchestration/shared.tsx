@@ -3,6 +3,19 @@ import { SkillToolResult } from '../../api/agentSkillsApi'
 
 export const confidenceLabels: Record<string, string> = { ALTO: 'Alta', MEDIO: 'Média', BAIXO: 'Baixa' }
 
+// Média medida em produção (11/2026) com openai/gpt-5-mini. Usada antes de haver
+// tempo real da execução para calcular a estimativa.
+export const DEFAULT_SECONDS_PER_SKILL = 45
+
+export function estimateRunSeconds(skillCount: number, secondsPerSkill = DEFAULT_SECONDS_PER_SKILL) {
+  return Math.round(skillCount * secondsPerSkill)
+}
+
+export function formatEstimate(totalSeconds: number) {
+  if (totalSeconds < 60) return 'menos de 1 min'
+  return `cerca de ${Math.ceil(totalSeconds / 60)} min`
+}
+
 export const domainLabels: Record<string, string> = {
   codigo_legado: 'Código Legado',
   regras_negocio: 'Regras de Negócio',

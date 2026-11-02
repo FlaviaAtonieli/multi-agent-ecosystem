@@ -1,7 +1,9 @@
-import { ChangeEvent, KeyboardEvent, useMemo, useState } from 'react'
+import { ChangeEvent, KeyboardEvent, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { AgentSkillDomain, agentSkillsApi } from '../api/agentSkillsApi'
 import { ApiError } from '../api/http'
 import { orchestrationApi } from '../api/orchestrationApi'
+import { domainLabels, estimateRunSeconds, formatEstimate } from '../components/orchestration/shared'
 
 const MAX_ATTACHMENT_BYTES = 300_000
 const ALLOWED_ATTACHMENT_EXTENSIONS =
@@ -37,6 +39,16 @@ export function NewRequestPage() {
   const [submitError, setSubmitError] = useState('')
   const [attachmentWarning, setAttachmentWarning] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [availableDomains, setAvailableDomains] = useState<AgentSkillDomain[]>([])
+  const [selectedDomains, setSelectedDomains] = useState<AgentSkillDomain[]>([])
+
+  useEffect(() => {
+    // Sem a lista, o campo não aparece e o backend consulta todas as skills ativas.
+    agentSkillsApi
+      .listSkills(true)
+      .then((skills) => setAvailableDomains([...new Set(skills.map((skill) => skill.domain))]))
+      .catch(() => setAvailableDomains([]))
+  }, [])
 
   const titleValid = title.trim().length >= 5 && title.trim().length <= 160
   const problemValid = problem.trim().length >= 10
@@ -110,6 +122,12 @@ export function NewRequestPage() {
     setAttachments((current) => [...current, ...accepted])
   }
 
+  function toggleDomain(domain: AgentSkillDomain) {
+    setSelectedDomains((current) =>
+      current.includes(domain) ? current.filter((item) => item !== domain) : [...current, domain],
+    )
+  }
+
   function removeAttachment(name: string) {
     setAttachments((current) => current.filter((file) => file.name !== name))
   }
@@ -124,6 +142,7 @@ export function NewRequestPage() {
         objective: objective.trim(),
         context: context.trim() || null,
         restrictions,
+        requested_domains: selectedDomains,
       })
 
       // The request itself is already created at this point -- an attachment
@@ -273,6 +292,30 @@ export function NewRequestPage() {
                 </div>
                 <small>Separe restrições por linha ou vírgula — cada uma vira uma tag independente.</small>
               </label>
+
+              {availableDomains.length > 0 && (
+                <div className="workspace-field workspace-field-full" role="group" aria-labelledby="request-agents-label">
+                  <span id="request-agents-label">Agentes que vão analisar</span>
+                  <div className="workspace-chip-row">
+                    {availableDomains.map((domain) => (
+                      <button
+                        key={domain}
+                        type="button"
+                        className={`workspace-suggestion-chip${selectedDomains.includes(domain) ? ' is-selected' : ''}`}
+                        aria-pressed={selectedDomains.includes(domain)}
+                        onClick={() => toggleDomain(domain)}
+                      >
+                        {domainLabels[domain] ?? domain}
+                      </button>
+                    ))}
+                  </div>
+                  <small>
+                    {selectedDomains.length > 0
+                      ? `${selectedDomains.length} ${selectedDomains.length === 1 ? 'agente escolhido' : 'agentes escolhidos'}: ${formatEstimate(estimateRunSeconds(selectedDomains.length))}.`
+                      : `Nenhum escolhido: todos os ${availableDomains.length} agentes vão analisar, ${formatEstimate(estimateRunSeconds(availableDomains.length))}. Escolher só os relevantes deixa a resposta mais rápida, mais barata e mais focada.`}
+                  </small>
+                </div>
+              )}
 
               <label className="workspace-field workspace-field-full">
                 Anexar documento (opcional)

@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react'
 import { OrchestrationEvent } from '../../api/orchestrationApi'
-import { domainLabels } from './shared'
-
-// Média medida em produção (11/2026) com openai/gpt-5-mini. Só vale até a
-// primeira skill terminar; depois a estimativa usa o tempo real desta execução.
-const DEFAULT_SECONDS_PER_SKILL = 45
+import { DEFAULT_SECONDS_PER_SKILL, domainLabels, estimateRunSeconds, formatEstimate } from './shared'
 
 interface Props {
   events: OrchestrationEvent[]
@@ -15,11 +11,6 @@ function formatElapsed(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-}
-
-function formatEstimate(totalSeconds: number) {
-  if (totalSeconds < 60) return 'menos de 1 min'
-  return `cerca de ${Math.ceil(totalSeconds / 60)} min`
 }
 
 function latestRunEvents(events: OrchestrationEvent[]) {
@@ -76,8 +67,8 @@ export function OrchestrationThinkingAnimation({ events, traceId }: Props) {
     latencies.length > 0
       ? latencies.reduce((sum, value) => sum + value, 0) / latencies.length / 1000
       : DEFAULT_SECONDS_PER_SKILL
-  const remainingSeconds = Math.round((selected.length - finished.length) * secondsPerSkill)
-  const totalSeconds = Math.round(selected.length * secondsPerSkill)
+  const remainingSeconds = estimateRunSeconds(selected.length - finished.length, secondsPerSkill)
+  const totalSeconds = estimateRunSeconds(selected.length, secondsPerSkill)
 
   return (
     <article className="workspace-panel workspace-thinking-panel" role="status" aria-live="polite">
