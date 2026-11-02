@@ -24,7 +24,10 @@ export function FollowUpExchangeCard({ exchange }: { exchange: FollowUpExchange 
         </span>
       </div>
 
-      <SynthesisByDomain text={exchange.synthesis} />
+      <SynthesisByDomain
+        domains={exchange.results.map((result) => result.agente_emissor.dominio)}
+        text={exchange.synthesis}
+      />
 
       {exchange.results.length > 0 && (
         <div className="workspace-execution-skills">

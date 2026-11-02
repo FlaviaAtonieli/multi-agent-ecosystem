@@ -17,7 +17,10 @@ export function ExecutionResultPanel({ execution }: { execution: OrchestrationEx
 
       <div className="workspace-execution-block">
         <h4>Síntese consolidada</h4>
-        <SynthesisByDomain text={consolidated.technical_synthesis} />
+        <SynthesisByDomain
+          domains={execution.results.map((result) => result.agente_emissor.dominio)}
+          text={consolidated.technical_synthesis}
+        />
       </div>
 
       {consolidated.risks.length > 0 && (

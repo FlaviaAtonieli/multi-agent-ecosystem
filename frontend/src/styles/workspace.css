@@ -656,6 +656,11 @@
 .workspace-step-done .workspace-step-circle { border-color: var(--success); color: var(--success-light); background: rgba(34, 197, 94, 0.14); }
 .workspace-step-done .workspace-step-label { color: var(--text-tertiary); font-weight: 500; }
 .workspace-step-done .workspace-step-line { background: rgba(34, 197, 94, 0.4); }
+/* Em tela estreita os três rótulos não cabem: fica só o da etapa atual. */
+@media (max-width: 620px) {
+  .workspace-step-label { display: none; }
+  .workspace-step-current .workspace-step-label { display: inline; }
+}
 
 .workspace-wizard-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
 .workspace-wizard-card { min-width: 0; padding: 26px 26px 22px; }

@@ -22,6 +22,8 @@ Este arquivo registra alterações relevantes da PoC. As datas correspondem ao m
 
 - As métricas de LLM (`agenthub_llm_*`) passam a vir do banco. Eram contadas no processo de cada skill, que termina ao fim da chamada, então os painéis de IA ficavam vazios e o alerta `FalhasNoLLM` nunca disparava.
 
+- A tela de nova solicitação não tem mais rolagem horizontal no celular.
+
 ### Observação registrada
 
 - O backend precisa rodar com um único processo.

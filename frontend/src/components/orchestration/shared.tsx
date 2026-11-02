@@ -43,8 +43,12 @@ export const domainLabels: Record<string, string> = {
   apis_integracoes: 'APIs e Integrações',
 }
 
-export function parseSynthesisByDomain(text: string): Array<{ domain: string; text: string }> {
-  const matches = [...text.matchAll(/\[([a-z_]+)\]\s*/g)]
+// A área agora é texto livre, então um marcador só é reconhecido se for uma área
+// conhecida: o resumo vem do modelo e pode trazer colchetes por outros motivos.
+export function parseSynthesisByDomain(text: string, domains: string[] = []): Array<{ domain: string; text: string }> {
+  const known = [...new Set([...Object.keys(domainLabels), ...domains])]
+  const alternatives = known.map((domain) => domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
+  const matches = [...text.matchAll(new RegExp(`\\[(${alternatives})\\]\\s*`, 'g'))]
   if (matches.length === 0) return [{ domain: '', text }]
 
   return matches.map((match, index) => {
@@ -54,8 +58,8 @@ export function parseSynthesisByDomain(text: string): Array<{ domain: string; te
   })
 }
 
-export function SynthesisByDomain({ text }: { text: string }) {
-  const parts = parseSynthesisByDomain(text)
+export function SynthesisByDomain({ text, domains }: { text: string; domains?: string[] }) {
+  const parts = parseSynthesisByDomain(text, domains)
   return (
     <div className="workspace-synthesis-list">
       {parts.map((part, index) => (
