@@ -1,18 +1,25 @@
+from pathlib import Path
+
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.agent_catalog.registry import register_skill
-from app.agent_manifest.manifest import AgentSkillManifest
+from app.agent_manifest.manifest import AgentSkillManifest, parse_modelo_md
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.security import normalize_email
 from app.models import AgentSkill, User
 
-# Cada entrada aqui é um domínio que ainda não tem uma Agent Skill OFFICIAL no
-# catálogo (checado por domínio, não por nome -- um domínio só ganha uma
-# oficial por vez). Os 4 domínios originais (codigo_legado, regras_negocio,
-# arquitetura_software, seguranca_informacao) não entram nesta lista porque já
-# foram cadastrados manualmente, uma vez, pela tela -- esta seed só existe para
-# não repetir esse passo manual a cada domínio novo adicionado ao catálogo.
+# Os 4 domínios originais (codigo_legado, regras_negocio, arquitetura_software,
+# seguranca_informacao) vêm dos manifestos desta pasta e rodam no servidor MCP
+# próprio de cada um (owner_id vazio, ver _module_for_skill em mcp_client.py). Pela
+# tela não dá: skill criada por usuário vai para o servidor genérico, que depende de
+# persona, e esses manifestos não têm.
+MANIFEST_FIXTURES = Path(__file__).resolve().parent.parent / "agent_manifest" / "fixtures"
+
+# Cada entrada aqui é um domínio novo, executado pelo servidor genérico a partir da
+# persona declarada (checado por domínio, não por nome -- um domínio só ganha uma
+# oficial por vez).
 _NEW_OFFICIAL_SKILLS: list[AgentSkillManifest] = [
     AgentSkillManifest(
         name="Agent Skill de Qualidade e Testes",
@@ -206,8 +213,35 @@ _NEW_OFFICIAL_SKILLS: list[AgentSkillManifest] = [
 ]
 
 
+def _seed_original_skills(db: Session, admin: User) -> None:
+    for path in sorted(MANIFEST_FIXTURES.glob("*.md")):
+        raw_markdown = path.read_text(encoding="utf-8")
+        manifest = parse_modelo_md(raw_markdown)
+        existing = db.scalar(
+            select(AgentSkill).where(
+                AgentSkill.domain == manifest.domain, AgentSkill.visibility == "OFFICIAL"
+            )
+        )
+        if existing:
+            print(
+                f"{manifest.domain}: já existe uma Agent Skill OFFICIAL "
+                f"('{existing.name}'). Nada a fazer."
+            )
+            continue
+
+        skill = register_skill(
+            db,
+            manifest=manifest,
+            submitted_by=admin,
+            raw_markdown=raw_markdown,
+            owner_id=None,
+            visibility="OFFICIAL",
+        )
+        print(f"{manifest.domain}: Agent Skill '{skill.name}' registrada.")
+
+
 def seed_agent_skills() -> None:
-    """Garante uma Agent Skill OFFICIAL por domínio em _NEW_OFFICIAL_SKILLS,
+    """Garante uma Agent Skill OFFICIAL para cada um dos 10 domínios,
     sem duplicar se já existir (idempotente, mesmo espírito de
     seed_knowledge_base.py). Atribui como submitted_by/owner a conta inicial
     (BOOTSTRAP_ADMIN_EMAIL, ver bootstrap_admin em app/db/init_db.py) ou, sem
@@ -224,6 +258,7 @@ def seed_agent_skills() -> None:
             print("Nenhum usuário encontrado -- rode bootstrap_admin antes desta seed.")
             return
 
+        _seed_original_skills(db, admin)
         for manifest in _NEW_OFFICIAL_SKILLS:
             existing = db.scalar(
                 select(AgentSkill).where(

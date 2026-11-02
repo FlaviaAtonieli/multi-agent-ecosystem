@@ -77,11 +77,11 @@ Não existe provedor mock: para usar a camada de planejamento (LLM) e a recupera
 ```env
 LLM_ENABLED=true
 LLM_PROVIDER=openrouter
-LLM_MODEL=nvidia/nemotron-3-super-120b-a12b:free
+LLM_MODEL=openai/gpt-5-mini
 OPENROUTER_API_KEY=defina-sua-chave-da-openrouter
 ```
 
-O modelo acima é gratuito no catálogo da OpenRouter (limite de 50 requisições/dia sem créditos comprados). Crie uma chave em [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys).
+O modelo acima é pago e usa créditos da OpenRouter. Para testar sem custo, use `dots-studio/dots-3-note-preview:free`, que está no catálogo gratuito até 31/12/2026, mas não foi validado de ponta a ponta. Modelos gratuitos entram e saem do catálogo: o padrão anterior deixou de ser gratuito em 11/2026.
 
 Login com GitHub e login com Google são opcionais e vêm desabilitados por padrão (`GITHUB_OAUTH_ENABLED=false`, `GOOGLE_OAUTH_ENABLED=false`) — sobe normalmente sem eles, só e-mail/senha continua disponível. Passo a passo pra habilitar: [docs/integrations/github-oauth.md](docs/integrations/github-oauth.md) e [docs/integrations/google-oauth.md](docs/integrations/google-oauth.md).
 

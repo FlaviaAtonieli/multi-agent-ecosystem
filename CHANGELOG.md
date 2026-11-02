@@ -13,6 +13,12 @@ Este arquivo registra alterações relevantes da PoC. As datas correspondem ao m
 - As perguntas de acompanhamento também rodam em segundo plano (`POST /agent-skills/requests/{id}/ask/start`).
 - As skills rodam em paralelo, até `ORCHESTRATION_MAX_PARALLEL_SKILLS` (3 por padrão), inclusive nas perguntas de acompanhamento.
 
+### Corrigido
+
+- O modelo padrão passa a ser `openai/gpt-5-mini`: o anterior saiu do catálogo gratuito da OpenRouter e toda orquestração falhava com 404.
+- A senha recusada da conta inicial e o corpo de e-mails em `EMAIL_BACKEND=console`, que pode ter um link de redefinição, não vão mais para o log em produção.
+- `seed_agent_skills` também registra as 4 skills com servidor MCP próprio, e o guia de deploy cobre os problemas encontrados no primeiro deploy.
+
 ### Observação registrada
 
 - O backend precisa rodar com um único processo.

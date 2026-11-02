@@ -55,11 +55,11 @@ def client() -> TestClient:
     limiter.clear()
 
 
-# Validated (2026-08-26) to honor the app's strict response_format json_schema:
-# openrouter/free's random router landed on a model without structured_outputs
-# support and returned incomplete JSON, so this pins a specific free model that
-# declares that capability instead. Free tier: 50 req/day without purchased credits.
-REAL_LLM_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
+# Pins a free model that declares structured_outputs: openrouter/free's random router
+# landed on a model without it and returned incomplete JSON (2026-08-26). Not validated
+# end-to-end yet; the previous pin left the free tier in 2026-11. Free tier: 50 req/day
+# without purchased credits.
+REAL_LLM_MODEL = "dots-studio/dots-3-note-preview:free"
 
 
 def csrf_headers(client: TestClient) -> dict[str, str]:

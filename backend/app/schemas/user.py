@@ -19,6 +19,10 @@ def _validate_password_strength(value: str) -> str:
 
 
 class UserCreate(BaseModel):
+    # Validado também na conta inicial (BOOTSTRAP_ADMIN_*), fora de uma requisição:
+    # o erro vai para o log e não pode trazer a senha recusada.
+    model_config = ConfigDict(hide_input_in_errors=True)
+
     name: str = Field(min_length=2, max_length=80)
     email: EmailStr
     password: str = Field(min_length=12, max_length=128)

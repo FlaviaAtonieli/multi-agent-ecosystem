@@ -883,7 +883,7 @@ def test_execute_uses_requested_model_override(client: TestClient, monkeypatch) 
     from app.core.config import settings
 
     enable_real_llm(monkeypatch)
-    override_model = "z-ai/glm-5.2:free"
+    override_model = "nvidia/nemotron-3.5-super-vl:free"
     assert override_model != REAL_LLM_MODEL
     monkeypatch.setattr(settings, "llm_allowed_models", f"{REAL_LLM_MODEL},{override_model}")
 
