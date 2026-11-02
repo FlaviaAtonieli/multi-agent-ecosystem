@@ -1,7 +1,7 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.agent_manifest.manifest import AgentSkillManifest
+from app.agent_manifest.manifest import AgentSkillManifest, normalize_domain_key
 from app.agent_manifest.validator import validate_manifest
 from app.core.security import utc_now
 from app.models import AgentSkill, AgentSkillInvocation, ClanMembership, User
@@ -15,6 +15,16 @@ class AgentSkillValidationError(ValueError):
 
 class AgentSkillNotFoundError(LookupError):
     pass
+
+
+def canonical_domain(db: Session, domain: str) -> str:
+    """Reuses the spelling already in the catalog, so "contabilidade" and
+    "Contabilidade" are one area: skills are selected by exact domain match."""
+    key = normalize_domain_key(domain)
+    for existing in db.scalars(select(AgentSkill.domain).distinct()):
+        if normalize_domain_key(existing) == key:
+            return existing
+    return domain
 
 
 def register_skill(
@@ -45,6 +55,7 @@ def register_skill(
     if not result.is_valid:
         raise AgentSkillValidationError(result.errors)
 
+    manifest = manifest.model_copy(update={"domain": canonical_domain(db, manifest.domain)})
     now = utc_now()
     skill = AgentSkill(
         name=manifest.name,
@@ -139,7 +150,7 @@ def select_skills_for_domain(
         db.scalars(
             select(AgentSkill)
             .where(
-                AgentSkill.domain == domain,
+                AgentSkill.domain == canonical_domain(db, domain),
                 AgentSkill.status == "approved",
                 AgentSkill.enabled.is_(True),
                 _visibility_filter(viewer_id),
@@ -198,6 +209,7 @@ def update_skill(
     if not result.is_valid:
         raise AgentSkillValidationError(result.errors)
 
+    manifest = manifest.model_copy(update={"domain": canonical_domain(db, manifest.domain)})
     skill.name = manifest.name
     skill.version = manifest.version
     skill.domain = manifest.domain

@@ -10,6 +10,7 @@ Este arquivo registra alterações relevantes da PoC. As datas correspondem ao m
 - A tela de orquestração mostra o andamento real, a partir da linha do tempo, com tempo decorrido e estimativa de tempo restante.
 - Execuções interrompidas por um reinício do backend passam a `FAILED` e podem ser repetidas pela tela.
 - A nova solicitação permite escolher os agentes, com estimativa de tempo.
+- Área de atuação livre: uma skill pode declarar qualquer área, além dos 10 domínios do catálogo. Grafias diferentes da mesma área (`Contabilidade` e `contabilidade`) ficam unificadas.
 - As perguntas de acompanhamento também rodam em segundo plano (`POST /agent-skills/requests/{id}/ask/start`).
 - As skills rodam em paralelo, até `ORCHESTRATION_MAX_PARALLEL_SKILLS` (3 por padrão), inclusive nas perguntas de acompanhamento.
 

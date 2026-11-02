@@ -37,11 +37,7 @@ class SkillToolCall(BaseModel):
 class AgenteEmissor(BaseModel):
     nome: str
     versao_prompt: str | None = None
-    dominio: Literal[
-        "codigo_legado", "regras_negocio", "arquitetura_software", "seguranca_informacao",
-        "qualidade_testes", "observabilidade_monitoramento", "performance_escalabilidade",
-        "dados_privacidade", "infraestrutura_devops", "apis_integracoes",
-    ]
+    dominio: str = Field(max_length=60)
 
 
 class AchadoTecnico(BaseModel):

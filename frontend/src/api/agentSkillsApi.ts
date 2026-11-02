@@ -1,16 +1,8 @@
 import { apiRequest } from './http'
 
-export type AgentSkillDomain =
-  | 'codigo_legado'
-  | 'regras_negocio'
-  | 'arquitetura_software'
-  | 'seguranca_informacao'
-  | 'qualidade_testes'
-  | 'observabilidade_monitoramento'
-  | 'performance_escalabilidade'
-  | 'dados_privacidade'
-  | 'infraestrutura_devops'
-  | 'apis_integracoes'
+// Área de atuação da skill: texto livre. Os 10 domínios do catálogo oficial têm
+// nome próprio em domainLabels (components/orchestration/shared.tsx).
+export type AgentSkillDomain = string
 
 export type AgentSkillVisibility = 'OFFICIAL' | 'PRIVATE' | 'CLAN' | 'PUBLIC'
 

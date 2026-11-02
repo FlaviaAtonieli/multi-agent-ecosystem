@@ -428,13 +428,11 @@ class GenericSkillExecutor(SkillExecutor):
     "qualquer usuário cria uma skill" viable without needing a developer to
     write code for every new skill.
 
-    In practice this is also what every "official" skill runs through: the
-    four dedicated subclasses above (LegacyCodeSkillExecutor and friends)
-    predate this class and were meant to stay official-only, but
-    register_skill() has no API-reachable path that creates a skill with
-    owner_id=None (both /agent-skills and /agent-skills/import always pass
-    owner_id=user.id), so mcp_client._module_for_skill() never actually
-    selects them -- every skill, official or not, is routed here.
+    Every skill created through the API runs here, official or not: both
+    /agent-skills and /agent-skills/import always pass owner_id=user.id. Only
+    the seed (app/db/seed_agent_skills.py) registers the four domains with a
+    dedicated subclass above with owner_id=None, which is what makes
+    mcp_client._module_for_skill() select their own servers.
     """
 
     def execute(

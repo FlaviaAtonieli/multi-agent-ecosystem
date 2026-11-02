@@ -4,7 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.agent_catalog.contracts import SkillToolResult
-from app.agent_manifest.manifest import DomainLiteral
+from app.agent_manifest.manifest import DomainName
 from app.quality_gate.service import QualityGateVerdict
 from app.schemas.orchestration import ConsolidatedResponseRead
 
@@ -27,7 +27,7 @@ class AgentSkillManifestCreate(BaseModel):
     name: str = Field(max_length=160)
     version: str = Field(max_length=30)
     author_origin: str
-    domain: DomainLiteral
+    domain: DomainName
     objective: str
     capabilities: list[str] = Field(default_factory=list)
     expected_inputs: list[str] = Field(default_factory=list)

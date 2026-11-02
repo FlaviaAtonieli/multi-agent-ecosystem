@@ -4282,18 +4282,8 @@
           },
           "domain": {
             "type": "string",
-            "enum": [
-              "codigo_legado",
-              "regras_negocio",
-              "arquitetura_software",
-              "seguranca_informacao",
-              "qualidade_testes",
-              "observabilidade_monitoramento",
-              "performance_escalabilidade",
-              "dados_privacidade",
-              "infraestrutura_devops",
-              "apis_integracoes"
-            ],
+            "maxLength": 60,
+            "minLength": 2,
             "title": "Domain"
           },
           "objective": {
@@ -4642,18 +4632,7 @@
           },
           "dominio": {
             "type": "string",
-            "enum": [
-              "codigo_legado",
-              "regras_negocio",
-              "arquitetura_software",
-              "seguranca_informacao",
-              "qualidade_testes",
-              "observabilidade_monitoramento",
-              "performance_escalabilidade",
-              "dados_privacidade",
-              "infraestrutura_devops",
-              "apis_integracoes"
-            ],
+            "maxLength": 60,
             "title": "Dominio"
           }
         },
@@ -5351,18 +5330,8 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": [
-                  "codigo_legado",
-                  "regras_negocio",
-                  "arquitetura_software",
-                  "seguranca_informacao",
-                  "qualidade_testes",
-                  "observabilidade_monitoramento",
-                  "performance_escalabilidade",
-                  "dados_privacidade",
-                  "infraestrutura_devops",
-                  "apis_integracoes"
-                ]
+                "maxLength": 60,
+                "minLength": 2
               },
               {
                 "type": "null"
@@ -6342,21 +6311,11 @@
           "requested_domains": {
             "items": {
               "type": "string",
-              "enum": [
-                "codigo_legado",
-                "regras_negocio",
-                "arquitetura_software",
-                "seguranca_informacao",
-                "qualidade_testes",
-                "observabilidade_monitoramento",
-                "performance_escalabilidade",
-                "dados_privacidade",
-                "infraestrutura_devops",
-                "apis_integracoes"
-              ]
+              "maxLength": 60,
+              "minLength": 2
             },
             "type": "array",
-            "maxItems": 10,
+            "maxItems": 50,
             "title": "Requested Domains"
           }
         },

@@ -6,7 +6,7 @@ A integração com modelos é uma dependência opcional da camada de planejament
 
 A aplicação utiliza uma interface interna para evitar que regras de negócio dependam diretamente de um fornecedor. A base atual oferece dois provedores, ambos chamando um serviço real — não há provedor mock:
 
-- `openrouter`: Model Gateway primário, adaptador para a Chat Completions API compatível com múltiplos providers/modelos por trás de uma única credencial (ex.: `nvidia/nemotron-3-super-120b-a12b:free`, `anthropic/claude-sonnet-4.5`);
+- `openrouter`: Model Gateway primário, adaptador para a Chat Completions API compatível com múltiplos providers/modelos por trás de uma única credencial (ex.: `openai/gpt-5-mini`, `anthropic/claude-sonnet-4.5`);
 - `openai`: adaptador direto para a Responses API da OpenAI, mantido como integração opcional para comparação.
 
 A troca entre provedores acontece só por configuração (`LLM_PROVIDER`); nenhuma regra de negócio em `llm_service.py` ou no Orquestrador precisa mudar — essa é a prova prática de que a interface `LLMProvider` é de fato plugável.
