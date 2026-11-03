@@ -281,9 +281,20 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
         "Executa as Agent Skills sobre uma solicitação `QUALIFIED`, consolida as respostas e aplica o "
         "Quality Gate. Se o resultado não for aprovado, a solicitação vai para `VALIDATING` (revisão humana).",
     ),
+    "POST /agent-skills/requests/{request_id}/start": (
+        "Iniciar orquestração em segundo plano",
+        "Inicia a mesma execução de `/execute`, mas responde `202` sem esperar as Agent Skills. O andamento fica "
+        "na linha do tempo de `GET /orchestrations/{trace_id}`. Aceita solicitações `QUALIFIED` ou `FAILED` (nova "
+        "tentativa) e responde `409` se a execução já estiver em andamento.",
+    ),
     "POST /agent-skills/requests/{request_id}/ask": (
         "Pergunta de acompanhamento",
         "Faz uma pergunta sobre uma solicitação já executada, opcionalmente direcionada a um domínio.",
+    ),
+    "POST /agent-skills/requests/{request_id}/ask/start": (
+        "Iniciar pergunta em segundo plano",
+        "Registra a pergunta e responde `202` sem esperar as Agent Skills. A resposta aparece em "
+        "`GET /orchestrations/{trace_id}/follow-ups`. Responde `409` se outra pergunta ainda estiver em andamento.",
     ),
     # Auditoria
     "GET /audit/events": (

@@ -4,20 +4,8 @@ import { AgentSkill, AgentSkillDomain, AgentSkillRankingEntry, agentSkillsApi } 
 import { Clan, clansApi } from '../api/clansApi'
 import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
+import { domainLabels } from '../components/orchestration/shared'
 import { CollapsibleSection } from '../components/shared/CollapsibleSection'
-
-const domainLabels: Record<AgentSkillDomain, string> = {
-  codigo_legado: 'Código Legado',
-  regras_negocio: 'Regras de Negócio',
-  arquitetura_software: 'Arquitetura de Software',
-  seguranca_informacao: 'Segurança da Informação',
-  qualidade_testes: 'Qualidade e Testes',
-  observabilidade_monitoramento: 'Observabilidade e Monitoramento',
-  performance_escalabilidade: 'Performance e Escalabilidade',
-  dados_privacidade: 'Dados e Privacidade (LGPD)',
-  infraestrutura_devops: 'Infraestrutura e DevOps',
-  apis_integracoes: 'APIs e Integrações',
-}
 
 const domainAbbreviations: Record<AgentSkillDomain, string> = {
   codigo_legado: 'CL',
@@ -43,6 +31,22 @@ const domainTones: Record<AgentSkillDomain, string> = {
   dados_privacidade: 'teal',
   infraestrutura_devops: 'rose',
   apis_integracoes: 'orange',
+}
+
+const OTHER_DOMAIN_TONES = ['violet', 'green', 'sky', 'amber', 'cyan', 'indigo', 'teal', 'rose', 'orange']
+
+function domainAbbreviation(domain: AgentSkillDomain) {
+  if (domainAbbreviations[domain]) return domainAbbreviations[domain]
+  const words = domain.split(/\s+/).filter((word) => word.length > 2)
+  const initials = words.length >= 2 ? words[0][0] + words[1][0] : domain.slice(0, 2)
+  return initials.toUpperCase()
+}
+
+// Mesma cor para a mesma área em todas as telas.
+function domainTone(domain: AgentSkillDomain) {
+  if (domainTones[domain]) return domainTones[domain]
+  const hash = [...domain].reduce((total, char) => total + char.charCodeAt(0), 0)
+  return OTHER_DOMAIN_TONES[hash % OTHER_DOMAIN_TONES.length]
 }
 
 const CORE_AGENTS = [
@@ -198,14 +202,14 @@ export function AgentSkillsPage() {
               <li key={entry.id} className="workspace-ranking-item">
                 <span className="workspace-ranking-position">{index + 1}</span>
                 <span
-                  className={`workspace-skill-icon workspace-skill-icon-${domainTones[entry.domain]}`}
+                  className={`workspace-skill-icon workspace-skill-icon-${domainTone(entry.domain)}`}
                   aria-hidden="true"
                 >
-                  {domainAbbreviations[entry.domain]}
+                  {domainAbbreviation(entry.domain)}
                 </span>
                 <div className="workspace-ranking-info">
                   <strong>{entry.name}</strong>
-                  <small>{domainLabels[entry.domain]}</small>
+                  <small>{domainLabels[entry.domain] ?? entry.domain}</small>
                 </div>
                 <span className="workspace-ranking-count">
                   {entry.usage_count} execu{entry.usage_count === 1 ? 'ção' : 'ções'}
@@ -268,8 +272,8 @@ export function AgentSkillsPage() {
             return (
               <article key={skill.id} className="workspace-skill-card">
                 <div className="workspace-skill-card-top">
-                  <span className={`workspace-skill-icon workspace-skill-icon-${domainTones[skill.domain]}`}>
-                    {domainAbbreviations[skill.domain]}
+                  <span className={`workspace-skill-icon workspace-skill-icon-${domainTone(skill.domain)}`}>
+                    {domainAbbreviation(skill.domain)}
                   </span>
                   <span
                     className={`workspace-status ${
@@ -288,7 +292,7 @@ export function AgentSkillsPage() {
                 <p className="workspace-skill-objective">{skill.objective}</p>
 
                 <div className="workspace-skill-card-footer">
-                  <span className="workspace-skill-domain-badge">{domainLabels[skill.domain]}</span>
+                  <span className="workspace-skill-domain-badge">{domainLabels[skill.domain] ?? skill.domain}</span>
                   <code>{skill.version}</code>
                 </div>
 

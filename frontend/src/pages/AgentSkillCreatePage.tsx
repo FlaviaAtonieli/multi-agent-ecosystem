@@ -1,23 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { AgentSkillCreatePayload, AgentSkillDomain, agentSkillsApi } from '../api/agentSkillsApi'
+import { AgentSkillCreatePayload, agentSkillsApi } from '../api/agentSkillsApi'
 import { Clan, canRegisterSkillsIn, clansApi } from '../api/clansApi'
 import { ApiError } from '../api/http'
+import { domainLabels } from '../components/orchestration/shared'
 import { TagListField } from '../components/shared/TagListField'
 import { useAuth } from '../auth/AuthContext'
-
-const DOMAIN_OPTIONS: Array<{ value: AgentSkillDomain; label: string }> = [
-  { value: 'codigo_legado', label: 'Código Legado' },
-  { value: 'regras_negocio', label: 'Regras de Negócio' },
-  { value: 'arquitetura_software', label: 'Arquitetura de Software' },
-  { value: 'seguranca_informacao', label: 'Segurança da Informação' },
-  { value: 'qualidade_testes', label: 'Qualidade e Testes' },
-  { value: 'observabilidade_monitoramento', label: 'Observabilidade e Monitoramento' },
-  { value: 'performance_escalabilidade', label: 'Performance e Escalabilidade' },
-  { value: 'dados_privacidade', label: 'Dados e Privacidade (LGPD)' },
-  { value: 'infraestrutura_devops', label: 'Infraestrutura e DevOps' },
-  { value: 'apis_integracoes', label: 'APIs e Integrações' },
-]
 
 // Todo skill hoje usa os mesmos contratos padrão (só existe um schema de
 // solicitação/resposta no ecossistema) -- pré-preenchido em vez de pedir pro
@@ -43,7 +31,8 @@ export function AgentSkillCreatePage() {
   const [authorOrigin, setAuthorOrigin] = useState('')
   const [loadingSkill, setLoadingSkill] = useState(isEdit)
   const [name, setName] = useState('')
-  const [domain, setDomain] = useState<AgentSkillDomain>('codigo_legado')
+  const [domain, setDomain] = useState('')
+  const [knownDomains, setKnownDomains] = useState<string[]>(Object.values(domainLabels))
   const [visibility, setVisibility] = useState<'PRIVATE' | 'OFFICIAL' | 'CLAN'>('PRIVATE')
   const [clanId, setClanId] = useState('')
   const [myClans, setMyClans] = useState<Clan[]>([])
@@ -63,6 +52,7 @@ export function AgentSkillCreatePage() {
 
   const nameValid = name.trim().length >= 3
   const objectiveValid = objective.trim().length >= 10
+  const domainValid = domain.trim().length >= 2
 
   useEffect(() => {
     clansApi
@@ -80,7 +70,7 @@ export function AgentSkillCreatePage() {
         setName(skill.name)
         setVersion(skill.version)
         setAuthorOrigin(skill.author_origin)
-        setDomain(skill.domain)
+        setDomain(domainLabels[skill.domain] ?? skill.domain)
         setVisibility(skill.visibility === 'PUBLIC' ? 'OFFICIAL' : skill.visibility)
         setClanId(skill.clan_id ?? '')
         setObjective(skill.objective)
@@ -97,6 +87,18 @@ export function AgentSkillCreatePage() {
       .finally(() => setLoadingSkill(false))
   }, [skillId])
 
+  useEffect(() => {
+    // Áreas já usadas por outras skills aparecem como sugestão, para evitar criar
+    // "Contábil" quando já existe "Contabilidade". Sem a lista, ficam só as do catálogo.
+    agentSkillsApi
+      .listSkills(false)
+      .then((skills) => {
+        const used = skills.map((skill) => domainLabels[skill.domain] ?? skill.domain)
+        setKnownDomains([...new Set([...Object.values(domainLabels), ...used])])
+      })
+      .catch(() => undefined)
+  }, [])
+
   function goNext() {
     if (step === 1 && !nameValid) {
       setStepError('Dê um nome com pelo menos 3 caracteres para a skill.')
@@ -104,6 +106,10 @@ export function AgentSkillCreatePage() {
     }
     if (step === 1 && !version.trim()) {
       setStepError('Informe a versão da skill (ex.: 1.1).')
+      return
+    }
+    if (step === 1 && !domainValid) {
+      setStepError('Informe a área de atuação da skill (ex.: Contabilidade).')
       return
     }
     if (step === 1 && !objectiveValid) {
@@ -223,15 +229,20 @@ export function AgentSkillCreatePage() {
               )}
 
               <label className="workspace-field workspace-field-full">
-                Domínio de atuação
-                <select value={domain} onChange={(event) => setDomain(event.target.value as AgentSkillDomain)}>
-                  {DOMAIN_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
+                Área de atuação
+                <input
+                  value={domain}
+                  onChange={(event) => setDomain(event.target.value)}
+                  list="skill-domain-suggestions"
+                  maxLength={60}
+                  placeholder="Ex.: Contabilidade, Jurídico, Segurança da Informação"
+                />
+                <datalist id="skill-domain-suggestions">
+                  {knownDomains.map((option) => (
+                    <option key={option} value={option} />
                   ))}
-                </select>
-                <small>Pode coexistir com outras skills do mesmo domínio — cada uma com sua própria persona.</small>
+                </datalist>
+                <small>Escolha uma sugestão ou escreva uma área nova. Pode coexistir com outras skills da mesma área — cada uma com sua própria persona.</small>
               </label>
 
               <label className="workspace-field workspace-field-full">
@@ -392,7 +403,7 @@ export function AgentSkillCreatePage() {
               </span>
               <div>
                 <strong>{name.trim() || 'Nome da sua skill'}</strong>
-                <small>{DOMAIN_OPTIONS.find((option) => option.value === domain)?.label}</small>
+                <small>{domain.trim() || 'Área de atuação'}</small>
               </div>
             </div>
             <p>{objective.trim() || 'O objetivo aparece aqui conforme você digita.'}</p>

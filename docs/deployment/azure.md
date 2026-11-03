@@ -67,6 +67,15 @@ az postgres flexible-server create `
 
 O Flexible Server **exige TLS por padrão** -- a `DATABASE_URL` precisa de `?sslmode=require` no final (ver seção de App Settings abaixo).
 
+> **Use só letras e números na senha do banco.** Ela entra na `DATABASE_URL`: um `@` faz a conexão procurar um servidor com nome errado, e um `%` quebra o Alembic. Para gerar uma: `openssl rand -hex 20` com um prefixo em maiúsculas (o Azure exige três tipos de caractere).
+
+Se o servidor já existe e foi criado pelo portal, confira o banco e o acesso:
+
+```bash
+az postgres flexible-server db create --resource-group "$RESOURCE_GROUP" --server-name "$DB_SERVER" --name "$DB_NAME"
+az postgres flexible-server firewall-rule create --resource-group "$RESOURCE_GROUP" --server-name "$DB_SERVER" --name AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
+```
+
 ## 4. App Service Plan + os dois Web Apps for Containers
 
 ```powershell
@@ -125,6 +134,8 @@ az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $BACKEN
   LLM_ENABLED=true `
   LLM_PROVIDER=openrouter `
   OPENROUTER_API_KEY="<sua-chave-openrouter>" `
+  LOGIN_EMAIL_CODE_ENABLED=false `
+  METRICS_ENABLED=false `
   GITHUB_OAUTH_ENABLED=false `
   GOOGLE_OAUTH_ENABLED=false `
   EMAIL_BACKEND=smtp `
@@ -140,6 +151,10 @@ az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $BACKEN
 > **SMTP é obrigatório em produção.** O login em navegador novo envia um código por e-mail, e com `ENVIRONMENT=production` a aplicação recusa subir com `EMAIL_BACKEND=console`. No Gmail, a senha de app é gerada em https://myaccount.google.com/apppasswords (exige verificação em 2 etapas na conta).
 
 > **`TRUSTED_PROXY_IPS` fica de fora de propósito.** Esse ajuste (`app/core/rate_limit.py::resolve_client_ip`) espera uma lista fixa de IPs de proxy confiável -- funciona bem com o `nginx` do `docker compose` local (IP interno estável), mas não tem um equivalente direto e estável no App Service atrás do Front Door (o IP que chega "direto" no container já passou pela infraestrutura do Azure antes). Gap conhecido: sem isso configurado, o rate limiter por IP enxerga o IP de borda do Azure pra todo mundo em vez do IP de cada usuário real -- não quebra a aplicação, mas o rate limit deixa de distinguir usuários individuais atrás do Front Door. Registrado aqui, não resolvido neste guia (é mudança de código, não de infraestrutura).
+
+**A aplicação não sobe em produção sem estas duas decisões:** o código de login por e-mail exige SMTP, e as métricas exigem `METRICS_TOKEN`. Os valores acima desligam os dois para o primeiro deploy. Para ligar depois, veja `.env.production.example`.
+
+`BOOTSTRAP_ADMIN_PASSWORD` precisa ter pelo menos 12 caracteres, com maiúscula, minúscula, número e símbolo, senão o backend não inicia. Ela só vale na criação da conta: mudar a variável depois não altera a senha.
 
 Substitua `<senha-forte-aqui>`, `<seu-dominio-ou-endpoint-do-frontdoor>`, `<sua-chave-openrouter>` etc. pelos valores reais. `GITHUB_OAUTH_ENABLED`/`GOOGLE_OAUTH_ENABLED` ficam `false` até você cadastrar os OAuth Apps com o domínio real -- ver checklist no final.
 
@@ -229,7 +244,27 @@ az webapp restart --resource-group $RESOURCE_GROUP --name $BACKEND_APP
 az webapp restart --resource-group $RESOURCE_GROUP --name $FRONTEND_APP
 ```
 
-O `CMD` do `backend/Dockerfile` já roda `alembic upgrade head` antes de subir o `uvicorn` -- a migration até `0014_google_oauth` aplica sozinha no primeiro start, sem passo manual. O usuário `ADMIN` de bootstrap (`BOOTSTRAP_ADMIN_*`) também é criado automaticamente no primeiro start, se ainda não existir.
+O `CMD` do `backend/Dockerfile` já roda `alembic upgrade head` antes de subir o `uvicorn` -- as migrations aplicam sozinhas no primeiro start, sem passo manual. A conta inicial (`BOOTSTRAP_ADMIN_*`) também é criada automaticamente no primeiro start, se ainda não existir.
+
+> Se o container falhar ao iniciar, o Azure **para o site** depois de algumas tentativas, e o `az webapp restart` não o religa: use `az webapp start`. Um `403 Web App - Unavailable` indica site parado.
+
+### Cadastrar as Agent Skills e a base de conhecimento
+
+O catálogo e a base de conhecimento começam vazios. Os dois comandos são idempotentes e podem rodar do Cloud Shell, que é aceito pela regra `AllowAzureServices` do banco:
+
+```bash
+git clone --depth 1 https://github.com/FlaviaAtonieli/multi-agent-ecosystem.git && cd multi-agent-ecosystem/backend
+python3 -m venv ~/venv && ~/venv/bin/pip install -q -r requirements.txt
+
+config() { az webapp config appsettings list -g "$RESOURCE_GROUP" -n "$BACKEND_APP" --query "[?name=='$1'].value | [0]" -o tsv; }
+export DATABASE_URL="$(config DATABASE_URL)" BOOTSTRAP_ADMIN_EMAIL="$(config BOOTSTRAP_ADMIN_EMAIL)" OPENROUTER_API_KEY="$(config OPENROUTER_API_KEY)"
+export ENVIRONMENT=development AUTO_CREATE_TABLES=false LLM_ENABLED=false
+
+~/venv/bin/python -m app.db.seed_agent_skills
+~/venv/bin/python -m app.db.seed_knowledge_base
+```
+
+A base de conhecimento usa um modelo de embeddings pago da OpenRouter.
 
 Confira os logs se algo não subir:
 
@@ -270,8 +305,9 @@ Internet
 
 ### Limitações conhecidas
 
-- **Limite de 45 segundos por chamada à API.** O Static Web Apps corta qualquer requisição a `/api` depois de 45 s, e esse limite não pode ser mudado. A execução das Agent Skills (`POST /agent-skills/requests/{id}/execute`) roda as skills **em sequência**, cada uma com cerca de 14 s em média (medição de 08/2026). Com 3 ou mais domínios, a execução tende a passar do limite. O navegador mostra erro, mas o backend termina e salva o resultado, que aparece ao reabrir a solicitação. É o mesmo sintoma que o `nginx.conf` resolveu subindo o timeout para 300 s, só que aqui não há como subir. A solução definitiva é mudança de código: executar as skills em paralelo ou em segundo plano, com o frontend consultando o status.
-- **O backend fica acessível só pelo Static Web App.** Ao ligar o linked backend, o Azure adiciona ao App Service um provedor de identidade chamado "Azure Static Web Apps (Linked)", que bloqueia acesso direto a `*.azurewebsites.net`. Isso também bloqueia um Prometheus externo tentando ler `/metrics` direto no App Service. Para coletar métricas, é preciso liberar esse caminho na autenticação do App Service.
+- **Limite de 45 segundos por chamada à API.** O Static Web Apps corta qualquer requisição a `/api` depois de 45 s, e esse limite não pode ser mudado. Por isso, o site inicia a orquestração por `POST /agent-skills/requests/{id}/start`, que responde na hora e roda as skills em segundo plano, e acompanha o andamento pela linha do tempo. Cada skill levou cerca de 40 s em média (medição de 11/2026, com `openai/gpt-5-mini`), e até `ORCHESTRATION_MAX_PARALLEL_SKILLS` skills rodam ao mesmo tempo (3 por padrão). As perguntas de acompanhamento seguem o mesmo caminho, por `/ask/start`.
+- **Um único processo no backend.** A execução em segundo plano vive no processo do backend. Se ele reiniciar, as execuções em andamento são marcadas como `FAILED` e podem ser repetidas pela tela. Por isso, o container não pode rodar com mais de um worker do `uvicorn`, nem o App Service com mais de uma instância.
+- **O backend fica acessível só pelo Static Web App.** Ao ligar o linked backend, o Azure adiciona ao App Service um provedor de identidade chamado "Azure Static Web Apps (Linked)", que bloqueia acesso direto a `*.azurewebsites.net`. Isso também bloqueia um Prometheus externo tentando ler `/metrics` direto no App Service. Para coletar métricas, é preciso liberar esse caminho na autenticação do App Service (ver [docs/monitoring.md](../monitoring.md)).
 - **Sem pré-visualização por PR.** Os ambientes de PR do Static Web Apps não aceitam linked backend, por isso o workflow só publica a partir da `main`.
 - **`TRUSTED_PROXY_IPS`:** vale a mesma ressalva da seção 4. O rate limit por IP enxerga o IP da infraestrutura do Azure.
 

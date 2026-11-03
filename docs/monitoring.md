@@ -18,6 +18,37 @@ O painel **"Multi-Agent Ecosystem — Visão geral"** abre como página inicial 
 
 `/metrics` fica fora do prefixo `/api`, então o nginx do frontend (porta 3000) não o expõe.
 
+## Monitorar o backend no Azure
+
+`docker-compose.azure-monitoring.yml` roda Prometheus e Grafana **no seu computador**, lendo o backend que está no Azure. Não há custo no Azure, mas só há coleta enquanto os containers estiverem rodando, e o histórico fica na sua máquina. Com o backend parado, o painel mostra "Backend no ar" zerado e o alerta `BackendFora` dispara, o que é esperado.
+
+No Azure, pelo Cloud Shell:
+
+```bash
+TOKEN="$(openssl rand -hex 32)"
+
+# Liga as métricas. O backend reinicia sozinho.
+az webapp config appsettings set -g 'Flav.ia' -n multi-agent-ecosystem-back -o none \
+  --settings METRICS_ENABLED=true METRICS_TOKEN="$TOKEN"
+
+# O linked backend do Static Web App bloqueia acesso direto ao App Service. Libera só
+# este caminho, que continua protegido pelo token.
+az webapp auth update -g 'Flav.ia' -n multi-agent-ecosystem-back --excluded-paths '["/metrics"]' -o none
+
+echo "$TOKEN"
+```
+
+No seu computador, na raiz do repositório, grave o token e suba os containers. O arquivo fica fora do git:
+
+```powershell
+Set-Content -NoNewline -Encoding ascii monitoring/prometheus/metrics_token "COLE-O-TOKEN-AQUI"
+docker compose -f docker-compose.azure-monitoring.yml up -d
+```
+
+Depois, abra o Grafana em `http://localhost:3001`. Em **Status > Targets**, no Prometheus (`http://localhost:9090`), o job `agenthub-backend` deve aparecer como `UP`.
+
+Se o Prometheus receber `401` da autenticação do Azure, confira o caminho liberado com `az webapp auth show -g 'Flav.ia' -n multi-agent-ecosystem-back`.
+
 ## Métricas
 
 Todas começam com `agenthub_`.

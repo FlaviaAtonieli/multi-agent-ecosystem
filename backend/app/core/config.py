@@ -100,18 +100,17 @@ class Settings(BaseSettings):
     # once enabled, OpenRouter is the primary Model Gateway (no mock provider).
     llm_enabled: bool = False
     llm_provider: Literal["openai", "openrouter"] = "openrouter"
-    llm_model: str = "nvidia/nemotron-3-super-120b-a12b:free"
-    # Free models below declare structured_outputs support in the OpenRouter catalog
-    # (GET /api/v1/models); only the default was empirically validated end-to-end
-    # (see docs/integrations/model-provider.md). openai/gpt-5-mini is paid (needs
-    # purchased OpenRouter credits) and a genuine reasoning model -- validated
-    # end-to-end on 2026-08-30 after fixing the strict-mode JSON schema (see
-    # strict_json_schema in app/llm/schemas.py) and raising llm_max_output_tokens.
+    llm_model: str = "openai/gpt-5-mini"
+    # openai/gpt-5-mini is paid (needs purchased OpenRouter credits) and a genuine
+    # reasoning model -- validated end-to-end on 2026-08-30 after fixing the
+    # strict-mode JSON schema (see strict_json_schema in app/llm/schemas.py) and
+    # raising llm_max_output_tokens, and again in production on 2026-11-02. The free
+    # model declares structured_outputs in the OpenRouter catalog (GET /api/v1/models)
+    # but wasn't validated end-to-end and leaves the catalog on 2026-12-31. Free models
+    # come and go: the previous default was removed from the free tier in 2026-11.
     llm_allowed_models: str = (
-        "nvidia/nemotron-3-super-120b-a12b:free,"
-        "z-ai/glm-5.2:free,"
-        "dots-studio/dots-3-note-preview:free,"
-        "openai/gpt-5-mini"
+        "openai/gpt-5-mini,"
+        "dots-studio/dots-3-note-preview:free"
     )
     llm_timeout_seconds: int = 45
     # Reasoning models (e.g. openai/gpt-5-mini) spend part of this budget on
@@ -157,6 +156,11 @@ class Settings(BaseSettings):
     # server as a genuine subprocess (JSON-RPC over stdio); "memory" connects to
     # the same MCPServer object in-process (fast, used by the test suite).
     mcp_skill_transport: Literal["memory", "stdio"] = "stdio"
+
+    # Agent Skills consulted at once by one orchestration. Each one is a subprocess
+    # (stdio transport) with its own memory use, so this can't grow freely on a
+    # small App Service plan.
+    orchestration_max_parallel_skills: int = 3
 
     # Documents a user can attach to a TechnicalRequest's context (RFC UX
     # suggestion, PR #24). Text-only for this iteration: the upload is decoded
@@ -247,6 +251,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_attachment_configuration(self) -> "Settings":
+        if self.orchestration_max_parallel_skills < 1:
+            raise ValueError("ORCHESTRATION_MAX_PARALLEL_SKILLS deve ser maior que zero.")
         if self.attachment_max_bytes < 1:
             raise ValueError("ATTACHMENT_MAX_BYTES deve ser maior que zero.")
         if self.attachment_max_bytes > self.max_request_body_bytes:

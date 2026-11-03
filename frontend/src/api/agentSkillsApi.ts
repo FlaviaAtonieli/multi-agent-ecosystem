@@ -1,16 +1,8 @@
 import { apiRequest } from './http'
 
-export type AgentSkillDomain =
-  | 'codigo_legado'
-  | 'regras_negocio'
-  | 'arquitetura_software'
-  | 'seguranca_informacao'
-  | 'qualidade_testes'
-  | 'observabilidade_monitoramento'
-  | 'performance_escalabilidade'
-  | 'dados_privacidade'
-  | 'infraestrutura_devops'
-  | 'apis_integracoes'
+// Área de atuação da skill: texto livre. Os 10 domínios do catálogo oficial têm
+// nome próprio em domainLabels (components/orchestration/shared.tsx).
+export type AgentSkillDomain = string
 
 export type AgentSkillVisibility = 'OFFICIAL' | 'PRIVATE' | 'CLAN' | 'PUBLIC'
 
@@ -170,9 +162,17 @@ export const agentSkillsApi = {
         body: JSON.stringify({ model }),
       },
     ),
-  askFollowUp: (requestId: string, question: string, targetDomain: AgentSkillDomain | null, model: string | null) =>
-    apiRequest<FollowUpExchange>(
-      `/agent-skills/requests/${encodeURIComponent(requestId)}/ask`,
+  start: (requestId: string, model: string | null) =>
+    apiRequest<{ trace_id: string; status: string }>(
+      `/agent-skills/requests/${encodeURIComponent(requestId)}/start`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ model }),
+      },
+    ),
+  startFollowUp: (requestId: string, question: string, targetDomain: AgentSkillDomain | null, model: string | null) =>
+    apiRequest<{ trace_id: string; status: string }>(
+      `/agent-skills/requests/${encodeURIComponent(requestId)}/ask/start`,
       {
         method: 'POST',
         body: JSON.stringify({ question, target_domain: targetDomain, model }),

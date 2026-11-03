@@ -3,6 +3,33 @@ import { SkillToolResult } from '../../api/agentSkillsApi'
 
 export const confidenceLabels: Record<string, string> = { ALTO: 'Alta', MEDIO: 'Média', BAIXO: 'Baixa' }
 
+// Média medida em produção (11/2026) com openai/gpt-5-mini. Usada antes de haver
+// tempo real da execução para calcular a estimativa.
+export const DEFAULT_SECONDS_PER_SKILL = 45
+
+// Mesmo valor padrão de ORCHESTRATION_MAX_PARALLEL_SKILLS no backend. Durante a
+// execução, vale o que vier no evento de início.
+export const DEFAULT_MAX_PARALLEL_SKILLS = 3
+
+export function estimateRunSeconds(
+  skillCount: number,
+  secondsPerSkill = DEFAULT_SECONDS_PER_SKILL,
+  maxParallel = DEFAULT_MAX_PARALLEL_SKILLS,
+) {
+  return Math.round(Math.ceil(skillCount / maxParallel) * secondsPerSkill)
+}
+
+export function formatElapsed(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
+export function formatEstimate(totalSeconds: number) {
+  if (totalSeconds < 60) return 'menos de 1 min'
+  return `cerca de ${Math.ceil(totalSeconds / 60)} min`
+}
+
 export const domainLabels: Record<string, string> = {
   codigo_legado: 'Código Legado',
   regras_negocio: 'Regras de Negócio',
@@ -16,8 +43,12 @@ export const domainLabels: Record<string, string> = {
   apis_integracoes: 'APIs e Integrações',
 }
 
-export function parseSynthesisByDomain(text: string): Array<{ domain: string; text: string }> {
-  const matches = [...text.matchAll(/\[([a-z_]+)\]\s*/g)]
+// A área agora é texto livre, então um marcador só é reconhecido se for uma área
+// conhecida: o resumo vem do modelo e pode trazer colchetes por outros motivos.
+export function parseSynthesisByDomain(text: string, domains: string[] = []): Array<{ domain: string; text: string }> {
+  const known = [...new Set([...Object.keys(domainLabels), ...domains])]
+  const alternatives = known.map((domain) => domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
+  const matches = [...text.matchAll(new RegExp(`\\[(${alternatives})\\]\\s*`, 'g'))]
   if (matches.length === 0) return [{ domain: '', text }]
 
   return matches.map((match, index) => {
@@ -27,8 +58,8 @@ export function parseSynthesisByDomain(text: string): Array<{ domain: string; te
   })
 }
 
-export function SynthesisByDomain({ text }: { text: string }) {
-  const parts = parseSynthesisByDomain(text)
+export function SynthesisByDomain({ text, domains }: { text: string; domains?: string[] }) {
+  const parts = parseSynthesisByDomain(text, domains)
   return (
     <div className="workspace-synthesis-list">
       {parts.map((part, index) => (

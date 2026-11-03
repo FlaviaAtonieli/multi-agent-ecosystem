@@ -70,6 +70,7 @@ export type CreateTechnicalRequestInput = {
   objective: string
   context: string | null
   restrictions: string[]
+  requested_domains: string[]
 }
 
 export type RequestAttachment = {

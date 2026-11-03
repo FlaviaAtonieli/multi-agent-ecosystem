@@ -24,7 +24,12 @@ def send_email(*, to: str, subject: str, body: str) -> None:
 
     if settings.email_backend == "console":
         console_outbox.append(message)
-        logger.warning("EMAIL_BACKEND=console -- e-mail para %s não enviado.\n%s\n%s", to, subject, body)
+        if settings.is_production:
+            # O corpo pode trazer um link de redefinição de senha: em produção,
+            # quem lê o log não pode conseguir entrar na conta de outra pessoa.
+            logger.warning("EMAIL_BACKEND=console -- e-mail para %s não enviado.", to)
+        else:
+            logger.warning("EMAIL_BACKEND=console -- e-mail para %s não enviado.\n%s\n%s", to, subject, body)
         return
 
     try:

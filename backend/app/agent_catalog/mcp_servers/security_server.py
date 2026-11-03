@@ -2,7 +2,7 @@
 single tool.
 
 Added after the other three domains as evidence for RFC §5.5 criterio 7 (prova
-de extensibilidade plug-and-play). See the note on `DomainLiteral` in
+de extensibilidade plug-and-play). See the note on `_DOMAIN_ALIASES` in
 app/agent_manifest/manifest.py for what this addition did and did not touch.
 
 Runnable two ways:

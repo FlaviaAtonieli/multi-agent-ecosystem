@@ -4,7 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.agent_catalog.contracts import SkillToolResult
-from app.agent_manifest.manifest import DomainLiteral
+from app.agent_manifest.manifest import DomainName
 
 
 class TechnicalRequestCreate(BaseModel):
@@ -13,7 +13,7 @@ class TechnicalRequestCreate(BaseModel):
     objective: str = Field(min_length=5, max_length=5_000)
     context: str | None = Field(default=None, max_length=20_000)
     restrictions: list[str] = Field(default_factory=list, max_length=20)
-    requested_domains: list[DomainLiteral] = Field(default_factory=list, max_length=10)
+    requested_domains: list[DomainName] = Field(default_factory=list, max_length=50)
 
     @field_validator("title", "problem", "objective")
     @classmethod
@@ -171,7 +171,7 @@ class FollowUpQuestionCreate(BaseModel):
     specific Agent Skill domain instead."""
 
     question: str = Field(min_length=5, max_length=5_000)
-    target_domain: DomainLiteral | None = Field(default=None)
+    target_domain: DomainName | None = Field(default=None)
     model: str | None = Field(default=None, max_length=200)
 
     @field_validator("question")

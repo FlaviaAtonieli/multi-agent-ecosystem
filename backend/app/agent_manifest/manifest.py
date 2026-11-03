@@ -1,28 +1,24 @@
 import re
 import unicodedata
-from typing import Literal
+from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
-DomainLiteral = Literal[
-    "codigo_legado", "regras_negocio", "arquitetura_software", "seguranca_informacao",
-    "qualidade_testes", "observabilidade_monitoramento", "performance_escalabilidade",
-    "dados_privacidade", "infraestrutura_devops", "apis_integracoes",
-]
 
-# The RFC's two MCP-inspired schemas (Apêndice C) use two different domain
-# enumerations (escopo_analise.analises_requeridas vs. agente_emissor.dominio).
-# This project standardizes on the resposta_especialista_schema.json enum
-# everywhere a domain is stored, to avoid carrying that inconsistency into code.
-#
-# "seguranca_informacao" was added after the other three (RFC §5.5 criterio 7:
-# prova de extensibilidade plug-and-play). Registering it here and in
-# mcp_client._DOMAIN_SERVER_MODULES are the only two touch points -- the
-# Orquestrador itself (agent_skill_orchestration_service.py,
-# orchestration_service.py, quality_gate/service.py) required zero changes,
-# since it already operates generically over "whichever skills matched the
+def normalize_domain_key(text: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", text)
+    without_accents = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    return " ".join(without_accents.lower().split())
+
+
+# The domain is the area a skill declares: free text, since a skill can belong to
+# any area (contabilidade, jurídico...), not only to the catalog below. These are
+# the 10 domains of the official catalog, with the spellings a manifest can use for
+# them, so they keep a single stored value. The Orquestrador itself
+# (agent_skill_orchestration_service.py, orchestration_service.py,
+# quality_gate/service.py) operates generically over "whichever skills matched the
 # requested domain," regardless of how many domains exist.
-_DOMAIN_ALIASES: dict[str, DomainLiteral] = {
+_DOMAIN_ALIASES: dict[str, str] = {
     "codigo legado": "codigo_legado",
     "codigo_legado": "codigo_legado",
     "legado": "codigo_legado",
@@ -76,6 +72,22 @@ DOMAIN_LABELS: dict[str, str] = {
     "infraestrutura_devops": "Infraestrutura e DevOps",
     "apis_integracoes": "APIs e Integrações",
 }
+_DOMAIN_ALIASES.update({normalize_domain_key(label): domain for domain, label in DOMAIN_LABELS.items()})
+
+MAX_DOMAIN_LENGTH = 60
+
+
+def resolve_domain(raw_value: str) -> str:
+    """Maps a known spelling to its catalog domain. Any other area is kept as
+    typed, only with the whitespace cleaned up."""
+    return _DOMAIN_ALIASES.get(normalize_domain_key(raw_value), " ".join(raw_value.split()))
+
+
+DomainName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=2, max_length=MAX_DOMAIN_LENGTH),
+    AfterValidator(resolve_domain),
+]
 
 _REQUIRED_SECTIONS = (
     "Identificação",
@@ -107,7 +119,7 @@ class AgentSkillManifest(BaseModel):
     name: str = Field(max_length=160)
     version: str = Field(max_length=30)
     author_origin: str
-    domain: DomainLiteral
+    domain: DomainName
     objective: str
     capabilities: list[str] = Field(default_factory=list)
     expected_inputs: list[str] = Field(default_factory=list)
@@ -126,16 +138,6 @@ class AgentSkillManifest(BaseModel):
     # are never actually selected by mcp_client._module_for_skill() in
     # practice, even for the "official" skills.
     persona_instructions: str | None = Field(default=None, max_length=4000)
-
-
-def _normalize(text: str) -> str:
-    decomposed = unicodedata.normalize("NFKD", text)
-    without_accents = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
-    return without_accents.strip().lower()
-
-
-def _resolve_domain(raw_value: str) -> DomainLiteral | None:
-    return _DOMAIN_ALIASES.get(_normalize(raw_value))
 
 
 def _split_sections(content: str) -> tuple[str | None, dict[str, str]]:
@@ -170,7 +172,7 @@ def _extract_identification_fields(block: str) -> dict[str, str]:
     for line in block.splitlines():
         match = _IDENTIFICATION_FIELD.match(line.strip())
         if match:
-            fields[_normalize(match.group(1))] = match.group(2).strip()
+            fields[normalize_domain_key(match.group(1))] = match.group(2).strip()
     return fields
 
 
@@ -201,16 +203,13 @@ def parse_modelo_md(content: str) -> AgentSkillManifest:
     if not author_origin:
         errors.append("Campo 'Autor/Origem' ausente na seção Identificação.")
 
-    domain: DomainLiteral | None = None
+    domain: str | None = None
     if not raw_domain:
         errors.append("Campo 'Domínio de atuação' ausente na seção Identificação.")
+    elif not 2 <= len(raw_domain) <= MAX_DOMAIN_LENGTH:
+        errors.append(f"Domínio de atuação deve ter de 2 a {MAX_DOMAIN_LENGTH} caracteres.")
     else:
-        domain = _resolve_domain(raw_domain)
-        if domain is None:
-            valid_domains = ", ".join(DOMAIN_LABELS.values())
-            errors.append(
-                f"Domínio de atuação '{raw_domain}' não reconhecido. Use um de: {valid_domains}."
-            )
+        domain = raw_domain
 
     if errors:
         raise ManifestParseError(errors)

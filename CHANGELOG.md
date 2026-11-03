@@ -2,6 +2,32 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-11-02 - Orquestração em segundo plano com progresso real
+
+### Adicionado
+
+- `POST /agent-skills/requests/{id}/start`: inicia a orquestração em segundo plano e responde `202`, sem depender do limite de 45 s do Static Web Apps.
+- A tela de orquestração mostra o andamento real, a partir da linha do tempo, com tempo decorrido e estimativa de tempo restante.
+- Execuções interrompidas por um reinício do backend passam a `FAILED` e podem ser repetidas pela tela.
+- A nova solicitação permite escolher os agentes, com estimativa de tempo.
+- Área de atuação livre: uma skill pode declarar qualquer área, além dos 10 domínios do catálogo. Grafias diferentes da mesma área (`Contabilidade` e `contabilidade`) ficam unificadas.
+- As perguntas de acompanhamento também rodam em segundo plano (`POST /agent-skills/requests/{id}/ask/start`).
+- As skills rodam em paralelo, até `ORCHESTRATION_MAX_PARALLEL_SKILLS` (3 por padrão), inclusive nas perguntas de acompanhamento.
+
+### Corrigido
+
+- O modelo padrão passa a ser `openai/gpt-5-mini`: o anterior saiu do catálogo gratuito da OpenRouter e toda orquestração falhava com 404.
+- A senha recusada da conta inicial e o corpo de e-mails em `EMAIL_BACKEND=console`, que pode ter um link de redefinição, não vão mais para o log em produção.
+- `seed_agent_skills` também registra as 4 skills com servidor MCP próprio, e o guia de deploy cobre os problemas encontrados no primeiro deploy.
+
+- As métricas de LLM (`agenthub_llm_*`) passam a vir do banco. Eram contadas no processo de cada skill, que termina ao fim da chamada, então os painéis de IA ficavam vazios e o alerta `FalhasNoLLM` nunca disparava.
+
+- A tela de nova solicitação não tem mais rolagem horizontal no celular.
+
+### Observação registrada
+
+- O backend precisa rodar com um único processo.
+
 ## 2026-10-14 - Documentação Swagger da API e monitoramento com Prometheus
 
 ### Adicionado

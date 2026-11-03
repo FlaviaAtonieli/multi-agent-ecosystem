@@ -17,7 +17,7 @@ A proposta é validar uma arquitetura modular para registrar, selecionar, coorde
 ## Capacidades principais
 
 - Solicitação técnica → qualificação de contexto → execução por Agent Skills (RAG + LLM) → Quality Gate → resposta consolidada, tudo rastreado por `Trace ID`.
-- Catálogo de 10 domínios de Agent Skill oficiais, extensível por manifesto `modelo.md` sem alterar o núcleo do Orquestrador (evidência: `docs/validation/evidence/2026-08-plug-and-play-extensibility.md`).
+- Catálogo de 10 domínios de Agent Skill oficiais, com áreas de atuação livres para skills de outras áreas (contabilidade, jurídico...), extensível por manifesto `modelo.md` sem alterar o núcleo do Orquestrador (evidência: `docs/validation/evidence/2026-08-plug-and-play-extensibility.md`).
 - Revisão humana obrigatória de solicitações sinalizadas pelo Quality Gate, feita por quem abriu a solicitação.
 - Clãs (grupos auto-serviço) como terceira visibilidade de Agent Skill, ao lado de `OFFICIAL`/`PRIVATE`.
 - Página de conta com exclusão lógica (preserva histórico referenciado por outras tabelas).
@@ -77,11 +77,11 @@ Não existe provedor mock: para usar a camada de planejamento (LLM) e a recupera
 ```env
 LLM_ENABLED=true
 LLM_PROVIDER=openrouter
-LLM_MODEL=nvidia/nemotron-3-super-120b-a12b:free
+LLM_MODEL=openai/gpt-5-mini
 OPENROUTER_API_KEY=defina-sua-chave-da-openrouter
 ```
 
-O modelo acima é gratuito no catálogo da OpenRouter (limite de 50 requisições/dia sem créditos comprados). Crie uma chave em [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys).
+O modelo acima é pago e usa créditos da OpenRouter. Para testar sem custo, use `dots-studio/dots-3-note-preview:free`, que está no catálogo gratuito até 31/12/2026, mas não foi validado de ponta a ponta. Modelos gratuitos entram e saem do catálogo: o padrão anterior deixou de ser gratuito em 11/2026.
 
 Login com GitHub e login com Google são opcionais e vêm desabilitados por padrão (`GITHUB_OAUTH_ENABLED=false`, `GOOGLE_OAUTH_ENABLED=false`) — sobe normalmente sem eles, só e-mail/senha continua disponível. Passo a passo pra habilitar: [docs/integrations/github-oauth.md](docs/integrations/github-oauth.md) e [docs/integrations/google-oauth.md](docs/integrations/google-oauth.md).
 

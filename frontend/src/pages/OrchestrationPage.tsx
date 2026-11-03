@@ -1,9 +1,9 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import { AgentSkillDomain, agentSkillsApi, FollowUpExchange, OrchestrationExecutionResult } from '../api/agentSkillsApi'
+import { AgentSkillDomain, agentSkillsApi, FollowUpExchange } from '../api/agentSkillsApi'
 import { ApiError } from '../api/http'
 import { llmApi } from '../api/llmApi'
-import { AgentSkillInvocationResult, OrchestrationDetail, orchestrationApi } from '../api/orchestrationApi'
+import { AgentSkillInvocationResult, OrchestrationDetail, OrchestrationEvent, orchestrationApi } from '../api/orchestrationApi'
 import { AttachmentsSection } from '../components/orchestration/AttachmentsSection'
 import { ExecutionResultPanel } from '../components/orchestration/ExecutionResultPanel'
 import { FollowUpExchangeCard } from '../components/orchestration/FollowUpExchangeCard'
@@ -13,6 +13,13 @@ import { OrchestrationThinkingAnimation } from '../components/orchestration/Orch
 import { StatusBadge } from '../components/orchestration/StatusBadge'
 import { TokenUsageMeter } from '../components/orchestration/TokenUsageMeter'
 import { CollapsibleSection } from '../components/shared/CollapsibleSection'
+
+const POLL_INTERVAL_MS = 4000
+const FOLLOW_UP_EVENT_TYPES = ['FOLLOW_UP_QUESTION_ASKED', 'FOLLOW_UP_RESPONSE_RECEIVED', 'FOLLOW_UP_FAILED']
+
+function latestFollowUpEvent(events: OrchestrationEvent[]) {
+  return [...events].reverse().find((event) => FOLLOW_UP_EVENT_TYPES.includes(event.event_type))
+}
 
 export function OrchestrationPage() {
   const { traceId = '' } = useParams()
@@ -29,13 +36,13 @@ export function OrchestrationPage() {
   const [allowedModels, setAllowedModels] = useState<string[]>([])
   const [selectedModel, setSelectedModel] = useState('')
   const [tokenUsage, setTokenUsage] = useState<{ used: number; limit: number } | null>(null)
-  const [executing, setExecuting] = useState(false)
+  const [starting, setStarting] = useState(false)
   const [executionError, setExecutionError] = useState('')
-  const [execution, setExecution] = useState<OrchestrationExecutionResult | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
   const [askingFollowUp, setAskingFollowUp] = useState(false)
   const [followUpError, setFollowUpError] = useState('')
-  const [activeSkillDomains, setActiveSkillDomains] = useState<AgentSkillDomain[]>([])
+  const previousStatus = useRef<string | null>(null)
+  const previousFollowUpPending = useRef(false)
 
   const load = useCallback(async () => {
     try {
@@ -58,13 +65,11 @@ export function OrchestrationPage() {
   }, [traceId])
 
   const participatingDomains = useMemo(() => {
-    const domains: AgentSkillDomain[] = execution
-      ? execution.results.map((result) => result.agente_emissor.dominio)
-      : pastSkillResults
-          .map((item) => item.result?.agente_emissor.dominio)
-          .filter((domain): domain is AgentSkillDomain => Boolean(domain))
+    const domains = pastSkillResults
+      .map((item) => item.result?.agente_emissor.dominio)
+      .filter((domain): domain is AgentSkillDomain => Boolean(domain))
     return [...new Set(domains)]
-  }, [execution, pastSkillResults])
+  }, [pastSkillResults])
 
   useEffect(() => {
     load()
@@ -84,47 +89,86 @@ export function OrchestrationPage() {
         // Sem acesso ao status do LLM (ex.: perfil sem permissão) -- o backend
         // usa o modelo padrão configurado quando nenhum é enviado.
       })
-    // A solicitação hoje não escolhe domínios explicitamente na tela de criação
-    // (requested_domains chega vazio) -- nesse caso o Orquestrador consulta
-    // todas as Agent Skills ativas do catálogo (ver _resolve_target_skills no
-    // backend). Busca aqui a mesma lista, só para nomear as etapas reais da
-    // animação de execução.
-    agentSkillsApi
-      .listSkills(true)
-      .then((skills) => setActiveSkillDomains([...new Set(skills.map((skill) => skill.domain))]))
-      .catch(() => setActiveSkillDomains([]))
   }, [])
 
-  async function handleExecute() {
-    if (!detail) return
-    setExecuting(true)
-    setExecutionError('')
-    setSuccessMessage('')
-    try {
-      const result = await agentSkillsApi.execute(detail.technical_request.id, selectedModel || null)
-      setExecution(result)
-      await load()
-      llmApi
-        .status()
-        .then((status) => {
-          if (status.daily_token_limit_per_user > 0) {
-            setTokenUsage({ used: status.tokens_used_today, limit: status.daily_token_limit_per_user })
-          }
-        })
-        .catch(() => undefined)
+  const status = detail?.technical_request.status
+  const running = status === 'RUNNING'
+
+  // A execução roda em segundo plano no backend: enquanto durar, acompanha o
+  // andamento pela linha do tempo. Uma falha pontual de rede não interrompe o
+  // acompanhamento, a próxima consulta tenta de novo.
+  const latestFollowUp = detail ? latestFollowUpEvent(detail.events) : undefined
+  const followUpPendingSince =
+    latestFollowUp?.event_type === 'FOLLOW_UP_QUESTION_ASKED' ? latestFollowUp.created_at : null
+  const followUpPending = followUpPendingSince !== null
+
+  useEffect(() => {
+    if (!running && !followUpPending) return
+    const timer = window.setInterval(() => {
+      orchestrationApi.getOrchestration(traceId).then(setDetail).catch(() => undefined)
+    }, POLL_INTERVAL_MS)
+    return () => window.clearInterval(timer)
+  }, [running, followUpPending, traceId])
+
+  const failedFollowUpMessage = latestFollowUp?.event_type === 'FOLLOW_UP_FAILED' ? latestFollowUp.message : ''
+
+  useEffect(() => {
+    const finished = previousFollowUpPending.current && !followUpPending
+    previousFollowUpPending.current = followUpPending
+    if (!finished) return
+
+    load()
+    llmApi
+      .status()
+      .then((llmStatus) => {
+        if (llmStatus.daily_token_limit_per_user > 0) {
+          setTokenUsage({ used: llmStatus.tokens_used_today, limit: llmStatus.daily_token_limit_per_user })
+        }
+      })
+      .catch(() => undefined)
+    setFollowUpError(failedFollowUpMessage)
+  }, [followUpPending, failedFollowUpMessage, load])
+
+  useEffect(() => {
+    const finished = previousStatus.current === 'RUNNING' && status !== undefined && status !== 'RUNNING'
+    previousStatus.current = status ?? null
+    if (!finished) return
+
+    load()
+    llmApi
+      .status()
+      .then((llmStatus) => {
+        if (llmStatus.daily_token_limit_per_user > 0) {
+          setTokenUsage({ used: llmStatus.tokens_used_today, limit: llmStatus.daily_token_limit_per_user })
+        }
+      })
+      .catch(() => undefined)
+    if (status === 'FAILED') {
+      setExecutionError('A execução foi interrompida. Veja a linha do tempo e tente executar novamente.')
+    } else {
       setSuccessMessage(
-        result.verdict.approved
+        status === 'COMPLETED'
           ? 'Orquestração executada e aprovada pelo Quality Gate.'
           : 'Orquestração executada. O resultado aguarda revisão humana.',
       )
-      // A resposta aparece no topo da página (antes do contexto, ver
-      // hasResult) -- leva o usuário até lá em vez de deixá-lo onde estava
-      // rolado enquanto a execução (que pode levar mais de um minuto) rodava.
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+    // A resposta aparece no topo da página (antes do contexto, ver hasResult) --
+    // leva o usuário até lá em vez de deixá-lo onde estava rolado durante a execução.
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [status, load])
+
+  async function handleExecute() {
+    if (!detail) return
+    setStarting(true)
+    setExecutionError('')
+    setSuccessMessage('')
+    try {
+      await agentSkillsApi.start(detail.technical_request.id, selectedModel || null)
+      await load()
     } catch (caught) {
       setExecutionError(caught instanceof ApiError ? caught.message : 'Não foi possível executar a orquestração.')
     } finally {
-      setExecuting(false)
+      setStarting(false)
     }
   }
 
@@ -133,21 +177,13 @@ export function OrchestrationPage() {
     setAskingFollowUp(true)
     setFollowUpError('')
     try {
-      const exchange = await agentSkillsApi.askFollowUp(
+      await agentSkillsApi.startFollowUp(
         detail.technical_request.id,
         question,
         targetDomain as AgentSkillDomain | null,
         selectedModel || null,
       )
-      setFollowUps((current) => [...current, exchange])
-      llmApi
-        .status()
-        .then((status) => {
-          if (status.daily_token_limit_per_user > 0) {
-            setTokenUsage({ used: status.tokens_used_today, limit: status.daily_token_limit_per_user })
-          }
-        })
-        .catch(() => undefined)
+      await load()
     } catch (caught) {
       setFollowUpError(caught instanceof ApiError ? caught.message : 'Não foi possível registrar a pergunta.')
     } finally {
@@ -177,7 +213,7 @@ export function OrchestrationPage() {
     return <div className="workspace-loader">Carregando rastreabilidade…</div>
   }
 
-  const hasResult = Boolean(execution || detail?.technical_request.consolidated_response)
+  const hasResult = Boolean(detail?.technical_request.consolidated_response) && !running
 
   return (
     <div className="workspace-page">
@@ -205,15 +241,8 @@ export function OrchestrationPage() {
 
       {detail && (
         <section className="workspace-orchestration-flow">
-          {executing && (
-            <OrchestrationThinkingAnimation
-              domains={
-                detail.technical_request.requested_domains.length > 0
-                  ? (detail.technical_request.requested_domains as AgentSkillDomain[])
-                  : activeSkillDomains
-              }
-              traceId={detail.technical_request.trace_id}
-            />
+          {running && (
+            <OrchestrationThinkingAnimation events={detail.events} traceId={detail.technical_request.trace_id} />
           )}
 
           {hasResult && (
@@ -225,23 +254,19 @@ export function OrchestrationPage() {
                 </div>
                 <code>{detail.technical_request.trace_id}</code>
               </div>
-              {execution ? (
-                <ExecutionResultPanel execution={execution} />
-              ) : (
-                detail.technical_request.consolidated_response && (
-                  <ExecutionResultPanel
-                    execution={{
-                      results: pastSkillResults.map((item) => item.result).filter((item) => item !== null),
-                      verdict: {
-                        approved: detail.technical_request.consolidated_response.quality_gate_approved,
-                        requires_human_review: detail.technical_request.consolidated_response.requires_human_review,
-                        reasons: [],
-                      },
-                      invocations_count: pastSkillResults.length,
-                      consolidated_response: detail.technical_request.consolidated_response,
-                    }}
-                  />
-                )
+              {detail.technical_request.consolidated_response && (
+                <ExecutionResultPanel
+                  execution={{
+                    results: pastSkillResults.map((item) => item.result).filter((item) => item !== null),
+                    verdict: {
+                      approved: detail.technical_request.consolidated_response.quality_gate_approved,
+                      requires_human_review: detail.technical_request.consolidated_response.requires_human_review,
+                      reasons: [],
+                    },
+                    invocations_count: pastSkillResults.length,
+                    consolidated_response: detail.technical_request.consolidated_response,
+                  }}
+                />
               )}
             </article>
           )}
@@ -307,7 +332,7 @@ export function OrchestrationPage() {
               </form>
             )}
 
-            {detail.technical_request.status === 'QUALIFIED' && (
+            {(status === 'QUALIFIED' || status === 'FAILED') && (
               <div className="workspace-execute-form">
                 <label className="workspace-field">
                   Modelo de IA para a orquestração
@@ -327,9 +352,9 @@ export function OrchestrationPage() {
                   className="workspace-primary-action"
                   type="button"
                   onClick={handleExecute}
-                  disabled={executing || Boolean(tokenUsage && tokenUsage.used >= tokenUsage.limit)}
+                  disabled={starting || Boolean(tokenUsage && tokenUsage.used >= tokenUsage.limit)}
                 >
-                  {executing ? 'Executando…' : 'Executar orquestração'}
+                  {starting ? 'Iniciando…' : status === 'FAILED' ? 'Executar novamente' : 'Executar orquestração'}
                 </button>
               </div>
             )}
@@ -351,6 +376,7 @@ export function OrchestrationPage() {
                   participatingDomains={participatingDomains}
                   onAsk={handleAskFollowUp}
                   submitting={askingFollowUp}
+                  pendingSince={followUpPendingSince}
                   error={followUpError}
                 />
               </div>
