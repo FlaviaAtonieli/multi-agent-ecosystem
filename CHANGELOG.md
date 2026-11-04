@@ -2,6 +2,12 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-11-03 - Deploy automático do backend
+
+### Adicionado
+
+- O workflow `Publish images` chama o webhook de implantação contínua do App Service depois de publicar a imagem. Depende do segredo `AZURE_BACKEND_DEPLOY_WEBHOOK`, e o guia de deploy explica como configurar e como voltar para uma versão anterior.
+
 ## 2026-11-03 - Testes do frontend e cobertura no CI
 
 ### Adicionado

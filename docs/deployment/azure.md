@@ -272,6 +272,33 @@ Confira os logs se algo não subir:
 az webapp log tail --resource-group $RESOURCE_GROUP --name $BACKEND_APP
 ```
 
+## 9. Deploy automático do backend
+
+A cada push na `main`, o workflow `Publish images` publica a imagem e, se o segredo `AZURE_BACKEND_DEPLOY_WEBHOOK` existir, chama o webhook de implantação contínua do App Service, que baixa a imagem nova e reinicia o container. Sem o segredo, o job termina com um aviso, e o redeploy continua manual (`az webapp restart`).
+
+Rode uma vez, no Cloud Shell:
+
+```bash
+# O webhook usa as credenciais de publicação do site (SCM).
+az resource update --resource-group "$RESOURCE_GROUP" --namespace Microsoft.Web --resource-type basicPublishingCredentialsPolicies --name scm --parent "sites/$BACKEND_APP" --set properties.allow=true -o none
+az webapp deployment container config --enable-cd true --resource-group "$RESOURCE_GROUP" --name "$BACKEND_APP" --query CI_CD_URL -o tsv
+```
+
+Copie a URL impressa para um segredo do repositório chamado `AZURE_BACKEND_DEPLOY_WEBHOOK` (**Settings > Secrets and variables > Actions**). **A URL contém a senha de publicação do site:** trate-a como senha e não a coloque em logs, issues ou mensagens.
+
+**Site parado:** ao religar com `az webapp start`, ele baixa a imagem mais recente, mesmo que o deploy tenha acontecido enquanto estava parado.
+
+**Voltar para uma versão anterior:** toda imagem também é publicada com o SHA do commit. Fixe a versão desejada e reinicie:
+
+```bash
+az webapp config container set --resource-group "$RESOURCE_GROUP" --name "$BACKEND_APP" --container-image-name "ghcr.io/flaviaatonieli/multi-agent-ecosystem-backend:<sha-do-commit>"
+az webapp restart --resource-group "$RESOURCE_GROUP" --name "$BACKEND_APP"
+```
+
+Enquanto a versão estiver fixada, os deploys automáticos reinstalam essa mesma imagem. Para voltar a acompanhar a `main`, repita o comando com a tag `latest`.
+
+Uma migration já aplicada não é desfeita ao voltar a imagem: se a versão anterior não for compatível com o banco, rode `alembic downgrade` antes.
+
 ## Alternativa: frontend no Azure Static Web Apps
 
 No lugar do App Service do frontend e do Front Door, o frontend pode ficar num **Static Web App** com o App Service do backend como **linked backend**. O Static Web App serve o build do Vite e repassa tudo em `/api/*` para o backend, sob o mesmo domínio. É isso que mantém o cookie de sessão e o CSRF funcionando sem mudar código: o frontend continua chamando `/api/v1` (relativo).
