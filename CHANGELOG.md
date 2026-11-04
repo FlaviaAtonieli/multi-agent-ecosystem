@@ -2,6 +2,13 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-11-04 - Motor de sugestão de Agent Skills
+
+### Adicionado
+
+- Na nova solicitação, é possível verificar se alguma skill do catálogo que não está no clã ajudaria, ou se o catálogo não cobre o assunto. Compara a solicitação com as skills por embeddings e similaridade de cosseno, sem chamar o modelo de chat, e só sugere: a pessoa decide adicionar.
+- `SKILL_SUGGESTION_MIN_SCORE` e `SKILL_SUGGESTION_MAX_RESULTS`. O limite precisa ser calibrado com `tests/test_skill_suggestion_quality.py`, que usa embeddings reais.
+
 ## 2026-11-04 - Respostas com arquivos
 
 ### Adicionado

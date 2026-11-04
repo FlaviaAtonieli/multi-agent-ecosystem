@@ -205,6 +205,31 @@ describe('NewRequestPage', () => {
       expect(screen.queryByRole('button', { name: 'Contabilidade' })).not.toBeInTheDocument()
     })
 
+    it('skill adicionada pela sugestão passa a ser um agente do clã', async () => {
+      const user = userEvent.setup()
+      mockApi({
+        ...baseRoutes,
+        'GET /clans/clan-1/skills': [skills[0]],
+        'POST /agent-skills/suggestions': {
+          available: true,
+          suggestions: [{ id: 'novo', name: 'Skill Nova', domain: 'Jurídico', objective: 'Objetivo.', score: 0.5 }],
+          best_clan_score: 0.1,
+          covered_by_clan: false,
+          catalog_gap: false,
+          can_add_to_clan: true,
+        },
+        'POST /clans/clan-1/skills': new ApiResponse(201, {}),
+      })
+      renderPage()
+      await goToLastStep(user)
+      await screen.findByRole('button', { name: 'Código Legado' })
+
+      await user.click(screen.getByRole('button', { name: 'Verificar skills que podem ajudar' }))
+      await user.click(await screen.findByRole('button', { name: 'Adicionar Skill Nova ao clã' }))
+
+      expect(await screen.findByRole('button', { name: 'Jurídico' })).toBeInTheDocument()
+    })
+
     it('não deixa registrar com um clã sem skills ativas', async () => {
       const user = userEvent.setup()
       const api = mockApi({ ...baseRoutes, 'GET /clans/clan-1/skills': [], 'POST /requests': created })

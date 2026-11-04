@@ -125,7 +125,37 @@ export type FollowUpExchange = {
   created_at: string
 }
 
+export type SkillSuggestion = {
+  id: string
+  name: string
+  domain: AgentSkillDomain
+  objective: string
+  score: number
+}
+
+export type SkillSuggestionsResult = {
+  available: boolean
+  suggestions: SkillSuggestion[]
+  best_clan_score: number | null
+  covered_by_clan: boolean
+  catalog_gap: boolean
+  can_add_to_clan: boolean
+}
+
+export type SkillSuggestionsInput = {
+  clan_id: string
+  title: string
+  problem: string
+  objective: string
+  context: string | null
+}
+
 export const agentSkillsApi = {
+  suggestSkills: (input: SkillSuggestionsInput) =>
+    apiRequest<SkillSuggestionsResult>('/agent-skills/suggestions', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
   listSkills: (onlyActive = false) =>
     apiRequest<AgentSkill[]>(`/agent-skills?only_active=${onlyActive}`),
   usageRanking: (limit = 5) =>

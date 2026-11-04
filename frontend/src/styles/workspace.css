@@ -1343,3 +1343,6 @@
 .workspace-artifact-info small { color: var(--text-muted); font-size: 0.72rem; }
 .workspace-artifact-actions { display: flex; gap: 8px; }
 .workspace-artifact-actions a { text-decoration: none; }
+
+.workspace-skill-suggestions { display: grid; gap: 10px; }
+.workspace-skill-suggestions > button { justify-self: start; }
