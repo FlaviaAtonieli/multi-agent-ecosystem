@@ -5,10 +5,10 @@ name: Publish images
 # Service puxa a imagem de la, ver docs/deployment/azure.md). Gratuito pra
 # imagem publica, sem precisar de Azure Container Registry pago.
 #
-# So builda/publica -- nao reinicia nada no Azure. Depois de publicada a
-# imagem, o redeploy no App Service e manual (az webapp restart) ate que a
-# automacao de deploy exista (fica pra quando os recursos do Azure jah
-# estiverem provisionados).
+# Depois de publicar, o job deploy-backend chama o webhook de implantacao
+# continua do App Service (docs/deployment/azure.md, secao 9). Sem o segredo
+# AZURE_BACKEND_DEPLOY_WEBHOOK, ele so avisa, e o redeploy segue manual. O
+# frontend em producao e publicado pelo workflow do Static Web Apps.
 
 on:
   push:
@@ -39,6 +39,22 @@ jobs:
           docker build -t "$IMAGE:latest" -t "$IMAGE:${{ github.sha }}" backend
           docker push "$IMAGE:latest"
           docker push "$IMAGE:${{ github.sha }}"
+
+  deploy-backend:
+    name: Deploy do backend no App Service
+    needs: publish-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar o webhook de implantação contínua
+        env:
+          DEPLOY_WEBHOOK: ${{ secrets.AZURE_BACKEND_DEPLOY_WEBHOOK }}
+        run: |
+          if [ -z "$DEPLOY_WEBHOOK" ]; then
+            echo "::notice::Sem AZURE_BACKEND_DEPLOY_WEBHOOK: reinicie o App Service manualmente."
+            exit 0
+          fi
+          # -o e --silent: a URL e a resposta não podem aparecer no log, porque a URL contém a senha de publicação.
+          curl --silent --fail --max-time 60 --request POST --output /dev/null "$DEPLOY_WEBHOOK"
 
   publish-frontend:
     name: Frontend image

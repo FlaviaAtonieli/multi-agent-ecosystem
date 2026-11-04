@@ -163,7 +163,7 @@ docker compose build frontend --no-cache
 
 ## Endereço da aplicação
 
-Ainda não implantada em produção -- guia de deploy (Azure) pronto em [docs/deployment/azure.md](docs/deployment/azure.md), execução pendente.
+Produção no Azure: <https://jolly-grass-0a3af3f10.2.azurestaticapps.net>. O frontend e o backend são publicados pelo GitHub Actions a cada push na `main`; o guia está em [docs/deployment/azure.md](docs/deployment/azure.md).
 
 ## Documentação
 
