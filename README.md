@@ -169,6 +169,7 @@ Produção no Azure: <https://jolly-grass-0a3af3f10.2.azurestaticapps.net>. O fr
 
 - [Documentação da API (Swagger/OpenAPI)](docs/api/README.md) — Swagger em `/docs` no desenvolvimento e `docs/api/openapi.json` versionado
 - [Monitoramento (Prometheus + Grafana)](docs/monitoring.md) — métricas em `/metrics`, painel pronto em http://localhost:3001
+- [Pipeline de IA](docs/ai-pipeline.md) — dados, RAG, modelo, Quality Gate e medições
 - [Wiki do projeto](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) — ponto de partida navegável (arquitetura, como rodar, domínios de Agent Skills, segurança, validação)
 - [Visão da arquitetura](docs/architecture/overview.md)
 - [Princípios de arquitetura](docs/architecture/principles.md)
