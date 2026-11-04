@@ -302,6 +302,22 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
         "Eventos das solicitações do próprio usuário, com filtros por período, ator e busca, e contagens "
         "do dia.",
     ),
+    "GET /orchestrations/{trace_id}/artifacts": (
+        "Listar arquivos gerados",
+        "Arquivos entregues pelas Agent Skills, sem o conteúdo. Não chama o modelo.",
+    ),
+    "GET /orchestrations/{trace_id}/artifacts.zip": (
+        "Baixar todos os arquivos",
+        "ZIP com uma pasta por área, montado na hora. Não chama o modelo.",
+    ),
+    "GET /orchestrations/{trace_id}/artifacts/{artifact_id}": (
+        "Ver arquivo gerado",
+        "Conteúdo em texto, para pré-visualização. Não chama o modelo.",
+    ),
+    "GET /orchestrations/{trace_id}/artifacts/{artifact_id}/download": (
+        "Baixar arquivo gerado",
+        "Entrega o arquivo como download, sem abrir no navegador. Não chama o modelo.",
+    ),
     # Clãs
     "GET /clans": ("Listar clãs", "Todos os clãs, ou só os do usuário com `mine=true`."),
     "POST /clans": (

@@ -2213,6 +2213,326 @@
         ]
       }
     },
+    "/api/v1/orchestrations/{trace_id}/artifacts": {
+      "get": {
+        "tags": [
+          "Orquestrações"
+        ],
+        "summary": "Listar arquivos gerados",
+        "operationId": "list_artifacts_api_v1_orchestrations__trace_id__artifacts_get",
+        "parameters": [
+          {
+            "name": "trace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SkillArtifactRead"
+                  },
+                  "title": "Response List Artifacts Api V1 Orchestrations  Trace Id  Artifacts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Arquivos entregues pelas Agent Skills, sem o conteúdo. Não chama o modelo.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orchestrations/{trace_id}/artifacts.zip": {
+      "get": {
+        "tags": [
+          "Orquestrações"
+        ],
+        "summary": "Baixar todos os arquivos",
+        "operationId": "download_all_artifacts_api_v1_orchestrations__trace_id__artifacts_zip_get",
+        "parameters": [
+          {
+            "name": "trace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "ZIP com uma pasta por área, montado na hora. Não chama o modelo.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orchestrations/{trace_id}/artifacts/{artifact_id}": {
+      "get": {
+        "tags": [
+          "Orquestrações"
+        ],
+        "summary": "Ver arquivo gerado",
+        "operationId": "get_artifact_api_v1_orchestrations__trace_id__artifacts__artifact_id__get",
+        "parameters": [
+          {
+            "name": "trace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trace Id"
+            }
+          },
+          {
+            "name": "artifact_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Artifact Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillArtifactContentRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Conteúdo em texto, para pré-visualização. Não chama o modelo.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orchestrations/{trace_id}/artifacts/{artifact_id}/download": {
+      "get": {
+        "tags": [
+          "Orquestrações"
+        ],
+        "summary": "Baixar arquivo gerado",
+        "operationId": "download_artifact_api_v1_orchestrations__trace_id__artifacts__artifact_id__download_get",
+        "parameters": [
+          {
+            "name": "trace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trace Id"
+            }
+          },
+          {
+            "name": "artifact_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Artifact Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Entrega o arquivo como download, sem abrir no navegador. Não chama o modelo.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/llm/status": {
       "get": {
         "tags": [
@@ -4920,6 +5240,25 @@
         ],
         "title": "AnaliseEstruturada"
       },
+      "ArquivoGerado": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "conteudo": {
+            "type": "string",
+            "title": "Conteudo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "conteudo"
+        ],
+        "title": "ArquivoGerado",
+        "description": "Arquivo de texto entregue pela skill. Só viaja do servidor MCP até o Orquestrador,\nque valida o nome e guarda o conteúdo (ver app/services/artifact_service.py)."
+      },
       "AuditEventPage": {
         "properties": {
           "stats": {
@@ -5667,6 +6006,24 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "LLMGeneratedFile": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename",
+          "content"
+        ],
+        "title": "LLMGeneratedFile"
+      },
       "LLMInvocationRead": {
         "properties": {
           "id": {
@@ -5897,6 +6254,13 @@
             "type": "boolean",
             "title": "Requires Human Approval",
             "default": true
+          },
+          "generated_files": {
+            "items": {
+              "$ref": "#/components/schemas/LLMGeneratedFile"
+            },
+            "type": "array",
+            "title": "Generated Files"
           }
         },
         "type": "object",
@@ -6492,6 +6856,89 @@
         ],
         "title": "SessionRead"
       },
+      "SkillArtifactContentRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "agent_skill_name": {
+            "type": "string",
+            "title": "Agent Skill Name"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "filename",
+          "size_bytes",
+          "agent_skill_name",
+          "domain",
+          "created_at",
+          "content"
+        ],
+        "title": "SkillArtifactContentRead"
+      },
+      "SkillArtifactRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "agent_skill_name": {
+            "type": "string",
+            "title": "Agent Skill Name"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "filename",
+          "size_bytes",
+          "agent_skill_name",
+          "domain",
+          "created_at"
+        ],
+        "title": "SkillArtifactRead"
+      },
       "SkillToolResult": {
         "properties": {
           "trace_id": {
@@ -6506,6 +6953,13 @@
           },
           "governanca": {
             "$ref": "#/components/schemas/Governanca"
+          },
+          "arquivos": {
+            "items": {
+              "$ref": "#/components/schemas/ArquivoGerado"
+            },
+            "type": "array",
+            "title": "Arquivos"
           }
         },
         "type": "object",

@@ -1,4 +1,4 @@
-import { apiRequest } from './http'
+import { API_URL, apiRequest } from './http'
 import { ConsolidatedResponse, FollowUpExchange, SkillToolResult } from './agentSkillsApi'
 
 export type RequestStatus =
@@ -83,7 +83,31 @@ export type RequestAttachment = {
   created_at: string
 }
 
+export type SkillArtifact = {
+  id: string
+  filename: string
+  size_bytes: number
+  agent_skill_name: string
+  domain: string
+  created_at: string
+}
+
+export type SkillArtifactContent = SkillArtifact & { content: string }
+
+function artifactsPath(traceId: string) {
+  return `/orchestrations/${encodeURIComponent(traceId)}/artifacts`
+}
+
+// Downloads são links diretos: usam o cookie de sessão e o navegador salva o arquivo.
+export const artifactDownloadUrl = (traceId: string, artifactId: string) =>
+  `${API_URL}${artifactsPath(traceId)}/${encodeURIComponent(artifactId)}/download`
+
+export const artifactsZipUrl = (traceId: string) => `${API_URL}${artifactsPath(traceId)}.zip`
+
 export const orchestrationApi = {
+  listArtifacts: (traceId: string) => apiRequest<SkillArtifact[]>(artifactsPath(traceId)),
+  getArtifact: (traceId: string, artifactId: string) =>
+    apiRequest<SkillArtifactContent>(`${artifactsPath(traceId)}/${encodeURIComponent(artifactId)}`),
   listRequests: () => apiRequest<TechnicalRequest[]>('/requests'),
   createRequest: (input: CreateTechnicalRequestInput) =>
     apiRequest<TechnicalRequest>('/requests', {

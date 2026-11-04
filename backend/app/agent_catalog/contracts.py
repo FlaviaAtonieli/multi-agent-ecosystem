@@ -58,6 +58,14 @@ class Governanca(BaseModel):
     referencias_catalogo: list[str] = Field(default_factory=list)
 
 
+class ArquivoGerado(BaseModel):
+    """Arquivo de texto entregue pela skill. Só viaja do servidor MCP até o Orquestrador,
+    que valida o nome e guarda o conteúdo (ver app/services/artifact_service.py)."""
+
+    nome: str
+    conteudo: str
+
+
 class SkillToolResult(BaseModel):
     """Mirrors resposta_especialista_schema.json (Apêndice C da RFC): the
     mandatory output contract for any Agent Skill in this ecosystem."""
@@ -66,6 +74,7 @@ class SkillToolResult(BaseModel):
     agente_emissor: AgenteEmissor
     analise_estruturada: AnaliseEstruturada
     governanca: Governanca
+    arquivos: list[ArquivoGerado] = Field(default_factory=list)
 
 
 class SkillToolDescriptor(BaseModel):

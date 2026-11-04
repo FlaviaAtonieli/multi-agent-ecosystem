@@ -2,6 +2,14 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-11-04 - Respostas com arquivos
+
+### Adicionado
+
+- Quando a solicitação pede um arquivo, código ou projeto, a skill pode entregar arquivos de texto junto com a resposta. O modelo só gasta tokens para gerar o conteúdo: mostrar, baixar e compactar não o chamam de novo.
+- A tela da orquestração mostra os arquivos, com pré-visualização em texto, download de cada um e ZIP com uma pasta por área.
+- Limites por resposta de skill: 20 arquivos, 500 KB por arquivo e 2 MB no total. Nomes que poderiam sair da pasta do projeto são recusados, e a linha do tempo registra quais.
+
 ## 2026-11-04 - Clã obrigatório na orquestração
 
 ### Alterado
