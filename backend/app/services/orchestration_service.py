@@ -114,6 +114,7 @@ def create_technical_request(
         context=input_data.context,
         restrictions=input_data.restrictions,
         requested_domains=input_data.requested_domains,
+        clan_id=input_data.clan_id,
         status=status,
     )
     db.add(technical_request)

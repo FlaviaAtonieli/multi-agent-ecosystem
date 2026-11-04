@@ -24,6 +24,10 @@ class TechnicalRequest(Base):
     context: Mapped[str | None] = mapped_column(Text, nullable=True)
     restrictions: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     requested_domains: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    # Opcional só por causa das solicitações antigas: a API exige o clã nas novas.
+    clan_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("clans.id", ondelete="SET NULL"), index=True, nullable=True
+    )
     status: Mapped[str] = mapped_column(String(32), index=True, nullable=False, default="RECEIVED")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

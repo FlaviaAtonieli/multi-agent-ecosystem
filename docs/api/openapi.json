@@ -4137,6 +4137,256 @@
           }
         ]
       }
+    },
+    "/api/v1/clans/{clan_id}/skills": {
+      "get": {
+        "tags": [
+          "Clãs"
+        ],
+        "summary": "Listar skills do clã",
+        "operationId": "list_skills_of_clan_api_v1_clans__clan_id__skills_get",
+        "parameters": [
+          {
+            "name": "clan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clan Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentSkillRead"
+                  },
+                  "title": "Response List Skills Of Clan Api V1 Clans  Clan Id  Skills Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Agent Skills disponíveis no clã. Num clã fechado, só para os membros.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Clãs"
+        ],
+        "summary": "Adicionar skill ao clã",
+        "operationId": "add_skill_api_v1_clans__clan_id__skills_post",
+        "parameters": [
+          {
+            "name": "clan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clan Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClanSkillAdd"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSkillRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Adiciona uma Agent Skill publicada ou do próprio usuário, seguindo o `skills_policy` do clã. `404` se a skill não existir ou não estiver visível, `409` se já estiver no clã.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/clans/{clan_id}/skills/{skill_id}": {
+      "delete": {
+        "tags": [
+          "Clãs"
+        ],
+        "summary": "Remover skill do clã",
+        "operationId": "remove_skill_api_v1_clans__clan_id__skills__skill_id__delete",
+        "parameters": [
+          {
+            "name": "clan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clan Id"
+            }
+          },
+          {
+            "name": "skill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Skill Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Tira a Agent Skill do clã, sem apagá-la do catálogo. Segue o `skills_policy` do clã.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -5069,6 +5319,21 @@
         },
         "type": "object",
         "title": "ClanSettingsUpdate"
+      },
+      "ClanSkillAdd": {
+        "properties": {
+          "agent_skill_id": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Agent Skill Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_skill_id"
+        ],
+        "title": "ClanSkillAdd"
       },
       "ConsolidatedResponseRead": {
         "properties": {
@@ -6308,6 +6573,13 @@
             "maxItems": 20,
             "title": "Restrictions"
           },
+          "clan_id": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Clan Id",
+            "description": "Clã cujas Agent Skills vão responder."
+          },
           "requested_domains": {
             "items": {
               "type": "string",
@@ -6323,7 +6595,8 @@
         "required": [
           "title",
           "problem",
-          "objective"
+          "objective",
+          "clan_id"
         ],
         "title": "TechnicalRequestCreate"
       },
@@ -6373,6 +6646,17 @@
             },
             "type": "array",
             "title": "Requested Domains"
+          },
+          "clan_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan Id"
           },
           "status": {
             "type": "string",

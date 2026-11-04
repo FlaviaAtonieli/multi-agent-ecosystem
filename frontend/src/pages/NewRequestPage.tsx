@@ -1,6 +1,7 @@
 import { ChangeEvent, KeyboardEvent, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { AgentSkillDomain, agentSkillsApi } from '../api/agentSkillsApi'
+import { Link, useNavigate } from 'react-router-dom'
+import { AgentSkillDomain } from '../api/agentSkillsApi'
+import { Clan, clansApi } from '../api/clansApi'
 import { ApiError } from '../api/http'
 import { orchestrationApi } from '../api/orchestrationApi'
 import { domainLabels, estimateRunSeconds, formatEstimate } from '../components/orchestration/shared'
@@ -16,6 +17,8 @@ type ChecklistItem = {
   label: string
   state: ChecklistState
 }
+
+const NO_ACTIVE_SKILLS_MESSAGE = 'Este clã ainda não tem Agent Skills ativas. Escolha outro ou adicione skills a ele.'
 
 const contextSuggestions = ['Módulos', 'Tecnologias', 'Dependências', 'Comportamento esperado']
 
@@ -39,16 +42,56 @@ export function NewRequestPage() {
   const [submitError, setSubmitError] = useState('')
   const [attachmentWarning, setAttachmentWarning] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [availableDomains, setAvailableDomains] = useState<AgentSkillDomain[]>([])
+  const [myClans, setMyClans] = useState<Clan[]>([])
+  const [joinableClans, setJoinableClans] = useState<Clan[]>([])
+  const [clansLoaded, setClansLoaded] = useState(false)
+  const [clanId, setClanId] = useState('')
+  // null enquanto carrega ou se falhar: o backend ainda confere o clã ao executar.
+  const [availableDomains, setAvailableDomains] = useState<AgentSkillDomain[] | null>(null)
   const [selectedDomains, setSelectedDomains] = useState<AgentSkillDomain[]>([])
 
   useEffect(() => {
-    // Sem a lista, o campo não aparece e o backend consulta todas as skills ativas.
-    agentSkillsApi
-      .listSkills(true)
-      .then((skills) => setAvailableDomains([...new Set(skills.map((skill) => skill.domain))]))
-      .catch(() => setAvailableDomains([]))
+    Promise.all([clansApi.listMine(), clansApi.list()])
+      .then(([mine, all]) => {
+        const mineIds = new Set(mine.map((clan) => clan.id))
+        setMyClans(mine)
+        setJoinableClans(all.filter((clan) => clan.is_open && !mineIds.has(clan.id)))
+        if (mine.length === 1) setClanId(mine[0].id)
+      })
+      .catch(() => setSubmitError('Não foi possível carregar os clãs.'))
+      .finally(() => setClansLoaded(true))
   }, [])
+
+  useEffect(() => {
+    setAvailableDomains(null)
+    setSelectedDomains([])
+    setStepError('')
+    if (!clanId) return
+    let current = true
+    clansApi
+      .listSkills(clanId)
+      .then((skills) => {
+        if (!current) return
+        const active = skills.filter((skill) => skill.enabled && skill.status === 'approved')
+        setAvailableDomains([...new Set(active.map((skill) => skill.domain))])
+      })
+      .catch(() => undefined)
+    return () => {
+      current = false
+    }
+  }, [clanId])
+
+  async function joinClan(clan: Clan) {
+    setSubmitError('')
+    try {
+      await clansApi.join(clan.id)
+      setMyClans((current) => [...current, clan])
+      setJoinableClans((current) => current.filter((item) => item.id !== clan.id))
+      setClanId(clan.id)
+    } catch (caught) {
+      setSubmitError(caught instanceof ApiError ? caught.message : 'Não foi possível entrar no clã.')
+    }
+  }
 
   const titleValid = title.trim().length >= 5 && title.trim().length <= 160
   const problemValid = problem.trim().length >= 10
@@ -59,10 +102,11 @@ export function NewRequestPage() {
       { key: 'title', label: 'Título', state: titleValid ? 'done' : step === 1 ? 'current' : 'pending' },
       { key: 'problem', label: 'Problema descrito', state: problemValid ? 'done' : step === 2 ? 'current' : 'pending' },
       { key: 'objective', label: 'Objetivo claro', state: objectiveValid ? 'done' : step === 2 ? 'current' : 'pending' },
+      { key: 'clan', label: 'Clã escolhido', state: step < 3 ? 'pending' : clanId ? 'done' : 'current' },
       { key: 'context', label: 'Contexto técnico completo', state: step < 3 ? 'pending' : context.trim() ? 'done' : 'current' },
       { key: 'restrictions', label: 'Restrições informadas', state: step < 3 ? 'pending' : restrictions.length > 0 ? 'done' : 'current' },
     ],
-    [titleValid, problemValid, objectiveValid, context, restrictions, step],
+    [titleValid, problemValid, objectiveValid, clanId, context, restrictions, step],
   )
 
   function goNext() {
@@ -133,8 +177,17 @@ export function NewRequestPage() {
   }
 
   async function handleFinalSubmit() {
-    setSubmitting(true)
     setSubmitError('')
+    if (!clanId) {
+      setStepError('Escolha o clã que vai responder.')
+      return
+    }
+    if (availableDomains?.length === 0) {
+      setStepError(NO_ACTIVE_SKILLS_MESSAGE)
+      return
+    }
+    setStepError('')
+    setSubmitting(true)
     try {
       const created = await orchestrationApi.createRequest({
         title: title.trim(),
@@ -143,6 +196,7 @@ export function NewRequestPage() {
         context: context.trim() || null,
         restrictions,
         requested_domains: selectedDomains,
+        clan_id: clanId,
       })
 
       // The request itself is already created at this point -- an attachment
@@ -290,7 +344,46 @@ export function NewRequestPage() {
                 <small>Separe restrições por linha ou vírgula — cada uma vira uma tag independente.</small>
               </label>
 
-              {availableDomains.length > 0 && (
+              <div className="workspace-field workspace-field-full">
+                {myClans.length > 0 ? (
+                  <label>
+                    Clã que vai responder
+                    <select value={clanId} onChange={(event) => setClanId(event.target.value)}>
+                      {myClans.length > 1 && <option value="">Escolha um clã</option>}
+                      {myClans.map((clan) => (
+                        <option key={clan.id} value={clan.id}>
+                          {clan.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  clansLoaded && (
+                    <span>
+                      Toda orquestração usa as Agent Skills de um clã, e você ainda não faz parte de nenhum.{' '}
+                      <Link to="/clans">Criar um clã</Link>
+                    </span>
+                  )
+                )}
+                {joinableClans.length > 0 && (
+                  <div className="workspace-chip-row">
+                    {joinableClans.map((clan) => (
+                      <button
+                        key={clan.id}
+                        type="button"
+                        className="workspace-suggestion-chip"
+                        onClick={() => joinClan(clan)}
+                      >
+                        Entrar em {clan.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <small>Só as Agent Skills do clã escolhido são consultadas.</small>
+                {availableDomains?.length === 0 && <small>{NO_ACTIVE_SKILLS_MESSAGE}</small>}
+              </div>
+
+              {availableDomains && availableDomains.length > 0 && (
                 <div className="workspace-field workspace-field-full" role="group" aria-labelledby="request-agents-label">
                   <span id="request-agents-label">Agentes que vão analisar</span>
                   <div className="workspace-chip-row">

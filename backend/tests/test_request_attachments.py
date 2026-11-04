@@ -1,7 +1,12 @@
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
-from tests.conftest import authenticated_csrf_headers, create_qualified_request, register
+from tests.conftest import (
+    authenticated_csrf_headers,
+    create_qualified_request,
+    create_test_clan,
+    register,
+)
 
 OWNER = {
     "name": "Dona da Solicitacao",
@@ -103,6 +108,7 @@ def test_attachment_never_qualifies_a_request_by_itself(client: TestClient) -> N
             "context": "pouco",
             "restrictions": [],
             "requested_domains": [],
+            "clan_id": create_test_clan(client),
         },
         headers=authenticated_csrf_headers(client),
     )

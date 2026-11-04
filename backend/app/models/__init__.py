@@ -2,7 +2,7 @@ from app.models.agent_skill import AgentSkill
 from app.models.agent_skill_invocation import AgentSkillInvocation
 from app.models.audit_log import AuditLog
 from app.models.auth_session import AuthSession
-from app.models.clan import Clan, ClanMembership
+from app.models.clan import Clan, ClanMembership, ClanSkill
 from app.models.consolidated_response import ConsolidatedResponse
 from app.models.follow_up_exchange import FollowUpExchange
 from app.models.knowledge_chunk import KnowledgeChunk
@@ -21,6 +21,7 @@ __all__ = [
     "AuthSession",
     "Clan",
     "ClanMembership",
+    "ClanSkill",
     "ConsolidatedResponse",
     "FollowUpExchange",
     "KnowledgeChunk",

@@ -423,7 +423,7 @@ async def start_skills_for_request(
     if not has_target_skills(db, technical_request):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Nenhuma Agent Skill ativa e compatível com o domínio da solicitação foi encontrada.",
+            detail="Nenhuma Agent Skill ativa no clã da solicitação foi encontrada.",
         )
     if not claim_request_for_execution(db, technical_request):
         raise HTTPException(

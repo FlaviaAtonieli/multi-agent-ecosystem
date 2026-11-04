@@ -1,3 +1,4 @@
+import { AgentSkill } from './agentSkillsApi'
 import { apiRequest } from './http'
 
 export type ClanMember = {
@@ -48,6 +49,16 @@ export const clansApi = {
     apiRequest<ClanDetail>(`/clans/${encodeURIComponent(clanId)}/members`, {
       method: 'POST',
       body: JSON.stringify({ email }),
+    }),
+  listSkills: (clanId: string) => apiRequest<AgentSkill[]>(`/clans/${encodeURIComponent(clanId)}/skills`),
+  addSkill: (clanId: string, skillId: string) =>
+    apiRequest<AgentSkill>(`/clans/${encodeURIComponent(clanId)}/skills`, {
+      method: 'POST',
+      body: JSON.stringify({ agent_skill_id: skillId }),
+    }),
+  removeSkill: (clanId: string, skillId: string) =>
+    apiRequest<void>(`/clans/${encodeURIComponent(clanId)}/skills/${encodeURIComponent(skillId)}`, {
+      method: 'DELETE',
     }),
   removeMember: (clanId: string, userId: string) =>
     apiRequest<ClanDetail>(

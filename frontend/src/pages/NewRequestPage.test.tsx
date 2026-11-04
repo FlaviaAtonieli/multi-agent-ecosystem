@@ -9,8 +9,18 @@ const created = new ApiResponse(201, { id: 'req-1', trace_id: 'TRC-1' })
 const skills = ['codigo_legado', 'regras_negocio', 'seguranca_informacao', 'Contabilidade'].map((domain, index) => ({
   id: `skill-${index}`,
   domain,
+  enabled: true,
+  status: 'approved',
 }))
-const baseRoutes = { 'GET /agent-skills?only_active=true': skills }
+const clan = { id: 'clan-1', name: 'Meu clã', is_open: false }
+const otherClan = { id: 'clan-2', name: 'Outro clã', is_open: false }
+const openClan = { id: 'clan-open', name: 'Ecossistema', is_open: true }
+const closedClan = { id: 'clan-closed', name: 'Clã fechado', is_open: false }
+const baseRoutes = {
+  'GET /clans?mine=true': [clan],
+  'GET /clans': [clan, openClan, closedClan],
+  'GET /clans/clan-1/skills': skills,
+}
 
 function Destination() {
   const location = useLocation()
@@ -106,13 +116,142 @@ describe('NewRequestPage', () => {
 
   it('continua funcionando quando o catálogo não carrega', async () => {
     const user = userEvent.setup()
-    mockApi({ 'GET /agent-skills?only_active=true': apiError(500, 'Erro interno.'), 'POST /requests': created })
+    mockApi({
+      ...baseRoutes,
+      'GET /clans/clan-1/skills': apiError(500, 'Erro interno.'),
+      'POST /requests': created,
+    })
     renderPage()
     await goToLastStep(user)
+    await screen.findByRole('combobox', { name: 'Clã que vai responder' })
 
     await submit(user)
 
     expect(await screen.findByText(/^Orquestração/)).toBeInTheDocument()
+  })
+
+  describe('clã da solicitação', () => {
+    it('com um clã só, já o seleciona e o envia', async () => {
+      const user = userEvent.setup()
+      const api = mockApi({ ...baseRoutes, 'POST /requests': created })
+      renderPage()
+      await goToLastStep(user)
+      await screen.findByRole('button', { name: 'Contabilidade' })
+
+      await submit(user)
+      await screen.findByText(/^Orquestração/)
+
+      expect(api.jsonBody('POST', '/requests').clan_id).toBe('clan-1')
+    })
+
+    it('com vários clãs, exige escolher antes de registrar', async () => {
+      const user = userEvent.setup()
+      const api = mockApi({
+        ...baseRoutes,
+        'GET /clans?mine=true': [clan, otherClan],
+        'POST /requests': created,
+      })
+      renderPage()
+      await goToLastStep(user)
+      await screen.findByRole('option', { name: 'Outro clã' })
+
+      await submit(user)
+
+      expect(screen.getByText('Escolha o clã que vai responder.')).toBeInTheDocument()
+      expect(api.callsTo('POST', '/requests')).toHaveLength(0)
+
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Clã que vai responder' }), 'clan-1')
+
+      expect(screen.queryByText('Escolha o clã que vai responder.')).not.toBeInTheDocument()
+    })
+
+    it('mostra só os agentes do clã escolhido e limpa a escolha ao trocar', async () => {
+      const user = userEvent.setup()
+      const api = mockApi({
+        ...baseRoutes,
+        'GET /clans?mine=true': [clan, otherClan],
+        'GET /clans/clan-2/skills': [{ id: 's', domain: 'apis_integracoes', enabled: true, status: 'approved' }],
+        'POST /requests': created,
+      })
+      renderPage()
+      await goToLastStep(user)
+      const select = await screen.findByRole('combobox', { name: 'Clã que vai responder' })
+      await screen.findByRole('option', { name: 'Outro clã' })
+
+      await user.selectOptions(select, 'clan-1')
+      await user.click(await screen.findByRole('button', { name: 'Contabilidade' }))
+      await user.selectOptions(select, 'clan-2')
+      await screen.findByRole('button', { name: 'APIs e Integrações' })
+
+      expect(screen.queryByRole('button', { name: 'Contabilidade' })).not.toBeInTheDocument()
+      await submit(user)
+      await screen.findByText(/^Orquestração/)
+      expect(api.jsonBody('POST', '/requests')).toMatchObject({ clan_id: 'clan-2', requested_domains: [] })
+    })
+
+    it('ignora skills desativadas do clã', async () => {
+      const user = userEvent.setup()
+      mockApi({
+        ...baseRoutes,
+        'GET /clans/clan-1/skills': [
+          { id: 'a', domain: 'codigo_legado', enabled: true, status: 'approved' },
+          { id: 'b', domain: 'Contabilidade', enabled: false, status: 'approved' },
+        ],
+      })
+      renderPage()
+      await goToLastStep(user)
+
+      await screen.findByRole('button', { name: 'Código Legado' })
+      expect(screen.queryByRole('button', { name: 'Contabilidade' })).not.toBeInTheDocument()
+    })
+
+    it('não deixa registrar com um clã sem skills ativas', async () => {
+      const user = userEvent.setup()
+      const api = mockApi({ ...baseRoutes, 'GET /clans/clan-1/skills': [], 'POST /requests': created })
+      renderPage()
+      await goToLastStep(user)
+      await screen.findByText(/ainda não tem Agent Skills ativas/)
+
+      await submit(user)
+
+      expect(screen.getByText('Este clã ainda não tem Agent Skills ativas. Escolha outro ou adicione skills a ele.', { selector: '.alert' })).toBeInTheDocument()
+      expect(api.callsTo('POST', '/requests')).toHaveLength(0)
+    })
+
+    it('sem clã, oferece entrar em um clã aberto e passa a usá-lo', async () => {
+      const user = userEvent.setup()
+      const api = mockApi({
+        ...baseRoutes,
+        'GET /clans?mine=true': [],
+        'GET /clans': [openClan, closedClan],
+        'POST /clans/clan-open/join': {},
+        'GET /clans/clan-open/skills': skills,
+        'POST /requests': created,
+      })
+      renderPage()
+      await goToLastStep(user)
+
+      expect(screen.queryByRole('button', { name: 'Entrar em Clã fechado' })).not.toBeInTheDocument()
+      await user.click(await screen.findByRole('button', { name: 'Entrar em Ecossistema' }))
+      await screen.findByRole('button', { name: 'Contabilidade' })
+      await submit(user)
+      await screen.findByText(/^Orquestração/)
+
+      expect(api.callsTo('POST', '/clans/clan-open/join')).toHaveLength(1)
+      expect(api.jsonBody('POST', '/requests').clan_id).toBe('clan-open')
+    })
+
+    it('sem clã, não registra a solicitação', async () => {
+      const user = userEvent.setup()
+      const api = mockApi({ 'GET /clans?mine=true': [], 'GET /clans': [], 'POST /requests': created })
+      renderPage()
+      await goToLastStep(user)
+      await screen.findByRole('link', { name: 'Criar um clã' })
+
+      await submit(user)
+
+      expect(api.callsTo('POST', '/requests')).toHaveLength(0)
+    })
   })
 
   it('adiciona restrição sem repetir e permite remover', async () => {
