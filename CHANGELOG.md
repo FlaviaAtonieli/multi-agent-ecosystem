@@ -2,6 +2,13 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-11-03 - Testes do frontend e cobertura no CI
+
+### Adicionado
+
+- Testes do frontend com Vitest e Testing Library: login, cadastro, recuperação de senha, rotas protegidas, nova solicitação, acompanhamento da orquestração, perguntas de acompanhamento e catálogo de skills. Só a rede é simulada.
+- O CI roda esses testes e passa a exigir cobertura mínima: 75% das linhas no backend e 25% no frontend.
+
 ## 2026-11-02 - Orquestração em segundo plano com progresso real
 
 ### Adicionado

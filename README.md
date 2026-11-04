@@ -144,7 +144,18 @@ docker run --rm `
   sh -c "pip install --no-cache-dir -r requirements-dev.txt && pytest -v"
 ```
 
-Frontend:
+Para ver a cobertura do backend, acrescente `--cov=app --cov-report=term` ao `pytest`. O CI exige pelo menos 75%.
+
+Frontend (Vitest e Testing Library; a rede é simulada e todo o resto do código roda de verdade):
+
+```powershell
+cd frontend
+npm ci
+npm test            # roda os testes
+npm run coverage    # mostra a cobertura e o relatório em coverage/index.html; o CI exige pelo menos 25% de linhas
+```
+
+Para validar o build da imagem do frontend:
 
 ```powershell
 docker compose build frontend --no-cache
