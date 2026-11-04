@@ -6,6 +6,7 @@ Este arquivo registra alterações relevantes da PoC. As datas correspondem ao m
 
 ### Adicionado
 
+- A conta inicial (`BOOTSTRAP_ADMIN_EMAIL`) pode desativar e reativar as 4 skills oficiais sem dono, atendendo o RF16 da RFC. Elas continuam sem dono e sem edição pela tela, porque dar um dono as mandaria para o servidor MCP genérico.
 - Testes do frontend com Vitest e Testing Library: login, cadastro, recuperação de senha, rotas protegidas, nova solicitação, acompanhamento da orquestração, perguntas de acompanhamento e catálogo de skills. Só a rede é simulada.
 - O CI roda esses testes e passa a exigir cobertura mínima: 75% das linhas no backend e 25% no frontend.
 

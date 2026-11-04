@@ -25,6 +25,7 @@ from app.core.rate_limit import (
 from app.core.security import (
     generate_csrf_token,
     hash_password,
+    is_initial_account,
     normalize_email,
     secure_compare,
     utc_now,
@@ -113,6 +114,7 @@ def _to_user_read(user: User) -> UserRead:
     data = UserRead.model_validate(user).model_dump()
     data["has_password"] = user.password_hash is not None
     data["oauth_provider"] = "github" if user.github_id else "google" if user.google_id else None
+    data["is_initial_account"] = is_initial_account(user.email)
     return UserRead(**data)
 
 
