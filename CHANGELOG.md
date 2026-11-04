@@ -2,6 +2,21 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-11-04 - Correções apontadas pelo SonarCloud
+
+### Corrigido
+
+- Um manifesto com texto cheio de espaços podia travar a leitura por cerca de 45 s com 100 KB: as expressões regulares passaram a ter tempo linear.
+- Respostas de erro dos middlewares, como corpo grande demais, não traziam os cabeçalhos de CORS, e o navegador as escondia da tela.
+- Acessibilidade: `autoFocus` removido dos formulários.
+
+### Alterado
+
+- Dependências travadas: `requirements.lock` no backend e `npm ci` no frontend, sem scripts de instalação. O CI passa a construir as imagens Docker em todo PR.
+- Ações do GitHub fixadas por SHA, e a permissão de escrita de pacotes fica só nos jobs que publicam.
+- O container do frontend roda sem root, na porta 8080.
+- Vite 8, Vitest 5 e plugin do React 6, para sair das vulnerabilidades conhecidas das versões anteriores.
+
 ## 2026-11-03 - Deploy automático do backend
 
 ### Adicionado

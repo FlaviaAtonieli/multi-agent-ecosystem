@@ -246,7 +246,7 @@ export function AgentNetworkHero({ variant = 'login' }: AgentNetworkHeroProps) {
 
   return (
     <section ref={containerRef} className={`auth-hero network-hero network-hero-${variant}`}>
-      <canvas ref={canvasRef} className="agent-network-canvas" aria-hidden="true" />
+      <canvas ref={canvasRef} className="agent-network-canvas" aria-hidden="true" tabIndex={-1} />
       <div className="network-noise" aria-hidden="true" />
       <div className="network-copy">
         <span className="network-kicker">ECOSSISTEMA MODULAR E RASTREÁVEL</span>

@@ -6,7 +6,7 @@ Arquitetura alvo (a mesma da estimativa de custo feita na calculadora do Azure):
 Internet
   -> Azure Front Door (domínio custom, TLS gerenciado, roteamento por path)
        /api/*  -> App Service "backend"  (container FastAPI, porta 8000)
-       /*      -> App Service "frontend" (container nginx+Vite, porta 80)
+       /*      -> App Service "frontend" (container nginx+Vite, porta 8080)
                      -> Azure Database for PostgreSQL Flexible Server
 ```
 
@@ -108,7 +108,7 @@ az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $BACKEN
   --settings WEBSITES_PORT=8000
 
 az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $FRONTEND_APP `
-  --settings WEBSITES_PORT=80
+  --settings WEBSITES_PORT=8080
 ```
 
 ### App Settings do backend

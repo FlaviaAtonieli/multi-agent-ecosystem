@@ -248,7 +248,6 @@ export function ClansPage() {
                     onChange={(event) => setRenameDraft(event.target.value)}
                     maxLength={120}
                     aria-label="Novo nome do clã"
-                    autoFocus
                   />
                   <button
                     className="workspace-primary-action"

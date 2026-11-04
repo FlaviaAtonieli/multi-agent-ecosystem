@@ -133,6 +133,14 @@ Exige usuário autenticado, `LLM_ENABLED=true` e `OPENROUTER_API_KEY` válida. A
 
 Os testes marcados com `@pytest.mark.llm` chamam a OpenRouter de verdade (sem provedor mock) — exigem uma `OPENROUTER_API_KEY` real no ambiente ou no `.env` da raiz do projeto. O resto da suíte roda sem chave e é o que o CI executa (`pytest -m "not llm"`).
 
+As imagens e o CI instalam o backend de `backend/requirements.lock` e `requirements-dev.lock`, com versões e hashes travados. Depois de mudar `requirements.txt` ou `requirements-dev.txt`, gere de novo:
+
+```powershell
+cd backend
+uv pip compile --universal --generate-hashes --python-version 3.12 requirements.txt -o requirements.lock
+uv pip compile --universal --generate-hashes --python-version 3.12 requirements-dev.txt -o requirements-dev.lock
+```
+
 Backend:
 
 ```powershell

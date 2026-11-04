@@ -38,7 +38,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "3000:80"
+      - "3000:8080"
 
   # Monitoramento (ver docs/monitoring.md): Prometheus coleta GET /metrics do
   # backend; Grafana já sobe com a fonte de dados e o painel provisionados.

@@ -103,10 +103,13 @@ _REQUIRED_SECTIONS = (
     "Critérios de Validação",
 )
 
-_SECTION_HEADER = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
-_TITLE_HEADER = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
-_IDENTIFICATION_FIELD = re.compile(r"^-\s*([^:]+):\s*(.*)$")
-_BULLET_ITEM = re.compile(r"^-\s+(.+?)\s*$")
+# O manifesto vem de upload: cada parte destas expressões aceita caracteres que a
+# seguinte não aceita, para o tempo não crescer de forma quadrática com um texto
+# cheio de espaços. Os espaços nas pontas saem com strip() em quem usa o resultado.
+_SECTION_HEADER = re.compile(r"^##[ \t]+(\S.*)$", re.MULTILINE)
+_TITLE_HEADER = re.compile(r"^#[ \t]+(\S.*)$", re.MULTILINE)
+_IDENTIFICATION_FIELD = re.compile(r"^-\s*([^:\s][^:]*):(.*)$")
+_BULLET_ITEM = re.compile(r"^-\s+(\S.*)$")
 
 
 class ManifestParseError(ValueError):

@@ -215,7 +215,6 @@ export function AgentSkillCreatePage() {
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   placeholder="Ex.: Revisor Cauteloso de Código Legado"
-                  autoFocus
                 />
                 <small>É assim que ela vai aparecer nos cards de resultado e na rede de agentes.</small>
               </label>

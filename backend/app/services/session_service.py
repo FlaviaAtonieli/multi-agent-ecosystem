@@ -11,7 +11,10 @@ from app.services.audit_service import get_request_ip, get_user_agent
 
 
 def set_public_csrf_cookie(response: Response, csrf_token: str) -> None:
-    response.set_cookie(
+    # O padrão double-submit exige que o JavaScript leia este cookie para enviá-lo
+    # no cabeçalho X-CSRF-Token, então ele não pode ser HttpOnly. Ele não dá acesso
+    # à conta: o cookie de sessão, esse sim, é HttpOnly.
+    response.set_cookie(  # NOSONAR
         key=settings.csrf_cookie_name,
         value=csrf_token,
         max_age=60 * 60,
@@ -33,7 +36,8 @@ def set_auth_cookies(response: Response, session_token: str, csrf_token: str) ->
         httponly=True,
         samesite="lax",
     )
-    response.set_cookie(
+    # Não é HttpOnly pelo mesmo motivo de set_public_csrf_cookie.
+    response.set_cookie(  # NOSONAR
         key=settings.csrf_cookie_name,
         value=csrf_token,
         max_age=max_age,
