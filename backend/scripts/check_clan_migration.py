@@ -62,7 +62,9 @@ def main() -> None:
     with engine.begin() as connection:
         for user_id, email in [(admin_id, "admin@example.com"), (other_id, "outra@example.com")]:
             connection.execute(
-                text("INSERT INTO users (id, name, email, is_active) VALUES (:id, 'Pessoa', :email, true)"),
+                text(
+                    "INSERT INTO users (id, name, email, is_active, failed_login_attempts) VALUES (:id, 'Pessoa', :email, true, 0)"
+                ),
                 {"id": user_id, "email": email},
             )
         connection.execute(
