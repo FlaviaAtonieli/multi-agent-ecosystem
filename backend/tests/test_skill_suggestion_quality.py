@@ -14,6 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
+from app.core.rate_limit import limiter
 from app.db.seed_agent_skills import seed_agent_skills
 from app.rag.evaluation import precision_at_k, recall_at_k, reciprocal_rank
 from tests.conftest import authenticated_csrf_headers, register
@@ -88,6 +89,8 @@ def test_suggestion_quality_against_ground_truth(client: TestClient, monkeypatch
     clan_id = _clan(client)["id"]
 
     def ask(problem: str) -> list[dict]:
+        # A medição faz mais consultas que o limite por minuto da API.
+        limiter.clear()
         response = client.post(
             "/api/v1/agent-skills/suggestions",
             json={"clan_id": clan_id, "problem": problem, "objective": "Avaliar o que fazer."},

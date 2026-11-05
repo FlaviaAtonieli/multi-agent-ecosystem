@@ -34,10 +34,10 @@ Conferidos em todo push e PR pelo CI, que falha abaixo das metas:
 
 | Parte | Ferramenta | Testes (04/11/2026) | Cobertura de linhas | Meta |
 |---|---|---:|---:|---:|
-| Backend | pytest, em SQLite e PostgreSQL | 296 | 85% | 75% |
+| Backend | pytest, em SQLite e PostgreSQL | 313 | 86% | 75% |
 | Frontend | Vitest e Testing Library | 135 | 51,52% | 25% |
 
-A contagem do backend não inclui os 27 testes marcados com `llm`, que chamam a OpenRouter de verdade e ficam fora do CI: rodar a cada push gastaria créditos reais e poderia ficar vermelho por instabilidade do provedor, não por bug de código. **Eles ainda não foram executados com o modelo padrão atual (`openai/gpt-5-mini`).**
+A contagem do backend não inclui os 27 testes marcados com `llm`, que chamam a OpenRouter de verdade e ficam fora do CI: rodar a cada push gastaria créditos reais e poderia ficar vermelho por instabilidade do provedor, não por bug de código. Em 05/11/2026 eles rodaram com modelos gratuitos: 25 de 27 passaram, e o que ficou abaixo do limite mede a qualidade da busca com um modelo de embeddings gratuito ([evidência](evidence/2026-11-05-real-llm-free-models.md)). **O modelo padrão de produção, `openai/gpt-5-mini`, não foi usado, porque é pago.**
 
 **O que é simulado:** na suíte do CI, o modelo de linguagem e os embeddings são substituídos por versões falsas, e no frontend só a rede é simulada. Todo o restante roda de verdade. Por isso, a suíte confere as regras do sistema, não a qualidade das respostas da IA.
 
@@ -89,6 +89,8 @@ Resultado esperado do `alembic current`:
 - [Extensibilidade plug-and-play](evidence/2026-08-plug-and-play-extensibility.md)
 - [Medição de KPIs (M7)](evidence/2026-08-m7-kpi-measurement.md) — com modelo gratuito e execução em sequência; ainda não repetida com o código atual
 - [Qualidade do RAG (domínio Código Legado)](evidence/2026-08-30-rag-quality-validation.md)
+- [Testes com a IA real em modelos gratuitos](evidence/2026-11-05-real-llm-free-models.md) (05/11/2026)
+- [Repetição da resposta do modelo](evidence/2026-11-05-reproducibility.md) (05/11/2026)
 - [Qualidade do RAG nos 4 domínios de Agent Skill](evidence/2026-09-rag-multi-domain-quality-validation.md)
 
 Essas evidências registram o sistema na época em que foram feitas, inclusive os papéis de usuário e a lista fechada de domínios, que depois mudaram.

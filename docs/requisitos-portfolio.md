@@ -55,8 +55,8 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 | Dados justificados | ✅ | Sintéticos, com a justificativa no [pipeline](architecture/ai-pipeline.md#1-dados-e-indexação) |
 | Pipeline completo | ✅ | Dados, pré-processamento, modelo e pós-processamento |
 | Ética e LGPD | ✅ | Mascaramento, [política de privacidade](../frontend/src/pages/PrivacyPage.tsx) e exclusão de conta |
-| Resultados replicáveis | 🟡 | Busca e métricas podem ser repetidas. O texto do modelo varia: falta a posição do professor |
-| Avaliação do resultado | ⏳ | Medido só na busca, em 4 de 10 áreas. Falta repetir com o modelo atual |
+| Resultados replicáveis | 🟡 | Busca e métricas podem ser repetidas. O texto do modelo varia mesmo com `temperature` e `seed` fixos ([medição](validation/evidence/2026-11-05-reproducibility.md)): falta a posição do professor |
+| Avaliação do resultado | 🟡 | Busca medida em 4 de 10 áreas, e repetida com modelo gratuito em 05/11/2026. Motor de sugestão medido. Falta a resposta final |
 
 ## O que depende de pessoas
 
