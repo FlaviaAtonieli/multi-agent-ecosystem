@@ -1,28 +1,33 @@
 # Documentação da API (OpenAPI / Swagger)
 
+O arquivo [`openapi.json`](openapi.json) é o contrato da API: 68 rotas, com descrição, exemplos no caminho principal e formato de erros.
+
 ## Onde ver
 
-| Ambiente | Como |
+| Onde | Como |
 |---|---|
-| Desenvolvimento | Swagger interativo em http://localhost:8000/docs e ReDoc em http://localhost:8000/redoc |
-| Qualquer lugar | [`openapi.json`](openapi.json), versionado neste diretório: abra em https://editor.swagger.io (*File → Import file*) ou em qualquer visualizador OpenAPI |
+| **Navegador, sem instalar nada** | [Abrir no Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/FlaviaAtonieli/multi-agent-ecosystem/main/docs/api/openapi.json). Só leitura: as chamadas de teste não funcionam daqui, porque a API não aceita outra origem |
+| **Desenvolvimento local** | Swagger interativo em http://localhost:8000/docs e ReDoc em http://localhost:8000/redoc |
+| **Postman ou Insomnia** | Importe o `openapi.json` |
 
-Em produção, `/docs`, `/redoc` e `/openapi.json` não são servidos (auditoria de segurança P1). O arquivo versionado é a referência.
+Em produção, `/docs`, `/redoc` e `/openapi.json` não são servidos, para não expor o mapa da API. O arquivo versionado é a referência.
 
 ## Testar pelo Swagger
 
-1. `GET /api/v1/auth/csrf`
-2. `POST /api/v1/auth/login` (ou `/register`). Se responder `202`, pegue o código no e-mail (ou no log do backend, com `EMAIL_BACKEND=console`) e confirme em `POST /api/v1/auth/login/verify`.
-3. Pronto: o navegador guarda o cookie de sessão, e a página `/docs` preenche sozinha o cabeçalho `X-CSRF-Token` a partir do cookie `agenthub_csrf`.
+1. Com o backend rodando, abra http://localhost:8000/docs.
+2. `GET /api/v1/auth/csrf`.
+3. `POST /api/v1/auth/login` ou `/register`. Se responder `202`, pegue o código no e-mail, ou no log do backend com `EMAIL_BACKEND=console`, e confirme em `POST /api/v1/auth/login/verify`.
+4. O navegador guarda o cookie de sessão, e a página preenche o cabeçalho `X-CSRF-Token` sozinha.
 
 ## Como a documentação é mantida
 
-- Os textos (descrição geral, tags, resumo e descrição de cada rota) ficam em `backend/app/api/openapi_docs.py`.
-- Os requisitos de segurança de cada rota (cookie de sessão e/ou CSRF) são detectados a partir das dependências reais da rota, então não divergem do código.
-- Todo erro é documentado com o formato padrão `ErrorResponse`.
-- `backend/tests/test_openapi_docs.py` falha se uma rota nova não tiver documentação ou se o `openapi.json` estiver desatualizado.
+- `backend/app/api/openapi_docs.py`: descrição geral, tags, resumo e descrição de cada rota.
+- `backend/app/api/openapi_examples.py`: descrição dos campos e exemplos.
+- Os requisitos de segurança de cada rota são detectados pelas dependências reais dela, então não divergem do código.
 
-Depois de mudar rotas ou schemas, regenere o arquivo:
+Os testes falham se uma rota ou um campo de entrada ficar sem descrição, se um exemplo for recusado pelos schemas da API ou se o `openapi.json` estiver desatualizado.
+
+Depois de mudar rotas ou schemas, gere o arquivo de novo:
 
 ```bash
 cd backend

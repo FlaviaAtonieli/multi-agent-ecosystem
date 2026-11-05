@@ -2,131 +2,63 @@
 
 ## Objetivo
 
-A aplicação serve como base para validar uma arquitetura de integração de agentes especialistas em ambientes corporativos. O foco não é criar um agente universal, mas coordenar capacidades com responsabilidades, contratos e limites definidos.
+Validar uma arquitetura de integração de agentes especialistas em ambientes corporativos. O foco não é criar um agente universal, mas coordenar capacidades com responsabilidades, contratos e limites definidos: uma solicitação técnica é qualificada, ganha um `Trace ID`, vai para as Agent Skills de um clã, passa pelo Quality Gate e pode ser reconstruída pela auditoria.
 
-A PoC deve permitir que uma solicitação técnica seja qualificada, associada a um `Trace ID`, encaminhada às capacidades adequadas, validada e reconstruída posteriormente por meio dos registros de auditoria.
+Os diagramas C4 e os requisitos estão na [RFC](../rfc/). Este documento descreve o que está implementado.
 
 ## Decisão estrutural
 
-A primeira versão adota um **monólito modular** com dois projetos:
-
-- `frontend`: interface, navegação e estado de apresentação;
-- `backend`: autenticação, autorização, regras, persistência, integração com modelos e auditoria.
-
-O PostgreSQL mantém os dados de usuários, sessões, solicitações, execuções e invocações. O Docker Compose organiza o ambiente local.
-
-Essa estrutura foi escolhida para reduzir o custo operacional da PoC sem misturar responsabilidades de domínio. A separação em serviços independentes pode ser avaliada quando existirem requisitos concretos de escala ou isolamento.
-
-## Componentes implementados
-
-### Frontend
-
-- cliente HTTP;
-- contexto de autenticação;
-- rotas públicas e protegidas;
-- login e cadastro;
-- dashboard;
-- criação de solicitação;
-- consulta de histórico e timeline.
-
-O frontend adapta a experiência conforme o usuário autenticado, mas não decide autorização. Todas as verificações de acesso permanecem no backend.
-
-### Backend
-
-- API REST;
-- autenticação por sessão opaca;
-- proteção CSRF;
-- controle de perfis;
-- persistência e migrations;
-- auditoria de eventos;
-- solicitações técnicas;
-- qualificação inicial do contexto;
-- execuções de orquestração;
-- abstração de provedores de modelo, incluindo OpenRouter como gateway primário (múltiplos providers/modelos por trás de uma única credencial) e o adaptador direto OpenAI como integração opcional;
-- pipeline de recuperação aumentada de geração (RAG): indexação de artefatos em `knowledge_chunks`, recuperação por similaridade antes de cada chamada de modelo, e registro do evento `RAG_RETRIEVAL_COMPLETED` na timeline;
-- rastreabilidade individual das invocações, incluindo os trechos recuperados que fundamentaram cada resposta;
-- catálogo de Agent Skills: criação assistida (RF01), importação e validação estrutural de manifesto `modelo.md` (RF02/RF03), registro no catálogo (RF04) e habilitação/desabilitação por administrador (RF16);
-- seleção de Agent Skills por domínio da solicitação e execução coordenada (RF08/RF09/RF10) — dez domínios de Agent Skill oficiais hoje (Código Legado, Regras de Negócio, Arquitetura de Software, Segurança da Informação, Qualidade e Testes, Observabilidade e Monitoramento, Performance e Escalabilidade, Dados e Privacidade/LGPD, Infraestrutura e DevOps, APIs e Integrações), acionáveis em conjunto numa mesma análise, todas rodando pelo `GenericSkillExecutor` (orientado por `persona_instructions` do manifesto) e operando sobre uma base de conhecimento RAG própria, com qualidade de retrieval medida nos 4 domínios originais (ver "Limites arquiteturais");
-- Quality Gate baseado em regras explicáveis (schema válido, nível de confiança, divergência entre respostas do mesmo domínio) consolidando as respostas antes da entrega (RF11);
-- revisão humana de solicitações sinalizadas pelo Quality Gate, feita por quem abriu a solicitação (desde 14/10/2026 não há papéis de usuário).
-
-## Componentes previstos no RFC
-
-Os módulos abaixo fazem parte do desenho da PoC, mas ainda não estão completos na implementação atual:
-
-- Agent Builder com editor visual (a criação assistida hoje é via API/formulário estruturado, sem UI dedicada).
-
-Já implementados (ver seção anterior): importador de `modelo.md`, validador de manifesto, catálogo de Agent Skills, camada de contratos de entrada e saída (Apêndice C), seleção dinâmica de Agent Skills por domínio, execução coordenada das dez skills oficiais, Quality Gate e revisão humana.
-
-A documentação distingue esses dois estados para não apresentar como concluído o que ainda está em desenvolvimento.
-
-## Fluxo atual
+**Monólito modular** com dois projetos e PostgreSQL. Reduz o custo operacional da Prova de Conceito sem misturar responsabilidades. Separar em serviços só se justifica com requisitos concretos de escala ou isolamento. A exceção são as Agent Skills, que rodam como processos MCP.
 
 ```text
-Interface web
-  -> API de solicitações
-  -> validação de contexto
-  -> criação do Trace ID
-  -> persistência da solicitação e da execução
-  -> registro dos eventos
-  -> consulta no dashboard e na timeline
+frontend/  React, Vite e TypeScript: interface. Nunca decide autorização.
+backend/   FastAPI e SQLAlchemy: regras, autorização, persistência e auditoria.
 ```
 
-Quando a integração com modelos está habilitada:
+## Módulos do backend
+
+| Pasta em `backend/app/` | Responsabilidade |
+|---|---|
+| `api/` | Rotas REST e documentação OpenAPI |
+| `services/` | Orquestração, clãs, arquivos, sugestão de skills, autenticação e LLM |
+| `agent_catalog/` | Catálogo de skills, cliente MCP, servidores MCP e contratos |
+| `agent_manifest/` | Leitura e validação do manifesto `modelo.md` |
+| `quality_gate/` | Regras explícitas sobre as respostas das skills |
+| `llm/` | Provedores de modelo, prompts e mascaramento de dados |
+| `rag/` | Indexação, embeddings, busca e métricas |
+| `models/`, `schemas/` | Tabelas e contratos da API |
+| `core/` | Configuração, segurança, limites de requisição e métricas |
+| `db/` | Conta inicial e cadastros iniciais (seeds) |
+
+## Fluxo de uma orquestração
 
 ```text
-Solicitação QUALIFIED
-  -> verificação de propriedade e do clã
-  -> sanitização e limite de entrada
-  -> recuperação de trechos relevantes na base de conhecimento (RAG)
-  -> criação do LLM Call ID
-  -> provedor configurado (OpenRouter ou OpenAI)
-  -> validação da resposta estruturada
-  -> persistência de metadados, hashes e trechos recuperados
-  -> aprovação humana obrigatória
+Pessoa autenticada
+  -> cria a solicitação e escolhe o clã (pode pedir sugestões de skills fora dele)
+  -> contexto avaliado: AWAITING_CONTEXT ou QUALIFIED, com Trace ID
+  -> POST /start responde na hora, e a execução segue em segundo plano
+  -> para cada skill ativa do clã, até 3 ao mesmo tempo, por MCP:
+       mascaramento -> busca na base (RAG) -> modelo -> contrato de saída
+  -> arquivos gerados são validados e guardados
+  -> Quality Gate aprova ou pede revisão humana
+  -> resposta consolidada
+  -> a tela acompanha cada etapa pela linha do tempo
 ```
+
+Detalhes da IA no [Pipeline de IA](ai-pipeline.md).
+
+## Agent Skills
+
+- **Execução por MCP real**, com o SDK oficial. O Orquestrador é o cliente (`agent_catalog/mcp_client.py`). Em produção, cada chamada usa um subprocesso por stdio, que nunca fica exposto à rede.
+- **Dois caminhos de execução:** skills com dono rodam no servidor genérico, guiado pela persona do manifesto. As 4 oficiais originais ficam sem dono e rodam nos próprios servidores, em `agent_catalog/mcp_servers/`.
+- **Extensibilidade:** uma skill nova, em qualquer área, entra por formulário ou manifesto, sem mudança no núcleo do Orquestrador.
 
 ## Limites arquiteturais
 
-- O frontend nunca recebe chaves de provedor.
-- A autorização é validada no backend.
-- O token bruto da sessão permanece apenas no cookie do navegador.
-- O banco armazena o hash do token de sessão.
-- Credenciais, cookies e senhas não devem aparecer nos logs.
-- Uma chamada de modelo não pode habilitar um executor nem alterar permissões.
-- A PoC atua em modo consultivo e read-only.
-- A decisão final permanece sob responsabilidade humana.
-- O retrieval do pipeline RAG roda em memória (sem `pgvector`/índice ANN), adequado ao volume da fixture da PoC; é um limite conhecido, não uma limitação arquitetural permanente.
-- A base de conhecimento não é isolada por domínio: todos os `knowledge_chunks` de todas as skills competem no mesmo ranking por similaridade de cosseno (o domínio da solicitação só entra como viés de texto na query, não como filtro) — ver `docs/validation/evidence/2026-09-rag-multi-domain-quality-validation.md` para a medição de quão bem isso discrimina por assunto mesmo assim (medição feita nos 4 domínios originais; os 6 domínios adicionados depois têm retrieval real mas ainda sem essa validação formal de Precision/Recall/MRR).
-
-## Evolução prevista
-
-A expansão seguirá módulos de domínio, sem concentrar toda a lógica no serviço de orquestração:
-
-```text
-rag/               (implementado)
-agent_manifest/    (implementado)
-agent_catalog/     (implementado)
-quality_gate/      (implementado)
-interaction_advisor/
-orchestration/
-traceability/
-```
-
-`rag/` já existe (`app/rag/`): interfaces `Retriever`/`EmbeddingProvider`, retrieval em memória por similaridade de cosseno (sem `pgvector` nesta fase — ver "Limites arquiteturais"), e uma fixture sintética de código legado usada como base de conhecimento inicial.
-
-`agent_manifest/` (`app/agent_manifest/`) faz o parsing e a validação estrutural do manifesto `modelo.md` (Apêndice G do RFC). `agent_catalog/` (`app/agent_catalog/`) mantém o registro de Agent Skills e as expõe via **MCP real**, usando o SDK oficial `mcp` (não mais um contrato só inspirado no protocolo): o Orquestrador consome cada skill como cliente MCP via `agent_catalog/mcp_client.py`. `agent_catalog/mcp_servers/` tem um servidor dedicado por domínio original (`MCPServer` + `@mcp.tool()`, com `input_schema`/`output_schema` derivados dos modelos Pydantic do Apêndice C), mas `mcp_client._module_for_skill()` só os seleciona para uma skill com `owner_id=None` — caminho que nenhum endpoint da API cria hoje. Na prática, toda skill (incluindo as 10 oficiais) tem dono e roda pelo servidor MCP genérico (`generic_skill_server.py` / `GenericSkillExecutor`), orientado pelo `persona_instructions` de cada manifesto. Dois transportes são suportados pelo mesmo SDK: `stdio` (subprocesso real, JSON-RPC de verdade — padrão em produção) e "em memória" (mesmo processo, usado pelos testes para manter a suíte rápida). O subprocesso é gerado diretamente pelo Orquestrador (nunca exposto à rede) e herda a confiança do processo pai — por isso não implementamos o framework de Authorization do MCP (OAuth 2.1 resource server), pensado para acesso remoto/não confiável. `quality_gate/` (`app/quality_gate/`) aplica regras explicáveis (schema válido, nível de confiança, divergência textual) sobre as respostas consolidadas, sem depender de um segundo modelo como juiz.
-
-`interaction_advisor/`, `orchestration/` e `traceability/` continuam sem módulo dedicado: suas responsabilidades já existem, hoje concentradas em `orchestration_service.py`/`OrchestrationEvent` — extrair módulos próprios é reorganização, não capacidade nova, e fica como evolução futura.
-
-Cada módulo deve definir:
-
-- contrato de entrada;
-- contrato de saída;
-- serviço de aplicação;
-- persistência necessária;
-- endpoints;
-- eventos de auditoria;
-- testes.
-
-A principal prova de extensibilidade será a inclusão de uma nova Agent Skill por manifesto e contrato, sem alteração no núcleo do Orquestrador.
+- O frontend nunca recebe chaves de provedor, e a autorização é sempre validada no backend.
+- O token de sessão fica só no cookie do navegador, e o banco guarda o hash.
+- Uma chamada de modelo não habilita executor nem altera permissões.
+- A Prova de Conceito só recomenda: nada gerado pelo modelo é executado, e a decisão final é humana.
+- A execução em segundo plano assume **um único processo** no backend.
+- A busca roda em memória, sem índice vetorial, o que serve ao volume atual, mas não a uma base grande.
+- A base de conhecimento não é separada por área: o nome da área só influencia o texto da consulta.

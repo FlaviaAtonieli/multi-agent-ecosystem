@@ -1,7 +1,7 @@
 # Relatório de Validação
 
 Snapshot do estado validado da PoC nesta versão. Não é um substituto das evidências
-detalhadas em [`docs/validation/evidence/`](docs/validation/evidence/) — este documento
+detalhadas em [`docs/validation/evidence/`](evidence) — este documento
 é o ponto de partida rápido; aquelas, o registro completo por marco/critério.
 
 ## Verificações desta versão
@@ -11,7 +11,7 @@ detalhadas em [`docs/validation/evidence/`](docs/validation/evidence/) — este 
 - login com GitHub e Google (OAuth, opcionais), código por e-mail em navegador novo e
   recuperação de senha por e-mail;
 - sem papéis de usuário desde 14/10/2026: o acesso é controlado por propriedade,
-  visibilidade da skill e cota de tokens (ver [`SECURITY.md`](SECURITY.md#autorização));
+  visibilidade da skill e cota de tokens (ver [`SECURITY.md`](../../SECURITY.md#autorização));
 - migrations Alembic até `0021_skill_embeddings`;
 - integração com a OpenRouter (Model Gateway), sem provedor mock na aplicação;
 - orquestração em segundo plano, com até 3 skills em paralelo por execução, progresso
@@ -25,7 +25,7 @@ detalhadas em [`docs/validation/evidence/`](docs/validation/evidence/) — este 
 - anexo de documentos de texto como contexto adicional de uma solicitação;
 - clã obrigatório na orquestração, respostas com arquivos e ZIP, e sugestão de skills por embeddings;
 - pipeline RAG com qualidade medida (Precision@k, Recall@k e MRR) em 4 das 10 áreas
-  oficiais (ver [`docs/ai-pipeline.md`](docs/ai-pipeline.md));
+  oficiais (ver [`docs/ai-pipeline.md`](../architecture/ai-pipeline.md));
 - métricas de IA, execução e autenticação em `/metrics`, com painel e alertas no Grafana.
 
 ## Testes e cobertura
@@ -34,14 +34,14 @@ Conferidos em todo push e PR pelo CI, que falha abaixo das metas:
 
 | Parte | Ferramenta | Testes (04/11/2026) | Cobertura de linhas | Meta |
 |---|---|---:|---:|---:|
-| Backend | pytest, em SQLite e PostgreSQL | 270 | 85% | 75% |
+| Backend | pytest, em SQLite e PostgreSQL | 288 | 85% | 75% |
 | Frontend | Vitest e Testing Library | 135 | 51,52% | 25% |
 
 A contagem do backend não inclui os 27 testes marcados com `llm`, que chamam a OpenRouter de verdade e ficam fora do CI: rodar a cada push gastaria créditos reais e poderia ficar vermelho por instabilidade do provedor, não por bug de código. **Eles ainda não foram executados com o modelo padrão atual (`openai/gpt-5-mini`).**
 
 **O que é simulado:** na suíte do CI, o modelo de linguagem e os embeddings são substituídos por versões falsas, e no frontend só a rede é simulada. Todo o restante roda de verdade. Por isso, a suíte confere as regras do sistema, não a qualidade das respostas da IA.
 
-Para rodar, veja a seção "Testes" do [README](README.md#testes).
+Para rodar, veja a seção "Testes" do [README](../../README.md#testes).
 
 ## Os testes acusam defeitos?
 
@@ -64,10 +64,10 @@ Em 04/11/2026, o [axe](https://github.com/dequelabs/axe-core), com as regras WCA
 
 Itens exigidos pela rubrica independentemente da linha de projeto:
 
-- [x] **CI/CD** — [`ci.yml`](.github/workflows/ci.yml) em todo push e PR, e [`publish-images.yml`](.github/workflows/publish-images.yml) com o [deploy do backend](docs/deployment/azure.md#8-deploy-automático-do-backend). O frontend é publicado pelo workflow do Static Web Apps.
+- [x] **CI/CD** — [`ci.yml`](../../.github/workflows/ci.yml) em todo push e PR, e [`publish-images.yml`](../../.github/workflows/publish-images.yml) com o [deploy do backend](../deployment/azure.md#8-deploy-automático-do-backend). O frontend é publicado pelo workflow do Static Web Apps.
 - [x] **Wiki no GitHub** — [wiki do repositório](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki).
 - [x] **Análise estática de código e segurança** — `ruff`, `mypy` e `tsc` no CI, e [SonarCloud](https://sonarcloud.io/project/overview?id=FlaviaAtonieli_multi-agent-ecosystem) em todo push e PR.
-- [ ] **Monitoramento** — Prometheus, Grafana, painel e alertas estão [prontos](docs/monitoring.md) e foram testados contra um backend local. **Falta** ligar a leitura do backend em produção.
+- [ ] **Monitoramento** — Prometheus, Grafana, painel e alertas estão [prontos](../deployment/monitoring.md) e foram testados contra um backend local. **Falta** ligar a leitura do backend em produção.
 
 ## Comandos locais
 
@@ -85,10 +85,10 @@ Resultado esperado do `alembic current`:
 
 ## Evidências detalhadas
 
-- [Validação da fundação](docs/validation/evidence/2026-08-foundation-validation.md)
-- [Extensibilidade plug-and-play](docs/validation/evidence/2026-08-plug-and-play-extensibility.md)
-- [Medição de KPIs (M7)](docs/validation/evidence/2026-08-m7-kpi-measurement.md) — com modelo gratuito e execução em sequência; ainda não repetida com o código atual
-- [Qualidade do RAG (domínio Código Legado)](docs/validation/evidence/2026-08-30-rag-quality-validation.md)
-- [Qualidade do RAG nos 4 domínios de Agent Skill](docs/validation/evidence/2026-09-rag-multi-domain-quality-validation.md)
+- [Validação da fundação](evidence/2026-08-foundation-validation.md)
+- [Extensibilidade plug-and-play](evidence/2026-08-plug-and-play-extensibility.md)
+- [Medição de KPIs (M7)](evidence/2026-08-m7-kpi-measurement.md) — com modelo gratuito e execução em sequência; ainda não repetida com o código atual
+- [Qualidade do RAG (domínio Código Legado)](evidence/2026-08-30-rag-quality-validation.md)
+- [Qualidade do RAG nos 4 domínios de Agent Skill](evidence/2026-09-rag-multi-domain-quality-validation.md)
 
 Essas evidências registram o sistema na época em que foram feitas, inclusive os papéis de usuário e a lista fechada de domínios, que depois mudaram.

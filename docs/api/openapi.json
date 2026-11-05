@@ -68,6 +68,11 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UserCreate"
+              },
+              "example": {
+                "name": "Pessoa de Exemplo",
+                "email": "pessoa@example.com",
+                "password": "Exemplo-De-Senha#2026"
               }
             }
           },
@@ -135,6 +140,10 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/LoginRequest"
+              },
+              "example": {
+                "email": "pessoa@example.com",
+                "password": "Exemplo-De-Senha#2026"
               }
             }
           },
@@ -1327,6 +1336,20 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/TechnicalRequestCreate"
+              },
+              "example": {
+                "title": "Limite de crédito por segmento",
+                "problem": "O limite é fixo para todos os clientes, no CreditLimitService.",
+                "objective": "Avaliar o impacto de limites diferentes por segmento.",
+                "context": "Sistema legado em Java. O limite é usado na aprovação de pedidos e no RiskBatchJob.",
+                "restrictions": [
+                  "Não interromper a aprovação de pedidos"
+                ],
+                "clan_id": "1d9e4b6a-3c2f-4a7b-8e05-6c1f2d3a9b10",
+                "requested_domains": [
+                  "codigo_legado",
+                  "regras_negocio"
+                ]
               }
             }
           },
@@ -1339,6 +1362,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TechnicalRequestRead"
+                },
+                "example": {
+                  "id": "7f3c1a2e-5b1d-4c8e-9a10-2f6d8e4b7c01",
+                  "trace_id": "TRC-20261104-D8E740",
+                  "title": "Limite de crédito por segmento",
+                  "problem": "O limite é fixo para todos os clientes, no CreditLimitService.",
+                  "objective": "Avaliar o impacto de limites diferentes por segmento.",
+                  "context": "Sistema legado em Java. O limite é usado na aprovação de pedidos e no RiskBatchJob.",
+                  "restrictions": [
+                    "Não interromper a aprovação de pedidos"
+                  ],
+                  "requested_domains": [
+                    "codigo_legado",
+                    "regras_negocio"
+                  ],
+                  "clan_id": "1d9e4b6a-3c2f-4a7b-8e05-6c1f2d3a9b10",
+                  "status": "QUALIFIED",
+                  "created_at": "2026-11-04T12:00:00Z",
+                  "updated_at": "2026-11-04T12:00:00Z",
+                  "consolidated_response": null
                 }
               }
             }
@@ -1485,6 +1528,10 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/TechnicalRequestReview"
+              },
+              "example": {
+                "decision": "approve",
+                "notes": "Análise conferida com o time de crédito."
               }
             }
           }
@@ -2242,7 +2289,17 @@
                     "$ref": "#/components/schemas/SkillArtifactRead"
                   },
                   "title": "Response List Artifacts Api V1 Orchestrations  Trace Id  Artifacts Get"
-                }
+                },
+                "example": [
+                  {
+                    "id": "c7b1d3e9-2a4f-4d6c-8e11-9f0a1b2c3d44",
+                    "filename": "src/limite.py",
+                    "size_bytes": 2048,
+                    "agent_skill_name": "Agent Skill de Código Legado",
+                    "domain": "codigo_legado",
+                    "created_at": "2026-11-04T12:00:00Z"
+                  }
+                ]
               }
             }
           },
@@ -2315,7 +2372,15 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response"
+            "description": "Successful Response",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
           },
           "422": {
             "description": "Dados inválidos",
@@ -2482,7 +2547,15 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response"
+            "description": "Successful Response",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
           },
           "422": {
             "description": "Dados inválidos",
@@ -2825,6 +2898,32 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AgentSkillManifestCreate"
+              },
+              "example": {
+                "name": "Skill de Impostos",
+                "version": "1.0",
+                "author_origin": "Escritório de Contabilidade",
+                "domain": "Contabilidade",
+                "objective": "Avaliar o impacto fiscal de uma mudança em um sistema.",
+                "persona_instructions": "Você é especialista em tributos. Aponte riscos fiscais e cite a evidência.",
+                "capabilities": [
+                  "Avaliar impostos sobre operações"
+                ],
+                "expected_inputs": [
+                  "Descrição da mudança"
+                ],
+                "produced_outputs": [
+                  "Riscos fiscais"
+                ],
+                "operating_limits": [
+                  "Não substitui o contador responsável"
+                ],
+                "input_contract_ref": "solicitacao_analise_schema.v1",
+                "output_contract_ref": "resposta_especialista_schema.v1",
+                "validation_criteria": [
+                  "Resposta segue o contrato de saída"
+                ],
+                "visibility": "OFFICIAL"
               }
             }
           }
@@ -3018,6 +3117,13 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/SkillSuggestionRequest"
+              },
+              "example": {
+                "clan_id": "1d9e4b6a-3c2f-4a7b-8e05-6c1f2d3a9b10",
+                "title": "Limite de crédito por segmento",
+                "problem": "O limite é fixo para todos os clientes e os impostos variam por segmento.",
+                "objective": "Avaliar o impacto de limites diferentes por segmento.",
+                "context": "Sistema legado em Java. O limite é usado na aprovação de pedidos."
               }
             }
           },
@@ -3030,6 +3136,22 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SkillSuggestionsRead"
+                },
+                "example": {
+                  "available": true,
+                  "suggestions": [
+                    {
+                      "id": "a4c2e8f1-7b3d-4e6a-9c10-5d2f8b1a3e77",
+                      "name": "Skill de Impostos",
+                      "domain": "Contabilidade",
+                      "objective": "Avaliar o impacto fiscal de uma mudança em um sistema.",
+                      "score": 0.62
+                    }
+                  ],
+                  "best_clan_score": 0.31,
+                  "covered_by_clan": false,
+                  "catalog_gap": false,
+                  "can_add_to_clan": true
                 }
               }
             }
@@ -3602,6 +3724,9 @@
                   }
                 ],
                 "title": "Payload"
+              },
+              "example": {
+                "model": "openai/gpt-5-mini"
               }
             }
           }
@@ -3780,6 +3905,11 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/FollowUpQuestionCreate"
+              },
+              "example": {
+                "question": "Qual é o maior risco desta mudança?",
+                "target_domain": "regras_negocio",
+                "model": "openai/gpt-5-mini"
               }
             }
           }
@@ -4058,6 +4188,12 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ClanCreate"
+              },
+              "example": {
+                "name": "Time de Crédito",
+                "is_open": false,
+                "skills_policy": "ALL_MEMBERS",
+                "members_policy": "OWNER_ONLY"
               }
             }
           }
@@ -4640,6 +4776,9 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ClanSkillAdd"
+              },
+              "example": {
+                "agent_skill_id": "a4c2e8f1-7b3d-4e6a-9c10-5d2f8b1a3e77"
               }
             }
           }
@@ -4830,7 +4969,8 @@
                 "type": "null"
               }
             ],
-            "title": "Model"
+            "title": "Model",
+            "description": "Modelo da lista permitida (`LLM_ALLOWED_MODELS`). Sem valor, usa o modelo padrão."
           }
         },
         "type": "object",
@@ -4900,7 +5040,8 @@
               "CLAN"
             ],
             "title": "Visibility",
-            "default": "OFFICIAL"
+            "default": "OFFICIAL",
+            "description": "`OFFICIAL` publica no catálogo, `PRIVATE` deixa só para você e `CLAN` registra a skill em um clã."
           },
           "clan_id": {
             "anyOf": [
@@ -4912,93 +5053,108 @@
               }
             ],
             "title": "Clan Id",
-            "description": "Obrigatório quando visibility='CLAN'."
+            "description": "Obrigatório quando `visibility` é `CLAN`."
           },
           "name": {
             "type": "string",
             "maxLength": 160,
-            "title": "Name"
+            "title": "Name",
+            "description": "Nome da skill no catálogo."
           },
           "version": {
             "type": "string",
             "maxLength": 30,
-            "title": "Version"
+            "title": "Version",
+            "description": "Versão da skill, como `1.0`."
           },
           "author_origin": {
             "type": "string",
-            "title": "Author Origin"
+            "title": "Author Origin",
+            "description": "Quem criou a skill, ou de onde ela veio."
           },
           "domain": {
             "type": "string",
             "maxLength": 60,
             "minLength": 2,
-            "title": "Domain"
+            "title": "Domain",
+            "description": "Área de atuação, em texto livre. As áreas do catálogo oficial mantêm um único valor."
           },
           "objective": {
             "type": "string",
-            "title": "Objective"
+            "title": "Objective",
+            "description": "O que a skill analisa. Também é usado pelo motor de sugestão."
           },
           "capabilities": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Capabilities"
+            "title": "Capabilities",
+            "description": "O que a skill sabe fazer. Pelo menos uma."
           },
           "expected_inputs": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Expected Inputs"
+            "title": "Expected Inputs",
+            "description": "O que a skill precisa receber."
           },
           "produced_outputs": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Produced Outputs"
+            "title": "Produced Outputs",
+            "description": "O que a skill entrega."
           },
           "operating_limits": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Operating Limits"
+            "title": "Operating Limits",
+            "description": "O que a skill não deve fazer."
           },
           "input_contract_ref": {
             "type": "string",
-            "title": "Input Contract Ref"
+            "title": "Input Contract Ref",
+            "description": "Contrato de entrada que a skill segue."
           },
           "output_contract_ref": {
             "type": "string",
-            "title": "Output Contract Ref"
+            "title": "Output Contract Ref",
+            "description": "Contrato de saída que a skill segue."
           },
           "security_rules": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Security Rules"
+            "title": "Security Rules",
+            "description": "Regras de segurança que a skill respeita."
           },
           "usage_examples": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Usage Examples"
+            "title": "Usage Examples",
+            "description": "Exemplos de uso."
           },
           "validation_criteria": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Validation Criteria"
+            "title": "Validation Criteria",
+            "description": "Como conferir a resposta da skill."
           },
           "uses_external_services": {
             "type": "boolean",
             "title": "Uses External Services",
-            "default": false
+            "default": false,
+            "description": "Se a skill depende de serviços externos."
           },
           "persona_instructions": {
             "anyOf": [
@@ -5010,7 +5166,8 @@
                 "type": "null"
               }
             ],
-            "title": "Persona Instructions"
+            "title": "Persona Instructions",
+            "description": "Instruções de papel e foco enviadas ao modelo em cada chamada."
           }
         },
         "type": "object",
@@ -5031,7 +5188,8 @@
           "manifest_markdown": {
             "type": "string",
             "minLength": 1,
-            "title": "Manifest Markdown"
+            "title": "Manifest Markdown",
+            "description": "Conteúdo do arquivo `modelo.md`."
           },
           "visibility": {
             "type": "string",
@@ -5041,7 +5199,8 @@
               "CLAN"
             ],
             "title": "Visibility",
-            "default": "OFFICIAL"
+            "default": "OFFICIAL",
+            "description": "`OFFICIAL` publica no catálogo, `PRIVATE` deixa só para você e `CLAN` registra a skill em um clã."
           },
           "clan_id": {
             "anyOf": [
@@ -5053,7 +5212,7 @@
               }
             ],
             "title": "Clan Id",
-            "description": "Obrigatório quando visibility='CLAN'."
+            "description": "Obrigatório quando `visibility` é `CLAN`."
           }
         },
         "type": "object",
@@ -5467,7 +5626,8 @@
           "file": {
             "type": "string",
             "contentMediaType": "application/octet-stream",
-            "title": "File"
+            "title": "File",
+            "description": "Arquivo de texto puro, como código, Markdown ou JSON. PDF e DOCX não são aceitos."
           }
         },
         "type": "object",
@@ -5482,12 +5642,13 @@
             "type": "string",
             "maxLength": 120,
             "minLength": 2,
-            "title": "Name"
+            "title": "Name",
+            "description": "Nome do clã. Precisa ser único."
           },
           "is_open": {
             "type": "boolean",
             "title": "Is Open",
-            "description": "Se true, qualquer usuário pode entrar sozinho.",
+            "description": "Se verdadeiro, qualquer pessoa pode entrar no clã sozinha.",
             "default": false
           },
           "skills_policy": {
@@ -5497,7 +5658,7 @@
               "OWNER_ONLY"
             ],
             "title": "Skills Policy",
-            "description": "Quem pode registrar Agent Skills com visibilidade CLAN.",
+            "description": "Quem adiciona e remove Agent Skills do clã: `ALL_MEMBERS` ou `OWNER_ONLY`.",
             "default": "ALL_MEMBERS"
           },
           "members_policy": {
@@ -5507,7 +5668,7 @@
               "OWNER_ONLY"
             ],
             "title": "Members Policy",
-            "description": "Quem pode adicionar e remover membros.",
+            "description": "Quem adiciona e remove membros: `ALL_MEMBERS` ou `OWNER_ONLY`.",
             "default": "ALL_MEMBERS"
           }
         },
@@ -5582,7 +5743,8 @@
           "email": {
             "type": "string",
             "format": "email",
-            "title": "Email"
+            "title": "Email",
+            "description": "E-mail de uma pessoa já cadastrada."
           }
         },
         "type": "object",
@@ -5690,7 +5852,8 @@
                 "type": "null"
               }
             ],
-            "title": "Name"
+            "title": "Name",
+            "description": "Novo nome. Sem valor, mantém o atual."
           },
           "is_open": {
             "anyOf": [
@@ -5701,7 +5864,8 @@
                 "type": "null"
               }
             ],
-            "title": "Is Open"
+            "title": "Is Open",
+            "description": "Se verdadeiro, qualquer pessoa pode entrar no clã sozinha."
           },
           "skills_policy": {
             "anyOf": [
@@ -5716,7 +5880,8 @@
                 "type": "null"
               }
             ],
-            "title": "Skills Policy"
+            "title": "Skills Policy",
+            "description": "Quem adiciona e remove Agent Skills do clã: `ALL_MEMBERS` ou `OWNER_ONLY`."
           },
           "members_policy": {
             "anyOf": [
@@ -5731,7 +5896,8 @@
                 "type": "null"
               }
             ],
-            "title": "Members Policy"
+            "title": "Members Policy",
+            "description": "Quem adiciona e remove membros: `ALL_MEMBERS` ou `OWNER_ONLY`."
           }
         },
         "type": "object",
@@ -5743,7 +5909,8 @@
             "type": "string",
             "maxLength": 36,
             "minLength": 1,
-            "title": "Agent Skill Id"
+            "title": "Agent Skill Id",
+            "description": "Skill publicada, ou sua, para adicionar ao clã."
           }
         },
         "type": "object",
@@ -6006,7 +6173,8 @@
             "type": "string",
             "maxLength": 5000,
             "minLength": 5,
-            "title": "Question"
+            "title": "Question",
+            "description": "Pergunta sobre a análise já feita."
           },
           "target_domain": {
             "anyOf": [
@@ -6019,7 +6187,8 @@
                 "type": "null"
               }
             ],
-            "title": "Target Domain"
+            "title": "Target Domain",
+            "description": "Área que deve responder. Sem valor, todas as áreas envolvidas respondem."
           },
           "model": {
             "anyOf": [
@@ -6031,7 +6200,8 @@
                 "type": "null"
               }
             ],
-            "title": "Model"
+            "title": "Model",
+            "description": "Modelo da lista permitida (`LLM_ALLOWED_MODELS`). Sem valor, usa o modelo padrão."
           }
         },
         "type": "object",
@@ -6519,7 +6689,8 @@
             "maxLength": 6,
             "minLength": 6,
             "pattern": "^\\d{6}$",
-            "title": "Code"
+            "title": "Code",
+            "description": "Código de 6 dígitos enviado por e-mail."
           }
         },
         "type": "object",
@@ -6533,13 +6704,15 @@
           "email": {
             "type": "string",
             "format": "email",
-            "title": "Email"
+            "title": "Email",
+            "description": "E-mail da conta."
           },
           "password": {
             "type": "string",
             "maxLength": 128,
             "minLength": 1,
-            "title": "Password"
+            "title": "Password",
+            "description": "Senha da conta."
           }
         },
         "type": "object",
@@ -6737,13 +6910,15 @@
             "type": "string",
             "maxLength": 128,
             "minLength": 1,
-            "title": "Current Password"
+            "title": "Current Password",
+            "description": "Senha atual."
           },
           "new_password": {
             "type": "string",
             "maxLength": 128,
             "minLength": 12,
-            "title": "New Password"
+            "title": "New Password",
+            "description": "Nova senha: pelo menos 12 caracteres, com maiúscula, minúscula, número e caractere especial."
           }
         },
         "type": "object",
@@ -6758,7 +6933,8 @@
           "email": {
             "type": "string",
             "format": "email",
-            "title": "Email"
+            "title": "Email",
+            "description": "E-mail da conta."
           }
         },
         "type": "object",
@@ -6773,13 +6949,15 @@
             "type": "string",
             "maxLength": 200,
             "minLength": 20,
-            "title": "Token"
+            "title": "Token",
+            "description": "Token recebido no link por e-mail."
           },
           "new_password": {
             "type": "string",
             "maxLength": 128,
             "minLength": 12,
-            "title": "New Password"
+            "title": "New Password",
+            "description": "Nova senha: pelo menos 12 caracteres, com maiúscula, minúscula, número e caractere especial."
           }
         },
         "type": "object",
@@ -7057,7 +7235,8 @@
             "type": "string",
             "maxLength": 36,
             "minLength": 1,
-            "title": "Clan Id"
+            "title": "Clan Id",
+            "description": "Clã que vai responder. Só skills fora dele são sugeridas."
           },
           "title": {
             "anyOf": [
@@ -7069,19 +7248,22 @@
                 "type": "null"
               }
             ],
-            "title": "Title"
+            "title": "Title",
+            "description": "Título da solicitação."
           },
           "problem": {
             "type": "string",
             "maxLength": 10000,
             "minLength": 1,
-            "title": "Problem"
+            "title": "Problem",
+            "description": "Problema a analisar."
           },
           "objective": {
             "type": "string",
             "maxLength": 5000,
             "minLength": 1,
-            "title": "Objective"
+            "title": "Objective",
+            "description": "Resultado esperado."
           },
           "context": {
             "anyOf": [
@@ -7093,7 +7275,8 @@
                 "type": "null"
               }
             ],
-            "title": "Context"
+            "title": "Context",
+            "description": "Contexto técnico, como módulos e tecnologias."
           }
         },
         "type": "object",
@@ -7193,7 +7376,8 @@
             "type": "string",
             "maxLength": 20000,
             "minLength": 10,
-            "title": "Context"
+            "title": "Context",
+            "description": "Contexto que faltava para qualificar a solicitação."
           }
         },
         "type": "object",
@@ -7208,19 +7392,22 @@
             "type": "string",
             "maxLength": 160,
             "minLength": 5,
-            "title": "Title"
+            "title": "Title",
+            "description": "Identificação curta e específica."
           },
           "problem": {
             "type": "string",
             "maxLength": 10000,
             "minLength": 10,
-            "title": "Problem"
+            "title": "Problem",
+            "description": "Comportamento atual, divergência ou dúvida técnica."
           },
           "objective": {
             "type": "string",
             "maxLength": 5000,
             "minLength": 5,
-            "title": "Objective"
+            "title": "Objective",
+            "description": "Resposta ou resultado esperado."
           },
           "context": {
             "anyOf": [
@@ -7232,7 +7419,8 @@
                 "type": "null"
               }
             ],
-            "title": "Context"
+            "title": "Context",
+            "description": "Módulos, tecnologias e dependências. Contexto insuficiente deixa a solicitação em `AWAITING_CONTEXT`."
           },
           "restrictions": {
             "items": {
@@ -7240,14 +7428,15 @@
             },
             "type": "array",
             "maxItems": 20,
-            "title": "Restrictions"
+            "title": "Restrictions",
+            "description": "O que a análise deve respeitar."
           },
           "clan_id": {
             "type": "string",
             "maxLength": 36,
             "minLength": 1,
             "title": "Clan Id",
-            "description": "Clã cujas Agent Skills vão responder."
+            "description": "Clã cujas Agent Skills vão responder. É preciso ser membro."
           },
           "requested_domains": {
             "items": {
@@ -7257,7 +7446,8 @@
             },
             "type": "array",
             "maxItems": 50,
-            "title": "Requested Domains"
+            "title": "Requested Domains",
+            "description": "Áreas escolhidas dentro do clã. Vazio significa todas as skills ativas do clã."
           }
         },
         "type": "object",
@@ -7376,7 +7566,8 @@
               "approve",
               "reject"
             ],
-            "title": "Decision"
+            "title": "Decision",
+            "description": "`approve` aprova e `reject` rejeita a resposta."
           },
           "notes": {
             "anyOf": [
@@ -7388,7 +7579,8 @@
                 "type": "null"
               }
             ],
-            "title": "Notes"
+            "title": "Notes",
+            "description": "Justificativa. Obrigatória ao rejeitar."
           }
         },
         "type": "object",
@@ -7403,18 +7595,21 @@
             "type": "string",
             "maxLength": 80,
             "minLength": 2,
-            "title": "Name"
+            "title": "Name",
+            "description": "Nome completo."
           },
           "email": {
             "type": "string",
             "format": "email",
-            "title": "Email"
+            "title": "Email",
+            "description": "E-mail da conta."
           },
           "password": {
             "type": "string",
             "maxLength": 128,
             "minLength": 12,
-            "title": "Password"
+            "title": "Password",
+            "description": "Senha: pelo menos 12 caracteres, com maiúscula, minúscula, número e caractere especial."
           }
         },
         "type": "object",
@@ -7431,7 +7626,8 @@
             "type": "string",
             "maxLength": 80,
             "minLength": 2,
-            "title": "Name"
+            "title": "Name",
+            "description": "Novo nome."
           }
         },
         "type": "object",
@@ -7652,6 +7848,16 @@
     {
       "name": "Auditoria",
       "description": "Trilha de eventos das solicitações do próprio usuário."
+    }
+  ],
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Desenvolvimento local"
+    },
+    {
+      "url": "https://jolly-grass-0a3af3f10.2.azurestaticapps.net",
+      "description": "Produção"
     }
   ]
 }
