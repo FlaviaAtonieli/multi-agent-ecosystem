@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, settings
 from app.rag.base import EmbeddingProvider, Retriever
+from app.rag.cache import CachedEmbeddingProvider
 from app.rag.providers.openrouter_embedding_provider import OpenRouterEmbeddingProvider
 from app.rag.retriever import InMemoryVectorRetriever
 
@@ -21,7 +22,9 @@ def create_embedding_provider(config: Settings = settings) -> EmbeddingProvider:
 
 
 def create_retriever(db: Session, config: Settings = settings) -> Retriever:
-    embedding_provider = create_embedding_provider(config)
+    embedding_provider = CachedEmbeddingProvider(
+        create_embedding_provider(config), db, model=config.embedding_model
+    )
     return InMemoryVectorRetriever(db, embedding_provider)
 
 

@@ -181,6 +181,8 @@ def generate_technical_plan(
         llm_call_id=llm_call_id,
         provider=provider.name,
         model=resolved_model,
+        temperature=settings.llm_temperature,
+        seed=settings.llm_seed,
         purpose="TECHNICAL_PLANNING",
         prompt_template_id="technical-planner",
         prompt_template_version="v1",

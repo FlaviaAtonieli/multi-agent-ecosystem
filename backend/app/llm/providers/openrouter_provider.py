@@ -50,6 +50,10 @@ class OpenRouterLLMProvider(LLMProvider):
             extra_kwargs: dict = {}
             if self.config.llm_max_output_tokens:
                 extra_kwargs["max_tokens"] = self.config.llm_max_output_tokens
+            if self.config.llm_temperature is not None:
+                extra_kwargs["temperature"] = self.config.llm_temperature
+            if self.config.llm_seed is not None:
+                extra_kwargs["seed"] = self.config.llm_seed
 
             response = self.client.chat.completions.create(
                 model=model,
