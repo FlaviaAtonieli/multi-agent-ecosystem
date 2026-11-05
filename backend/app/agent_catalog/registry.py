@@ -165,34 +165,6 @@ def list_all_skills(db: Session, *, viewer_id: str | None = None) -> list[AgentS
     )
 
 
-def select_skills_for_domain(
-    db: Session, *, domain: str, viewer_id: str | None = None
-) -> list[AgentSkill]:
-    """Selects skills compatible with a domain (RF09).
-
-    Deliberately an exact-match filter on the declared domain rather than
-    semantic/NLP matching: cheaper, deterministic, and easy to demonstrate/
-    test — appropriate for a solo-developer PoC (Documento de referência's
-    Orquestrador aspirations are explicitly out of scope here).
-
-    viewer_id scopes the result to official skills plus that user's own
-    (fase 1 da rede de agentes) — never another user's private skill, even if
-    it happens to share the same domain as an official one.
-    """
-    return list(
-        db.scalars(
-            select(AgentSkill)
-            .where(
-                AgentSkill.domain == canonical_domain(db, domain),
-                AgentSkill.status == "approved",
-                AgentSkill.enabled.is_(True),
-                _visibility_filter(viewer_id),
-            )
-            .order_by(AgentSkill.name)
-        )
-    )
-
-
 def official_skill_usage_ranking(db: Session, *, limit: int = 5) -> list[tuple[AgentSkill, int]]:
     """Ranks OFFICIAL skills by successful invocation count, all-time.
 

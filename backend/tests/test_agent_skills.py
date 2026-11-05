@@ -1,4 +1,5 @@
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -948,7 +949,7 @@ def test_skill_usage_ranking_counts_only_official_and_completed(client: TestClie
                         technical_request_id=technical_request["id"],
                         agent_skill_id=skill_id,
                         trace_id=technical_request["trace_id"],
-                        invocation_id=f"{skill_id}-{status}-{index}",
+                        invocation_id=str(uuid4()),
                         input_hash=f"hash-{skill_id}-{status}-{index}",
                         status=status,
                     )

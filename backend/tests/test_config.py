@@ -56,6 +56,7 @@ def test_production_with_sqlite_database_is_rejected() -> None:
         Settings(
             _env_file=None,
             environment="production",
+            database_url="sqlite:///./local.db",
             cookie_secure=True,
             metrics_enabled=False,
         )

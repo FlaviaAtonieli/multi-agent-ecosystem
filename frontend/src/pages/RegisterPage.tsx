@@ -91,6 +91,9 @@ export function RegisterPage() {
           <p className="form-footer">
             Já possui conta? <Link to="/login">Voltar ao login</Link>
           </p>
+          <p className="form-footer">
+            Ao criar a conta, você concorda com a <Link to="/privacidade">política de privacidade</Link>.
+          </p>
         </div>
       </section>
     </main>

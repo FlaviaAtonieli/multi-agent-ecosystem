@@ -59,6 +59,10 @@ Antes de qualquer chamada externa, [`llm/security.py`](../backend/app/llm/securi
 
 Cada Agent Skill é chamada por meio do protocolo MCP e faz uma chamada à OpenRouter, com as instruções da skill, os trechos recuperados e a solicitação. O modelo padrão é `openai/gpt-5-mini`, escolhido depois que o modelo gratuito anterior saiu do catálogo. O usuário escolhe outro entre os permitidos em `LLM_ALLOWED_MODELS`.
 
+Só as skills ativas do **clã escolhido** são chamadas, o que evita gastar tokens com skills fora do assunto.
+
+Quando a solicitação pede um arquivo, código ou projeto, o modelo também devolve `generated_files`. Os nomes e o conteúdo são tratados como não confiáveis: caminhos que poderiam sair da pasta do projeto são recusados, e nada é executado. Depois de gerados, mostrar, baixar e compactar os arquivos não chama o modelo.
+
 ## 5. Pós-processamento
 
 - **Contrato de saída:** a resposta precisa seguir um JSON Schema estrito e é validada com Pydantic.
@@ -86,6 +90,14 @@ Fonte: [medição de 21/09/2026](validation/evidence/2026-09-rag-multi-domain-qu
 - A qualidade da resposta final do modelo: as medições cobrem a recuperação.
 - Os KPIs da RFC com o código e o modelo atuais. A [rodada de agosto](validation/evidence/2026-08-m7-kpi-measurement.md) usou um modelo gratuito e execução em sequência.
 
+## Motor de sugestão de skills
+
+Antes de registrar a solicitação, a pessoa pode verificar se alguma skill fora do clã ajudaria. O texto da solicitação, mascarado, e o de cada skill ativa (nome, área, objetivo e capacidades) viram embeddings, comparados por similaridade de cosseno. O vetor de cada skill fica guardado até o texto dela mudar. O motor só sugere, e a pessoa decide.
+
+**Por que não uma CNN ou outro modelo treinado:** não há exemplos rotulados de "solicitação e skill certa", e um dataset pronto como dados da solução reprova na linha de IA. A similaridade dispensa treino e pode ser medida com gabarito.
+
+**A qualidade ainda não foi medida com embeddings reais.** `tests/test_skill_suggestion_quality.py` mede Precision@3, Recall@3 e MRR em 20 perguntas e mostra as notas de 3 perguntas fora do assunto. O limite `SKILL_SUGGESTION_MIN_SCORE` (0,35) é um valor inicial, até essa calibração.
+
 ## Reprodutibilidade
 
 | Etapa | Repetir dá o mesmo resultado? |
@@ -93,6 +105,7 @@ Fonte: [medição de 21/09/2026](validation/evidence/2026-09-rag-multi-domain-qu
 | Chunking e ranking dos trechos | Sim, com os mesmos embeddings |
 | Métricas de recuperação | Sim, desde que o provedor mantenha o modelo de embeddings: mesmo gabarito e mesmos documentos |
 | Quality Gate | Sim, para as mesmas respostas das skills |
+| Sugestão de skills | Sim, com os mesmos embeddings e o mesmo limite |
 | Texto gerado pelo modelo | **Não necessariamente.** Modelos de linguagem variam, e o projeto não fixa `temperature` nem `seed` |
 
 Para repetir as medições, rode os testes marcados com `llm` (ver README). Eles exigem uma `OPENROUTER_API_KEY` real e geram custo.
@@ -107,5 +120,5 @@ Para repetir as medições, rode os testes marcados com `llm` (ver README). Eles
 ## Limitações conhecidas
 
 - O chunking não considera a estrutura do texto, então um trecho pode cortar uma função ou um parágrafo.
-- A base é compartilhada entre as áreas. Uma skill de outra área, como contabilidade, roda, mas só tem os próprios anexos da solicitação como evidência da área.
+- A base de conhecimento é compartilhada entre as áreas. Uma skill de outra área, como contabilidade, roda, mas só tem os próprios anexos da solicitação como evidência da área.
 - Os anexos só aceitam texto puro, sem PDF ou DOCX.

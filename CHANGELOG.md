@@ -2,6 +2,25 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-11-04 - Auditoria frente aos requisitos do Portfólio
+
+### Adicionado
+
+- Testes para proteções que nenhuma verificação do CI exercitava: CSRF ligado à sessão, bloqueio por tentativas, limite de requisições, expiração de sessão e de link de senha, cota de tokens, lista de modelos, mascaramento de dados, Quality Gate e ordem da busca do RAG.
+- O CI também roda a suíte em PostgreSQL.
+- Política de privacidade (`/privacidade`), com link no login e no cadastro.
+- `docs/requisitos-portfolio.md`, com a situação de cada requisito e a evidência.
+
+### Corrigido
+
+- Acessibilidade: contraste do texto secundário e nomes das listas de filtro, apontados pelo axe.
+
+### Removido
+
+- `docs/Documento_de_referencia.md`, com ideias especulativas que nunca foram implementadas.
+- O caminho com Azure Front Door e App Service do frontend no guia de deploy, que nunca foi usado, e a publicação da imagem do frontend.
+- Código sem uso: `select_skills_for_domain` e o cliente de `/execute` no frontend.
+
 ## 2026-11-04 - Motor de sugestão de Agent Skills
 
 ### Adicionado

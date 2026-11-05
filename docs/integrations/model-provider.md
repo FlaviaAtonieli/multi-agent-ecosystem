@@ -93,7 +93,6 @@ Após o retorno, o backend:
 GET  /api/v1/llm/status
 POST /api/v1/llm/requests/{request_id}/plan
 GET  /api/v1/llm/invocations/{trace_id}
-PATCH /api/v1/admin/users/{user_id}/role
 ```
 
 O endpoint de status não retorna a chave nem qualquer trecho da credencial.

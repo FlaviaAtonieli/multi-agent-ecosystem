@@ -184,14 +184,6 @@ export const agentSkillsApi = {
     apiRequest<AgentSkill>(`/agent-skills/${encodeURIComponent(id)}/enable`, { method: 'PATCH' }),
   disableSkill: (id: string) =>
     apiRequest<AgentSkill>(`/agent-skills/${encodeURIComponent(id)}/disable`, { method: 'PATCH' }),
-  execute: (requestId: string, model: string | null) =>
-    apiRequest<OrchestrationExecutionResult>(
-      `/agent-skills/requests/${encodeURIComponent(requestId)}/execute`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ model }),
-      },
-    ),
   start: (requestId: string, model: string | null) =>
     apiRequest<{ trace_id: string; status: string }>(
       `/agent-skills/requests/${encodeURIComponent(requestId)}/start`,

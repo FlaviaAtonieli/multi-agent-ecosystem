@@ -1,0 +1,77 @@
+# Requisitos do Portfólio
+
+Situação do projeto frente ao [The Portfolio Playbook](https://github.com/CatolicaSC-Portfolio/The-Portfolio-Playbook), nas linhas de **Web Apps** e de **IA**. Cada item aponta para a evidência, para ser conferido no código.
+
+Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | ⏳ pendente
+
+## Pontos fortes
+
+| Ponto | Evidência |
+|---|---|
+| **Protocolo MCP real**, tema que o guia marca como "Preferir" e pouco explorado: cada Agent Skill roda em um processo separado | [`mcp_client.py`](../backend/app/agent_catalog/mcp_client.py), testado por stdio em `test_skill_artifacts.py` |
+| **RAG com qualidade medida:** Precision@3, Recall@3 e MRR contra gabarito manual | [Pipeline de IA](ai-pipeline.md) |
+| **Governança de IA explicável:** Quality Gate por regras, revisão humana e `Trace ID` em cada etapa | [`quality_gate/service.py`](../backend/app/quality_gate/service.py) |
+| **Clã como escopo da orquestração:** evita chamadas de IA a skills fora do assunto | [`agent_skill_orchestration_service.py`](../backend/app/services/agent_skill_orchestration_service.py) |
+| **Respostas com arquivos e ZIP**, sem gastar tokens para mostrar ou baixar | [`artifact_service.py`](../backend/app/services/artifact_service.py) |
+| **Segurança além do básico:** sessão opaca, CSRF, Argon2, OAuth, código por e-mail, mascaramento de dados pessoais | [SECURITY.md](../SECURITY.md) |
+| **Testes que acusam defeitos:** o código é quebrado de propósito para conferir | [VALIDATION.md](../VALIDATION.md) |
+| **Engenharia:** CI, SonarCloud, imagens com hashes travados, migrações conferidas em PostgreSQL | [`ci.yml`](../.github/workflows/ci.yml) |
+
+## Núcleo comum
+
+| Requisito | Situação | Evidência |
+|---|---|---|
+| Wiki no repositório | ✅ | [Wiki](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) |
+| CI/CD | 🟡 | CI ativo. O deploy automático do backend depende do segredo do webhook ([guia](deployment/azure.md)) |
+| Análise estática e de segurança | ✅ | `ruff`, `mypy`, `tsc` e [SonarCloud](https://sonarcloud.io/project/overview?id=FlaviaAtonieli_multi-agent-ecosystem) |
+| Monitoramento | 🟡 | Prometheus e Grafana [prontos](monitoring.md). Falta ler o backend em produção |
+
+## Linha de Web Apps
+
+| Requisito | Situação | Evidência |
+|---|---|---|
+| Hospedagem pública | 🟡 | Azure, aceito pelo professor. **Precisa estar ligado até sair a nota final** |
+| Funcionalidades conforme a RFC | 🟡 | Clãs, arquivos e sugestão mudaram o escopo: registrar na [RFC](rfc/) |
+| Interface funcional | ✅ | Jornadas conferidas no Chrome |
+| Arquitetura modular | ✅ | [Visão da arquitetura](architecture/overview.md) |
+| Requisitos, casos de uso e C4 | ✅ | [RFC](rfc/), seções 2 e 3 |
+| Instruções de deploy | ✅ | [Guia](deployment/azure.md) |
+| 3 fluxos de negócio completos | ✅ | Ver abaixo |
+| Cobertura de 75% no backend e 25% no frontend | ✅ | Exigida pelo CI. Números em [VALIDATION.md](../VALIDATION.md) |
+| TDD | 🟡 | Usado nas funcionalidades recentes, não no início do projeto. Falta saber como é cobrado |
+
+**Fluxos de negócio:**
+
+1. **Conta e acesso:** cadastro, login, código por e-mail, recuperação de senha e exclusão de conta.
+2. **Catálogo e clãs:** criar ou importar skill, publicar, montar clã e receber sugestões.
+3. **Orquestração:** solicitação, qualificação, execução, Quality Gate, revisão humana, arquivos e perguntas.
+
+## Linha de IA
+
+| Requisito | Situação | Evidência |
+|---|---|---|
+| Abordagem de IA fundamentada | ✅ | RAG é aceito pelo guia. [Pipeline de IA](ai-pipeline.md) |
+| Parte de uma aplicação | ✅ | A orquestração é o fluxo principal |
+| Dados justificados | ✅ | Sintéticos, com a justificativa no [pipeline](ai-pipeline.md#1-dados-e-indexação) |
+| Pipeline completo | ✅ | Dados, pré-processamento, modelo e pós-processamento |
+| Ética e LGPD | ✅ | Mascaramento, [política de privacidade](../frontend/src/pages/PrivacyPage.tsx) e exclusão de conta |
+| Resultados replicáveis | 🟡 | Busca e métricas podem ser repetidas. O texto do modelo varia: falta a posição do professor |
+| Avaliação do resultado | ⏳ | Medido só na busca, em 4 de 10 áreas. Falta repetir com o modelo atual |
+
+## O que depende de pessoas
+
+| Requisito | Situação |
+|---|---|
+| 5 orientações evidenciadas | ⏳ 4 de 5, segundo a autora |
+| Review por colegas em PRs, testes cruzados e issues | ⏳ Nenhum registrado no repositório até 04/11/2026 |
+| Aceite do parceiro externo e feedbacks | ⏳ Em andamento |
+| Pôster A0 com QR Code | ⏳ |
+| Prova de autoria | ⏳ Até 30/11/2026 |
+| Visitar e avaliar colegas no Demo Day | ⏳ Em dezembro |
+
+## Limitações conhecidas
+
+- O limite de requisições por IP enxerga o IP da infraestrutura do Azure, não o de cada usuário.
+- A execução em segundo plano assume um único processo no backend.
+- A base de conhecimento só tem documentos técnicos de exemplo.
+- A suíte automática simula a IA. Os testes marcados com `llm` chamam o modelo real e ficam fora do CI.

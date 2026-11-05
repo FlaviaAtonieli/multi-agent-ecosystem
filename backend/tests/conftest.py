@@ -7,7 +7,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 TEST_DB = Path(__file__).parent / "test_agenthub.db"
-os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB.as_posix()}"
+# Por padrão, SQLite. O CI também roda a suíte em PostgreSQL, o banco de produção.
+os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL") or f"sqlite:///{TEST_DB.as_posix()}"
 os.environ["AUTO_CREATE_TABLES"] = "true"
 os.environ["COOKIE_SECURE"] = "false"
 os.environ["ALLOW_REGISTRATION"] = "true"

@@ -138,7 +138,7 @@ export function AuditoriaPage() {
           ))}
         </div>
 
-        <select value={days} onChange={(event) => setDays(Number(event.target.value))}>
+        <select aria-label="Período da auditoria" value={days} onChange={(event) => setDays(Number(event.target.value))}>
           <option value={7}>Últimos 7 dias</option>
           <option value={14}>Últimos 14 dias</option>
           <option value={30}>Últimos 30 dias</option>

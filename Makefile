@@ -1,4 +1,4 @@
-.PHONY: up down logs test-backend lint-backend
+.PHONY: up down logs test-backend test-frontend lint-backend
 
 up:
 	docker compose up --build
@@ -10,7 +10,10 @@ logs:
 	docker compose logs -f
 
 test-backend:
-	cd backend && pytest
+	cd backend && pytest -m "not llm"
+
+test-frontend:
+	cd frontend && npm run coverage
 
 lint-backend:
 	cd backend && ruff check .
