@@ -34,7 +34,7 @@ Conferidos em todo push e PR pelo CI, que falha abaixo das metas:
 
 | Parte | Ferramenta | Testes (04/11/2026) | Cobertura de linhas | Meta |
 |---|---|---:|---:|---:|
-| Backend | pytest, em SQLite e PostgreSQL | 288 | 85% | 75% |
+| Backend | pytest, em SQLite e PostgreSQL | 296 | 85% | 75% |
 | Frontend | Vitest e Testing Library | 135 | 51,52% | 25% |
 
 A contagem do backend não inclui os 27 testes marcados com `llm`, que chamam a OpenRouter de verdade e ficam fora do CI: rodar a cada push gastaria créditos reais e poderia ficar vermelho por instabilidade do provedor, não por bug de código. **Eles ainda não foram executados com o modelo padrão atual (`openai/gpt-5-mini`).**
