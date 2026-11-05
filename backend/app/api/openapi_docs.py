@@ -253,6 +253,11 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
         "Cria uma skill pelo formulário assistido. O manifesto passa pela validação de governança "
         "(`422` lista todos os problemas). `visibility=CLAN` exige `clan_id` e permissão no clã.",
     ),
+    "POST /agent-skills/suggestions": (
+        "Sugerir Agent Skills",
+        "Compara a solicitação com as skills ativas por similaridade de embeddings e sugere as que não "
+        "estão no clã. Não chama o modelo de chat, e `available=false` indica provedor indisponível.",
+    ),
     "GET /agent-skills/tools": (
         "Skills como tools",
         "Descritores das skills ativas no formato de tool (nome, descrição, schema de entrada).",

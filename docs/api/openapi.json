@@ -3006,6 +3006,84 @@
         ]
       }
     },
+    "/api/v1/agent-skills/suggestions": {
+      "post": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Sugerir Agent Skills",
+        "operationId": "suggest_api_v1_agent_skills_suggestions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkillSuggestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillSuggestionsRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Compara a solicitação com as skills ativas por similaridade de embeddings e sugere as que não estão no clã. Não chama o modelo de chat, e `available=false` indica provedor indisponível.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
     "/api/v1/agent-skills/import": {
       "post": {
         "tags": [
@@ -6938,6 +7016,143 @@
           "created_at"
         ],
         "title": "SkillArtifactRead"
+      },
+      "SkillSuggestionItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "objective": {
+            "type": "string",
+            "title": "Objective"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "description": "Similaridade de cosseno com a solicitação. Não é uma probabilidade."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "domain",
+          "objective",
+          "score"
+        ],
+        "title": "SkillSuggestionItem"
+      },
+      "SkillSuggestionRequest": {
+        "properties": {
+          "clan_id": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Clan Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "problem": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Problem"
+          },
+          "objective": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Objective"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clan_id",
+          "problem",
+          "objective"
+        ],
+        "title": "SkillSuggestionRequest"
+      },
+      "SkillSuggestionsRead": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "description": "False quando o provedor de embeddings não está disponível."
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/SkillSuggestionItem"
+            },
+            "type": "array",
+            "title": "Suggestions"
+          },
+          "best_clan_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Clan Score"
+          },
+          "covered_by_clan": {
+            "type": "boolean",
+            "title": "Covered By Clan"
+          },
+          "catalog_gap": {
+            "type": "boolean",
+            "title": "Catalog Gap",
+            "description": "True quando nada no catálogo chega ao limite de similaridade."
+          },
+          "can_add_to_clan": {
+            "type": "boolean",
+            "title": "Can Add To Clan"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available",
+          "suggestions",
+          "best_clan_score",
+          "covered_by_clan",
+          "catalog_gap",
+          "can_add_to_clan"
+        ],
+        "title": "SkillSuggestionsRead"
       },
       "SkillToolResult": {
         "properties": {

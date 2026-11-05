@@ -19,7 +19,7 @@ from app.agent_manifest.manifest import AgentSkillManifest, ManifestParseError, 
 from app.api.dependencies import get_current_user, require_authenticated_csrf
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import is_initial_account
+from app.core.rate_limit import skill_suggestion_rate_limit
 from app.models import AgentSkill, AuthSession, TechnicalRequest, User
 from app.schemas.agent_skill import (
     AgentSkillExecutionRequest,
@@ -31,6 +31,9 @@ from app.schemas.agent_skill import (
     ConsolidatedResponseRead,
     OrchestrationExecutionRead,
     OrchestrationStartRead,
+    SkillSuggestionItem,
+    SkillSuggestionRequest,
+    SkillSuggestionsRead,
     SkillVisibilityLiteral,
 )
 from app.schemas.orchestration import FollowUpExchangeRead, FollowUpQuestionCreate
@@ -55,6 +58,7 @@ from app.services.clan_service import (
     is_member,
 )
 from app.services.llm_service import LLMQuotaExceededError
+from app.services.skill_suggestion_service import suggest_skills
 
 
 def _resolve_visibility(
@@ -77,6 +81,7 @@ def _resolve_visibility(
     except ClanPermissionError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     return clan_id
+
 
 def _can_manage_skill(db: Session, skill: AgentSkill, user: User) -> bool:
     """Quem criou a skill a gerencia (editar, ativar, desativar). Numa skill de
@@ -161,9 +166,7 @@ def list_skills(
     user: User = Depends(get_current_user),
 ) -> list:
     return (
-        list_active_skills(db, viewer_id=user.id)
-        if only_active
-        else list_all_skills(db, viewer_id=user.id)
+        list_active_skills(db, viewer_id=user.id) if only_active else list_all_skills(db, viewer_id=user.id)
     )
 
 
@@ -191,6 +194,55 @@ def skill_usage_ranking(
         )
         for skill, count in official_skill_usage_ranking(db, limit=limit)
     ]
+
+
+@router.post("/suggestions", response_model=SkillSuggestionsRead)
+def suggest(
+    payload: SkillSuggestionRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+    _rate: None = Depends(skill_suggestion_rate_limit),
+) -> SkillSuggestionsRead:
+    try:
+        clan = get_clan(db, payload.clan_id)
+    except ClanNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    if not is_member(db, clan_id=clan.id, user_id=user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Só um membro do clã pode pedir sugestões para ele.",
+        )
+
+    result = suggest_skills(
+        db,
+        clan_id=clan.id,
+        viewer_id=user.id,
+        query_parts=[payload.title, payload.problem, payload.objective, payload.context],
+    )
+    try:
+        ensure_can_register_skills(db, clan=clan, user=user)
+        can_add = True
+    except ClanPermissionError:
+        can_add = False
+
+    return SkillSuggestionsRead(
+        available=result.available,
+        suggestions=[
+            SkillSuggestionItem(
+                id=item.skill.id,
+                name=item.skill.name,
+                domain=item.skill.domain,
+                objective=item.skill.objective,
+                score=round(item.score, 3),
+            )
+            for item in result.suggestions
+        ],
+        best_clan_score=None if result.best_clan_score is None else round(result.best_clan_score, 3),
+        covered_by_clan=result.covered_by_clan,
+        catalog_gap=result.catalog_gap,
+        can_add_to_clan=can_add,
+    )
 
 
 @router.post("", response_model=AgentSkillRead, status_code=status.HTTP_201_CREATED)

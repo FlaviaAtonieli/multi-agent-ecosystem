@@ -8,7 +8,7 @@ from app.rag.base import EmbeddingProvider, Retriever
 from app.rag.schemas import RetrievedChunk
 
 
-def _cosine_similarity(a: list[float], b: list[float]) -> float:
+def cosine_similarity(a: list[float], b: list[float]) -> float:
     if not a or not b or len(a) != len(b):
         return 0.0
     dot = sum(x * y for x, y in zip(a, b, strict=True))
@@ -40,7 +40,7 @@ class InMemoryVectorRetriever(Retriever):
         query_embedding = self.embedding_provider.embed([query])[0]
         scored = [
             (
-                _cosine_similarity(query_embedding, chunk.embedding or []),
+                cosine_similarity(query_embedding, chunk.embedding or []),
                 chunk,
             )
             for chunk in chunks

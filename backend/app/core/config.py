@@ -152,6 +152,11 @@ class Settings(BaseSettings):
     rag_chunk_max_chars: int = 800
     rag_chunk_overlap: int = 100
 
+    # Motor de sugestão de Agent Skills. O limite é a similaridade de cosseno mínima
+    # para sugerir, e deve ser calibrado com tests/test_skill_suggestion_quality.py.
+    skill_suggestion_min_score: float = 0.35
+    skill_suggestion_max_results: int = 3
+
     # Real MCP transport used to invoke Agent Skills. "stdio" spawns each skill's
     # server as a genuine subprocess (JSON-RPC over stdio); "memory" connects to
     # the same MCPServer object in-process (fast, used by the test suite).

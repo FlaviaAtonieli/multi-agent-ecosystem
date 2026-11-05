@@ -5,6 +5,7 @@ import { Clan, clansApi } from '../api/clansApi'
 import { ApiError } from '../api/http'
 import { orchestrationApi } from '../api/orchestrationApi'
 import { domainLabels, estimateRunSeconds, formatEstimate } from '../components/orchestration/shared'
+import { SkillSuggestions } from '../components/orchestration/SkillSuggestions'
 
 const MAX_ATTACHMENT_BYTES = 300_000
 const ALLOWED_ATTACHMENT_EXTENSIONS =
@@ -382,6 +383,21 @@ export function NewRequestPage() {
                 <small>Só as Agent Skills do clã escolhido são consultadas.</small>
                 {availableDomains?.length === 0 && <small>{NO_ACTIVE_SKILLS_MESSAGE}</small>}
               </div>
+
+              {clanId && (
+                <SkillSuggestions
+                  key={clanId}
+                  clanId={clanId}
+                  title={title}
+                  problem={problem}
+                  objective={objective}
+                  context={context}
+                  onAdded={(domain) => {
+                    setStepError('')
+                    setAvailableDomains((current) => [...new Set([...(current ?? []), domain])])
+                  }}
+                />
+              )}
 
               {availableDomains && availableDomains.length > 0 && (
                 <div className="workspace-field workspace-field-full" role="group" aria-labelledby="request-agents-label">

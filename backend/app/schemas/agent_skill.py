@@ -99,3 +99,28 @@ class AgentSkillExecutionRequest(BaseModel):
     configured LLM_MODEL default."""
 
     model: str | None = Field(default=None, max_length=200)
+
+
+class SkillSuggestionRequest(BaseModel):
+    clan_id: str = Field(min_length=1, max_length=36)
+    title: str | None = Field(default=None, max_length=160)
+    problem: str = Field(min_length=1, max_length=10_000)
+    objective: str = Field(min_length=1, max_length=5_000)
+    context: str | None = Field(default=None, max_length=20_000)
+
+
+class SkillSuggestionItem(BaseModel):
+    id: str
+    name: str
+    domain: str
+    objective: str
+    score: float = Field(description="Similaridade de cosseno com a solicitação. Não é uma probabilidade.")
+
+
+class SkillSuggestionsRead(BaseModel):
+    available: bool = Field(description="False quando o provedor de embeddings não está disponível.")
+    suggestions: list[SkillSuggestionItem]
+    best_clan_score: float | None
+    covered_by_clan: bool
+    catalog_gap: bool = Field(description="True quando nada no catálogo chega ao limite de similaridade.")
+    can_add_to_clan: bool

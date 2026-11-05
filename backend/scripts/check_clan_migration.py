@@ -121,6 +121,9 @@ def main() -> None:
     command.upgrade(config, "head")
     command.downgrade(config, NEW_REVISION)
     command.upgrade(config, "head")
+    with engine.connect() as connection:
+        embedding = connection.scalar(text("SELECT embedding FROM agent_skills LIMIT 1"))
+        assert embedding is None, "embedding começa vazio"
     print("Migração 0019 conferida.")
 
 

@@ -54,6 +54,9 @@ class AgentSkill(Base):
     # logic -- the 4 official skills don't use this, they keep their own
     # SkillExecutor subclasses.
     persona_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Motor de sugestão. Adiado porque só ele lê o vetor, e o catálogo lista todas as skills.
+    embedding: Mapped[list[float] | None] = mapped_column(JSON, nullable=True, deferred=True)
+    embedding_text_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
