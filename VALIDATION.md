@@ -12,7 +12,7 @@ detalhadas em [`docs/validation/evidence/`](docs/validation/evidence/) — este 
   recuperação de senha por e-mail;
 - sem papéis de usuário desde 14/10/2026: o acesso é controlado por propriedade,
   visibilidade da skill e cota de tokens (ver [`SECURITY.md`](SECURITY.md#autorização));
-- migrations Alembic até `0018_password_reset`;
+- migrations Alembic até `0021_skill_embeddings`;
 - integração com a OpenRouter (Model Gateway), sem provedor mock na aplicação;
 - orquestração em segundo plano, com até 3 skills em paralelo por execução, progresso
   real e recuperação de execuções interrompidas por um reinício;
@@ -23,6 +23,7 @@ detalhadas em [`docs/validation/evidence/`](docs/validation/evidence/) — este 
 - catálogo de Agent Skills: 10 oficiais e skills de usuário em área livre, com visibilidade
   `OFFICIAL`, `PRIVATE` (só o dono) ou `CLAN` (membros do clã);
 - anexo de documentos de texto como contexto adicional de uma solicitação;
+- clã obrigatório na orquestração, respostas com arquivos e ZIP, e sugestão de skills por embeddings;
 - pipeline RAG com qualidade medida (Precision@k, Recall@k e MRR) em 4 das 10 áreas
   oficiais (ver [`docs/ai-pipeline.md`](docs/ai-pipeline.md));
 - métricas de IA, execução e autenticação em `/metrics`, com painel e alertas no Grafana.
@@ -31,27 +32,41 @@ detalhadas em [`docs/validation/evidence/`](docs/validation/evidence/) — este 
 
 Conferidos em todo push e PR pelo CI, que falha abaixo das metas:
 
-| Parte | Ferramenta | Testes (03/11/2026) | Cobertura de linhas | Meta |
+| Parte | Ferramenta | Testes (04/11/2026) | Cobertura de linhas | Meta |
 |---|---|---:|---:|---:|
-| Backend | pytest | 152 | 80% | 75% |
-| Frontend | Vitest e Testing Library | 99 | 48% | 25% |
+| Backend | pytest, em SQLite e PostgreSQL | 269 | 85% | 75% |
+| Frontend | Vitest e Testing Library | 135 | 51.52% | 25% |
 
-A contagem do backend não inclui os 26 testes marcados com `llm`, que chamam a OpenRouter
-de verdade e ficam fora do CI: rodar a cada push gastaria créditos reais e poderia ficar
-vermelho por instabilidade do provedor, não por bug de código. **Eles ainda não foram
-executados com o modelo padrão atual (`openai/gpt-5-mini`).**
+A contagem do backend não inclui os 27 testes marcados com , que chamam a OpenRouter de verdade e ficam fora do CI: rodar a cada push gastaria créditos reais e poderia ficar vermelho por instabilidade do provedor, não por bug de código. **Eles ainda não foram executados com o modelo padrão atual ().**
 
-Os testes do frontend simulam só a rede. O restante do código roda de verdade.
+**O que é simulado:** na suíte do CI, o modelo de linguagem e os embeddings são substituídos por versões falsas, e no frontend só a rede é simulada. Todo o restante roda de verdade. Por isso, a suíte confere as regras do sistema, não a qualidade das respostas da IA.
 
 Para rodar, veja a seção "Testes" do [README](README.md#testes).
+
+## Os testes acusam defeitos?
+
+Cobertura mostra que uma linha rodou, não que o resultado foi conferido. Por isso, em 04/11/2026, o código foi quebrado de propósito, um ponto por vez, em cópias, e a suíte do CI rodou em cada caso.
+
+| Rodada | Backend | Frontend |
+|---|---:|---:|
+| Primeira, antes dos testes novos | **19 de 34 acusadas**, 15 passaram sem ninguém perceber | 10 de 10, em 03/11/2026 |
+| Depois de  | **35 de 35** | 12 de 12, com as telas novas |
+
+As 15 que escaparam eram proteções reais, como o vínculo do CSRF com a sessão, o bloqueio por tentativas de login, o limite de requisições, a cota de tokens, o mascaramento de dados pessoais e o Quality Gate. Parte delas tinha teste, mas marcado com , e por isso nunca rodava no CI. A própria checagem também pegou um teste novo fraco, que recebia 403 pelo motivo errado.
+
+**O que isso não prova:** os pontos foram escolhidos à mão entre as regras críticas, então não é uma medida da suíte inteira. A automática simula o modelo e, no frontend, a rede. Os testes marcados com `llm` são os únicos que falam com o modelo real.
+
+## Acessibilidade
+
+Em 04/11/2026, o [axe](https://github.com/dequelabs/axe-core), com as regras WCAG 2.1 A e AA, rodou no Chrome em todas as telas, inclusive a orquestração com resultado. A primeira rodada achou contraste insuficiente e 3 listas sem nome para leitor de tela. Depois da correção, nenhuma violação foi apontada. Ferramentas automáticas pegam só parte dos problemas de acessibilidade: não houve teste com leitor de tela nem com pessoas.
 
 ## Núcleo comum de engenharia
 
 Itens exigidos pela rubrica independentemente da linha de projeto:
 
-- [x] **CI/CD** — [`ci.yml`](.github/workflows/ci.yml) em todo push e PR, e [`publish-images.yml`](.github/workflows/publish-images.yml) com o [deploy do backend](docs/deployment/azure.md#9-deploy-automático-do-backend). O frontend é publicado pelo workflow do Static Web Apps.
+- [x] **CI/CD** — [`ci.yml`](.github/workflows/ci.yml) em todo push e PR, e [`publish-images.yml`](.github/workflows/publish-images.yml) com o [deploy do backend](docs/deployment/azure.md#8-deploy-automático-do-backend). O frontend é publicado pelo workflow do Static Web Apps.
 - [x] **Wiki no GitHub** — [wiki do repositório](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki).
-- [ ] **Análise estática de código e segurança** — `ruff`, `mypy` e `tsc` rodam no CI. **Falta** a análise de segurança.
+- [x] **Análise estática de código e segurança** — `ruff`, `mypy` e `tsc` no CI, e [SonarCloud](https://sonarcloud.io/project/overview?id=FlaviaAtonieli_multi-agent-ecosystem) em todo push e PR.
 - [ ] **Monitoramento** — Prometheus, Grafana, painel e alertas estão [prontos](docs/monitoring.md) e foram testados contra um backend local. **Falta** ligar a leitura do backend em produção.
 
 ## Comandos locais
@@ -65,7 +80,7 @@ docker compose ps
 Resultado esperado do `alembic current`:
 
 ```text
-0018_password_reset (head)
+0021_skill_embeddings (head)
 ```
 
 ## Evidências detalhadas

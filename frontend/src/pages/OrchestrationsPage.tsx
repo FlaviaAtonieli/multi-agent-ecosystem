@@ -91,7 +91,7 @@ export function OrchestrationsPage() {
           ))}
         </div>
 
-        <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as SortOrder)}>
+        <select aria-label="Ordenar orquestrações" value={sortOrder} onChange={(event) => setSortOrder(event.target.value as SortOrder)}>
           <option value="recent">Mais recentes</option>
           <option value="oldest">Mais antigas</option>
         </select>

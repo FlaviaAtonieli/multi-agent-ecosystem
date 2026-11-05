@@ -1,18 +1,13 @@
 # Deploy no Azure
 
-Arquitetura alvo (a mesma da estimativa de custo feita na calculadora do Azure): **Azure Front Door** na frente, roteando por path pra dois **App Service** (backend e frontend, Web App for Containers), com **Azure Database for PostgreSQL Flexible Server** como banco.
+Arquitetura em produção: o frontend fica em um **Static Web App**, que repassa `/api/*` para o App Service do backend (**linked backend**), sob o mesmo domínio. Isso mantém o cookie de sessão e o CSRF funcionando sem mudar código.
 
 ```text
 Internet
-  -> Azure Front Door (domínio custom, TLS gerenciado, roteamento por path)
-       /api/*  -> App Service "backend"  (container FastAPI, porta 8000)
-       /*      -> App Service "frontend" (container nginx+Vite, porta 8080)
+  -> Azure Static Web App (Standard)   frontend: build do Vite (frontend/dist)
+       /api/*  -> linked backend: App Service "backend" (container FastAPI, porta 8000)
                      -> Azure Database for PostgreSQL Flexible Server
 ```
-
-Front Door faz o roteamento que hoje o `nginx.conf` local faz via `proxy_pass http://backend:8000/` (esse hostname só existe na rede interna do `docker compose` -- não existe equivalente dentro do Azure, por isso o Front Door assume esse papel). Os dois App Services ficam com **Access Restriction** pra só aceitar tráfego vindo do Front Door -- as URLs públicas `*.azurewebsites.net` não ficam acessíveis direto.
-
-Registro de aplicativo OAuth (GitHub/Google) fica pra depois do domínio estar no ar -- ver "Checklist pós-deploy" no final.
 
 ## Pré-requisitos
 
@@ -22,20 +17,17 @@ Registro de aplicativo OAuth (GitHub/Google) fica pra depois do domínio estar n
 
 ## 1. Variáveis de convenção
 
-Ajuste os nomes abaixo -- nomes de App Service precisam ser **globalmente únicos** em `*.azurewebsites.net`.
+Ajuste os nomes abaixo. Nomes de App Service precisam ser **globalmente únicos** em `*.azurewebsites.net`.
 
 ```powershell
 $RESOURCE_GROUP = "flavia-ia-rg"
 $LOCATION = "brazilsouth"
 $PLAN_NAME = "flavia-ia-plan"
 $BACKEND_APP = "flavia-ia-backend"      # vira flavia-ia-backend.azurewebsites.net
-$FRONTEND_APP = "flavia-ia-frontend"    # vira flavia-ia-frontend.azurewebsites.net
 $DB_SERVER = "flavia-ia-db"             # vira flavia-ia-db.postgres.database.azure.com
 $DB_NAME = "agenthub"
 $DB_ADMIN = "agenthub_admin"
-$FRONTDOOR_PROFILE = "flavia-ia-fd"
 $GHCR_IMAGE_BACKEND = "ghcr.io/flaviaatonieli/multi-agent-ecosystem-backend:latest"
-$GHCR_IMAGE_FRONTEND = "ghcr.io/flaviaatonieli/multi-agent-ecosystem-frontend:latest"
 ```
 
 ## 2. Resource group
@@ -76,7 +68,7 @@ az postgres flexible-server db create --resource-group "$RESOURCE_GROUP" --serve
 az postgres flexible-server firewall-rule create --resource-group "$RESOURCE_GROUP" --server-name "$DB_SERVER" --name AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
 ```
 
-## 4. App Service Plan + os dois Web Apps for Containers
+## 4. App Service do backend
 
 ```powershell
 az appservice plan create `
@@ -92,23 +84,8 @@ az webapp create `
   --name $BACKEND_APP `
   --deployment-container-image-name $GHCR_IMAGE_BACKEND
 
-az webapp create `
-  --resource-group $RESOURCE_GROUP `
-  --plan $PLAN_NAME `
-  --name $FRONTEND_APP `
-  --deployment-container-image-name $GHCR_IMAGE_FRONTEND
-```
-
-Os dois Web Apps compartilham o mesmo Plano (B1 = 1 núcleo, 1.75 GB RAM) -- sem custo adicional por ter dois apps no mesmo plano, igual à sua estimativa mostrou.
-
-### Porta de cada container
-
-```powershell
 az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $BACKEND_APP `
   --settings WEBSITES_PORT=8000
-
-az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $FRONTEND_APP `
-  --settings WEBSITES_PORT=8080
 ```
 
 ### App Settings do backend
@@ -121,8 +98,8 @@ Em `ENVIRONMENT=production`, o backend exige `DATABASE_URL` apontando para Postg
 az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $BACKEND_APP --settings `
   ENVIRONMENT=production `
   DATABASE_URL="postgresql+psycopg://$DB_ADMIN`:<senha-forte-aqui>@$DB_SERVER.postgres.database.azure.com:5432/$DB_NAME`?sslmode=require" `
-  CORS_ORIGINS="https://<seu-dominio-ou-endpoint-do-frontdoor>" `
-  TRUSTED_HOSTS="<seu-dominio-ou-endpoint-do-frontdoor>" `
+  CORS_ORIGINS="https://<nome>.azurestaticapps.net" `
+  TRUSTED_HOSTS="<nome>.azurestaticapps.net,$BACKEND_APP.azurewebsites.net" `
   COOKIE_SECURE=true `
   SESSION_TTL_HOURS=8 `
   ALLOW_REGISTRATION=false `
@@ -130,7 +107,7 @@ az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $BACKEN
   BOOTSTRAP_ADMIN_NAME="<seu nome>" `
   BOOTSTRAP_ADMIN_EMAIL="<seu-email>" `
   BOOTSTRAP_ADMIN_PASSWORD="<senha-forte-aqui>" `
-  FRONTEND_BASE_URL="https://<seu-dominio-ou-endpoint-do-frontdoor>" `
+  FRONTEND_BASE_URL="https://<nome>.azurestaticapps.net" `
   LLM_ENABLED=true `
   LLM_PROVIDER=openrouter `
   OPENROUTER_API_KEY="<sua-chave-openrouter>" `
@@ -150,98 +127,34 @@ az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $BACKEN
 
 > **SMTP é obrigatório em produção.** O login em navegador novo envia um código por e-mail, e com `ENVIRONMENT=production` a aplicação recusa subir com `EMAIL_BACKEND=console`. No Gmail, a senha de app é gerada em https://myaccount.google.com/apppasswords (exige verificação em 2 etapas na conta).
 
-> **`TRUSTED_PROXY_IPS` fica de fora de propósito.** Esse ajuste (`app/core/rate_limit.py::resolve_client_ip`) espera uma lista fixa de IPs de proxy confiável -- funciona bem com o `nginx` do `docker compose` local (IP interno estável), mas não tem um equivalente direto e estável no App Service atrás do Front Door (o IP que chega "direto" no container já passou pela infraestrutura do Azure antes). Gap conhecido: sem isso configurado, o rate limiter por IP enxerga o IP de borda do Azure pra todo mundo em vez do IP de cada usuário real -- não quebra a aplicação, mas o rate limit deixa de distinguir usuários individuais atrás do Front Door. Registrado aqui, não resolvido neste guia (é mudança de código, não de infraestrutura).
+> **`TRUSTED_PROXY_IPS` fica de fora de propósito.** Esse ajuste (`app/core/rate_limit.py::resolve_client_ip`) espera uma lista fixa de IPs de proxy confiável -- funciona bem com o `nginx` do `docker compose` local (IP interno estável), mas não tem um equivalente direto e estável no App Service atrás do Static Web App (o IP que chega "direto" no container já passou pela infraestrutura do Azure antes). Gap conhecido: sem isso configurado, o rate limiter por IP enxerga o IP de borda do Azure pra todo mundo em vez do IP de cada usuário real -- não quebra a aplicação, mas o rate limit deixa de distinguir usuários individuais. Registrado aqui, não resolvido neste guia (é mudança de código, não de infraestrutura).
 
 **A aplicação não sobe em produção sem estas duas decisões:** o código de login por e-mail exige SMTP, e as métricas exigem `METRICS_TOKEN`. Os valores acima desligam os dois para o primeiro deploy. Para ligar depois, veja `.env.production.example`.
 
 `BOOTSTRAP_ADMIN_PASSWORD` precisa ter pelo menos 12 caracteres, com maiúscula, minúscula, número e símbolo, senão o backend não inicia. Ela só vale na criação da conta: mudar a variável depois não altera a senha.
 
-Substitua `<senha-forte-aqui>`, `<seu-dominio-ou-endpoint-do-frontdoor>`, `<sua-chave-openrouter>` etc. pelos valores reais. `GITHUB_OAUTH_ENABLED`/`GOOGLE_OAUTH_ENABLED` ficam `false` até você cadastrar os OAuth Apps com o domínio real -- ver checklist no final.
+Substitua `<senha-forte-aqui>`, `<nome>.azurestaticapps.net`, `<sua-chave-openrouter>` etc. pelos valores reais. `GITHUB_OAUTH_ENABLED`/`GOOGLE_OAUTH_ENABLED` ficam `false` até você cadastrar os OAuth Apps com o domínio real -- ver checklist no final.
 
-### App Settings do frontend
+## 5. Imagem do backend no GitHub Container Registry
 
-A imagem do frontend já embute `VITE_API_URL=/api/v1` (relativo) desde o build -- nenhuma App Setting de runtime muda isso, porque é uma variável de **build-time** do Vite, não de execução. Caminho relativo funciona porque o Front Door serve os dois App Services sob o mesmo domínio público, roteando `/api/*` pro backend -- sem isso, seria preciso rebuildar a imagem do frontend com uma URL absoluta.
+O workflow `.github/workflows/publish-images.yml` publica a imagem no `ghcr.io` a cada push na `main`, com o `GITHUB_TOKEN` padrão. Depois da primeira publicação, torne o pacote público em **github.com/FlaviaAtonieli?tab=packages → pacote → Package settings → Change visibility → Public**, para o App Service baixar a imagem sem credencial.
 
-## 5. Publicar as imagens no GitHub Container Registry
+## 6. Frontend no Static Web App
 
-O workflow de CI já builda as imagens (`docker compose build`); falta publicar no `ghcr.io`. Via GitHub Actions, autenticando com o `GITHUB_TOKEN` padrão (sem secret novo):
+- **Workflow:** `.github/workflows/azure-static-web-apps-*.yml`, criado pelo portal ao criar o recurso e ajustado depois. Ele publica `frontend/dist` a cada push na `main`. O token de deploy fica no secret `AZURE_STATIC_WEB_APPS_API_TOKEN_*`, que o portal já criou.
+- **Configuração:** `frontend/public/staticwebapp.config.json` manda as rotas da SPA (`/login`, `/reset-password`, ...) para o `index.html` e aplica os cabeçalhos de segurança (CSP, `X-Frame-Options` etc.).
 
-```yaml
-# .github/workflows/publish-images.yml (exemplo -- ver arquivo real criado nesta mudança)
-- uses: docker/login-action@v3
-  with:
-    registry: ghcr.io
-    username: ${{ github.actor }}
-    password: ${{ secrets.GITHUB_TOKEN }}
-- run: docker build -t ghcr.io/${{ github.repository_owner }}/multi-agent-ecosystem-backend:latest backend
-- run: docker push ghcr.io/${{ github.repository_owner }}/multi-agent-ecosystem-backend:latest
-```
+Passos no Azure:
 
-Depois de publicada ao menos uma vez, torne o pacote público em **github.com/FlaviaAtonieli?tab=packages → pacote → Package settings → Change visibility → Public** -- assim o App Service puxa sem precisar de credencial de registro.
+1. **Plano:** o Static Web App precisa estar no plano **Standard**. O Free não aceita linked backend.
+2. **Linked backend:** no Static Web App, menu **APIs**, ambiente de produção, **Link**, tipo **Web App**, escolher `$BACKEND_APP`.
+3. **Domínio:** `TRUSTED_HOSTS` leva os dois nomes porque a documentação do Static Web Apps não diz qual cabeçalho `Host` o proxy repassa. Depois de confirmar nos logs qual deles chega, dá para deixar só esse.
+4. **OAuth:** as URLs de callback do GitHub e do Google são `https://<nome>.azurestaticapps.net/api/v1/auth/{github,google}/callback`. As variáveis `*_OAUTH_REDIRECT_URI` precisam bater exatamente com elas.
 
-## 6. Azure Front Door (Classic) -- roteamento por path
-
-```powershell
-az afd profile create --resource-group $RESOURCE_GROUP --profile-name $FRONTDOOR_PROFILE --sku Standard_AzureFrontDoor
-
-az afd endpoint create --resource-group $RESOURCE_GROUP --profile-name $FRONTDOOR_PROFILE `
-  --endpoint-name flavia-ia --enabled-state Enabled
-
-# Origin group + origin do backend
-az afd origin-group create --resource-group $RESOURCE_GROUP --profile-name $FRONTDOOR_PROFILE `
-  --origin-group-name backend-origins --probe-request-type GET --probe-protocol Https `
-  --probe-path /api/v1/health --probe-interval-in-seconds 30 `
-  --sample-size 4 --successful-samples-required 3
-
-az afd origin create --resource-group $RESOURCE_GROUP --profile-name $FRONTDOOR_PROFILE `
-  --origin-group-name backend-origins --origin-name backend `
-  --host-name "$BACKEND_APP.azurewebsites.net" --origin-host-header "$BACKEND_APP.azurewebsites.net" `
-  --http-port 80 --https-port 443 --priority 1 --weight 1000 --enabled-state Enabled
-
-# Origin group + origin do frontend
-az afd origin-group create --resource-group $RESOURCE_GROUP --profile-name $FRONTDOOR_PROFILE `
-  --origin-group-name frontend-origins --probe-request-type GET --probe-protocol Https `
-  --probe-path / --probe-interval-in-seconds 30 --sample-size 4 --successful-samples-required 3
-
-az afd origin create --resource-group $RESOURCE_GROUP --profile-name $FRONTDOOR_PROFILE `
-  --origin-group-name frontend-origins --origin-name frontend `
-  --host-name "$FRONTEND_APP.azurewebsites.net" --origin-host-header "$FRONTEND_APP.azurewebsites.net" `
-  --http-port 80 --https-port 443 --priority 1 --weight 1000 --enabled-state Enabled
-
-# Rota /api/* -> backend
-az afd route create --resource-group $RESOURCE_GROUP --profile-name $FRONTDOOR_PROFILE `
-  --endpoint-name flavia-ia --route-name api-route --origin-group backend-origins `
-  --supported-protocols Https --patterns-to-match "/api/*" --forwarding-protocol HttpsOnly `
-  --link-to-default-domain Enabled
-
-# Rota default / -> frontend
-az afd route create --resource-group $RESOURCE_GROUP --profile-name $FRONTDOOR_PROFILE `
-  --endpoint-name flavia-ia --route-name default-route --origin-group frontend-origins `
-  --supported-protocols Https --patterns-to-match "/*" --forwarding-protocol HttpsOnly `
-  --link-to-default-domain Enabled
-```
-
-Isso já dá um domínio público do tipo `flavia-ia-xxxx.z01.azurefd.net`, com TLS gerenciado pelo Azure. Domínio próprio (`seu-dominio.com`) é um passo opcional adicional (`az afd custom-domain create` + validação de DNS) -- não incluído aqui pra manter o guia no escopo do que a estimativa de custo cobre.
-
-## 7. Travar os App Services pra só aceitarem tráfego do Front Door
-
-```powershell
-az webapp config access-restriction add --resource-group $RESOURCE_GROUP --name $BACKEND_APP `
-  --rule-name AllowFrontDoor --priority 100 --service-tag AzureFrontDoor.Backend `
-  --http-header "x-azure-fdid=<ID-do-seu-perfil-Front-Door>"
-
-az webapp config access-restriction add --resource-group $RESOURCE_GROUP --name $FRONTEND_APP `
-  --rule-name AllowFrontDoor --priority 100 --service-tag AzureFrontDoor.Backend `
-  --http-header "x-azure-fdid=<ID-do-seu-perfil-Front-Door>"
-```
-
-O `<ID-do-seu-perfil-Front-Door>` sai de `az afd profile show --resource-group $RESOURCE_GROUP --profile-name $FRONTDOOR_PROFILE --query "frontDoorId"`. Esse header extra evita que outro cliente do Azure (com um Front Door próprio, também usando o service tag genérico) consiga rotear tráfego pro seu App Service.
-
-## 8. Subir os containers
+## 7. Subir o backend
 
 ```powershell
 az webapp restart --resource-group $RESOURCE_GROUP --name $BACKEND_APP
-az webapp restart --resource-group $RESOURCE_GROUP --name $FRONTEND_APP
 ```
 
 O `CMD` do `backend/Dockerfile` já roda `alembic upgrade head` antes de subir o `uvicorn` -- as migrations aplicam sozinhas no primeiro start, sem passo manual. A conta inicial (`BOOTSTRAP_ADMIN_*`) também é criada automaticamente no primeiro start, se ainda não existir.
@@ -272,7 +185,7 @@ Confira os logs se algo não subir:
 az webapp log tail --resource-group $RESOURCE_GROUP --name $BACKEND_APP
 ```
 
-## 9. Deploy automático do backend
+## 8. Deploy automático do backend
 
 A cada push na `main`, o workflow `Publish images` publica a imagem e, se o segredo `AZURE_BACKEND_DEPLOY_WEBHOOK` existir, chama o webhook de implantação contínua do App Service, que baixa a imagem nova e reinicia o container. Sem o segredo, o job termina com um aviso, e o redeploy continua manual (`az webapp restart`).
 
@@ -299,50 +212,18 @@ Enquanto a versão estiver fixada, os deploys automáticos reinstalam essa mesma
 
 Uma migration já aplicada não é desfeita ao voltar a imagem: se a versão anterior não for compatível com o banco, rode `alembic downgrade` antes.
 
-## Alternativa: frontend no Azure Static Web Apps
-
-No lugar do App Service do frontend e do Front Door, o frontend pode ficar num **Static Web App** com o App Service do backend como **linked backend**. O Static Web App serve o build do Vite e repassa tudo em `/api/*` para o backend, sob o mesmo domínio. É isso que mantém o cookie de sessão e o CSRF funcionando sem mudar código: o frontend continua chamando `/api/v1` (relativo).
-
-```text
-Internet
-  -> Azure Static Web App (Standard)   frontend: build do Vite (frontend/dist)
-       /api/*  -> linked backend: App Service "backend" (container FastAPI)
-                     -> Azure Database for PostgreSQL Flexible Server
-```
-
-### O que já está no repositório
-
-- **Workflow:** `.github/workflows/azure-static-web-apps-*.yml`, criado pelo portal ao criar o recurso e ajustado depois. Ele publica `frontend/dist` a cada push na `main`. O token de deploy fica no secret `AZURE_STATIC_WEB_APPS_API_TOKEN_*`, que o portal já criou.
-- **Configuração:** `frontend/public/staticwebapp.config.json` (o Vite copia para a raiz de `dist/`, onde o Static Web Apps procura o arquivo quando há build) faz o papel do `nginx.conf`. Ele manda as rotas da SPA (`/login`, `/reset-password`, ...) para o `index.html` e aplica os mesmos cabeçalhos de segurança (CSP, `X-Frame-Options` etc.).
-
-### Passos no Azure
-
-1. **Plano:** o Static Web App precisa estar no plano **Standard**. O Free não aceita linked backend.
-2. **Linked backend:** no Static Web App, menu **APIs**, ambiente de produção, **Link**, tipo **Web App**, escolher `$BACKEND_APP`.
-3. **App Settings do backend:** o domínio público passa a ser o do Static Web App, por exemplo `https://<nome>.azurestaticapps.net`. Ajuste estas variáveis da seção 4:
-   ```powershell
-   az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $BACKEND_APP --settings `
-     CORS_ORIGINS="https://<nome>.azurestaticapps.net" `
-     TRUSTED_HOSTS="<nome>.azurestaticapps.net,$BACKEND_APP.azurewebsites.net" `
-     FRONTEND_BASE_URL="https://<nome>.azurestaticapps.net"
-   ```
-   O `TRUSTED_HOSTS` leva os dois nomes porque a documentação do Static Web Apps não diz qual cabeçalho `Host` o proxy repassa. Depois de confirmar nos logs qual deles chega, dá para deixar só esse.
-4. **OAuth:** as URLs de callback do GitHub e do Google passam a ser `https://<nome>.azurestaticapps.net/api/v1/auth/{github,google}/callback`. As variáveis `*_OAUTH_REDIRECT_URI` precisam bater exatamente com elas.
-5. **Seções que não se aplicam:** neste caminho, a seção 6 (Front Door), a seção 7 (Access Restriction) e o App Service do frontend não são necessários.
-
-### Limitações conhecidas
+## Limitações conhecidas
 
 - **Limite de 45 segundos por chamada à API.** O Static Web Apps corta qualquer requisição a `/api` depois de 45 s, e esse limite não pode ser mudado. Por isso, o site inicia a orquestração por `POST /agent-skills/requests/{id}/start`, que responde na hora e roda as skills em segundo plano, e acompanha o andamento pela linha do tempo. Cada skill levou cerca de 40 s em média (medição de 11/2026, com `openai/gpt-5-mini`), e até `ORCHESTRATION_MAX_PARALLEL_SKILLS` skills rodam ao mesmo tempo (3 por padrão). As perguntas de acompanhamento seguem o mesmo caminho, por `/ask/start`.
 - **Um único processo no backend.** A execução em segundo plano vive no processo do backend. Se ele reiniciar, as execuções em andamento são marcadas como `FAILED` e podem ser repetidas pela tela. Por isso, o container não pode rodar com mais de um worker do `uvicorn`, nem o App Service com mais de uma instância.
 - **O backend fica acessível só pelo Static Web App.** Ao ligar o linked backend, o Azure adiciona ao App Service um provedor de identidade chamado "Azure Static Web Apps (Linked)", que bloqueia acesso direto a `*.azurewebsites.net`. Isso também bloqueia um Prometheus externo tentando ler `/metrics` direto no App Service. Para coletar métricas, é preciso liberar esse caminho na autenticação do App Service (ver [docs/monitoring.md](../monitoring.md)).
 - **Sem pré-visualização por PR.** Os ambientes de PR do Static Web Apps não aceitam linked backend, por isso o workflow só publica a partir da `main`.
-- **`TRUSTED_PROXY_IPS`:** vale a mesma ressalva da seção 4. O rate limit por IP enxerga o IP da infraestrutura do Azure.
+- **`TRUSTED_PROXY_IPS`:** ver a ressalva da seção 4. O rate limit por IP enxerga o IP da infraestrutura do Azure.
 
 ## Checklist pós-deploy
 
-- [ ] Confirmar `https://<endpoint-do-frontdoor>/api/v1/health` responde `200`.
-- [ ] Confirmar `https://<endpoint-do-frontdoor>/` carrega o frontend.
-- [ ] Cadastrar o OAuth App do GitHub e o OAuth Client do Google com o domínio real do Front Door (`docs/integrations/github-oauth.md`, `docs/integrations/google-oauth.md`) -- as `*_OAUTH_REDIRECT_URI` precisam bater exatamente com `https://<endpoint-do-frontdoor>/api/v1/auth/{github,google}/callback`.
-- [ ] Depois de cadastrados: `az webapp config appsettings set` no `$BACKEND_APP` com `GITHUB_OAUTH_ENABLED=true`/`GOOGLE_OAUTH_ENABLED=true` + os `*_CLIENT_ID`/`*_CLIENT_SECRET` reais.
-- [ ] Revisar `TRUSTED_PROXY_IPS` (ver nota na seção 4) antes de expor o sistema a usuários reais, se o rate limit por IP individual for importante pro seu caso de uso.
-- [ ] `ALLOW_REGISTRATION=false` depois do cadastro inicial dos usuários reais (já no template).
+- [ ] Confirmar que `https://<nome>.azurestaticapps.net/api/v1/health` responde `200`.
+- [ ] Confirmar que `https://<nome>.azurestaticapps.net/` carrega o frontend.
+- [ ] Cadastrar o OAuth App do GitHub e o OAuth Client do Google com o domínio real (`docs/integrations/github-oauth.md`, `docs/integrations/google-oauth.md`).
+- [ ] Depois de cadastrados: `az webapp config appsettings set` no `$BACKEND_APP` com `GITHUB_OAUTH_ENABLED=true`/`GOOGLE_OAUTH_ENABLED=true` e os `*_CLIENT_ID`/`*_CLIENT_SECRET` reais.
+- [ ] `ALLOW_REGISTRATION=false` depois do cadastro inicial dos usuários reais.

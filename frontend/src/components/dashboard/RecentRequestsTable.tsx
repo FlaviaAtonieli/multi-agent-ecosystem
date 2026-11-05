@@ -41,7 +41,7 @@ export function RecentRequestsTable({ requests, showToolbar = false }: { request
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
-          <select value={status} onChange={(event) => setStatus(event.target.value as RequestStatus | 'ALL')}>
+          <select aria-label="Filtrar por status" value={status} onChange={(event) => setStatus(event.target.value as RequestStatus | 'ALL')}>
             {statusOptions.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}

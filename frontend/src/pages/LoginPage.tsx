@@ -212,6 +212,9 @@ export function LoginPage() {
               <p className="form-footer">
                 Ainda não possui conta? <Link to="/register">Criar conta</Link>
               </p>
+              <p className="form-footer">
+                <Link to="/privacidade">Política de privacidade</Link>
+              </p>
             </>
           )}
         </div>

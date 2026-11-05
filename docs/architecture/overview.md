@@ -76,11 +76,11 @@ Quando a integração com modelos está habilitada:
 
 ```text
 Solicitação QUALIFIED
-  -> verificação de perfil e propriedade
+  -> verificação de propriedade e do clã
   -> sanitização e limite de entrada
   -> recuperação de trechos relevantes na base de conhecimento (RAG)
   -> criação do LLM Call ID
-  -> provedor configurado (OpenRouter, OpenAI ou mock)
+  -> provedor configurado (OpenRouter ou OpenAI)
   -> validação da resposta estruturada
   -> persistência de metadados, hashes e trechos recuperados
   -> aprovação humana obrigatória

@@ -1,12 +1,12 @@
 name: Publish images
 
-# Builda e publica as imagens Docker (backend/frontend) no GitHub Container
+# Builda e publica a imagem Docker do backend no GitHub Container
 # Registry a cada push na main -- pre-requisito pro deploy no Azure (App
 # Service puxa a imagem de la, ver docs/deployment/azure.md). Gratuito pra
 # imagem publica, sem precisar de Azure Container Registry pago.
 #
 # Depois de publicar, o job deploy-backend chama o webhook de implantacao
-# continua do App Service (docs/deployment/azure.md, secao 9). Sem o segredo
+# continua do App Service (docs/deployment/azure.md, secao 8). Sem o segredo
 # AZURE_BACKEND_DEPLOY_WEBHOOK, ele so avisa, e o redeploy segue manual. O
 # frontend em producao e publicado pelo workflow do Static Web Apps.
 
@@ -57,26 +57,3 @@ jobs:
           fi
           # -o e --silent: a URL e a resposta não podem aparecer no log, porque a URL contém a senha de publicação.
           curl --silent --fail --max-time 60 --request POST --output /dev/null "$DEPLOY_WEBHOOK"
-
-  publish-frontend:
-    name: Frontend image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build e push
-        run: |
-          IMAGE=ghcr.io/${{ github.repository_owner }}/multi-agent-ecosystem-frontend
-          IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
-          docker build --build-arg VITE_API_URL=/api/v1 -t "$IMAGE:latest" -t "$IMAGE:${{ github.sha }}" frontend
-          docker push "$IMAGE:latest"
-          docker push "$IMAGE:${{ github.sha }}"

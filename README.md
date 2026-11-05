@@ -6,6 +6,18 @@ Projeto acadêmico **Arquitetura de Integração de Agentes Especialistas em Amb
 
 A proposta é validar uma arquitetura modular para registrar, selecionar, coordenar e auditar capacidades especializadas. A Prova de Conceito usa solicitações técnicas como entrada e mantém o vínculo entre contexto, decisões, chamadas de modelo e eventos por meio de um `Trace ID`.
 
+## Destaques
+
+- **Agentes em processos separados, por MCP real:** cada Agent Skill roda como um servidor MCP, e o Orquestrador é o cliente.
+- **RAG com qualidade medida:** Precision@3, Recall@3 e MRR contra gabarito manual, em 4 áreas. Ver [Pipeline de IA](docs/ai-pipeline.md).
+- **Clã como escopo:** só as skills do clã escolhido respondem, o que evita chamadas de IA fora do assunto.
+- **Motor de sugestão:** indica skills fora do clã que podem ajudar, por similaridade de embeddings, sem chamar o modelo de chat.
+- **Governança:** Quality Gate por regras explícitas, revisão humana e `Trace ID` em cada etapa.
+- **Respostas com arquivos e ZIP:** só gerar consome tokens. Mostrar e baixar, não.
+- **Testes verificados:** o código é quebrado de propósito para conferir se a suíte acusa. Ver [VALIDATION.md](VALIDATION.md#os-testes-acusam-defeitos).
+
+Situação item a item frente aos requisitos do Portfólio: [docs/requisitos-portfolio.md](docs/requisitos-portfolio.md).
+
 ## Tecnologias
 
 - **Frontend**: React, Vite, TypeScript.
@@ -19,9 +31,10 @@ A proposta é validar uma arquitetura modular para registrar, selecionar, coorde
 - Solicitação técnica → qualificação de contexto → execução por Agent Skills (RAG + LLM) → Quality Gate → resposta consolidada, tudo rastreado por `Trace ID`.
 - Catálogo de 10 domínios de Agent Skill oficiais, com áreas de atuação livres para skills de outras áreas (contabilidade, jurídico...), extensível por manifesto `modelo.md` sem alterar o núcleo do Orquestrador (evidência: `docs/validation/evidence/2026-08-plug-and-play-extensibility.md`).
 - Revisão humana obrigatória de solicitações sinalizadas pelo Quality Gate, feita por quem abriu a solicitação.
-- Clãs (grupos auto-serviço) como terceira visibilidade de Agent Skill, ao lado de `OFFICIAL`/`PRIVATE`.
+- Clãs (grupos auto-serviço): toda orquestração escolhe um clã, e só as skills dele respondem. Uma skill pode estar em vários clãs.
+- Sugestão de skills fora do clã e respostas com arquivos e ZIP.
 - Página de conta com exclusão lógica (preserva histórico referenciado por outras tabelas).
-- CI com análise estática em todo push/PR (`.github/workflows/ci.yml`).
+- CI em todo push e PR: análise estática, testes em SQLite e PostgreSQL, cobertura mínima, migrações e build das imagens (`.github/workflows/ci.yml`), além de análise de segurança no SonarCloud.
 
 Detalhes de arquitetura, os três níveis de controle de acesso e o que ainda não faz parte da base: [Wiki do projeto](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) e [SECURITY.md](SECURITY.md#autorização).
 
@@ -120,11 +133,12 @@ Na base atual, o resultado esperado é:
 
 ```text
 Usuário autenticado
-  -> cria uma solicitação técnica
+  -> cria uma solicitação técnica e escolhe o clã
+  -> pode pedir sugestões de skills fora do clã
   -> contexto é avaliado (AWAITING_CONTEXT ou QUALIFIED)
-  -> execução aciona as Agent Skills do(s) domínio(s) pedido(s)
+  -> execução aciona as Agent Skills do clã, ou as áreas escolhidas dentro dele
   -> Quality Gate aprova ou sinaliza revisão humana
-  -> resposta final consolidada
+  -> resposta final consolidada, com os arquivos gerados, se houver
 ```
 
 Exige usuário autenticado, `LLM_ENABLED=true` e `OPENROUTER_API_KEY` válida. A base não executa tools nem publica documentos automaticamente. Detalhe completo do fluxo e dos três níveis de controle de acesso (propriedade → visibilidade da skill → cota de tokens): [Wiki do projeto](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) e [SECURITY.md](SECURITY.md#autorização).
@@ -175,6 +189,8 @@ Produção no Azure: <https://jolly-grass-0a3af3f10.2.azurestaticapps.net>. O fr
 
 ## Documentação
 
+- [Requisitos do Portfólio](docs/requisitos-portfolio.md)
+- [Relatório de validação](VALIDATION.md)
 - [Documentação da API (Swagger/OpenAPI)](docs/api/README.md) — Swagger em `/docs` no desenvolvimento e `docs/api/openapi.json` versionado
 - [Monitoramento (Prometheus + Grafana)](docs/monitoring.md) — métricas em `/metrics`, painel pronto em http://localhost:3001
 - [Pipeline de IA](docs/ai-pipeline.md) — dados, RAG, modelo, Quality Gate e medições

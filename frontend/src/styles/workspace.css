@@ -1346,3 +1346,7 @@
 
 .workspace-skill-suggestions { display: grid; gap: 10px; }
 .workspace-skill-suggestions > button { justify-self: start; }
+
+.workspace-privacy { padding-block: 40px; color: var(--text-secondary); line-height: 1.6; }
+.workspace-privacy h1, .workspace-privacy h2, .workspace-privacy strong { color: var(--text-primary); }
+.workspace-privacy a { color: var(--text-primary); text-decoration: underline; }

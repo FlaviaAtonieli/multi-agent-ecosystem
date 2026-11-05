@@ -14,6 +14,7 @@ import { LoginPage } from '../pages/LoginPage'
 import { NewRequestPage } from '../pages/NewRequestPage'
 import { OrchestrationPage } from '../pages/OrchestrationPage'
 import { OrchestrationsPage } from '../pages/OrchestrationsPage'
+import { PrivacyPage } from '../pages/PrivacyPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { ResetPasswordPage } from '../pages/ResetPasswordPage'
 
@@ -27,6 +28,7 @@ export function App() {
       </Route>
       {/* Fora do PublicRoute: o link do e-mail precisa abrir mesmo com alguém logado neste navegador. */}
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/privacidade" element={<PrivacyPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>

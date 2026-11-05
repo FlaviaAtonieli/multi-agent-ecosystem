@@ -8,7 +8,7 @@ Solicitações, Agent Skills e respostas devem possuir formatos conhecidos e val
 
 ## Autorização no backend
 
-A interface pode ocultar ações conforme o perfil, porém a decisão de acesso é sempre tomada pela API. Nenhuma restrição de segurança pode depender apenas do frontend.
+A interface pode ocultar ações, porém a decisão de acesso é sempre tomada pela API. Nenhuma restrição de segurança pode depender apenas do frontend.
 
 ## Extensibilidade controlada
 
