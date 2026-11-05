@@ -7,8 +7,8 @@ WORKDIR /app
 
 RUN addgroup --system agenthub && adduser --system --ingroup agenthub agenthub
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.lock ./
+RUN pip install --no-cache-dir --only-binary :all: --require-hashes -r requirements.lock
 
 COPY alembic.ini ./
 COPY alembic ./alembic

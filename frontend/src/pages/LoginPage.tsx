@@ -127,7 +127,6 @@ export function LoginPage() {
                     value={code}
                     onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
                     placeholder="000000"
-                    autoFocus
                     required
                   />
                 </label>

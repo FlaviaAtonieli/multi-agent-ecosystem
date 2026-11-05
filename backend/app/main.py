@@ -66,13 +66,6 @@ app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=settings.trusted_host_list,
 )
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origin_list,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "X-CSRF-Token", "X-Request-ID"],
-)
 if settings.metrics_enabled:
     register_database_collector()
     app.add_middleware(MetricsMiddleware)
@@ -80,6 +73,15 @@ if settings.metrics_enabled:
 # oversized body via Content-Length before any other middleware or route
 # handler touches the request.
 app.add_middleware(MaxBodySizeMiddleware)
+# Por último de todos, para ser o mais externo: sem os cabeçalhos de CORS, o
+# navegador esconde as respostas de erro dos outros middlewares da tela.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origin_list,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "X-CSRF-Token", "X-Request-ID"],
+)
 
 
 @app.exception_handler(StarletteHTTPException)

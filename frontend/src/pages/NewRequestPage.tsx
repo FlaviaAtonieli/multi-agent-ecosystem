@@ -207,7 +207,6 @@ export function NewRequestPage() {
                   minLength={5}
                   maxLength={160}
                   placeholder="Ex.: Erro de timeout no serviço de pagamentos"
-                  autoFocus
                 />
                 <small>Uma identificação curta e específica — evite títulos genéricos como &ldquo;teste&rdquo;.</small>
               </label>
@@ -224,7 +223,6 @@ export function NewRequestPage() {
                   rows={5}
                   minLength={10}
                   placeholder="Descreva o comportamento atual, a divergência ou a dúvida técnica..."
-                  autoFocus
                 />
                 <small>
                   Exemplo: &ldquo;O endpoint /checkout retorna 504 após ~30s quando o carrinho tem mais de 20 itens.
@@ -258,7 +256,6 @@ export function NewRequestPage() {
                   onChange={(event) => setContext(event.target.value)}
                   rows={7}
                   placeholder="Inclua módulos, tecnologias, artefatos, dependências e comportamento esperado..."
-                  autoFocus
                 />
                 <div className="workspace-chip-row">
                   {contextSuggestions.map((hint) => (
