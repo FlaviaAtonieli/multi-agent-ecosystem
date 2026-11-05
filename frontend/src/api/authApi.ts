@@ -10,6 +10,7 @@ export type User = {
   onboarding_completed_at: string | null
   has_password: boolean
   oauth_provider: 'github' | 'google' | null
+  is_initial_account: boolean
 }
 
 export type AuthResponse = {

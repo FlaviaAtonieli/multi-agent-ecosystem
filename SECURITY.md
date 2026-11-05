@@ -54,7 +54,7 @@ Desde 14/10/2026 não há papéis de usuário (os antigos `USER`, `TECHNICIAN`, 
 |---|---|
 | Solicitações, orquestrações e revisão humana | Só quem abriu a solicitação (lookup owner-scoped, 404 para os demais) |
 | Trilha de auditoria | Cada usuário vê apenas os eventos das próprias solicitações |
-| Agent Skills | Qualquer usuário cria ou importa, inclusive `OFFICIAL`; editar, desativar e reativar fica com quem criou (numa skill `CLAN`, também com o dono do clã) |
+| Agent Skills | Qualquer usuário cria ou importa, inclusive `OFFICIAL`; editar, desativar e reativar fica com quem criou (numa skill `CLAN`, também com o dono do clã). As 4 oficiais sem dono só são desativadas e reativadas pela conta inicial (`BOOTSTRAP_ADMIN_EMAIL`), e ninguém as edita pela tela |
 | Clãs | Regras por clã (`is_open`, `skills_policy`, `members_policy`); o dono (`created_by_id`) altera as configurações |
 
 Não há mais painel de administração: desativar a conta de outro usuário deixou de existir pela interface.

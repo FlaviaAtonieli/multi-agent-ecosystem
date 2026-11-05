@@ -6,12 +6,23 @@ from datetime import UTC, datetime
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 
+from app.core.config import settings
+
 password_hasher = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4)
 DUMMY_PASSWORD_HASH = password_hasher.hash("NotARealPassword!123456")
 
 
 def normalize_email(email: str) -> str:
     return email.strip().lower()
+
+
+def is_initial_account(email: str) -> bool:
+    """A conta de BOOTSTRAP_ADMIN_EMAIL, a única que pode ligar e desligar as skills
+    oficiais sem dono (ver _find_toggleable_skill em agent_skills.py)."""
+    configured = settings.bootstrap_admin_email
+    if not configured:
+        return False
+    return normalize_email(configured) == normalize_email(email)
 
 
 def hash_password(password: str) -> str:

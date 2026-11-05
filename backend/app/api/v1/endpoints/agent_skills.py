@@ -109,6 +109,20 @@ def _find_manageable_skill(db: Session, skill_id: str, user: User) -> AgentSkill
     return skill
 
 
+def _find_toggleable_skill(db: Session, skill_id: str, user: User) -> AgentSkill:
+    """As skills oficiais sem dono rodam no próprio servidor MCP, e dar um dono a elas
+    as mandaria para o servidor genérico (ver _module_for_skill em mcp_client.py). Por
+    isso continuam sem dono, e a conta inicial pode só ligar e desligar: o que elas
+    fazem está no código, então editar o manifesto pela tela não mudaria o resultado."""
+    try:
+        skill = get_skill(db, skill_id)
+    except AgentSkillNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    if skill.owner_id is None and is_initial_account(user.email):
+        return skill
+    return _find_manageable_skill(db, skill_id, user)
+
+
 router = APIRouter(prefix="/agent-skills", tags=["Agent Skills"])
 
 
@@ -346,7 +360,7 @@ def enable(
     user: User = Depends(get_current_user),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> object:
-    _find_manageable_skill(db, skill_id, user)
+    _find_toggleable_skill(db, skill_id, user)
     skill = enable_skill(db, skill_id)
 
     record_audit(db, request, "AGENT_SKILL_ENABLED", user_id=user.id, details={"agent_skill_id": skill_id})
@@ -362,7 +376,7 @@ def disable(
     user: User = Depends(get_current_user),
     _: AuthSession = Depends(require_authenticated_csrf),
 ) -> object:
-    _find_manageable_skill(db, skill_id, user)
+    _find_toggleable_skill(db, skill_id, user)
     skill = disable_skill(db, skill_id)
 
     record_audit(db, request, "AGENT_SKILL_DISABLED", user_id=user.id, details={"agent_skill_id": skill_id})

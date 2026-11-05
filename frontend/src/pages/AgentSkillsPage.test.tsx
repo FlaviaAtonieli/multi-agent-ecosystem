@@ -106,6 +106,42 @@ describe('AgentSkillsPage', () => {
     })
   })
 
+  describe('skill oficial sem dono', () => {
+    const initialAccount = { 'GET /auth/me': { ...testUser, is_initial_account: true } }
+
+    it('a conta inicial pode desativar, mas não editar', async () => {
+      mockApi(routes(initialAccount))
+      renderPage()
+      const element = await card('Skill sem-dono')
+
+      expect(await within(element).findByRole('button', { name: 'Desativar' })).toBeInTheDocument()
+      expect(within(element).queryByRole('link', { name: 'Editar' })).not.toBeInTheDocument()
+    })
+
+    it('a conta inicial desativa e o card atualiza', async () => {
+      const user = userEvent.setup()
+      const api = mockApi(
+        routes({ ...initialAccount, 'PATCH /agent-skills/sem-dono/disable': skill('sem-dono', { enabled: false }) }),
+      )
+      renderPage()
+      const element = await card('Skill sem-dono')
+
+      await user.click(await within(element).findByRole('button', { name: 'Desativar' }))
+
+      expect(await within(element).findByRole('button', { name: 'Reativar' })).toBeInTheDocument()
+      expect(api.callsTo('PATCH', '/agent-skills/sem-dono/disable')).toHaveLength(1)
+    })
+
+    it('a conta inicial não ganha botões nas skills de outras pessoas', async () => {
+      mockApi(routes(initialAccount))
+      renderPage()
+      const element = await card('Skill oficial-outra')
+      await within(await card('Skill sem-dono')).findByRole('button', { name: 'Desativar' })
+
+      expect(within(element).queryByRole('button', { name: 'Desativar' })).not.toBeInTheDocument()
+    })
+  })
+
   describe('ativar e desativar', () => {
     it('desativa a skill e atualiza o card', async () => {
       const user = userEvent.setup()
