@@ -20,6 +20,7 @@ from app.api.dependencies import get_current_user, require_authenticated_csrf
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import skill_suggestion_rate_limit
+from app.core.security import is_initial_account
 from app.models import AgentSkill, AuthSession, TechnicalRequest, User
 from app.schemas.agent_skill import (
     AgentSkillExecutionRequest,
