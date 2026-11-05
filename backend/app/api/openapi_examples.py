@@ -67,8 +67,8 @@ FIELD_DOCS: dict[str, dict[str, str]] = {
         "model": _MODEL,
     },
     "LoginCodeVerify": {"code": "Código de 6 dígitos enviado por e-mail."},
-    "LoginRequest": {"email": "E-mail da conta.", "password": "Senha da conta."},
-    "PasswordChange": {"current_password": "Senha atual.", "new_password": _NEW_SECRET_RULE},
+    "LoginRequest": {"email": "E-mail da conta.", "password": "Senha da conta."},  # NOSONAR: texto ou exemplo de documentação, não é credencial
+    "PasswordChange": {"current_password": "Senha atual.", "new_password": _NEW_SECRET_RULE},  # NOSONAR: texto ou exemplo de documentação, não é credencial
     "PasswordForgot": {"email": "E-mail da conta."},
     "PasswordReset": {"token": "Token recebido no link por e-mail.", "new_password": _NEW_SECRET_RULE},
     "SkillSuggestionRequest": {
@@ -95,7 +95,7 @@ FIELD_DOCS: dict[str, dict[str, str]] = {
     "UserCreate": {
         "name": "Nome completo.",
         "email": "E-mail da conta.",
-        "password": "Senha: pelo menos 12 caracteres, com maiúscula, minúscula, número e caractere especial.",
+        "password": "Senha: pelo menos 12 caracteres, com maiúscula, minúscula, número e caractere especial.",  # NOSONAR: texto ou exemplo de documentação, não é credencial
     },
     "UserNameUpdate": {"name": "Novo nome."},
 }
@@ -108,9 +108,9 @@ REQUEST_EXAMPLES: dict[str, dict[str, Any]] = {
     "POST /auth/register": {
         "name": "Pessoa de Exemplo",
         "email": "pessoa@example.com",
-        "password": "Exemplo-De-Senha#2026",
+        "password": "Exemplo-De-Senha#2026",  # NOSONAR: texto ou exemplo de documentação, não é credencial
     },
-    "POST /auth/login": {"email": "pessoa@example.com", "password": "Exemplo-De-Senha#2026"},
+    "POST /auth/login": {"email": "pessoa@example.com", "password": "Exemplo-De-Senha#2026"},  # NOSONAR: texto ou exemplo de documentação, não é credencial
     "POST /clans": {
         "name": "Time de Crédito",
         "is_open": False,
