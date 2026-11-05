@@ -96,6 +96,14 @@ export function OrchestrationPage() {
 
   const status = detail?.technical_request.status
   const running = status === 'RUNNING'
+  // Motivos da última vez que o Orientador pediu mais contexto
+  // (backend/app/services/context_quality.py).
+  const contextIssues =
+    status === 'AWAITING_CONTEXT'
+      ? ((detail?.events.filter((event) => event.event_type === 'CONTEXT_REQUESTED').at(-1)?.payload.issues as
+          | string[]
+          | undefined) ?? [])
+      : []
 
   // A execução roda em segundo plano no backend: enquanto durar, acompanha o
   // andamento pela linha do tempo. Uma falha pontual de rede não interrompe o
@@ -221,9 +229,13 @@ export function OrchestrationPage() {
     setError('')
     setSuccessMessage('')
     try {
-      await orchestrationApi.addContext(detail.technical_request.id, context)
-      setContext('')
+      const updated = await orchestrationApi.addContext(detail.technical_request.id, context)
       await load()
+      if (updated?.status === 'AWAITING_CONTEXT') {
+        setError('O contexto ainda não é suficiente. Veja acima o que falta e ajuste o texto.')
+        return
+      }
+      setContext('')
       setSuccessMessage('Contexto complementado com sucesso.')
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Não foi possível complementar o contexto.')
@@ -364,6 +376,16 @@ export function OrchestrationPage() {
 
             {(status === 'AWAITING_CONTEXT' || status === 'CANCELLED') && (
               <form className="workspace-context-form" onSubmit={handleContextSubmit}>
+                {contextIssues.length > 0 && (
+                  <div className="workspace-context-issues" role="status" aria-label="O que falta no contexto">
+                    <strong>O Orientador precisa de mais contexto:</strong>
+                    <ul>
+                      {contextIssues.map((issue) => (
+                        <li key={issue}>{issue}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <label className="workspace-field">
                   Complementar contexto
                   <textarea
