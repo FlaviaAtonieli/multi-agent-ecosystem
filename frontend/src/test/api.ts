@@ -72,6 +72,7 @@ export const testUser = {
   onboarding_completed_at: '2026-11-01T00:00:00Z',
   has_password: true,
   oauth_provider: null,
+  is_initial_account: false,
 }
 
 export const authResponse = { user: testUser, session_expires_at: '2026-11-02T00:00:00Z' }
