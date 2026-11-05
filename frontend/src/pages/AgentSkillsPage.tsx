@@ -126,6 +126,12 @@ export function AgentSkillsPage() {
     return myClans.some((clan) => clan.id === skill.clan_id && clan.created_by_id === user?.id)
   }
 
+  // Espelha agent_skills._find_toggleable_skill: a conta inicial também liga e
+  // desliga as skills oficiais sem dono, mas não as edita.
+  function canToggle(skill: AgentSkill): boolean {
+    return canManage(skill) || (skill.owner_id === null && Boolean(user?.is_initial_account))
+  }
+
   const counts = useMemo(() => {
     const result: Record<StatusFilter, number> = { ALL: 0, ENABLED: 0, PENDING: 0, DISABLED: 0 }
     for (const skill of skills) {
@@ -310,11 +316,13 @@ export function AgentSkillsPage() {
                         : 'Skill privada'}
                 </span>
 
-                {canManage(skill) && (
+                {canToggle(skill) && (
                   <div className="workspace-skill-actions">
-                    <Link className="workspace-secondary-action" to={`/agent-skills/${skill.id}/edit`}>
-                      Editar
-                    </Link>
+                    {canManage(skill) && (
+                      <Link className="workspace-secondary-action" to={`/agent-skills/${skill.id}/edit`}>
+                        Editar
+                      </Link>
+                    )}
                     <button
                       type="button"
                       className="workspace-secondary-action"

@@ -7702,6 +7702,11 @@
               }
             ],
             "title": "Oauth Provider"
+          },
+          "is_initial_account": {
+            "type": "boolean",
+            "title": "Is Initial Account",
+            "default": false
           }
         },
         "type": "object",
