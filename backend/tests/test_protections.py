@@ -5,6 +5,7 @@ do CI continuava passando. Aqui elas rodam sempre, com um provedor falso no luga
 modelo, e o resto do código de verdade.
 """
 
+import os
 from datetime import timedelta
 
 import pytest
@@ -18,7 +19,7 @@ from app.agent_catalog.contracts import (
     SkillToolResult,
 )
 from app.core.config import settings
-from app.core.database import SessionLocal
+from app.core.database import SessionLocal, engine
 from app.core.rate_limit import limiter
 from app.core.security import hash_token, utc_now
 from app.llm.schemas import LLMPlan, LLMPlanRequest, LLMProviderResult, LLMUsage
@@ -373,3 +374,11 @@ class TestRagPipeline:
         assert recall_at_k(retrieved, relevant, 3) == pytest.approx(1 / 2)
         assert reciprocal_rank(retrieved, relevant) == pytest.approx(1 / 2)
         assert reciprocal_rank(["errado.md"], relevant) == 0.0
+
+
+def test_suite_runs_on_the_requested_database() -> None:
+    """Sem isso, um erro de configuração faria o job de PostgreSQL rodar em SQLite sem avisar."""
+    if os.environ.get("TEST_DATABASE_URL"):
+        assert engine.url.get_backend_name() == "postgresql"
+    else:
+        assert engine.url.get_backend_name() == "sqlite"

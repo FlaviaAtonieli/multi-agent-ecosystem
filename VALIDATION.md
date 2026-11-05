@@ -34,10 +34,10 @@ Conferidos em todo push e PR pelo CI, que falha abaixo das metas:
 
 | Parte | Ferramenta | Testes (04/11/2026) | Cobertura de linhas | Meta |
 |---|---|---:|---:|---:|
-| Backend | pytest, em SQLite e PostgreSQL | 269 | 85% | 75% |
-| Frontend | Vitest e Testing Library | 135 | 51.52% | 25% |
+| Backend | pytest, em SQLite e PostgreSQL | 270 | 85% | 75% |
+| Frontend | Vitest e Testing Library | 135 | 51,52% | 25% |
 
-A contagem do backend não inclui os 27 testes marcados com , que chamam a OpenRouter de verdade e ficam fora do CI: rodar a cada push gastaria créditos reais e poderia ficar vermelho por instabilidade do provedor, não por bug de código. **Eles ainda não foram executados com o modelo padrão atual ().**
+A contagem do backend não inclui os 27 testes marcados com `llm`, que chamam a OpenRouter de verdade e ficam fora do CI: rodar a cada push gastaria créditos reais e poderia ficar vermelho por instabilidade do provedor, não por bug de código. **Eles ainda não foram executados com o modelo padrão atual (`openai/gpt-5-mini`).**
 
 **O que é simulado:** na suíte do CI, o modelo de linguagem e os embeddings são substituídos por versões falsas, e no frontend só a rede é simulada. Todo o restante roda de verdade. Por isso, a suíte confere as regras do sistema, não a qualidade das respostas da IA.
 
@@ -50,9 +50,9 @@ Cobertura mostra que uma linha rodou, não que o resultado foi conferido. Por is
 | Rodada | Backend | Frontend |
 |---|---:|---:|
 | Primeira, antes dos testes novos | **19 de 34 acusadas**, 15 passaram sem ninguém perceber | 10 de 10, em 03/11/2026 |
-| Depois de  | **35 de 35** | 12 de 12, com as telas novas |
+| Depois de `tests/test_protections.py` | **35 de 35** | 12 de 12, com as telas novas |
 
-As 15 que escaparam eram proteções reais, como o vínculo do CSRF com a sessão, o bloqueio por tentativas de login, o limite de requisições, a cota de tokens, o mascaramento de dados pessoais e o Quality Gate. Parte delas tinha teste, mas marcado com , e por isso nunca rodava no CI. A própria checagem também pegou um teste novo fraco, que recebia 403 pelo motivo errado.
+As 15 que escaparam eram proteções reais, como o vínculo do CSRF com a sessão, o bloqueio por tentativas de login, o limite de requisições, a cota de tokens, o mascaramento de dados pessoais e o Quality Gate. Parte delas tinha teste, mas marcado com `llm`, e por isso nunca rodava no CI. A própria checagem também pegou um teste novo fraco, que recebia 403 pelo motivo errado.
 
 **O que isso não prova:** os pontos foram escolhidos à mão entre as regras críticas, então não é uma medida da suíte inteira. A automática simula o modelo e, no frontend, a rede. Os testes marcados com `llm` são os únicos que falam com o modelo real.
 
