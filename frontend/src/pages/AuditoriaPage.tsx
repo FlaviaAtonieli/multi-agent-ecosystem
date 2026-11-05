@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AuditEvent, AuditEventPage, auditApi } from '../api/auditApi'
 import { ApiError } from '../api/http'
+import { OnboardingTour, TourStep } from '../components/onboarding/OnboardingTour'
 
 
 const actorLabels: Record<string, string> = {
@@ -25,6 +26,39 @@ const actorTones: Record<string, string> = {
 }
 
 const knownActors = Object.keys(actorLabels)
+
+// Os indicadores seguem as regras de backend/app/api/v1/endpoints/audit.py.
+const helpSteps: TourStep[] = [
+  {
+    selector: '[data-tour="audit-intro"]',
+    title: 'Para que serve',
+    description:
+      'Cada passo das suas solicitações fica registrado aqui: quem agiu, em qual solicitação e quando. É o que permite explicar depois como uma resposta da IA foi construída, conferir se as regras foram seguidas e responder a pedidos de transparência, como os previstos na LGPD.',
+  },
+  {
+    selector: '[data-tour="audit-metrics"]',
+    title: 'O que os números contam',
+    description:
+      'Contagens de hoje. Decisões automatizadas são as do Orientador, do Orquestrador, das skills e do RAG. Intervenções manuais são as feitas por pessoas. Alertas de conformidade são uma falha de IA, uma falha de skill ou uma resposta rejeitada na revisão humana.',
+  },
+  {
+    selector: '[data-tour="audit-filters"]',
+    title: 'Encontre um evento',
+    description: 'Busque pelo nome do evento ou pelo Trace ID, filtre por agente e escolha o período, de 7 a 90 dias.',
+  },
+  {
+    selector: '[data-tour="audit-table"]',
+    title: 'Do evento à análise',
+    description:
+      'Clique na solicitação para abrir a linha do tempo completa, com cada etapa, os agentes acionados e o resultado.',
+  },
+  {
+    selector: '[data-tour="audit-export"]',
+    title: 'Leve para fora',
+    description:
+      'Exporte em CSV para relatórios ou auditorias externas. Entram os eventos carregados na tela, com os filtros atuais.',
+  },
+]
 
 function toCsv(events: AuditEvent[]): string {
   const header = ['Evento', 'Origem', 'Solicitação', 'Trace ID', 'Data/Hora']
@@ -56,6 +90,7 @@ export function AuditoriaPage() {
   const [search, setSearch] = useState('')
   const [actor, setActor] = useState<string>('ALL')
   const [days, setDays] = useState(7)
+  const [showHelp, setShowHelp] = useState(false)
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -75,25 +110,39 @@ export function AuditoriaPage() {
 
   return (
     <div className="workspace-page">
+      {showHelp && <OnboardingTour steps={helpSteps} skipLabel="Fechar ajuda" onFinish={() => setShowHelp(false)} />}
+
       <section className="workspace-page-heading fade-up">
-        <div>
+        <div data-tour="audit-intro">
           <span className="workspace-eyebrow">AUDITORIA</span>
           <h1>Trilha de auditoria</h1>
           <p>Histórico de eventos das suas solicitações, por agente, para conformidade e rastreabilidade.</p>
         </div>
-        <button
+        <div className="workspace-page-heading-actions">
+          <button
+            type="button"
+            className="workspace-help-button"
+            aria-label="Como usar a auditoria"
+            title="Como usar a auditoria"
+            onClick={() => setShowHelp(true)}
+          >
+            !
+          </button>
+          <button
           type="button"
+          data-tour="audit-export"
           className="workspace-secondary-action"
           disabled={!page || page.items.length === 0}
           onClick={() => page && downloadCsv(toCsv(page.items))}
         >
           ↓ Exportar CSV
-        </button>
+          </button>
+        </div>
       </section>
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      <section className="workspace-metric-grid fade-up" style={{ animationDelay: '0.08s' }} aria-label="Indicadores de auditoria">
+      <section data-tour="audit-metrics" className="workspace-metric-grid fade-up" style={{ animationDelay: '0.08s' }} aria-label="Indicadores de auditoria">
         <article className="workspace-metric-card">
           <span>Eventos registrados hoje</span>
           <strong>{page?.stats.events_today ?? '—'}</strong>
@@ -114,7 +163,7 @@ export function AuditoriaPage() {
         </article>
       </section>
 
-      <div className="workspace-orchestrations-toolbar fade-up" style={{ animationDelay: '0.14s' }}>
+      <div data-tour="audit-filters" className="workspace-orchestrations-toolbar fade-up" style={{ animationDelay: '0.14s' }}>
         <input
           type="search"
           placeholder="Buscar por evento ou Trace ID..."
@@ -146,7 +195,7 @@ export function AuditoriaPage() {
         </select>
       </div>
 
-      <article className="workspace-panel">
+      <article data-tour="audit-table" className="workspace-panel">
         {!page || page.items.length === 0 ? (
           <div className="workspace-empty">
             {page ? 'Nenhum evento corresponde ao filtro atual.' : 'Carregando…'}

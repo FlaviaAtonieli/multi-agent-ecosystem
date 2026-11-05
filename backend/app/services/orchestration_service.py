@@ -229,6 +229,14 @@ def record_human_review(
     return technical_request
 
 
+CONTEXT_EDITABLE_STATUSES = {
+    RequestStatus.AWAITING_CONTEXT,
+    RequestStatus.QUALIFIED,
+    RequestStatus.FAILED,
+    RequestStatus.CANCELLED,
+}
+
+
 def complement_context(
     db: Session,
     *,

@@ -41,6 +41,7 @@ from app.schemas.orchestration import FollowUpExchangeRead, FollowUpQuestionCrea
 from app.services.agent_skill_orchestration_service import (
     NoAgentSkillsAvailableError,
     ask_follow_up_question,
+    cancel_orchestration,
     claim_request_for_execution,
     execute_orchestration_step,
     has_follow_up_skills,
@@ -458,6 +459,37 @@ async def execute_skills_for_request(
         invocations_count=len(execution.invocations),
         consolidated_response=ConsolidatedResponseRead.model_validate(execution.consolidated_response),
     )
+
+
+@router.post("/requests/{request_id}/cancel", status_code=status.HTTP_202_ACCEPTED)
+def cancel_skills_for_request(
+    request_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> dict[str, str]:
+    technical_request = db.scalar(
+        select(TechnicalRequest).where(
+            TechnicalRequest.id == request_id, TechnicalRequest.owner_id == user.id
+        )
+    )
+    if technical_request is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Solicitação não encontrada.")
+    if not cancel_orchestration(db, technical_request):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A solicitação não está em execução."
+        )
+
+    record_audit(
+        db,
+        request,
+        "AGENT_SKILL_ORCHESTRATION_CANCELLED",
+        user_id=user.id,
+        details={"technical_request_id": technical_request.id, "trace_id": technical_request.trace_id},
+    )
+    db.commit()
+    return {"trace_id": technical_request.trace_id, "status": "CANCELLING"}
 
 
 @router.post(
