@@ -40,6 +40,29 @@ class Clan(Base):
     memberships = relationship("ClanMembership", back_populates="clan", cascade="all, delete-orphan")
 
 
+class ClanSkill(Base):
+    """Uma Agent Skill disponível num clã. Só as skills do clã escolhido rodam numa
+    orquestração, o que evita chamar skills fora do assunto. Uma skill pode estar em
+    vários clãs, inclusive os de outras pessoas, quando é publicada."""
+
+    __tablename__ = "clan_skills"
+    __table_args__ = (UniqueConstraint("clan_id", "agent_skill_id", name="uq_clan_skill"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    clan_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("clans.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    agent_skill_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("agent_skills.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    added_by_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    added_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class ClanMembership(Base):
     """Many-to-many join between User and Clan -- a user can belong to several
     clans at once (confirmed scope). `added_by_id` keeps a lightweight audit

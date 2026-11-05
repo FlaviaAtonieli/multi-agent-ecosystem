@@ -30,6 +30,10 @@ class ClanMemberAdd(BaseModel):
     email: EmailStr
 
 
+class ClanSkillAdd(BaseModel):
+    agent_skill_id: str = Field(min_length=1, max_length=36)
+
+
 class ClanMemberRead(BaseModel):
     user_id: str
     name: str

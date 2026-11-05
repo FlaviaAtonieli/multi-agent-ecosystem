@@ -2,6 +2,19 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-11-04 - Clã obrigatório na orquestração
+
+### Alterado
+
+- Toda solicitação nova escolhe um clã, e só as Agent Skills ativas dele respondem. Isso evita chamadas de IA a skills fora do assunto. Dá para escolher alguns agentes dentro do clã.
+- Uma skill pode estar em vários clãs: as publicadas no catálogo podem ser adicionadas a qualquer clã, seguindo o `skills_policy`.
+- Solicitações antigas, sem clã, continuam visíveis, mas não podem mais ser executadas.
+
+### Adicionado
+
+- Clã aberto "Ecossistema", com as 10 skills oficiais, criado pela migração e pela seed.
+- `GET`, `POST` e `DELETE /clans/{id}/skills`, e a gestão das skills na tela de clãs.
+
 ## 2026-11-04 - Correções apontadas pelo SonarCloud
 
 ### Corrigido

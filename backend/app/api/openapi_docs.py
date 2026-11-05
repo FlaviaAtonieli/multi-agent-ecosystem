@@ -310,6 +310,19 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
         "Quem cria vira dono e membro.",
     ),
     "GET /clans/{clan_id}": ("Detalhe do clã", "Dados, regras e membros do clã."),
+    "GET /clans/{clan_id}/skills": (
+        "Listar skills do clã",
+        "Agent Skills disponíveis no clã. Num clã fechado, só para os membros.",
+    ),
+    "POST /clans/{clan_id}/skills": (
+        "Adicionar skill ao clã",
+        "Adiciona uma Agent Skill publicada ou do próprio usuário, seguindo o `skills_policy` do clã. "
+        "`404` se a skill não existir ou não estiver visível, `409` se já estiver no clã.",
+    ),
+    "DELETE /clans/{clan_id}/skills/{skill_id}": (
+        "Remover skill do clã",
+        "Tira a Agent Skill do clã, sem apagá-la do catálogo. Segue o `skills_policy` do clã.",
+    ),
     "PATCH /clans/{clan_id}/settings": (
         "Alterar clã",
         "Renomeia o clã e altera as regras. Só o dono. `409` se o nome já existir.",

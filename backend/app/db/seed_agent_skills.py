@@ -3,12 +3,13 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.agent_catalog.registry import register_skill
+from app.agent_catalog.registry import add_skill_to_clan, get_clan_skill_link, register_skill
 from app.agent_manifest.manifest import AgentSkillManifest, parse_modelo_md
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.security import normalize_email
-from app.models import AgentSkill, User
+from app.models import AgentSkill, Clan, User
+from app.services.clan_service import create_clan
 
 # Os 4 domínios originais (codigo_legado, regras_negocio, arquitetura_software,
 # seguranca_informacao) vêm dos manifestos desta pasta e rodam no servidor MCP
@@ -240,6 +241,37 @@ def _seed_original_skills(db: Session, admin: User) -> None:
         print(f"{manifest.domain}: Agent Skill '{skill.name}' registrada.")
 
 
+ECOSYSTEM_CLAN_NAME = "Ecossistema"
+
+
+def _ensure_ecosystem_clan(db: Session, admin: User) -> None:
+    """Clã aberto com as skills oficiais: toda orquestração exige um clã, então quem
+    acabou de chegar precisa de um para usar. Fica sem as skills que usuários publicam."""
+    clan = db.scalar(select(Clan).where(Clan.name == ECOSYSTEM_CLAN_NAME))
+    if clan is None:
+        clan = create_clan(
+            db,
+            name=ECOSYSTEM_CLAN_NAME,
+            created_by=admin,
+            is_open=True,
+            skills_policy="OWNER_ONLY",
+            members_policy="OWNER_ONLY",
+        )
+
+    domains = [manifest.domain for manifest in _NEW_OFFICIAL_SKILLS] + [
+        parse_modelo_md(path.read_text(encoding="utf-8")).domain
+        for path in sorted(MANIFEST_FIXTURES.glob("*.md"))
+    ]
+    official = db.scalars(
+        select(AgentSkill).where(AgentSkill.visibility == "OFFICIAL", AgentSkill.domain.in_(domains))
+    )
+    for skill in official:
+        if skill.owner_id in (None, admin.id) and not get_clan_skill_link(
+            db, clan_id=clan.id, skill_id=skill.id
+        ):
+            add_skill_to_clan(db, clan_id=clan.id, skill_id=skill.id, added_by_id=admin.id)
+
+
 def seed_agent_skills() -> None:
     """Garante uma Agent Skill OFFICIAL para cada um dos 10 domínios,
     sem duplicar se já existir (idempotente, mesmo espírito de
@@ -281,6 +313,7 @@ def seed_agent_skills() -> None:
             )
             print(f"{manifest.domain}: Agent Skill '{skill.name}' registrada.")
 
+        _ensure_ecosystem_clan(db, admin)
         db.commit()
 
 

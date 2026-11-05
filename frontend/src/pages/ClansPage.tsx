@@ -69,8 +69,10 @@ export function ClansPage() {
   const [pending, setPending] = useState(false)
   // null = não está renomeando; string = rascunho do novo nome.
   const [renameDraft, setRenameDraft] = useState<string | null>(null)
-  // O backend só devolve skills CLAN dos clãs dos quais o usuário é membro.
   const [skills, setSkills] = useState<AgentSkill[]>([])
+  // null = sem acesso: clã fechado de que o usuário não é membro.
+  const [clanSkills, setClanSkills] = useState<AgentSkill[] | null>(null)
+  const [skillToAdd, setSkillToAdd] = useState('')
 
   function loadSkills() {
     agentSkillsApi.listSkills(false).then(setSkills).catch(() => undefined)
@@ -86,6 +88,22 @@ export function ClansPage() {
   }
 
   useEffect(load, [])
+
+  const selectedId = selected?.id
+  const isMember = Boolean(selected?.members.some((m) => m.user_id === user?.id))
+
+  function loadClanSkills(clanId: string) {
+    clansApi
+      .listSkills(clanId)
+      .then(setClanSkills)
+      .catch(() => setClanSkills(null))
+  }
+
+  useEffect(() => {
+    setClanSkills(null)
+    setSkillToAdd('')
+    if (selectedId) loadClanSkills(selectedId)
+  }, [selectedId, isMember])
 
   function openClan(clanId: string) {
     setError('')
@@ -149,6 +167,31 @@ export function ClansPage() {
     return runOnSelected((clan) => clansApi.join(clan.id), 'Não foi possível entrar no clã.')
   }
 
+  async function changeClanSkills(action: (clanId: string) => Promise<unknown>, fallbackError: string) {
+    if (!selected) return
+    setPending(true)
+    setError('')
+    try {
+      await action(selected.id)
+      setSkillToAdd('')
+      loadClanSkills(selected.id)
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : fallbackError)
+    } finally {
+      setPending(false)
+    }
+  }
+
+  function handleAddSkill(event: FormEvent) {
+    event.preventDefault()
+    if (!skillToAdd) return
+    return changeClanSkills((clanId) => clansApi.addSkill(clanId, skillToAdd), 'Não foi possível adicionar a skill.')
+  }
+
+  function handleRemoveSkill(skillId: string) {
+    return changeClanSkills((clanId) => clansApi.removeSkill(clanId, skillId), 'Não foi possível remover a skill.')
+  }
+
   function handleSettingsChange(patch: Partial<ClanSettings>) {
     return runOnSelected(
       (clan) => clansApi.updateSettings(clan.id, patch),
@@ -167,11 +210,12 @@ export function ClansPage() {
     }, 'Não foi possível renomear o clã.')
   }
 
-  const isMember = Boolean(selected?.members.some((m) => m.user_id === user?.id))
   const isOwner = Boolean(selected && selected.created_by_id === user?.id)
   const canManageMembers = isOwner || (isMember && selected?.members_policy === 'ALL_MEMBERS')
   const canEditSettings = isOwner
-  const clanSkills = selected ? skills.filter((skill) => skill.visibility === 'CLAN' && skill.clan_id === selected.id) : []
+  const canChangeSkills = isOwner || (isMember && selected?.skills_policy === 'ALL_MEMBERS')
+  const clanSkillIds = new Set(clanSkills?.map((skill) => skill.id))
+  const skillsToOffer = skills.filter((skill) => skill.enabled && !clanSkillIds.has(skill.id))
 
   return (
     <div className="workspace-page">
@@ -181,7 +225,8 @@ export function ClansPage() {
           <h1>Clãs do ecossistema</h1>
           <p>
             Qualquer pessoa pode criar um clã e definir as regras dele: se é aberto ou fechado, e quem pode adicionar
-            Agent Skills e membros. As Agent Skills de um clã ficam visíveis só para os membros.
+            Agent Skills e membros. Toda orquestração usa as Agent Skills de um clã, então adicione aqui as skills
+            publicadas no catálogo que fazem sentido para o grupo.
           </p>
         </div>
       </section>
@@ -354,15 +399,12 @@ export function ClansPage() {
               )}
 
               <span className="workspace-card-kicker workspace-clan-skills-kicker">
-                AGENT SKILLS DO CLÃ · {isMember ? clanSkills.length : '—'}
+                AGENT SKILLS DO CLÃ · {clanSkills ? clanSkills.length : '—'}
               </span>
-              {!isMember ? (
+              {!clanSkills ? (
                 <small className="workspace-clan-hint">Só membros do clã enxergam as Agent Skills dele.</small>
               ) : clanSkills.length === 0 ? (
-                <small className="workspace-clan-hint">
-                  Nenhuma skill registrada para este clã ainda. Crie uma em Agent Skills escolhendo a visibilidade
-                  "Clã".
-                </small>
+                <small className="workspace-clan-hint">Nenhuma skill neste clã ainda.</small>
               ) : (
                 <ul className="workspace-clan-members">
                   {clanSkills.map((skill) => (
@@ -371,10 +413,42 @@ export function ClansPage() {
                         <strong>{skill.name}</strong>
                         <small>{skill.objective}</small>
                       </div>
-                      <code>{skill.version}</code>
+                      {canChangeSkills ? (
+                        <button
+                          type="button"
+                          className="workspace-secondary-action"
+                          disabled={pending}
+                          aria-label={`Remover ${skill.name} do clã`}
+                          onClick={() => handleRemoveSkill(skill.id)}
+                        >
+                          Remover
+                        </button>
+                      ) : (
+                        <code>{skill.version}</code>
+                      )}
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {canChangeSkills && clanSkills && (
+                <form className="workspace-clan-add-member" onSubmit={handleAddSkill}>
+                  <select
+                    aria-label="Skill para adicionar"
+                    value={skillToAdd}
+                    onChange={(event) => setSkillToAdd(event.target.value)}
+                  >
+                    <option value="">Escolha uma skill do catálogo...</option>
+                    {skillsToOffer.map((skill) => (
+                      <option key={skill.id} value={skill.id}>
+                        {skill.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button className="workspace-secondary-action" type="submit" disabled={pending || !skillToAdd}>
+                    Adicionar skill
+                  </button>
+                </form>
               )}
             </>
           )}

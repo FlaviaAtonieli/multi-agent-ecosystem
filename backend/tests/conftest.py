@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -91,6 +92,20 @@ def user_id_for(email: str) -> str:
         return user.id
 
 
+def create_test_clan(client: TestClient) -> str:
+    """Clã novo com todas as skills ativas que o usuário logado enxerga agora."""
+    headers = authenticated_csrf_headers(client)
+    clan = client.post("/api/v1/clans", json={"name": f"Clã {uuid4().hex[:12]}"}, headers=headers)
+    assert clan.status_code == 201, clan.text
+    clan_id = clan.json()["id"]
+    for skill in client.get("/api/v1/agent-skills?only_active=true").json():
+        added = client.post(
+            f"/api/v1/clans/{clan_id}/skills", json={"agent_skill_id": skill["id"]}, headers=headers
+        )
+        assert added.status_code == 201, added.text
+    return clan_id
+
+
 def create_qualified_request(
     client: TestClient,
     *,
@@ -113,6 +128,7 @@ def create_qualified_request(
             "context": context,
             "restrictions": restrictions if restrictions is not None else ["Não executar tools"],
             "requested_domains": requested_domains or [],
+            "clan_id": create_test_clan(client),
         },
         headers=authenticated_csrf_headers(client),
     )

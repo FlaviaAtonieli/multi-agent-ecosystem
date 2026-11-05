@@ -10,7 +10,7 @@ from sqlalchemy import CursorResult, func, select, update
 from sqlalchemy.orm import Session
 
 from app.agent_catalog.mcp_client import SkillServerNotImplementedError, call_skill_tool
-from app.agent_catalog.registry import list_active_skills, select_skills_for_domain
+from app.agent_catalog.registry import canonical_domain, list_clan_skills
 from app.agent_catalog.tool_interface import SkillToolCall, SkillToolResult
 from app.core.config import settings
 from app.core.database import SessionLocal
@@ -27,6 +27,7 @@ from app.models import (
     User,
 )
 from app.quality_gate.service import QualityGateVerdict, evaluate
+from app.services.clan_service import is_member
 from app.services.orchestration_service import RequestStatus, append_event
 
 logger = logging.getLogger(__name__)
@@ -142,18 +143,24 @@ def _consolidate(
     return consolidated
 
 
+def _active_clan_skills(db: Session, technical_request: TechnicalRequest) -> list[AgentSkill]:
+    """As skills que podem responder a esta solicitação. Solicitação antiga, sem clã,
+    ou de quem saiu do clã depois de criá-la não tem nenhuma."""
+    clan_id = technical_request.clan_id
+    if clan_id is None or not is_member(db, clan_id=clan_id, user_id=technical_request.owner_id):
+        return []
+    return list_clan_skills(db, clan_id=clan_id, only_active=True)
+
+
 def _resolve_target_skills(db: Session, technical_request: TechnicalRequest) -> list[AgentSkill]:
-    viewer_id = technical_request.owner_id
-    domains = technical_request.requested_domains or [
-        skill.domain for skill in list_active_skills(db, viewer_id=viewer_id)
-    ]
-    seen_ids: set[str] = set()
+    available = _active_clan_skills(db, technical_request)
+    if not technical_request.requested_domains:
+        return available
+
     skills: list[AgentSkill] = []
-    for domain in dict.fromkeys(domains):  # de-dupe, preserve order
-        for skill in select_skills_for_domain(db, domain=domain, viewer_id=viewer_id):
-            if skill.id not in seen_ids:
-                seen_ids.add(skill.id)
-                skills.append(skill)
+    for domain in dict.fromkeys(technical_request.requested_domains):  # de-dupe, preserve order
+        canonical = canonical_domain(db, domain)
+        skills.extend(skill for skill in available if skill.domain == canonical)
     return skills
 
 
@@ -544,7 +551,8 @@ def _follow_up_skills(
     db: Session, technical_request: TechnicalRequest, target_domain: str | None
 ) -> list[AgentSkill]:
     if target_domain:
-        return select_skills_for_domain(db, domain=target_domain, viewer_id=technical_request.owner_id)
+        canonical = canonical_domain(db, target_domain)
+        return [skill for skill in _active_clan_skills(db, technical_request) if skill.domain == canonical]
     return _resolve_target_skills(db, technical_request)
 
 

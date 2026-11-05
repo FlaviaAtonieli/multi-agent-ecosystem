@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from tests.conftest import authenticated_csrf_headers, csrf_headers
+from tests.conftest import authenticated_csrf_headers, create_test_clan, csrf_headers
 
 USER = {
     "name": "Flavia Souza",
@@ -25,6 +25,7 @@ def test_orchestration_foundation_flow(client: TestClient) -> None:
             "objective": "Mapear o impacto técnico e orientar a correção.",
             "context": "Curto",
             "restrictions": ["Não alterar código automaticamente"],
+            "clan_id": create_test_clan(client),
         },
         headers=authenticated_csrf_headers(client),
     )

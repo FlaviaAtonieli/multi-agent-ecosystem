@@ -22,6 +22,7 @@ export type TechnicalRequest = {
   context: string | null
   restrictions: string[]
   requested_domains: string[]
+  clan_id: string | null
   status: RequestStatus
   created_at: string
   updated_at: string
@@ -71,6 +72,7 @@ export type CreateTechnicalRequestInput = {
   context: string | null
   restrictions: string[]
   requested_domains: string[]
+  clan_id: string
 }
 
 export type RequestAttachment = {

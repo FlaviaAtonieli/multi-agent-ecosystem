@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.agent_manifest.manifest import AgentSkillManifest, normalize_domain_key
 from app.agent_manifest.validator import validate_manifest
 from app.core.security import utc_now
-from app.models import AgentSkill, AgentSkillInvocation, ClanMembership, User
+from app.models import AgentSkill, AgentSkillInvocation, ClanMembership, ClanSkill, User
 
 
 class AgentSkillValidationError(ValueError):
@@ -79,7 +79,38 @@ def register_skill(
     )
     db.add(skill)
     db.flush()
+    if clan_id:
+        add_skill_to_clan(db, clan_id=clan_id, skill_id=skill.id, added_by_id=submitted_by.id)
     return skill
+
+
+def add_skill_to_clan(db: Session, *, clan_id: str, skill_id: str, added_by_id: str) -> ClanSkill:
+    link = ClanSkill(clan_id=clan_id, agent_skill_id=skill_id, added_by_id=added_by_id)
+    db.add(link)
+    db.flush()
+    return link
+
+
+def get_clan_skill_link(db: Session, *, clan_id: str, skill_id: str) -> ClanSkill | None:
+    return db.scalar(
+        select(ClanSkill).where(ClanSkill.clan_id == clan_id, ClanSkill.agent_skill_id == skill_id)
+    )
+
+
+def list_clan_skills(db: Session, *, clan_id: str, only_active: bool = False) -> list[AgentSkill]:
+    query = (
+        select(AgentSkill)
+        .join(ClanSkill, ClanSkill.agent_skill_id == AgentSkill.id)
+        .where(ClanSkill.clan_id == clan_id)
+        .order_by(AgentSkill.name)
+    )
+    if only_active:
+        query = query.where(AgentSkill.status == "approved", AgentSkill.enabled.is_(True))
+    return list(db.scalars(query))
+
+
+def find_visible_skill(db: Session, *, skill_id: str, viewer_id: str) -> AgentSkill | None:
+    return db.scalar(select(AgentSkill).where(AgentSkill.id == skill_id, _visibility_filter(viewer_id)))
 
 
 def get_skill(db: Session, skill_id: str) -> AgentSkill:
@@ -98,10 +129,12 @@ def _visibility_filter(viewer_id: str | None):
     if viewer_id is None:
         return AgentSkill.visibility == "OFFICIAL"
     member_clan_ids = select(ClanMembership.clan_id).where(ClanMembership.user_id == viewer_id)
+    shared_with_viewer = select(ClanSkill.agent_skill_id).where(ClanSkill.clan_id.in_(member_clan_ids))
     return (
         (AgentSkill.visibility == "OFFICIAL")
         | (AgentSkill.owner_id == viewer_id)
         | ((AgentSkill.visibility == "CLAN") & AgentSkill.clan_id.in_(member_clan_ids))
+        | AgentSkill.id.in_(shared_with_viewer)
     )
 
 
@@ -225,4 +258,6 @@ def update_skill(
     skill.clan_id = clan_id
     skill.validated_at = utc_now()
     db.flush()
+    if clan_id and get_clan_skill_link(db, clan_id=clan_id, skill_id=skill.id) is None:
+        add_skill_to_clan(db, clan_id=clan_id, skill_id=skill.id, added_by_id=skill.submitted_by_id)
     return skill

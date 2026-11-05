@@ -1,11 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.agent_catalog.registry import (
+    add_skill_to_clan,
+    find_visible_skill,
+    get_clan_skill_link,
+    list_clan_skills,
+)
 from app.api.dependencies import get_current_user, require_authenticated_csrf
 from app.core.database import get_db
 from app.core.security import normalize_email
 from app.models import AuthSession, Clan, User
+from app.schemas.agent_skill import AgentSkillRead
 from app.schemas.clan import (
     ClanCreate,
     ClanDetailRead,
@@ -13,6 +20,7 @@ from app.schemas.clan import (
     ClanMemberRead,
     ClanRead,
     ClanSettingsUpdate,
+    ClanSkillAdd,
 )
 from app.services.audit_service import record_audit
 from app.services.clan_service import (
@@ -21,7 +29,9 @@ from app.services.clan_service import (
     ClanPermissionError,
     add_member,
     create_clan,
+    ensure_can_register_skills,
     get_clan,
+    is_member,
     join_clan,
     list_clans,
     list_user_clans,
@@ -235,3 +245,90 @@ def remove_clan_member(
     )
     db.commit()
     return _to_detail(get_clan(db, clan_id))
+
+
+def _find_clan(db: Session, clan_id: str) -> Clan:
+    try:
+        return get_clan(db, clan_id)
+    except ClanNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+def _ensure_can_change_skills(db: Session, clan: Clan, user: User) -> None:
+    try:
+        ensure_can_register_skills(db, clan=clan, user=user)
+    except ClanPermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+
+@router.get("/{clan_id}/skills", response_model=list[AgentSkillRead])
+def list_skills_of_clan(
+    clan_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> object:
+    clan = _find_clan(db, clan_id)
+    # Num clã aberto, dá para ver as skills antes de decidir entrar.
+    if not clan.is_open and not is_member(db, clan_id=clan_id, user_id=user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Só um membro pode ver as Agent Skills de um clã fechado.",
+        )
+    return list_clan_skills(db, clan_id=clan_id)
+
+
+@router.post("/{clan_id}/skills", response_model=AgentSkillRead, status_code=status.HTTP_201_CREATED)
+def add_skill(
+    clan_id: str,
+    payload: ClanSkillAdd,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> object:
+    clan = _find_clan(db, clan_id)
+    _ensure_can_change_skills(db, clan, user)
+    # 404, e não 403: não revela que existe uma skill privada de outra pessoa.
+    skill = find_visible_skill(db, skill_id=payload.agent_skill_id, viewer_id=user.id)
+    if skill is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent Skill não encontrada.")
+    if get_clan_skill_link(db, clan_id=clan_id, skill_id=skill.id) is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Esta Agent Skill já está no clã.")
+
+    add_skill_to_clan(db, clan_id=clan_id, skill_id=skill.id, added_by_id=user.id)
+    record_audit(
+        db,
+        request,
+        "CLAN_SKILL_ADDED",
+        user_id=user.id,
+        details={"clan_id": clan_id, "agent_skill_id": skill.id},
+    )
+    db.commit()
+    return skill
+
+
+@router.delete("/{clan_id}/skills/{skill_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_skill(
+    clan_id: str,
+    skill_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> Response:
+    clan = _find_clan(db, clan_id)
+    _ensure_can_change_skills(db, clan, user)
+    link = get_clan_skill_link(db, clan_id=clan_id, skill_id=skill_id)
+    if link is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Esta Agent Skill não está no clã.")
+
+    db.delete(link)
+    record_audit(
+        db,
+        request,
+        "CLAN_SKILL_REMOVED",
+        user_id=user.id,
+        details={"clan_id": clan_id, "agent_skill_id": skill_id},
+    )
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

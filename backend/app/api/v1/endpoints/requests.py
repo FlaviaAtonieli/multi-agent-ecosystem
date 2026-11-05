@@ -18,6 +18,7 @@ from app.schemas.orchestration import (
     TechnicalRequestReview,
 )
 from app.services.audit_service import record_audit
+from app.services.clan_service import ClanNotFoundError, get_clan, is_member
 from app.services.orchestration_service import (
     AttachmentRejectedError,
     RequestNotAwaitingReviewError,
@@ -55,6 +56,16 @@ def create_request(
     db: Session = Depends(get_db),
     current_session: AuthSession = Depends(require_authenticated_csrf),
 ) -> TechnicalRequest:
+    try:
+        get_clan(db, payload.clan_id)
+    except ClanNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    if not is_member(db, clan_id=payload.clan_id, user_id=current_session.user_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Só um membro do clã pode usá-lo numa solicitação.",
+        )
+
     technical_request = create_technical_request(
         db,
         owner_id=current_session.user_id,
