@@ -11,7 +11,7 @@ from typing import Any
 _MODEL = "Modelo da lista permitida (`LLM_ALLOWED_MODELS`). Sem valor, usa o modelo padrão."
 _VISIBILITY = "`OFFICIAL` publica no catálogo, `PRIVATE` deixa só para você e `CLAN` registra a skill em um clã."
 _CLAN_ID = "Obrigatório quando `visibility` é `CLAN`."
-_NEW_PASSWORD = "Nova senha: pelo menos 12 caracteres, com maiúscula, minúscula, número e caractere especial."
+_NEW_SECRET_RULE = "Nova senha: pelo menos 12 caracteres, com maiúscula, minúscula, número e caractere especial."
 _SKILLS_POLICY = "Quem adiciona e remove Agent Skills do clã: `ALL_MEMBERS` ou `OWNER_ONLY`."
 _MEMBERS_POLICY = "Quem adiciona e remove membros: `ALL_MEMBERS` ou `OWNER_ONLY`."
 _IS_OPEN = "Se verdadeiro, qualquer pessoa pode entrar no clã sozinha."
@@ -68,9 +68,9 @@ FIELD_DOCS: dict[str, dict[str, str]] = {
     },
     "LoginCodeVerify": {"code": "Código de 6 dígitos enviado por e-mail."},
     "LoginRequest": {"email": "E-mail da conta.", "password": "Senha da conta."},
-    "PasswordChange": {"current_password": "Senha atual.", "new_password": _NEW_PASSWORD},
+    "PasswordChange": {"current_password": "Senha atual.", "new_password": _NEW_SECRET_RULE},
     "PasswordForgot": {"email": "E-mail da conta."},
-    "PasswordReset": {"token": "Token recebido no link por e-mail.", "new_password": _NEW_PASSWORD},
+    "PasswordReset": {"token": "Token recebido no link por e-mail.", "new_password": _NEW_SECRET_RULE},
     "SkillSuggestionRequest": {
         "clan_id": "Clã que vai responder. Só skills fora dele são sugeridas.",
         "title": "Título da solicitação.",
