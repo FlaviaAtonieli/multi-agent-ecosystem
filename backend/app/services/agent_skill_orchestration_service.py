@@ -23,10 +23,12 @@ from app.models import (
     ConsolidatedResponse,
     FollowUpExchange,
     OrchestrationEvent,
+    SkillArtifact,
     TechnicalRequest,
     User,
 )
 from app.quality_gate.service import QualityGateVerdict, evaluate
+from app.services.artifact_service import prepare_files
 from app.services.clan_service import is_member
 from app.services.orchestration_service import RequestStatus, append_event
 
@@ -216,6 +218,19 @@ async def _invoke_skill(
 
         invocation.status = "COMPLETED"
         invocation.output_hash = content_sha256(result.model_dump_json())
+        # O conteúdo fica só em skill_artifacts: daqui em diante, o resultado segue sem ele.
+        accepted_files, rejected_files = prepare_files(result.arquivos)
+        for file in accepted_files:
+            db.add(
+                SkillArtifact(
+                    technical_request_id=technical_request.id,
+                    invocation_id=invocation.id,
+                    filename=file.nome,
+                    content=file.conteudo,
+                    size_bytes=len(file.conteudo.encode("utf-8", errors="replace")),
+                )
+            )
+        result = result.model_copy(update={"arquivos": []})
         SKILL_INVOCATIONS.labels(skill.domain, "COMPLETED").inc()
         SKILL_LATENCY.labels(skill.domain).observe(latency_ms / 1000)
         invocation.confidence_level = result.governanca.nivel_confianca
@@ -233,6 +248,8 @@ async def _invoke_skill(
                 "agent_skill_id": skill.id,
                 "confidence_level": result.governanca.nivel_confianca,
                 "latency_ms": latency_ms,
+                "artifacts_stored": len(accepted_files),
+                "artifacts_rejected": rejected_files,
             },
         )
         db.commit()

@@ -118,7 +118,9 @@ def main() -> None:
         assert is_open is True, "Ecossistema precisa ser aberto"
 
     command.downgrade(config, OLD_REVISION)
-    command.upgrade(config, NEW_REVISION)
+    command.upgrade(config, "head")
+    command.downgrade(config, NEW_REVISION)
+    command.upgrade(config, "head")
     print("Migração 0019 conferida.")
 
 

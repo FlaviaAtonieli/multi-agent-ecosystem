@@ -7,6 +7,7 @@ from app.agent_catalog.contracts import (
     AchadoTecnico,
     AgenteEmissor,
     AnaliseEstruturada,
+    ArquivoGerado,
     ConfidenceLevel,
     Governanca,
     SkillToolCall,
@@ -15,6 +16,7 @@ from app.agent_catalog.contracts import (
     list_tools,
 )
 from app.agent_manifest.manifest import DOMAIN_LABELS
+from app.llm.schemas import LLMPlan
 from app.models import AgentSkill, KnowledgeChunk, LLMInvocation, TechnicalRequest, User
 from app.services.llm_service import generate_technical_plan
 
@@ -35,6 +37,10 @@ __all__ = [
     "SecuritySkillExecutor",
     "GenericSkillExecutor",
 ]
+
+
+def _generated_files(plan: LLMPlan) -> list[ArquivoGerado]:
+    return [ArquivoGerado(nome=file.filename, conteudo=file.content) for file in plan.generated_files]
 
 
 class SkillExecutor(ABC):
@@ -142,6 +148,7 @@ class LegacyCodeSkillExecutor(SkillExecutor):
                 justificativa_confianca=justification,
                 referencias_catalogo=[],
             ),
+            arquivos=_generated_files(plan_response.plan),
         )
 
 
@@ -235,6 +242,7 @@ class BusinessRulesSkillExecutor(SkillExecutor):
                 justificativa_confianca=justification,
                 referencias_catalogo=[],
             ),
+            arquivos=_generated_files(plan_response.plan),
         )
 
 
@@ -326,6 +334,7 @@ class ArchitectureSkillExecutor(SkillExecutor):
                 justificativa_confianca=justification,
                 referencias_catalogo=[],
             ),
+            arquivos=_generated_files(plan_response.plan),
         )
 
 
@@ -419,6 +428,7 @@ class SecuritySkillExecutor(SkillExecutor):
                 justificativa_confianca=justification,
                 referencias_catalogo=[],
             ),
+            arquivos=_generated_files(plan_response.plan),
         )
 
 
@@ -516,4 +526,5 @@ class GenericSkillExecutor(SkillExecutor):
                 justificativa_confianca=justification,
                 referencias_catalogo=[],
             ),
+            arquivos=_generated_files(plan_response.plan),
         )

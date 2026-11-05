@@ -44,4 +44,10 @@ def build_technical_planner_prompt(request: LLMPlanRequest) -> str:
             "Responda especificamente a essa pergunta, além do já analisado acima."
         )
 
+    lines.append(
+        "Se a solicitação pedir explicitamente um arquivo, código ou projeto, coloque cada arquivo em "
+        "generated_files, com o caminho relativo em filename e o texto completo em content. Caso contrário, "
+        "devolva generated_files como lista vazia. Esses arquivos são só propostas: nada é executado."
+    )
+
     return "\n".join(lines)

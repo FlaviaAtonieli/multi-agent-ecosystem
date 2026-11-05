@@ -4,6 +4,7 @@ import { AgentSkillDomain, agentSkillsApi, FollowUpExchange } from '../api/agent
 import { ApiError } from '../api/http'
 import { llmApi } from '../api/llmApi'
 import { AgentSkillInvocationResult, OrchestrationDetail, OrchestrationEvent, orchestrationApi } from '../api/orchestrationApi'
+import { ArtifactsPanel } from '../components/orchestration/ArtifactsPanel'
 import { AttachmentsSection } from '../components/orchestration/AttachmentsSection'
 import { ExecutionResultPanel } from '../components/orchestration/ExecutionResultPanel'
 import { FollowUpExchangeCard } from '../components/orchestration/FollowUpExchangeCard'
@@ -268,6 +269,7 @@ export function OrchestrationPage() {
                   }}
                 />
               )}
+              <ArtifactsPanel traceId={detail.technical_request.trace_id} refreshKey={followUps.length} />
             </article>
           )}
 

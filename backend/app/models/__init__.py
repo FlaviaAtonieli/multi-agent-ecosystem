@@ -11,6 +11,7 @@ from app.models.login_verification import LoginChallenge, PasswordResetToken, Tr
 from app.models.orchestration_event import OrchestrationEvent
 from app.models.orchestration_run import OrchestrationRun
 from app.models.request_attachment import RequestAttachment
+from app.models.skill_artifact import SkillArtifact
 from app.models.technical_request import TechnicalRequest
 from app.models.user import User
 
@@ -31,6 +32,7 @@ __all__ = [
     "OrchestrationRun",
     "PasswordResetToken",
     "RequestAttachment",
+    "SkillArtifact",
     "TechnicalRequest",
     "TrustedDevice",
     "User",

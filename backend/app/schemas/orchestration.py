@@ -153,6 +153,19 @@ class OrchestrationDetail(BaseModel):
     events: list[OrchestrationEventRead]
 
 
+class SkillArtifactRead(BaseModel):
+    id: str
+    filename: str
+    size_bytes: int
+    agent_skill_name: str
+    domain: str
+    created_at: datetime
+
+
+class SkillArtifactContentRead(SkillArtifactRead):
+    content: str
+
+
 class AgentSkillInvocationResultRead(BaseModel):
     """Persisted per-skill result (AgentSkillInvocation.result_payload), so the
     detailed breakdown survives a page reload -- not just the ephemeral response

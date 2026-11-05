@@ -85,6 +85,7 @@ const commonRoutes = {
   'GET /requests/req-1/attachments': [],
   'GET /orchestrations/TRC-1/skill-results': [skillResult],
   'GET /orchestrations/TRC-1/follow-ups': [],
+  'GET /orchestrations/TRC-1/artifacts': [],
 }
 
 function renderPage(state?: unknown) {
@@ -202,6 +203,21 @@ describe('OrchestrationPage', () => {
     expect(screen.getByText('Orquestração executada e aprovada pelo Quality Gate.')).toBeInTheDocument()
     expect(screen.getByText('Impacto fiscal baixo.')).toBeInTheDocument()
     expect(await screen.findByText('Skill de Impostos')).toBeInTheDocument()
+  })
+
+  it('mostra os arquivos gerados junto com o resultado', async () => {
+    mockApi({
+      ...commonRoutes,
+      [`GET ${ORCHESTRATION}`]: detail('COMPLETED', { result: true }),
+      'GET /orchestrations/TRC-1/artifacts': [
+        { id: 'a', filename: 'src/main.py', size_bytes: 10, agent_skill_name: 'Skill', domain: 'd', created_at: '' },
+      ],
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('src/main.py')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Baixar tudo/ })).toBeInTheDocument()
   })
 
   it('não interrompe o acompanhamento por uma falha pontual de rede', async () => {

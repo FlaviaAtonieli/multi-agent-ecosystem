@@ -16,8 +16,9 @@ def strict_json_schema(model: type[BaseModel]) -> dict:
     went unnoticed until a strict-mode model was actually exercised end-to-end.
     """
     schema = model.model_json_schema()
-    schema["required"] = list(schema["properties"].keys())
-    schema["additionalProperties"] = False
+    for object_schema in [schema, *schema.get("$defs", {}).values()]:
+        object_schema["required"] = list(object_schema["properties"].keys())
+        object_schema["additionalProperties"] = False
     return schema
 
 
@@ -48,6 +49,11 @@ class LLMPlanRequest(BaseModel):
     attachments_context: str | None = None
 
 
+class LLMGeneratedFile(BaseModel):
+    filename: str
+    content: str
+
+
 class LLMPlan(BaseModel):
     summary: str = Field(min_length=1, max_length=3000)
     required_agents: list[str] = Field(default_factory=list, max_length=20)
@@ -55,6 +61,9 @@ class LLMPlan(BaseModel):
     risks: list[str] = Field(default_factory=list, max_length=30)
     missing_information: list[str] = Field(default_factory=list, max_length=30)
     requires_human_approval: bool = True
+    # Sem limite aqui: exceder não deve invalidar a análise inteira. O limite fica em
+    # app/services/artifact_service.py, que recusa só os arquivos em excesso.
+    generated_files: list[LLMGeneratedFile] = Field(default_factory=list)
 
 
 class LLMUsage(BaseModel):
