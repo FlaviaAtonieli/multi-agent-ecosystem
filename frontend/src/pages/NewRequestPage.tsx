@@ -218,7 +218,13 @@ export function NewRequestPage() {
         state: failedUploads.length > 0 ? { failedAttachmentUploads: failedUploads } : undefined,
       })
     } catch (caught) {
-      setSubmitError(caught instanceof ApiError ? caught.message : 'Não foi possível criar a solicitação.')
+      if (caught instanceof ApiError) {
+        // Num 422, o motivo de cada campo vem em details (ex.: problema sem conteúdo).
+        const reasons = caught.details?.map((detail) => detail.message) ?? []
+        setSubmitError(reasons.length > 0 ? reasons.join(' ') : caught.message)
+      } else {
+        setSubmitError('Não foi possível criar a solicitação.')
+      }
     } finally {
       setSubmitting(false)
     }

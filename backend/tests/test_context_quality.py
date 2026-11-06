@@ -7,7 +7,7 @@ teclado batido, texto colado repetido) antes de qualquer orquestração.
 import pytest
 from fastapi.testclient import TestClient
 
-from app.services.context_quality import context_issues
+from app.services.context_quality import context_issues, describes_something
 from tests.conftest import authenticated_csrf_headers, create_test_clan, register
 
 SEM_CONTEUDO = [
@@ -115,3 +115,45 @@ def test_complementar_com_contexto_real_qualifica(client: TestClient) -> None:
     )
 
     assert response.json()["status"] == "QUALIFIED"
+
+
+# --- Problema e objetivo -----------------------------------------------------
+# Só o contexto pode ser complementado depois. Problema e objetivo sem conteúdo
+# são recusados já no cadastro, com o motivo, para a pessoa corrigir no form.
+
+
+@pytest.mark.parametrize(
+    "text", ["TESTE TESTE TESTE", "asdfasdf qwerqwer", "teste teste teste teste", "1234567890"]
+)
+def test_problema_sem_conteudo_nao_descreve_nada(text: str) -> None:
+    assert not describes_something(text)
+
+
+@pytest.mark.parametrize(
+    "text", ["O job demora.", "Reduzir o tempo.", "Erro de timeout na API", "Teste de carga falhando"]
+)
+def test_problema_curto_mas_real_descreve(text: str) -> None:
+    assert describes_something(text)
+
+
+@pytest.mark.parametrize("field", ["problem", "objective"])
+def test_cadastro_recusa_problema_ou_objetivo_sem_conteudo(client: TestClient, field: str) -> None:
+    register(
+        client,
+        {"name": "Conta Campos", "email": f"campos-{field}@example.com", "password": "StrongPassword!123"},
+    )
+    payload = {
+        "title": "Analisar integração corporativa",
+        "problem": "A API atual apresenta inconsistência entre contrato e retorno.",
+        "objective": "Mapear o impacto técnico e orientar a correção.",
+        "context": COM_CONTEUDO[0],
+        "clan_id": create_test_clan(client),
+    }
+    payload[field] = "TESTE TESTE TESTE TESTE"
+
+    response = client.post("/api/v1/requests", json=payload, headers=authenticated_csrf_headers(client))
+
+    assert response.status_code == 422
+    detail = next(item for item in response.json()["details"] if item["field"] == field)
+    assert detail["message"].startswith("Descreva")
+    assert "Value error" not in detail["message"]
