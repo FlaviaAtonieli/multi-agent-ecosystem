@@ -112,6 +112,8 @@ class LLMInvocationRead(BaseModel):
     llm_call_id: str
     provider: str
     model: str
+    temperature: float | None = None
+    seed: int | None = None
     purpose: str
     prompt_template_id: str
     prompt_template_version: str

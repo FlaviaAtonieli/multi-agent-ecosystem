@@ -121,6 +121,11 @@ class Settings(BaseSettings):
     # the model's own maximum applies), which is now the default so it never
     # bottlenecks multi-agent orchestration output.
     llm_max_output_tokens: int = 0
+    # Pedem a resposta mais repetível possível (linha de IA: resultados replicáveis).
+    # Modelo que não aceita algum deles o ignora, então guardar o valor não garante
+    # texto idêntico: ver "Reprodutibilidade" em docs/architecture/ai-pipeline.md.
+    llm_temperature: float | None = 0.0
+    llm_seed: int | None = 42
     llm_max_input_chars: int = 12000
     llm_requests_per_hour_technician: int = 20
     # Caps total input+output tokens (LLMInvocation.input_tokens + output_tokens,
@@ -151,6 +156,8 @@ class Settings(BaseSettings):
     rag_top_k: int = 3
     rag_chunk_max_chars: int = 800
     rag_chunk_overlap: int = 100
+    # Trocar de modelo exige reindexar a base: vetores de modelos diferentes não se comparam.
+    embedding_model: str = "openai/text-embedding-3-small"
 
     # Motor de sugestão de Agent Skills. O limite é a similaridade de cosseno mínima
     # para sugerir, e deve ser calibrado com tests/test_skill_suggestion_quality.py.

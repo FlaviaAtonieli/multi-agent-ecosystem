@@ -90,13 +90,19 @@ Fonte: [medição de 21/09/2026](../validation/evidence/2026-09-rag-multi-domain
 - A qualidade da resposta final do modelo: as medições cobrem a recuperação.
 - Os KPIs da RFC com o código e o modelo atuais. A [rodada de agosto](../validation/evidence/2026-08-m7-kpi-measurement.md) usou um modelo gratuito e execução em sequência.
 
+## Cache
+
+- **Embeddings:** o mesmo texto com o mesmo modelo não gera nova chamada. O cache fica no banco (`embedding_cache`), porque cada skill roda em um processo próprio, e guarda só o hash do texto.
+- **Vetores das skills:** ficam guardados até o texto da skill ou o modelo mudar.
+- **Site:** os arquivos de `/assets`, cujo nome muda a cada build, podem ficar guardados por 1 ano. O `index.html` é sempre revalidado.
+
 ## Motor de sugestão de skills
 
 Antes de registrar a solicitação, a pessoa pode verificar se alguma skill fora do clã ajudaria. O texto da solicitação, mascarado, e o de cada skill ativa (nome, área, objetivo e capacidades) viram embeddings, comparados por similaridade de cosseno. O vetor de cada skill fica guardado até o texto dela mudar. O motor só sugere, e a pessoa decide.
 
 **Por que não uma CNN ou outro modelo treinado:** não há exemplos rotulados de "solicitação e skill certa", e um dataset pronto como dados da solução reprova na linha de IA. A similaridade dispensa treino e pode ser medida com gabarito.
 
-**A qualidade ainda não foi medida com embeddings reais.** `tests/test_skill_suggestion_quality.py` mede Precision@3, Recall@3 e MRR em 20 perguntas e mostra as notas de 3 perguntas fora do assunto. O limite `SKILL_SUGGESTION_MIN_SCORE` (0,35) é um valor inicial, até essa calibração.
+**Medição de 05/11/2026, com embeddings gratuitos:** Recall@3 de 1,00 e MRR de 0,91 em 20 perguntas ([evidência](../validation/evidence/2026-11-05-real-llm-free-models.md)). O ranking funciona, mas o limite `SKILL_SUGGESTION_MIN_SCORE` (0,35) não: com esse modelo, as notas das perguntas do assunto e das de fora se sobrepõem. O limite precisa ser calibrado com o modelo de embeddings de produção.
 
 ## Reprodutibilidade
 
@@ -106,7 +112,7 @@ Antes de registrar a solicitação, a pessoa pode verificar se alguma skill fora
 | Métricas de recuperação | Sim, desde que o provedor mantenha o modelo de embeddings: mesmo gabarito e mesmos documentos |
 | Quality Gate | Sim, para as mesmas respostas das skills |
 | Sugestão de skills | Sim, com os mesmos embeddings e o mesmo limite |
-| Texto gerado pelo modelo | **Não necessariamente.** Modelos de linguagem variam, e o projeto não fixa `temperature` nem `seed` |
+| Texto gerado pelo modelo | **Não.** O projeto envia `temperature=0` e `seed=42` e guarda os valores em cada chamada (`llm_invocations`), mas, em 3 modelos gratuitos, 4 repetições deram 4 respostas diferentes ([medição de 05/11/2026](../validation/evidence/2026-11-05-reproducibility.md)) |
 
 Para repetir as medições, rode os testes marcados com `llm` (ver README). Eles exigem uma `OPENROUTER_API_KEY` real e geram custo.
 

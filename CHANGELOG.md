@@ -2,6 +2,14 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-11-05 - Reprodutibilidade e cache
+
+### Adicionado
+
+- `LLM_TEMPERATURE` e `LLM_SEED` (0 e 42 por padrão), enviados ao modelo e guardados em cada invocação.
+- `EMBEDDING_MODEL`, antes fixo no código.
+- Cache de embeddings no banco e cabeçalhos de cache para os arquivos do site.
+
 ## 2026-11-04 - Documentação da API e organização dos documentos
 
 ### Adicionado

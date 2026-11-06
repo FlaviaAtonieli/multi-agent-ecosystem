@@ -8,7 +8,7 @@ class OpenRouterEmbeddingProvider(EmbeddingProvider):
 
     name = "openrouter"
 
-    def __init__(self, config: Settings, *, model: str = "openai/text-embedding-3-small") -> None:
+    def __init__(self, config: Settings) -> None:
         # Import is intentionally lazy: the project remains runnable with LLM/RAG disabled.
         from openai import OpenAI
 
@@ -16,7 +16,7 @@ class OpenRouterEmbeddingProvider(EmbeddingProvider):
         if not api_key:
             raise RuntimeError("A credencial da OpenRouter não foi configurada.")
 
-        self.model = model
+        self.model = config.embedding_model
         self.client = OpenAI(
             api_key=api_key,
             base_url=config.openrouter_base_url,

@@ -20,6 +20,7 @@ from app.core.config import Settings, settings
 from app.llm.security import content_sha256, sanitize_content
 from app.models import AgentSkill
 from app.rag.base import EmbeddingProvider
+from app.rag.cache import CachedEmbeddingProvider
 from app.rag.factory import RAGConfigurationError, create_embedding_provider
 from app.rag.retriever import cosine_similarity
 
@@ -57,12 +58,17 @@ def _skill_text(skill: AgentSkill) -> str:
     return "\n".join(part for part in parts if part)
 
 
+def _embedding_key(provider: EmbeddingProvider, text: str) -> str:
+    # Inclui o modelo: vetores de modelos diferentes não se comparam.
+    return content_sha256(f"{getattr(provider, 'model', provider.name)}\n{text}")
+
+
 def _ensure_skill_embeddings(db: Session, skills: list[AgentSkill], provider: EmbeddingProvider) -> None:
     texts = {skill.id: _skill_text(skill) for skill in skills}
     stale = [
         skill
         for skill in skills
-        if skill.embedding is None or skill.embedding_text_hash != content_sha256(texts[skill.id])
+        if skill.embedding is None or skill.embedding_text_hash != _embedding_key(provider, texts[skill.id])
     ]
     if not stale:
         return
@@ -70,7 +76,7 @@ def _ensure_skill_embeddings(db: Session, skills: list[AgentSkill], provider: Em
     vectors = provider.embed([texts[skill.id] for skill in stale])
     for skill, vector in zip(stale, vectors, strict=True):
         skill.embedding = vector
-        skill.embedding_text_hash = content_sha256(texts[skill.id])
+        skill.embedding_text_hash = _embedding_key(provider, texts[skill.id])
     db.commit()
 
 
@@ -95,7 +101,8 @@ def suggest_skills(
     # Sem isso a orquestração continua funcionando: a falha só deixa o motor indisponível.
     try:
         provider = create_embedding_provider(config)
-        query_vector = provider.embed([query])[0]
+        query_vector = CachedEmbeddingProvider(provider, db, model=config.embedding_model).embed([query])[0]
+        db.commit()
         _ensure_skill_embeddings(db, clan_skills + others, provider)
     except RAGConfigurationError:
         return UNAVAILABLE

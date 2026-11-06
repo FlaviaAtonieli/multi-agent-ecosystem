@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -33,6 +33,8 @@ class LLMInvocation(Base):
     llm_call_id: Mapped[str] = mapped_column(String(36), unique=True, index=True, nullable=False)
     provider: Mapped[str] = mapped_column(String(40), nullable=False)
     model: Mapped[str] = mapped_column(String(120), nullable=False)
+    temperature: Mapped[float | None] = mapped_column(Float, nullable=True)
+    seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
     purpose: Mapped[str] = mapped_column(String(80), nullable=False)
     prompt_template_id: Mapped[str] = mapped_column(String(120), nullable=False)
     prompt_template_version: Mapped[str] = mapped_column(String(30), nullable=False)

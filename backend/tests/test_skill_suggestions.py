@@ -189,7 +189,7 @@ class TestCost:
 
         _ask(client, clan["id"])
         first_round = len(provider.batches)
-        _ask(client, clan["id"])
+        _ask(client, clan["id"], "Outra pergunta sobre outro assunto.")
 
         # A segunda pergunta só gera o vetor da própria pergunta.
         assert first_round == 2
@@ -224,8 +224,9 @@ class TestCost:
         before = len(provider.batches)
         _ask(client, clan["id"])
 
-        assert len(provider.batches) == before + 2
-        assert "Novo objetivo sobre auditoria." in provider.batches[before + 1][0]
+        # A pergunta repetida vem do cache: só a skill editada gera vetor de novo.
+        assert len(provider.batches) == before + 1
+        assert "Novo objetivo sobre auditoria." in provider.batches[before][0]
 
     def test_does_not_call_the_chat_model(self, client: TestClient, provider, monkeypatch) -> None:
         def must_not_run(*args, **kwargs):

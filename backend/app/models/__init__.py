@@ -4,6 +4,7 @@ from app.models.audit_log import AuditLog
 from app.models.auth_session import AuthSession
 from app.models.clan import Clan, ClanMembership, ClanSkill
 from app.models.consolidated_response import ConsolidatedResponse
+from app.models.embedding_cache import EmbeddingCacheEntry
 from app.models.follow_up_exchange import FollowUpExchange
 from app.models.knowledge_chunk import KnowledgeChunk
 from app.models.llm_invocation import LLMInvocation
@@ -24,6 +25,7 @@ __all__ = [
     "ClanMembership",
     "ClanSkill",
     "ConsolidatedResponse",
+    "EmbeddingCacheEntry",
     "FollowUpExchange",
     "KnowledgeChunk",
     "LLMInvocation",
