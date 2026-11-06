@@ -16,6 +16,7 @@ from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.metrics import QUALITY_GATE_VERDICTS, SKILL_INVOCATIONS, SKILL_LATENCY
 from app.core.security import utc_now
+from app.llm.file_request import asks_for_files
 from app.llm.security import content_sha256
 from app.models import (
     AgentSkill,
@@ -378,7 +379,10 @@ async def execute_orchestration_step(
         db, skills=skills, technical_request=technical_request, user=user, requested_model=requested_model
     )
 
-    verdict = evaluate(results)
+    verdict = evaluate(
+        results,
+        files_requested=asks_for_files(technical_request.title, technical_request.objective),
+    )
     QUALITY_GATE_VERDICTS.labels(
         "approved" if verdict.approved and not verdict.requires_human_review else "human_review"
     ).inc()
@@ -754,7 +758,7 @@ async def _answer_follow_up(
         additional_question=question,
     )
 
-    verdict = evaluate(results)
+    verdict = evaluate(results, files_requested=asks_for_files(question))
     append_event(
         db,
         technical_request,
