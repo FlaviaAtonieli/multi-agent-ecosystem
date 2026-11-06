@@ -9,7 +9,7 @@ Ambiente: https://jolly-grass-0a3af3f10.2.azurestaticapps.net, commit `d009c8b` 
 - Os testes rodaram no site público, com o Chrome controlado pelo Playwright. Alguns passos foram feitos direto pela API, com a mesma sessão.
 - A conta de teste foi criada pelo cadastro normal: `teste-claude-11052125@example.com`.
 - Ela usou um clã fechado próprio, **Teste Claude**, com a skill oficial Código Legado. Nenhum clã de outra pessoa foi usado.
-- A IA rodou só com o modelo gratuito `dots-studio/dots-3-note-preview:free`, que está na lista de modelos permitidos em produção. No total foram 2 orquestrações.
+- A IA rodou só com o modelo gratuito `dots-studio/dots-3-note-preview:free`, que está na lista de modelos permitidos em produção. No total foram 3 orquestrações.
 
 ## Versão no ar
 
@@ -78,9 +78,27 @@ Trace `TRC-20261106-7CCE71`.
 O que isso mostra:
 
 - O caminho completo funciona em produção, com o rastro de cada etapa: qualificação, RAG, modelo, contrato MCP, Quality Gate, consolidação e revisão humana.
-- **O modelo gratuito não gerou arquivos.** O recurso de arquivos e ZIP (#98) continua sem ter sido visto funcionando com um modelo real. Não dá para concluir se o motivo é o modelo ou o prompt.
+- Não vieram arquivos, e isso estava correto: o prompt só pede arquivos quando a solicitação pede explicitamente, e esta não pedia.
 - A síntese ficou rasa, mas a solicitação de teste também era rasa ("validar a barreira de contexto"). Isso não mede a qualidade da resposta.
 - A busca no RAG levou quase 6 s, a maior parte na chamada de embeddings ao provedor externo.
+
+## Arquivos pedidos explicitamente
+
+Uma terceira orquestração gratuita pediu "um arquivo SQL com o índice composto e um arquivo README.md" (`TRC-20261106-62E128`). Ela terminou como Concluída, com confiança ALTO, mas **sem arquivos** (911 tokens de saída). O Quality Gate não percebeu a falta.
+
+A investigação foi feita localmente, também só com modelos gratuitos:
+
+| Teste | Arquivos |
+|---|---|
+| Chamada direta, `dots-3-note` e `nemotron-3.5-super-vl` | 2 e 2 |
+| Prompt com o domínio da skill e trechos sintéticos, 3 tentativas por variante | sempre 2 |
+| Orquestração local completa, skill por MCP stdio como em produção | 2 guardados |
+| Prompt com trechos reais da base, 4 tentativas | 3 com arquivos, 1 sem |
+| Prompt antigo x reforçado, 8 tentativas cada | 8 de 8 nos dois |
+
+O código guarda e entrega os arquivos. É o modelo que às vezes ignora o pedido: 2 de 13 vezes no total, contando a de produção. A correção está no PR #107: o Quality Gate passa a mandar para revisão humana quando os arquivos pedidos não vêm. O reforço no prompt não mostrou ganho medido.
+
+Um achado sobre a qualidade dos arquivos: um dos SQLs gerados usava `COMMENT ON INDEX`, que não existe no Oracle. É por isso que os arquivos são propostas que passam por revisão humana.
 
 ## O que continua pendente
 
@@ -88,4 +106,4 @@ O que isso mostra:
 - **Monitoramento em produção.** O linked backend do Static Web App bloqueia o acesso direto ao App Service, e isso inclui `/metrics` ([monitoring.md](../../deployment/monitoring.md)).
 - **Wiki.** A última atualização é de 03/11/2026. Faltam Swagger, interromper a execução, a barreira de contexto, o cache de embeddings e os parâmetros fixos do modelo.
 
-Dados deixados em produção: a conta de teste, o clã Teste Claude e a solicitação `TRC-20261106-7CCE71`.
+Dados deixados em produção: a conta de teste, o clã Teste Claude e as solicitações `TRC-20261106-7CCE71` e `TRC-20261106-62E128`.
