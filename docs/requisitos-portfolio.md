@@ -77,5 +77,5 @@ Em produção, em 05/11/2026, foram conferidos o cadastro e o login do fluxo 1, 
 - A execução em segundo plano assume um único processo no backend.
 - A base de conhecimento só tem documentos técnicos de exemplo.
 - O modelo às vezes ignora um pedido explícito de arquivos (2 de 13 tentativas com o modelo gratuito). O Quality Gate manda esses casos para revisão humana (PR #107).
-- A barreira de contexto vale só para o campo de contexto. Título, problema e objetivo não passam por ela.
+- A barreira de contexto vale para o contexto. Problema e objetivo sem conteúdo passam a ser recusados no cadastro com o PR #108. O título continua livre.
 - A suíte automática simula a IA. Os testes marcados com `llm` chamam o modelo real e ficam fora do CI.
