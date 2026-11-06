@@ -1376,3 +1376,5 @@
   cursor: pointer;
 }
 .workspace-danger-action:disabled { opacity: 0.6; cursor: default; }
+.workspace-context-issues { padding: 12px 14px; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 11px; color: var(--text-primary); background: rgba(245, 158, 11, 0.1); font-size: 0.9rem; line-height: 1.45; }
+.workspace-context-issues ul { margin: 6px 0 0; padding-left: 18px; }

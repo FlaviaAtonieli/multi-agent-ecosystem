@@ -352,6 +352,37 @@ describe('OrchestrationPage', () => {
     expect(api.jsonBody('POST', '/requests/req-1/context')).toEqual({ context: 'Sistema legado em Java.' })
   })
 
+  describe('o que falta no contexto', () => {
+    const issues = ['Use mais palavras que descrevam o cenário: tecnologias, módulos, o que acontece e o que se espera.']
+    const requested = event(2, 'CONTEXT_REQUESTED', { issues })
+
+    it('mostra por que o Orientador pediu mais contexto', async () => {
+      mockApi({ ...commonRoutes, [`GET ${ORCHESTRATION}`]: detail('AWAITING_CONTEXT', { events: [requested] }) })
+      renderPage()
+
+      const box = await screen.findByRole('status', { name: 'O que falta no contexto' })
+      expect(box).toHaveTextContent(issues[0])
+    })
+
+    it('não diz que deu certo quando o contexto continua insuficiente', async () => {
+      const user = setupUser()
+      mockApi({
+        ...commonRoutes,
+        [`GET ${ORCHESTRATION}`]: detail('AWAITING_CONTEXT', { events: [requested] }),
+        'POST /requests/req-1/context': { status: 'AWAITING_CONTEXT' },
+      })
+      renderPage()
+
+      await user.type(await screen.findByLabelText('Complementar contexto'), 'TESTE TESTE TESTE TESTE TESTE TESTE TESTE')
+      await user.click(screen.getByRole('button', { name: 'Enviar complementação' }))
+
+      expect(await screen.findByText(/O contexto ainda não é suficiente/)).toBeInTheDocument()
+      expect(screen.queryByText('Contexto complementado com sucesso.')).not.toBeInTheDocument()
+      expect(screen.getByLabelText('Complementar contexto')).toHaveValue('TESTE TESTE TESTE TESTE TESTE TESTE TESTE')
+      expect(screen.queryByRole('button', { name: 'Executar orquestração' })).not.toBeInTheDocument()
+    })
+  })
+
   describe('perguntas de acompanhamento', () => {
     const asked = event(1, 'FOLLOW_UP_QUESTION_ASKED')
 

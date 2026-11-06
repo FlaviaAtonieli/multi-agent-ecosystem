@@ -13,8 +13,7 @@ from app.core.metrics import HUMAN_REVIEWS
 from app.core.security import utc_now
 from app.models import OrchestrationEvent, OrchestrationRun, RequestAttachment, TechnicalRequest, User
 from app.schemas.orchestration import TechnicalRequestCreate
-
-CONTEXT_MIN_LENGTH = 40
+from app.services.context_quality import CONTEXT_MIN_LENGTH, context_issues
 
 
 class RequestStatus:
@@ -46,7 +45,11 @@ def generate_trace_id(now: datetime | None = None) -> str:
 
 
 def has_sufficient_context(context: str | None) -> bool:
-    return bool(context and len(context.strip()) >= CONTEXT_MIN_LENGTH)
+    return not context_issues(context)
+
+
+def _context_requested_payload(context: str | None) -> dict:
+    return {"minimum_context_characters": CONTEXT_MIN_LENGTH, "issues": context_issues(context)}
 
 
 def append_event(
@@ -156,11 +159,8 @@ def create_technical_request(
             event_type="CONTEXT_REQUESTED",
             actor="INTERACTION_GUIDE",
             title="Complementação necessária",
-            message=(
-                "O contexto inicial ainda é insuficiente. Informe detalhes técnicos, artefatos, "
-                "dependências ou comportamento esperado."
-            ),
-            payload={"minimum_context_characters": CONTEXT_MIN_LENGTH},
+            message="O contexto ainda é insuficiente. " + " ".join(context_issues(input_data.context)),
+            payload=_context_requested_payload(input_data.context),
         )
 
     db.flush()
@@ -279,8 +279,8 @@ def complement_context(
             event_type="CONTEXT_REQUESTED",
             actor="INTERACTION_GUIDE",
             title="Mais contexto necessário",
-            message="As informações adicionadas ainda não atendem ao contexto mínimo do fluxo.",
-            payload={"minimum_context_characters": CONTEXT_MIN_LENGTH},
+            message="O contexto ainda é insuficiente. " + " ".join(context_issues(technical_request.context)),
+            payload=_context_requested_payload(technical_request.context),
         )
 
     db.flush()
