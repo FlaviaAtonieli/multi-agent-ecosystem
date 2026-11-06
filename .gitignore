@@ -37,5 +37,5 @@ frontend/vite.config.d.ts
 .DS_Store
 Thumbs.db
 
-# Token de scrape do Prometheus (docs/monitoring.md)
+# Token de scrape do Prometheus (docs/deployment/monitoring.md)
 monitoring/prometheus/metrics_token

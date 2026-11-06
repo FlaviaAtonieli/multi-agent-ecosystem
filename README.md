@@ -9,12 +9,12 @@ A proposta é validar uma arquitetura modular para registrar, selecionar, coorde
 ## Destaques
 
 - **Agentes em processos separados, por MCP real:** cada Agent Skill roda como um servidor MCP, e o Orquestrador é o cliente.
-- **RAG com qualidade medida:** Precision@3, Recall@3 e MRR contra gabarito manual, em 4 áreas. Ver [Pipeline de IA](docs/ai-pipeline.md).
+- **RAG com qualidade medida:** Precision@3, Recall@3 e MRR contra gabarito manual, em 4 áreas. Ver [Pipeline de IA](docs/architecture/ai-pipeline.md).
 - **Clã como escopo:** só as skills do clã escolhido respondem, o que evita chamadas de IA fora do assunto.
 - **Motor de sugestão:** indica skills fora do clã que podem ajudar, por similaridade de embeddings, sem chamar o modelo de chat.
 - **Governança:** Quality Gate por regras explícitas, revisão humana e `Trace ID` em cada etapa.
 - **Respostas com arquivos e ZIP:** só gerar consome tokens. Mostrar e baixar, não.
-- **Testes verificados:** o código é quebrado de propósito para conferir se a suíte acusa. Ver [VALIDATION.md](VALIDATION.md#os-testes-acusam-defeitos).
+- **Testes verificados:** o código é quebrado de propósito para conferir se a suíte acusa. Ver [Relatório de validação](docs/validation/README.md#os-testes-acusam-defeitos).
 
 Situação item a item frente aos requisitos do Portfólio: [docs/requisitos-portfolio.md](docs/requisitos-portfolio.md).
 
@@ -23,7 +23,7 @@ Situação item a item frente aos requisitos do Portfólio: [docs/requisitos-por
 - **Frontend**: React, Vite, TypeScript.
 - **Backend**: FastAPI, SQLAlchemy, PostgreSQL, migrations via Alembic.
 - **Autenticação**: sessão opaca em cookie `HttpOnly` -- e-mail/senha, GitHub OAuth ou Google OAuth (ambos opcionais).
-- **Modelo de IA**: OpenRouter como Model Gateway primário (RAG + LLM), sem provedor mock.
+- **Modelo de IA**: OpenRouter como Model Gateway primário (RAG + LLM).
 - **Infra**: Docker Compose; guia de deploy no Azure em [docs/deployment/azure.md](docs/deployment/azure.md).
 
 ## Capacidades principais
@@ -85,7 +85,7 @@ BOOTSTRAP_ADMIN_EMAIL=admin@agenthub.com
 BOOTSTRAP_ADMIN_PASSWORD=defina-outra-senha-forte
 ```
 
-Não existe provedor mock: para usar a camada de planejamento (LLM) e a recuperação de conhecimento (RAG), é necessária uma `OPENROUTER_API_KEY` real. Sem chave, a aplicação sobe normalmente com `LLM_ENABLED=false` — só a integração de modelo fica indisponível.
+A aplicação não tem provedor mock: para usar a camada de planejamento (LLM) e a recuperação de conhecimento (RAG), é necessária uma `OPENROUTER_API_KEY` real. Sem chave, a aplicação sobe normalmente com `LLM_ENABLED=false` — só a integração de modelo fica indisponível.
 
 ```env
 LLM_ENABLED=true
@@ -145,7 +145,7 @@ Exige usuário autenticado, `LLM_ENABLED=true` e `OPENROUTER_API_KEY` válida. A
 
 ## Testes
 
-Os testes marcados com `@pytest.mark.llm` chamam a OpenRouter de verdade (sem provedor mock) — exigem uma `OPENROUTER_API_KEY` real no ambiente ou no `.env` da raiz do projeto. O resto da suíte roda sem chave e é o que o CI executa (`pytest -m "not llm"`).
+Os testes marcados com `@pytest.mark.llm` chamam a OpenRouter de verdade — exigem uma `OPENROUTER_API_KEY` real no ambiente ou no `.env` da raiz do projeto. O resto da suíte roda sem chave e é o que o CI executa (`pytest -m "not llm"`).
 
 As imagens e o CI instalam o backend de `backend/requirements.lock` e `requirements-dev.lock`, com versões e hashes travados. Depois de mudar `requirements.txt` ou `requirements-dev.txt`, gere de novo:
 
@@ -189,22 +189,11 @@ Produção no Azure: <https://jolly-grass-0a3af3f10.2.azurestaticapps.net>. O fr
 
 ## Documentação
 
+Comece pelo [índice da documentação](docs/README.md). Os mais procurados:
+
 - [Requisitos do Portfólio](docs/requisitos-portfolio.md)
-- [Relatório de validação](VALIDATION.md)
-- [Documentação da API (Swagger/OpenAPI)](docs/api/README.md) — Swagger em `/docs` no desenvolvimento e `docs/api/openapi.json` versionado
-- [Monitoramento (Prometheus + Grafana)](docs/monitoring.md) — métricas em `/metrics`, painel pronto em http://localhost:3001
-- [Pipeline de IA](docs/ai-pipeline.md) — dados, RAG, modelo, Quality Gate e medições
-- [Wiki do projeto](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) — ponto de partida navegável (arquitetura, como rodar, domínios de Agent Skills, segurança, validação)
-- [Visão da arquitetura](docs/architecture/overview.md)
-- [Princípios de arquitetura](docs/architecture/principles.md)
-- [Integração com provedores de modelo](docs/integrations/model-provider.md)
-- [Deploy no Azure](docs/deployment/azure.md)
-- [Segurança](SECURITY.md)
-- [Evidência de validação da base](docs/validation/evidence/2026-08-foundation-validation.md)
-- [Evidência de extensibilidade plug-and-play](docs/validation/evidence/2026-08-plug-and-play-extensibility.md)
-- [Primeira medição de KPIs (M7)](docs/validation/evidence/2026-08-m7-kpi-measurement.md)
-- [Validação de qualidade do RAG (domínio Código Legado)](docs/validation/evidence/2026-08-30-rag-quality-validation.md)
-- [Validação de qualidade do RAG nos 4 domínios de Agent Skill](docs/validation/evidence/2026-09-rag-multi-domain-quality-validation.md)
-- [Histórico de mudanças](CHANGELOG.md)
+- [API (Swagger/OpenAPI)](docs/api/README.md)
+- [Arquitetura](docs/architecture/overview.md) e [Pipeline de IA](docs/architecture/ai-pipeline.md)
+- [Relatório de validação](docs/validation/README.md)
 
 O RFC acadêmico permanece como a especificação principal do projeto. Os documentos deste repositório registram o que já foi implementado e as limitações conhecidas da PoC.

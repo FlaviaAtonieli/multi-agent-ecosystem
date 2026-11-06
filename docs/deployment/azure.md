@@ -123,7 +123,7 @@ az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $BACKEN
   METRICS_TOKEN="<gere-com-openssl-rand-hex-32>"
 ```
 
-> **`METRICS_TOKEN` é obrigatório em produção.** Sem ele a aplicação recusa subir, porque `/metrics` ficaria público no App Service. Para coletar as métricas no Azure, aponte um Prometheus (ou o Azure Monitor managed Prometheus) para `https://<backend>/metrics` com `Authorization: Bearer <token>`. Ver [docs/monitoring.md](../monitoring.md).
+> **`METRICS_TOKEN` é obrigatório em produção.** Sem ele a aplicação recusa subir, porque `/metrics` ficaria público no App Service. Para coletar as métricas no Azure, aponte um Prometheus (ou o Azure Monitor managed Prometheus) para `https://<backend>/metrics` com `Authorization: Bearer <token>`. Ver [docs/deployment/monitoring.md](monitoring.md).
 
 > **SMTP é obrigatório em produção.** O login em navegador novo envia um código por e-mail, e com `ENVIRONMENT=production` a aplicação recusa subir com `EMAIL_BACKEND=console`. No Gmail, a senha de app é gerada em https://myaccount.google.com/apppasswords (exige verificação em 2 etapas na conta).
 
@@ -216,7 +216,7 @@ Uma migration já aplicada não é desfeita ao voltar a imagem: se a versão ant
 
 - **Limite de 45 segundos por chamada à API.** O Static Web Apps corta qualquer requisição a `/api` depois de 45 s, e esse limite não pode ser mudado. Por isso, o site inicia a orquestração por `POST /agent-skills/requests/{id}/start`, que responde na hora e roda as skills em segundo plano, e acompanha o andamento pela linha do tempo. Cada skill levou cerca de 40 s em média (medição de 11/2026, com `openai/gpt-5-mini`), e até `ORCHESTRATION_MAX_PARALLEL_SKILLS` skills rodam ao mesmo tempo (3 por padrão). As perguntas de acompanhamento seguem o mesmo caminho, por `/ask/start`.
 - **Um único processo no backend.** A execução em segundo plano vive no processo do backend. Se ele reiniciar, as execuções em andamento são marcadas como `FAILED` e podem ser repetidas pela tela. Por isso, o container não pode rodar com mais de um worker do `uvicorn`, nem o App Service com mais de uma instância.
-- **O backend fica acessível só pelo Static Web App.** Ao ligar o linked backend, o Azure adiciona ao App Service um provedor de identidade chamado "Azure Static Web Apps (Linked)", que bloqueia acesso direto a `*.azurewebsites.net`. Isso também bloqueia um Prometheus externo tentando ler `/metrics` direto no App Service. Para coletar métricas, é preciso liberar esse caminho na autenticação do App Service (ver [docs/monitoring.md](../monitoring.md)).
+- **O backend fica acessível só pelo Static Web App.** Ao ligar o linked backend, o Azure adiciona ao App Service um provedor de identidade chamado "Azure Static Web Apps (Linked)", que bloqueia acesso direto a `*.azurewebsites.net`. Isso também bloqueia um Prometheus externo tentando ler `/metrics` direto no App Service. Para coletar métricas, é preciso liberar esse caminho na autenticação do App Service (ver [docs/deployment/monitoring.md](monitoring.md)).
 - **Sem pré-visualização por PR.** Os ambientes de PR do Static Web Apps não aceitam linked backend, por isso o workflow só publica a partir da `main`.
 - **`TRUSTED_PROXY_IPS`:** ver a ressalva da seção 4. O rate limit por IP enxerga o IP da infraestrutura do Azure.
 

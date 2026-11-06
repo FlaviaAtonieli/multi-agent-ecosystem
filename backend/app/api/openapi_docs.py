@@ -24,6 +24,7 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute
 
 from app.api.dependencies import get_current_session, require_authenticated_csrf, require_public_csrf
+from app.api.openapi_examples import apply_examples
 from app.api.v1.endpoints import (
     agent_skills,
     audit,
@@ -482,6 +483,7 @@ def build_openapi(app: FastAPI) -> dict[str, Any]:
             if "422" in responses:
                 responses["422"] = {"description": _ERROR_DESCRIPTIONS["422"], **error_ref}
 
+    apply_examples(schema, api_prefix=settings.api_v1_prefix)
     app.openapi_schema = schema
     return schema
 

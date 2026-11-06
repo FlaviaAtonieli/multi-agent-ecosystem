@@ -2,6 +2,22 @@
 
 Este arquivo registra alterações relevantes da PoC. As datas correspondem ao material disponível no projeto e não substituem tags ou releases do GitHub.
 
+## 2026-11-04 - Documentação da API e organização dos documentos
+
+### Adicionado
+
+- Swagger: descrição de todos os campos de entrada, exemplos do caminho principal, servidores e downloads documentados como arquivo. Os testes recusam exemplos que a própria API não aceitaria.
+- Índice em `docs/README.md` e teste que acusa link relativo quebrado.
+
+### Alterado
+
+- `VALIDATION.md` passou para `docs/validation/README.md`, `docs/monitoring.md` para `docs/deployment/` e `docs/ai-pipeline.md` para `docs/architecture/`.
+- `docs/architecture/overview.md` foi reescrito: dizia que toda skill rodava no servidor genérico e citava controle de perfis.
+
+### Removido
+
+- `backend/.env.example`, que não era usado e divergia do `.env.example` da raiz.
+
 ## 2026-11-04 - Auditoria frente aos requisitos do Portfólio
 
 ### Adicionado

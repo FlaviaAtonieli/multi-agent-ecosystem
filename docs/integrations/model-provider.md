@@ -87,15 +87,9 @@ Após o retorno, o backend:
 4. registra conclusão ou falha;
 5. retorna um plano que exige aprovação humana.
 
-## Endpoints atuais
+## Endpoints
 
-```text
-GET  /api/v1/llm/status
-POST /api/v1/llm/requests/{request_id}/plan
-GET  /api/v1/llm/invocations/{trace_id}
-```
-
-O endpoint de status não retorna a chave nem qualquer trecho da credencial.
+Ver a [documentação da API](../api/README.md), na tag "Integração com LLM". O endpoint de status não retorna a chave nem qualquer trecho da credencial.
 
 ## Dados registrados
 
@@ -139,11 +133,11 @@ LLM_REDACT_SENSITIVE_DATA=true
 
 ## Limitações atuais
 
-- A seleção de Agent Skills por domínio já existe (`app/agent_catalog/`), mas é por correspondência exata de domínio (sem roteamento semântico) — decisão deliberada de escopo para uma PoC de desenvolvedora única.
+- A seleção de Agent Skills é feita pelo clã e pelas áreas escolhidas. O motor de sugestão só recomenda, e não escolhe sozinho.
 - O plano não executa tools.
 - O resultado não é publicado automaticamente.
 - O rate limit é local ao processo e precisa de uma solução distribuída antes de escalar horizontalmente.
 - A credencial ainda depende de variável de ambiente no desenvolvimento local.
 - O padrão passou a ser `openai/gpt-5-mini` em 11/2026, quando o modelo gratuito anterior (`nvidia/nemotron-3-super-120b-a12b:free`) saiu do catálogo gratuito. Modelos gratuitos, como `dots-studio/dots-3-note-preview:free`, têm limite de 50 requisições/dia sem créditos comprados na conta da OpenRouter; a suíte de testes inteira consome uma fração relevante dessa cota a cada execução completa.
-- Sem provedor mock, não há mais forma de rodar a suíte de testes nem a aplicação com a integração de modelo habilitada sem uma `OPENROUTER_API_KEY` real.
+- A aplicação não tem provedor mock: com a integração de modelo habilitada, ela exige uma `OPENROUTER_API_KEY` real. A suíte do CI usa provedores falsos só nos testes.
 - O modelo gratuito, sendo compartilhado, apresenta instabilidade ocasional sob rajada de chamadas (rate limit, timeout ou resposta JSON incompleta). `OpenRouterLLMProvider` e `OpenRouterEmbeddingProvider` fazem retry automático (até 2 tentativas, `app/core/retry.py`) para absorver isso; validado empiricamente — sem retry, duas rodadas completas da suíte produziram 1-2 falhas cada (sempre passando isoladamente); com retry, uma rodada completa passou 33/33.

@@ -9,12 +9,12 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 | Ponto | Evidência |
 |---|---|
 | **Protocolo MCP real**, tema que o guia marca como "Preferir" e pouco explorado: cada Agent Skill roda em um processo separado | [`mcp_client.py`](../backend/app/agent_catalog/mcp_client.py), testado por stdio em `test_skill_artifacts.py` |
-| **RAG com qualidade medida:** Precision@3, Recall@3 e MRR contra gabarito manual | [Pipeline de IA](ai-pipeline.md) |
+| **RAG com qualidade medida:** Precision@3, Recall@3 e MRR contra gabarito manual | [Pipeline de IA](architecture/ai-pipeline.md) |
 | **Governança de IA explicável:** Quality Gate por regras, revisão humana e `Trace ID` em cada etapa | [`quality_gate/service.py`](../backend/app/quality_gate/service.py) |
 | **Clã como escopo da orquestração:** evita chamadas de IA a skills fora do assunto | [`agent_skill_orchestration_service.py`](../backend/app/services/agent_skill_orchestration_service.py) |
 | **Respostas com arquivos e ZIP**, sem gastar tokens para mostrar ou baixar | [`artifact_service.py`](../backend/app/services/artifact_service.py) |
 | **Segurança além do básico:** sessão opaca, CSRF, Argon2, OAuth, código por e-mail, mascaramento de dados pessoais | [SECURITY.md](../SECURITY.md) |
-| **Testes que acusam defeitos:** o código é quebrado de propósito para conferir | [VALIDATION.md](../VALIDATION.md) |
+| **Testes que acusam defeitos:** o código é quebrado de propósito para conferir | [Relatório de validação](validation/README.md) |
 | **Engenharia:** CI, SonarCloud, imagens com hashes travados, migrações conferidas em PostgreSQL | [`ci.yml`](../.github/workflows/ci.yml) |
 
 ## Núcleo comum
@@ -24,20 +24,20 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 | Wiki no repositório | ✅ | [Wiki](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) |
 | CI/CD | 🟡 | CI ativo. O deploy automático do backend depende do segredo do webhook ([guia](deployment/azure.md)) |
 | Análise estática e de segurança | ✅ | `ruff`, `mypy`, `tsc` e [SonarCloud](https://sonarcloud.io/project/overview?id=FlaviaAtonieli_multi-agent-ecosystem) |
-| Monitoramento | 🟡 | Prometheus e Grafana [prontos](monitoring.md). Falta ler o backend em produção |
+| Monitoramento | 🟡 | Prometheus e Grafana [prontos](deployment/monitoring.md). Falta ler o backend em produção |
 
 ## Linha de Web Apps
 
 | Requisito | Situação | Evidência |
 |---|---|---|
 | Hospedagem pública | 🟡 | Azure, aceito pelo professor. **Precisa estar ligado até sair a nota final** |
-| Funcionalidades conforme a RFC | 🟡 | Clãs, arquivos e sugestão mudaram o escopo: registrar na [RFC](rfc/) |
+| Funcionalidades conforme a RFC | 🟡 | Clãs, arquivos e sugestão mudaram o escopo: registrar na [RFC](rfc) |
 | Interface funcional | ✅ | Jornadas conferidas no Chrome |
 | Arquitetura modular | ✅ | [Visão da arquitetura](architecture/overview.md) |
-| Requisitos, casos de uso e C4 | ✅ | [RFC](rfc/), seções 2 e 3 |
+| Requisitos, casos de uso e C4 | ✅ | [RFC](rfc), seções 2 e 3 |
 | Instruções de deploy | ✅ | [Guia](deployment/azure.md) |
 | 3 fluxos de negócio completos | ✅ | Ver abaixo |
-| Cobertura de 75% no backend e 25% no frontend | ✅ | Exigida pelo CI. Números em [VALIDATION.md](../VALIDATION.md) |
+| Cobertura de 75% no backend e 25% no frontend | ✅ | Exigida pelo CI. Números em [Relatório de validação](validation/README.md) |
 | TDD | 🟡 | Usado nas funcionalidades recentes, não no início do projeto. Falta saber como é cobrado |
 
 **Fluxos de negócio:**
@@ -50,9 +50,9 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 
 | Requisito | Situação | Evidência |
 |---|---|---|
-| Abordagem de IA fundamentada | ✅ | RAG é aceito pelo guia. [Pipeline de IA](ai-pipeline.md) |
+| Abordagem de IA fundamentada | ✅ | RAG é aceito pelo guia. [Pipeline de IA](architecture/ai-pipeline.md) |
 | Parte de uma aplicação | ✅ | A orquestração é o fluxo principal |
-| Dados justificados | ✅ | Sintéticos, com a justificativa no [pipeline](ai-pipeline.md#1-dados-e-indexação) |
+| Dados justificados | ✅ | Sintéticos, com a justificativa no [pipeline](architecture/ai-pipeline.md#1-dados-e-indexação) |
 | Pipeline completo | ✅ | Dados, pré-processamento, modelo e pós-processamento |
 | Ética e LGPD | ✅ | Mascaramento, [política de privacidade](../frontend/src/pages/PrivacyPage.tsx) e exclusão de conta |
 | Resultados replicáveis | 🟡 | Busca e métricas podem ser repetidas. O texto do modelo varia: falta a posição do professor |
