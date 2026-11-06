@@ -6,6 +6,7 @@ import { afterEach, beforeEach, vi } from 'vitest'
 // simplesmente não desenha a animação de fundo.
 HTMLCanvasElement.prototype.getContext = (() => null) as unknown as HTMLCanvasElement['getContext']
 window.scrollTo = (() => undefined) as typeof window.scrollTo
+Element.prototype.scrollIntoView = () => undefined
 
 beforeEach(() => {
   document.cookie = 'agenthub_csrf=token-de-teste; path=/'

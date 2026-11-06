@@ -20,6 +20,7 @@ from app.schemas.orchestration import (
 from app.services.audit_service import record_audit
 from app.services.clan_service import ClanNotFoundError, get_clan, is_member
 from app.services.orchestration_service import (
+    CONTEXT_EDITABLE_STATUSES,
     AttachmentRejectedError,
     RequestNotAwaitingReviewError,
     add_attachment,
@@ -171,6 +172,13 @@ def add_request_context(
     current_session: AuthSession = Depends(require_authenticated_csrf),
 ) -> TechnicalRequest:
     technical_request = find_owned_request(db, request_id, current_session.user_id)
+    # Mudar o contexto no meio da execução deixaria a solicitação qualificada enquanto
+    # as skills ainda respondem sobre o contexto antigo.
+    if technical_request.status not in CONTEXT_EDITABLE_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="O contexto não pode mudar agora. Interrompa a execução antes, se precisar.",
+        )
     updated = complement_context(db, technical_request=technical_request, context=payload.context)
     record_audit(
         db,

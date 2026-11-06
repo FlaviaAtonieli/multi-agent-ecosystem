@@ -60,7 +60,7 @@ function detail(status: RequestStatus, options: { result?: boolean; events?: Ret
       title: 'Reduzir o tempo do job',
       problem: 'O job demora.',
       objective: 'Reduzir o tempo.',
-      context: null,
+      context: status === 'CANCELLED' ? 'Contexto da solicitação.' : null,
       restrictions: [],
       requested_domains: [],
       status,
@@ -263,6 +263,60 @@ describe('OrchestrationPage', () => {
 
     expect(await screen.findByText(/A execução foi interrompida/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Executar novamente' })).toBeEnabled()
+  })
+
+  describe('interromper a execução', () => {
+    const CANCEL = '/agent-skills/requests/req-1/cancel'
+
+    it('pede confirmação antes de interromper', async () => {
+      const user = setupUser()
+      const api = mockApi({ ...commonRoutes, [`GET ${ORCHESTRATION}`]: detail('RUNNING') })
+      renderPage()
+
+      await user.click(await screen.findByRole('button', { name: 'Interromper execução' }))
+      await user.click(screen.getByRole('button', { name: 'Continuar executando' }))
+
+      expect(api.callsTo('POST', CANCEL)).toHaveLength(0)
+      expect(screen.getByRole('button', { name: 'Interromper execução' })).toBeInTheDocument()
+    })
+
+    it('interrompe e oferece completar o contexto, já preenchido, para executar de novo', async () => {
+      const user = setupUser()
+      let current = detail('RUNNING')
+      const api = mockApi({
+        ...commonRoutes,
+        [`GET ${ORCHESTRATION}`]: () => current,
+        [`POST ${CANCEL}`]: () => {
+          current = detail('CANCELLED')
+          return new ApiResponse(202, { trace_id: 'TRC-1', status: 'CANCELLING' })
+        },
+      })
+      renderPage()
+
+      await user.click(await screen.findByRole('button', { name: 'Interromper execução' }))
+      await user.click(screen.getByRole('button', { name: 'Confirmar interrupção' }))
+
+      expect(await screen.findByText(/Você interrompeu a execução/)).toBeInTheDocument()
+      expect(api.callsTo('POST', CANCEL)).toHaveLength(1)
+      expect(screen.queryByText('Processando orquestração')).not.toBeInTheDocument()
+      expect(screen.getByLabelText('Complementar contexto')).toHaveValue('Contexto da solicitação.')
+      expect(screen.getByRole('button', { name: 'Executar novamente' })).toBeEnabled()
+    })
+
+    it('mostra o motivo quando não dá para interromper', async () => {
+      const user = setupUser()
+      mockApi({
+        ...commonRoutes,
+        [`GET ${ORCHESTRATION}`]: detail('RUNNING'),
+        [`POST ${CANCEL}`]: apiError(409, 'A solicitação não está em execução.'),
+      })
+      renderPage()
+
+      await user.click(await screen.findByRole('button', { name: 'Interromper execução' }))
+      await user.click(screen.getByRole('button', { name: 'Confirmar interrupção' }))
+
+      expect(await screen.findByText('A solicitação não está em execução.')).toBeInTheDocument()
+    })
   })
 
   it('avisa quando o resultado aguarda revisão humana', async () => {

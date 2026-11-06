@@ -1350,3 +1350,29 @@
 .workspace-privacy { padding-block: 40px; color: var(--text-secondary); line-height: 1.6; }
 .workspace-privacy h1, .workspace-privacy h2, .workspace-privacy strong { color: var(--text-primary); }
 .workspace-privacy a { color: var(--text-primary); text-decoration: underline; }
+
+.workspace-help-button {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  font-weight: 850;
+  cursor: pointer;
+}
+.workspace-help-button:hover, .workspace-help-button:focus-visible { border-color: var(--accent); }
+.workspace-cancel-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; margin: 10px 0 18px; color: var(--text-secondary); font-size: 0.82rem; }
+.workspace-cancel-row .alert { flex-basis: 100%; }
+.workspace-danger-action {
+  padding: 10px 16px;
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  border-radius: 10px;
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.14);
+  font-weight: 700;
+  cursor: pointer;
+}
+.workspace-danger-action:disabled { opacity: 0.6; cursor: default; }

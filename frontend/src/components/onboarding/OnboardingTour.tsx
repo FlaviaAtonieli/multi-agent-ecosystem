@@ -1,12 +1,12 @@
 import { CSSProperties, useEffect, useState } from 'react'
 
-type TourStep = {
+export type TourStep = {
   selector: string
   title: string
   description: string
 }
 
-const steps: TourStep[] = [
+const dashboardSteps: TourStep[] = [
   {
     selector: '[data-tour="nav"]',
     title: 'Bem-vindo à Flav.IA',
@@ -69,7 +69,13 @@ function placeTooltip(rect: DOMRect): { top: number; left: number } {
   }
 }
 
-export function OnboardingTour({ onFinish }: { onFinish: () => void }) {
+type Props = {
+  onFinish: () => void
+  steps?: TourStep[]
+  skipLabel?: string
+}
+
+export function OnboardingTour({ onFinish, steps = dashboardSteps, skipLabel = 'Pular tour' }: Props) {
   const [stepIndex, setStepIndex] = useState(0)
   const [rect, setRect] = useState<DOMRect | null>(null)
 
@@ -90,7 +96,7 @@ export function OnboardingTour({ onFinish }: { onFinish: () => void }) {
       window.clearTimeout(timeout)
       window.removeEventListener('resize', measure)
     }
-  }, [stepIndex])
+  }, [stepIndex, steps])
 
   const step = steps[stepIndex]
   const isLast = stepIndex === steps.length - 1
@@ -117,12 +123,19 @@ export function OnboardingTour({ onFinish }: { onFinish: () => void }) {
   return (
     <div className="onboarding-overlay">
       <div className="onboarding-spotlight" style={spotlightStyle} />
-      <div key={stepIndex} className="onboarding-tooltip fade-up" style={tooltipStyle}>
+      <div
+        key={stepIndex}
+        className="onboarding-tooltip fade-up"
+        style={tooltipStyle}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboarding-step-title"
+      >
         <span className="onboarding-step-count">Passo {stepIndex + 1} de {steps.length}</span>
-        <h3>{step.title}</h3>
+        <h3 id="onboarding-step-title">{step.title}</h3>
         <p>{step.description}</p>
         <div className="onboarding-actions">
-          <button type="button" className="onboarding-skip" onClick={onFinish}>Pular tour</button>
+          <button type="button" className="onboarding-skip" onClick={onFinish}>{skipLabel}</button>
           <button type="button" className="workspace-primary-action" onClick={next}>
             {isLast ? 'Concluir' : 'Próximo →'}
           </button>

@@ -38,6 +38,8 @@ export function OrchestrationPage() {
   const [selectedModel, setSelectedModel] = useState('')
   const [tokenUsage, setTokenUsage] = useState<{ used: number; limit: number } | null>(null)
   const [starting, setStarting] = useState(false)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const [executionError, setExecutionError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [askingFollowUp, setAskingFollowUp] = useState(false)
@@ -144,7 +146,12 @@ export function OrchestrationPage() {
         }
       })
       .catch(() => undefined)
-    if (status === 'FAILED') {
+    if (status === 'CANCELLED') {
+      setExecutionError(
+        'Você interrompeu a execução. Se faltou alguma informação, complemente o contexto abaixo e execute de novo.',
+      )
+      setContext(detail?.technical_request.context ?? '')
+    } else if (status === 'FAILED') {
       setExecutionError('A execução foi interrompida. Veja a linha do tempo e tente executar novamente.')
     } else {
       setSuccessMessage(
@@ -157,6 +164,21 @@ export function OrchestrationPage() {
     // leva o usuário até lá em vez de deixá-lo onde estava rolado durante a execução.
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [status, load])
+
+  async function handleCancel() {
+    if (!detail) return
+    setCancelling(true)
+    setExecutionError('')
+    try {
+      await agentSkillsApi.cancel(detail.technical_request.id)
+      setConfirmingCancel(false)
+      await load()
+    } catch (caught) {
+      setExecutionError(caught instanceof ApiError ? caught.message : 'Não foi possível interromper a execução.')
+    } finally {
+      setCancelling(false)
+    }
+  }
 
   async function handleExecute() {
     if (!detail) return
@@ -243,7 +265,32 @@ export function OrchestrationPage() {
       {detail && (
         <section className="workspace-orchestration-flow">
           {running && (
-            <OrchestrationThinkingAnimation events={detail.events} traceId={detail.technical_request.trace_id} />
+            <>
+              <OrchestrationThinkingAnimation events={detail.events} traceId={detail.technical_request.trace_id} />
+              <div className="workspace-cancel-row">
+                {confirmingCancel ? (
+                  <>
+                    <span>As respostas ainda não recebidas serão descartadas.</span>
+                    <button
+                      type="button"
+                      className="workspace-secondary-action"
+                      disabled={cancelling}
+                      onClick={() => setConfirmingCancel(false)}
+                    >
+                      Continuar executando
+                    </button>
+                    <button type="button" className="workspace-danger-action" disabled={cancelling} onClick={handleCancel}>
+                      {cancelling ? 'Interrompendo…' : 'Confirmar interrupção'}
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" className="workspace-secondary-action" onClick={() => setConfirmingCancel(true)}>
+                    Interromper execução
+                  </button>
+                )}
+                {executionError && <div className="alert alert-error">{executionError}</div>}
+              </div>
+            </>
           )}
 
           {hasResult && (
@@ -315,7 +362,7 @@ export function OrchestrationPage() {
 
             <AttachmentsSection requestId={detail.technical_request.id} />
 
-            {detail.technical_request.status === 'AWAITING_CONTEXT' && (
+            {(status === 'AWAITING_CONTEXT' || status === 'CANCELLED') && (
               <form className="workspace-context-form" onSubmit={handleContextSubmit}>
                 <label className="workspace-field">
                   Complementar contexto
@@ -334,7 +381,7 @@ export function OrchestrationPage() {
               </form>
             )}
 
-            {(status === 'QUALIFIED' || status === 'FAILED') && (
+            {(status === 'QUALIFIED' || status === 'FAILED' || status === 'CANCELLED') && (
               <div className="workspace-execute-form">
                 <label className="workspace-field">
                   Modelo de IA para a orquestração
@@ -356,7 +403,7 @@ export function OrchestrationPage() {
                   onClick={handleExecute}
                   disabled={starting || Boolean(tokenUsage && tokenUsage.used >= tokenUsage.limit)}
                 >
-                  {starting ? 'Iniciando…' : status === 'FAILED' ? 'Executar novamente' : 'Executar orquestração'}
+                  {starting ? 'Iniciando…' : status === 'FAILED' || status === 'CANCELLED' ? 'Executar novamente' : 'Executar orquestração'}
                 </button>
               </div>
             )}

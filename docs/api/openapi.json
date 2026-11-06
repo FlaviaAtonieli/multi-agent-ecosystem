@@ -3693,6 +3693,89 @@
         ]
       }
     },
+    "/api/v1/agent-skills/requests/{request_id}/cancel": {
+      "post": {
+        "tags": [
+          "Agent Skills"
+        ],
+        "summary": "Interromper orquestração",
+        "operationId": "cancel_skills_for_request_api_v1_agent_skills_requests__request_id__cancel_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Cancel Skills For Request Api V1 Agent Skills Requests  Request Id  Cancel Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Interrompe a execução em andamento. A linha do tempo registra a interrupção, e a solicitação passa a `CANCELLED`: dá para complementar o contexto e executar de novo. `409` se não estiver em execução.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
     "/api/v1/agent-skills/requests/{request_id}/start": {
       "post": {
         "tags": [

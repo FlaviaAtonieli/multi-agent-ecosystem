@@ -192,6 +192,11 @@ export const agentSkillsApi = {
         body: JSON.stringify({ model }),
       },
     ),
+  cancel: (requestId: string) =>
+    apiRequest<{ trace_id: string; status: string }>(
+      `/agent-skills/requests/${encodeURIComponent(requestId)}/cancel`,
+      { method: 'POST' },
+    ),
   startFollowUp: (requestId: string, question: string, targetDomain: AgentSkillDomain | null, model: string | null) =>
     apiRequest<{ trace_id: string; status: string }>(
       `/agent-skills/requests/${encodeURIComponent(requestId)}/ask/start`,

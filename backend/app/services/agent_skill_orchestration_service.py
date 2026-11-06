@@ -39,6 +39,8 @@ _CONFIDENCE_RANK = {"BAIXO": 0, "MEDIO": 1, "ALTO": 2}
 # asyncio only keeps a weak reference to running tasks: without this set, a
 # background orchestration could be garbage-collected halfway through.
 _background_tasks: set[asyncio.Task[None]] = set()
+# Execução em andamento de cada solicitação, para poder interrompê-la.
+_running_orchestrations: dict[str, asyncio.Task[None]] = {}
 
 _FOLLOW_UP_EVENT_TYPES = ("FOLLOW_UP_QUESTION_ASKED", "FOLLOW_UP_RESPONSE_RECEIVED", "FOLLOW_UP_FAILED")
 _NO_FOLLOW_UP_SKILLS_MESSAGE = "Nenhuma Agent Skill ativa disponível para responder a esta pergunta."
@@ -442,7 +444,9 @@ def claim_request_for_execution(db: Session, technical_request: TechnicalRequest
             update(TechnicalRequest)
             .where(
                 TechnicalRequest.id == technical_request.id,
-                TechnicalRequest.status.in_([RequestStatus.QUALIFIED, RequestStatus.FAILED]),
+                TechnicalRequest.status.in_(
+                    [RequestStatus.QUALIFIED, RequestStatus.FAILED, RequestStatus.CANCELLED]
+                ),
             )
             .values(status=RequestStatus.RUNNING)
         ),
@@ -487,6 +491,10 @@ async def _run_orchestration(request_id: str, user_id: str, requested_model: str
             await execute_orchestration_step(
                 db, technical_request=technical_request, user=user, requested_model=requested_model
             )
+        except asyncio.CancelledError:
+            db.rollback()
+            _mark_cancelled(db, technical_request)
+            raise
         except Exception:  # noqa: BLE001 - no caller left to answer: record it on the request instead
             logger.exception("Falha na orquestração em segundo plano %s", technical_request.trace_id)
             db.rollback()
@@ -498,10 +506,49 @@ async def _run_orchestration(request_id: str, user_id: str, requested_model: str
             )
 
 
-def _spawn(coroutine: Coroutine[Any, Any, None]) -> None:
+def _spawn(coroutine: Coroutine[Any, Any, None]) -> asyncio.Task[None]:
     task = asyncio.create_task(coroutine)
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
+    return task
+
+
+def _mark_cancelled(db: Session, technical_request: TechnicalRequest) -> None:
+    db.execute(
+        update(AgentSkillInvocation)
+        .where(
+            AgentSkillInvocation.technical_request_id == technical_request.id,
+            AgentSkillInvocation.status == "STARTED",
+        )
+        .values(status="CANCELLED", completed_at=utc_now())
+    )
+    technical_request.status = RequestStatus.CANCELLED
+    run = technical_request.orchestration_run
+    if run:
+        run.status = RequestStatus.CANCELLED
+        run.completed_at = utc_now()
+    append_event(
+        db,
+        technical_request,
+        event_type="ORCHESTRATION_CANCELLED",
+        actor="USER",
+        title="Execução interrompida",
+        message="A pessoa interrompeu a execução. Dá para complementar o contexto e executar de novo.",
+    )
+    db.commit()
+
+
+def cancel_orchestration(db: Session, technical_request: TechnicalRequest) -> bool:
+    """Interrompe a execução em andamento. A tarefa marca a solicitação como
+    CANCELLED ao parar. Sem tarefa neste processo (o servidor reiniciou), marca na hora."""
+    if technical_request.status != RequestStatus.RUNNING:
+        return False
+    task = _running_orchestrations.get(technical_request.id)
+    if task is not None and not task.done():
+        task.cancel()
+    else:
+        _mark_cancelled(db, technical_request)
+    return True
 
 
 def start_orchestration_in_background(
@@ -511,7 +558,9 @@ def start_orchestration_in_background(
     minutes in total, longer than the 45 s the Static Web Apps
     proxy allows a call to /api. The frontend follows progress through the
     request's event timeline."""
-    _spawn(_run_orchestration(request_id, user_id, requested_model))
+    task = _spawn(_run_orchestration(request_id, user_id, requested_model))
+    _running_orchestrations[request_id] = task
+    task.add_done_callback(lambda _: _running_orchestrations.pop(request_id, None))
 
 
 def fail_interrupted_orchestrations(db: Session) -> int:
