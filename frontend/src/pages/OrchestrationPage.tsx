@@ -326,9 +326,9 @@ export function OrchestrationPage() {
                     invocations_count: pastSkillResults.length,
                     consolidated_response: detail.technical_request.consolidated_response,
                   }}
+                  material={<ArtifactsPanel traceId={detail.technical_request.trace_id} refreshKey={followUps.length} />}
                 />
               )}
-              <ArtifactsPanel traceId={detail.technical_request.trace_id} refreshKey={followUps.length} />
             </article>
           )}
 
