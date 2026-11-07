@@ -16,7 +16,7 @@ _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
         r"\1 [REDACTED]",
     ),
     (
-        # Covers sk-... key formats from OpenAI, OpenRouter (sk-or-v1-...) and similar providers.
+        # Chaves no formato sk-... da OpenAI, da OpenRouter (sk-or-v1-...) e de provedores parecidos.
         re.compile(r"\bsk-[A-Za-z0-9_-]{12,}\b"),
         "[REDACTED_API_KEY]",
     ),

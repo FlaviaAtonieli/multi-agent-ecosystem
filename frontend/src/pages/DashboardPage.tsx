@@ -27,13 +27,13 @@ export function DashboardPage() {
       })
   }, [])
 
-  // Auto-show on first-ever dashboard visit for a user who hasn't completed onboarding.
+  // Abre sozinho na primeira visita de quem ainda não fez o tour.
   useEffect(() => {
     if (user && !user.onboarding_completed_at) setShowTour(true)
   }, [user])
 
-  // Manually reopened via "Rever tour" (?tour=1) -- its own effect so it fires even
-  // when already on /dashboard, where `user` alone wouldn't change to retrigger it.
+  // Reaberto por "Rever tour" (?tour=1), em efeito próprio para funcionar mesmo já
+  // estando em /dashboard, onde `user` não muda.
   useEffect(() => {
     if (searchParams.get('tour') !== '1') return
     setShowTour(true)

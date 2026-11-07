@@ -56,10 +56,10 @@ class ExecutionResult:
 
 
 def build_technical_synthesis(results: list[SkillToolResult]) -> str:
-    """Rule-based cross-agent synthesis, mirroring the Quality Gate's own
-    explicit, explainable approach — no second LLM pass to summarize the
-    summaries. Shared by the initial consolidation and every follow-up
-    exchange, so both render the same domain-tagged shape on the frontend."""
+    """Síntese entre as skills feita por regras, como o Quality Gate, sem um segundo LLM
+    resumindo os resumos. A execução inicial e as perguntas de acompanhamento usam a
+    mesma, e a tela mostra o mesmo formato.
+    """
     return (
         " ".join(
             f"[{result.agente_emissor.dominio}] {result.analise_estruturada.resumo_executivo}"
@@ -86,11 +86,7 @@ def _consolidate(
     verdict: QualityGateVerdict,
     invocations: list[AgentSkillInvocation],
 ) -> ConsolidatedResponse:
-    """Builds the RFC §5.3 "Resposta Final Consolidada": a single synthesized
-    answer distinct from each skill's partial response, satisfying RFC §5.5's
-    criterion 5 ("diferenciar resposta parcial ... e resposta final
-    consolidada").
-    """
+    """Monta a resposta final consolidada, separada da resposta parcial de cada skill."""
     technical_synthesis = build_technical_synthesis(results)
 
     risks: list[str] = []
@@ -278,13 +274,12 @@ async def invoke_skills(
     additional_question: str | None = None,
     team_context: str | None = None,
 ) -> tuple[list[AgentSkillInvocation], list[SkillToolResult]]:
-    """Runs the skills concurrently, up to orchestration_max_parallel_skills.
+    """Roda as skills ao mesmo tempo, até orchestration_max_parallel_skills.
 
-    Sharing one Session is safe here: _invoke_skill only yields to the event loop
-    while awaiting the skill call, and commits before doing so, so no two
-    coroutines ever interleave inside a database operation. Results keep the
-    order of `skills`, so the consolidated response doesn't depend on which one
-    finished first."""
+    Dividir a Session é seguro: _invoke_skill só cede o event loop enquanto espera a
+    skill, e faz commit antes, então duas corrotinas nunca se cruzam numa operação de
+    banco. O resultado segue a ordem de `skills`, não a ordem de término.
+    """
     semaphore = asyncio.Semaphore(settings.orchestration_max_parallel_skills)
 
     async def invoke_limited(skill: AgentSkill) -> tuple[AgentSkillInvocation, SkillToolResult | None]:
@@ -387,8 +382,8 @@ async def _invoke_in_stages(
         team_context=team_context,
     )
 
-    # Medido em 06/11/2026: com o contexto, o modelo gratuito às vezes devolveu só um
-    # plano. Quem não entregou código tenta de novo uma vez, sem o contexto.
+    # Com o contexto, o modelo gratuito às vezes devolveu só um plano. Quem não entregou
+    # código tenta de novo uma vez, sem o contexto.
     names = {skill.id: skill for skill in implementers}
     without_code = [
         names[invocation.agent_skill_id]
@@ -446,8 +441,8 @@ async def execute_orchestration_step(
     user: User,
     requested_model: str | None = None,
 ) -> ExecutionResult:
-    """Selects and runs Agent Skills for a qualified request (RF08/RF09/RF10),
-    then consolidates their responses through the Quality Gate (RF11)."""
+    """Escolhe e roda as Agent Skills de uma solicitação qualificada (RF08, RF09, RF10)
+    e consolida as respostas passando pelo Quality Gate (RF11)."""
     skills = resolve_target_skills(db, technical_request)
     if not skills:
         raise NoAgentSkillsAvailableError(

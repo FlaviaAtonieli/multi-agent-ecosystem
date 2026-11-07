@@ -44,13 +44,12 @@ async def ask_follow_up_question(
     target_domain: str | None = None,
     requested_model: str | None = None,
 ) -> FollowUpExchange:
-    """Continues the same orchestration chain (trace_id) after the initial
-    execution: the user can keep asking questions, either broadcast to every
-    domain the original run used (target_domain=None) or aimed at one
-    specific Agent Skill domain. Every round — even a single agent answering —
-    still goes through the same Quality Gate as the initial execution (RF11),
-    and is kept as its own row so the conversation history survives (unlike
-    ConsolidatedResponse, one per TechnicalRequest)."""
+    """Continua a mesma cadeia (trace_id) depois da execução inicial.
+
+    A pergunta vai para todas as áreas da execução original ou só para uma
+    (target_domain). Toda rodada, mesmo com uma skill só, passa pelo mesmo Quality Gate
+    (RF11) e fica gravada na própria linha.
+    """
     skills = _follow_up_skills(db, technical_request, target_domain)
     if not skills:
         raise NoAgentSkillsAvailableError(_NO_FOLLOW_UP_SKILLS_MESSAGE)
@@ -98,8 +97,9 @@ def record_follow_up_question(
 
 
 def has_pending_follow_up(db: Session, technical_request: TechnicalRequest) -> bool:
-    """The timeline is the source of truth: a question is pending while it is the
-    latest follow-up event of the request."""
+    """A linha do tempo é a fonte da verdade: a pergunta está pendente enquanto for o
+    último evento de acompanhamento da solicitação.
+    """
     latest = db.scalar(
         select(OrchestrationEvent.event_type)
         .where(
@@ -138,7 +138,7 @@ async def _run_follow_up(
                 target_domain=target_domain,
                 requested_model=requested_model,
             )
-        except Exception:  # noqa: BLE001 - no caller left to answer: record it on the request instead
+        except Exception:  # noqa: BLE001 - ninguém espera a resposta: o erro fica registrado na solicitação
             logger.exception("Falha na pergunta em segundo plano %s", technical_request.trace_id)
             db.rollback()
             _record_follow_up_failure(
@@ -154,8 +154,9 @@ def start_follow_up_in_background(
     target_domain: str | None = None,
     requested_model: str | None = None,
 ) -> None:
-    """Same reason as start_orchestration_in_background: several skills can take
-    longer than the 45 s limit of the Static Web Apps proxy."""
+    """Mesmo motivo de start_orchestration_in_background: várias skills podem passar dos
+    45 s que o proxy do Static Web Apps espera.
+    """
     spawn(_run_follow_up(request_id, user_id, question, target_domain, requested_model))
 
 

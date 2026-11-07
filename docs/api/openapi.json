@@ -5058,7 +5058,7 @@
         },
         "type": "object",
         "title": "AgentSkillExecutionRequest",
-        "description": "Optional model override for this specific execution (RFC 5.2 Model Gateway:\npicking among LLM_ALLOWED_MODELS, not an arbitrary string). None keeps the\nconfigured LLM_MODEL default."
+        "description": "Modelo opcional para esta execução, escolhido entre LLM_ALLOWED_MODELS (nunca um\ntexto livre). None usa o LLM_MODEL configurado."
       },
       "AgentSkillInvocationResultRead": {
         "properties": {
@@ -5111,7 +5111,7 @@
           "created_at"
         ],
         "title": "AgentSkillInvocationResultRead",
-        "description": "Persisted per-skill result (AgentSkillInvocation.result_payload), so the\ndetailed breakdown survives a page reload -- not just the ephemeral response\nof POST /agent-skills/requests/{id}/execute."
+        "description": "Resultado gravado de cada skill, para o detalhamento continuar na tela depois de\nrecarregar a página."
       },
       "AgentSkillManifestCreate": {
         "properties": {
@@ -6085,7 +6085,7 @@
           "created_at"
         ],
         "title": "ConsolidatedResponseRead",
-        "description": "RFC §5.3 \"Resposta Final Consolidada\": the single synthesized answer,\ndistinct from each Agent Skill's partial response."
+        "description": "Resposta final consolidada, separada da resposta parcial de cada skill."
       },
       "CsrfResponse": {
         "properties": {
@@ -6292,7 +6292,7 @@
           "question"
         ],
         "title": "FollowUpQuestionCreate",
-        "description": "A question asked after the initial execution, continuing the same\norchestration chain (trace_id). target_domain=None broadcasts to every\ndomain the original execution used; set it to aim the question at one\nspecific Agent Skill domain instead."
+        "description": "Pergunta feita depois da execução, na mesma cadeia (trace_id). Sem target_domain,\nvai para todas as áreas da execução original; com ele, só para uma."
       },
       "Governanca": {
         "properties": {
@@ -7473,7 +7473,7 @@
           "governanca"
         ],
         "title": "SkillToolResult",
-        "description": "Mirrors resposta_especialista_schema.json (Apêndice C da RFC): the\nmandatory output contract for any Agent Skill in this ecosystem."
+        "description": "Contrato de saída obrigatório de toda Agent Skill (resposta_especialista_schema.json,\nApêndice C da RFC)."
       },
       "TechnicalRequestContextUpdate": {
         "properties": {

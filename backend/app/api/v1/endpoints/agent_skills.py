@@ -70,8 +70,7 @@ from app.services.skill_suggestion_service import suggest_skills
 def _resolve_visibility(
     db: Session, *, visibility: SkillVisibilityLiteral, clan_id: str | None, user: User
 ) -> str | None:
-    """Validates the visibility/clan_id combo from a create/import request and
-    returns the clan_id to persist (None for OFFICIAL/PRIVATE)."""
+    """Confere a combinação visibilidade/clan_id e devolve o clan_id a gravar (None fora de CLAN)."""
     if visibility != "CLAN":
         return None
 

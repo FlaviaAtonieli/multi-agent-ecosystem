@@ -9,9 +9,8 @@ interface Props {
   required?: boolean
 }
 
-// Same tag-chip interaction as the "Restrições" field in NewRequestPage --
-// reused here so every list field in the skill-creation form (capabilities,
-// contracts, etc.) behaves identically instead of reinventing the pattern.
+// Mesma interação de etiquetas do campo "Restrições" da NewRequestPage, para todo
+// campo de lista do formulário de skill funcionar igual.
 export function TagListField({ label, hint, placeholder, values, onChange, required }: Props) {
   const [draft, setDraft] = useState('')
 

@@ -5,11 +5,10 @@ from app.rag.base import EmbeddingProvider
 
 
 def chunk_text(content: str, *, max_chars: int, overlap: int) -> list[tuple[str, int, int]]:
-    """Splits text into fixed-size, overlapping character windows.
+    """Divide o texto em janelas de tamanho fixo que se sobrepõem.
 
-    Returns a list of (chunk_content, char_start, char_end). A fixed-size window is
-    enough for the PoC fixture (small synthetic legacy files); no NLP-aware chunking
-    library is required.
+    Devolve (trecho, início, fim). Janelas fixas bastam para os documentos pequenos da
+    base, sem biblioteca de NLP.
     """
     if overlap >= max_chars:
         raise ValueError("overlap deve ser menor que max_chars")

@@ -69,8 +69,7 @@ class TechnicalRequestContextUpdate(BaseModel):
 
 
 class ConsolidatedResponseRead(BaseModel):
-    """RFC §5.3 "Resposta Final Consolidada": the single synthesized answer,
-    distinct from each Agent Skill's partial response."""
+    """Resposta final consolidada, separada da resposta parcial de cada skill."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -181,9 +180,9 @@ class SkillArtifactContentRead(SkillArtifactRead):
 
 
 class AgentSkillInvocationResultRead(BaseModel):
-    """Persisted per-skill result (AgentSkillInvocation.result_payload), so the
-    detailed breakdown survives a page reload -- not just the ephemeral response
-    of POST /agent-skills/requests/{id}/execute."""
+    """Resultado gravado de cada skill, para o detalhamento continuar na tela depois de
+    recarregar a página.
+    """
 
     id: str
     agent_skill_name: str
@@ -194,10 +193,9 @@ class AgentSkillInvocationResultRead(BaseModel):
 
 
 class FollowUpQuestionCreate(BaseModel):
-    """A question asked after the initial execution, continuing the same
-    orchestration chain (trace_id). target_domain=None broadcasts to every
-    domain the original execution used; set it to aim the question at one
-    specific Agent Skill domain instead."""
+    """Pergunta feita depois da execução, na mesma cadeia (trace_id). Sem target_domain,
+    vai para todas as áreas da execução original; com ele, só para uma.
+    """
 
     question: str = Field(min_length=5, max_length=5_000)
     target_domain: DomainName | None = Field(default=None)

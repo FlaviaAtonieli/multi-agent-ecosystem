@@ -50,9 +50,8 @@ class Settings(BaseSettings):
     bootstrap_admin_email: str | None = None
     bootstrap_admin_password: str | None = None
 
-    # GitHub OAuth: login adicional, ao lado do fluxo de email/senha (nao o
-    # substitui). Disabled by default so the project boots without um OAuth
-    # App configurado -- ver docs/integrations/github-oauth.md.
+    # Login com GitHub, ao lado do e-mail e senha (não os substitui). Desligado por
+    # padrão, para o projeto subir sem um OAuth App: ver docs/integrations/github-oauth.md.
     github_oauth_enabled: bool = False
     github_client_id: str | None = None
     github_client_secret: SecretStr | None = None
@@ -96,32 +95,23 @@ class Settings(BaseSettings):
     smtp_from: str | None = None
     smtp_starttls: bool = True
 
-    # LLM foundation. Disabled by default so the project boots without an API key;
-    # once enabled, OpenRouter is the primary Model Gateway (no mock provider).
+    # LLM desligado por padrão, para o projeto subir sem chave de API. Ligado, a
+    # OpenRouter é o Model Gateway.
     llm_enabled: bool = False
     llm_provider: Literal["openai", "openrouter"] = "openrouter"
     llm_model: str = "openai/gpt-5-mini"
-    # openai/gpt-5-mini is paid (needs purchased OpenRouter credits) and a genuine
-    # reasoning model -- validated end-to-end on 2026-08-30 after fixing the
-    # strict-mode JSON schema (see strict_json_schema in app/llm/schemas.py) and
-    # raising llm_max_output_tokens, and again in production on 2026-11-02. The free
-    # model declares structured_outputs in the OpenRouter catalog (GET /api/v1/models)
-    # but wasn't validated end-to-end and leaves the catalog on 2026-12-31. Free models
-    # come and go: the previous default was removed from the free tier in 2026-11.
+    # openai/gpt-5-mini é pago e foi validado de ponta a ponta, inclusive em produção.
+    # Modelos gratuitos entram e saem do catálogo da OpenRouter sem aviso.
     llm_allowed_models: str = (
         "openai/gpt-5-mini,"
         "dots-studio/dots-3-note-preview:free"
     )
     # Modelos que raciocinam (gpt-5-mini) levam de 45 a 90 s em respostas com código.
-    # Com 45 s, o cliente desistia e repetia, e a OpenRouter cobrava as duas (07/11/2026).
+    # Com 45 s, o cliente desistia e repetia, e a OpenRouter cobrava as duas chamadas.
     llm_timeout_seconds: int = 180
-    # Reasoning models (e.g. openai/gpt-5-mini) spend part of this budget on
-    # hidden chain-of-thought tokens before writing visible output; fixed caps
-    # (1200, then 3000) kept leaving content=None (finish_reason "length") on
-    # rich schemas -- see docs/integrations/model-provider.md. 0 disables the
-    # cap entirely (the provider call omits max_tokens/max_output_tokens and
-    # the model's own maximum applies), which is now the default so it never
-    # bottlenecks multi-agent orchestration output.
+    # Modelos que raciocinam gastam parte deste limite em tokens ocultos antes da
+    # resposta; com 1200 e 3000, a resposta vinha vazia (finish_reason "length").
+    # 0 tira o limite e vale o máximo do próprio modelo.
     llm_max_output_tokens: int = 0
     # Pedem a resposta mais repetível possível (linha de IA: resultados replicáveis).
     # Modelo que não aceita algum deles o ignora, então guardar o valor não garante
@@ -130,13 +120,11 @@ class Settings(BaseSettings):
     llm_seed: int | None = 42
     llm_max_input_chars: int = 12000
     llm_requests_per_hour_technician: int = 20
-    # Caps total input+output tokens (LLMInvocation.input_tokens + output_tokens,
-    # summed across every "COMPLETED" call the same day) per non-admin user, to
-    # protect the account's OpenRouter subscription from a single user's usage.
-    # 0 disables the cap (default). Applies to every account (no role is exempt).
+    # Limite diário de tokens (entrada + saída) por usuário, somando as chamadas
+    # concluídas no dia, para proteger o crédito da OpenRouter. 0 desliga.
     llm_daily_token_limit_per_user: int = 0
 
-    # Privacy-safe defaults.
+    # Padrões que protegem a privacidade.
     llm_store_provider_response: bool = False
     llm_store_result_content: bool = False
     llm_log_content: bool = False
@@ -145,15 +133,13 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr | None = None
     openai_base_url: str = "https://api.openai.com/v1"
 
-    # OpenRouter is the primary Model Gateway: a single credential exposes many
-    # providers/models (e.g. "openai/gpt-5-mini", "anthropic/claude-sonnet-4.5"),
-    # useful to compare models without recoding the LLM abstraction.
+    # Uma credencial da OpenRouter dá acesso a muitos modelos, o que permite compará-los
+    # sem mexer na abstração do LLM.
     openrouter_api_key: SecretStr | None = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_app_url: str = "http://localhost:5173"
 
-    # Retrieval-augmented generation. Independent from llm_enabled: retrieval can
-    # run (and be tested) even while the model call itself stays mocked/disabled.
+    # RAG independente do LLM: a busca roda, e é testada, mesmo com o modelo desligado.
     rag_enabled: bool = True
     rag_top_k: int = 3
     rag_chunk_max_chars: int = 800
@@ -166,21 +152,16 @@ class Settings(BaseSettings):
     skill_suggestion_min_score: float = 0.35
     skill_suggestion_max_results: int = 3
 
-    # Real MCP transport used to invoke Agent Skills. "stdio" spawns each skill's
-    # server as a genuine subprocess (JSON-RPC over stdio); "memory" connects to
-    # the same MCPServer object in-process (fast, used by the test suite).
+    # Transporte MCP das skills: "stdio" sobe um subprocesso de verdade (JSON-RPC por
+    # stdio); "memory" conecta ao mesmo servidor dentro do processo, mais rápido, nos testes.
     mcp_skill_transport: Literal["memory", "stdio"] = "stdio"
 
-    # Agent Skills consulted at once by one orchestration. Each one is a subprocess
-    # (stdio transport) with its own memory use, so this can't grow freely on a
-    # small App Service plan.
+    # Skills consultadas ao mesmo tempo. Cada uma é um subprocesso com memória própria,
+    # então o número não pode crescer à vontade num App Service pequeno.
     orchestration_max_parallel_skills: int = 3
 
-    # Documents a user can attach to a TechnicalRequest's context (RFC UX
-    # suggestion, PR #24). Text-only for this iteration: the upload is decoded
-    # as UTF-8 and stored as text, no binary blob and no PDF/DOCX parsing --
-    # that would pull in new parsing dependencies with their own security
-    # surface (malformed PDFs, zip-bomb-style DOCX) not evaluated yet.
+    # Anexos só de texto: o arquivo é lido como UTF-8. PDF e DOCX ficaram de fora porque
+    # os parsers trazem riscos ainda não avaliados (PDF malformado, DOCX como zip-bomb).
     attachment_max_bytes: int = 300_000
     attachment_allowed_extensions: str = (
         ".txt,.md,.markdown,.py,.js,.jsx,.ts,.tsx,.java,.go,.rb,.php,.cs,.c,.cpp,.h,.hpp,"

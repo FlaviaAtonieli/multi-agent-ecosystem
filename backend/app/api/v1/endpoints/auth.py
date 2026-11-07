@@ -84,9 +84,9 @@ router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 
 def _to_user_read(user: User) -> UserRead:
-    """UserRead.model_validate(user) alone would silently report has_password=False
-    for everyone (it isn't a real column, just a default) -- every response that
-    serializes a User must go through here instead."""
+    """Toda resposta com um User passa por aqui: has_password não é coluna, e o
+    UserRead.model_validate(user) sozinho diria False para todo mundo.
+    """
     data = UserRead.model_validate(user).model_dump()
     data["has_password"] = user.password_hash is not None
     data["oauth_provider"] = "github" if user.github_id else "google" if user.google_id else None
@@ -441,13 +441,12 @@ def delete_my_account(
     user: User = Depends(get_current_user),
     current_session: AuthSession = Depends(require_authenticated_csrf),
 ) -> Response:
-    """Soft delete: várias outras tabelas referenciam users.id com
-    ondelete=RESTRICT (AgentSkill.submitted_by_id, Clan.created_by_id,
-    ClanMembership.added_by_id, FollowUpExchange.asked_by_id,
-    LLMInvocation.user_id -- essa última criada por toda orquestração já
-    executada) -- um DELETE de verdade falharia pra praticamente qualquer
-    conta que já usou o sistema. Em vez disso, desativa e limpa nome/e-mail/
-    identidade, preservando a linha (e todo o histórico que aponta pra ela)."""
+    """Desativa a conta em vez de apagar a linha.
+
+    Várias tabelas apontam para users.id com ondelete=RESTRICT (skills, clãs, chamadas
+    ao LLM...), então um DELETE falharia para quase toda conta que já usou o sistema.
+    Nome, e-mail e identidades são apagados; o histórico que aponta para a conta fica.
+    """
     user.is_active = False
     user.name = "Conta removida"
     user.email = f"conta-removida-{user.id}@removida.local"

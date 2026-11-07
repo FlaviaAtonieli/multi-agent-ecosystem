@@ -10,7 +10,7 @@ class OpenAILLMProvider(LLMProvider):
     name = "openai"
 
     def __init__(self, config: Settings) -> None:
-        # Import is intentionally lazy: the project remains runnable with LLM disabled.
+        # Import dentro da função: o projeto roda sem esta biblioteca com o LLM desligado.
         from openai import OpenAI
 
         api_key = config.openai_api_key_value

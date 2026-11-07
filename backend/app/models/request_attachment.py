@@ -8,11 +8,9 @@ from app.core.database import Base
 
 
 class RequestAttachment(Base):
-    """A document attached to a TechnicalRequest's context (RFC UX suggestion,
-    PR #24). Text-only for this iteration -- content is decoded UTF-8 text
-    read at upload time, not a binary blob; see ALLOWED_ATTACHMENT_EXTENSIONS
-    in app/core/config.py for accepted formats and why (PDF/DOCX parsing is
-    explicit future work, not silently unsupported)."""
+    """Documento anexado ao contexto de uma solicitação. Só texto: o conteúdo é lido como
+    UTF-8 no envio (ver attachment_allowed_extensions em app/core/config.py).
+    """
 
     __tablename__ = "request_attachments"
 

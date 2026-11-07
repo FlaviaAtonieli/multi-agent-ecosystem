@@ -30,11 +30,10 @@ def evaluate(
     files_delivered: bool | None = None,
     package_issues: list[str] | None = None,
 ) -> QualityGateVerdict:
-    """Cross-checks the consolidated Agent Skill responses before delivery (RF11).
+    """Confere as respostas das skills antes da entrega (RF11).
 
-    Rules are explicit and explainable — not a second LLM acting as judge — which
-    keeps the PoC's quality evaluation reproducible and cheap to test (aligned with
-    RFC §5.5: "validação qualitativa e técnica").
+    As regras são explícitas e explicáveis, sem um segundo LLM como juiz: a avaliação
+    fica reproduzível e barata de testar.
     """
     reasons: list[str] = []
 

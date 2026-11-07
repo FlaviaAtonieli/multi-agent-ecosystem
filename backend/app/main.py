@@ -67,9 +67,8 @@ app.add_middleware(
 if settings.metrics_enabled:
     register_database_collector()
     app.add_middleware(MetricsMiddleware)
-# Added last so it runs first (Starlette wraps outward) -- rejects an
-# oversized body via Content-Length before any other middleware or route
-# handler touches the request.
+# Adicionado por último para rodar primeiro: recusa pelo Content-Length um corpo
+# grande demais antes de qualquer outro middleware ou rota.
 app.add_middleware(MaxBodySizeMiddleware)
 # Por último de todos, para ser o mais externo: sem os cabeçalhos de CORS, o
 # navegador esconde as respostas de erro dos outros middlewares da tela.

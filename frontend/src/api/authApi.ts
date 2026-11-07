@@ -36,9 +36,9 @@ export type LoginInput = {
   password: string
 }
 
-// Navegacao de pagina inteira, nao uma chamada fetch: o backend precisa
-// redirecionar o navegador ate o GitHub/Google (e de volta) pra completar
-// o fluxo OAuth, o que uma requisicao XHR/fetch nao consegue fazer.
+// Navegação de página inteira, não uma chamada fetch: o backend precisa
+// redirecionar o navegador até o GitHub ou o Google (e de volta) para completar
+// o fluxo OAuth, o que uma requisição fetch não consegue fazer.
 export const githubLoginUrl = `${API_URL}/auth/github/login`
 export const googleLoginUrl = `${API_URL}/auth/google/login`
 

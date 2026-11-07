@@ -1,14 +1,12 @@
-"""Detects when a request explicitly asks for files (script, código, README...).
+"""Detecta quando a solicitação pede arquivos (script, código, README...).
 
-Measured on 2026-11-05 with the free model dots-3-note and real knowledge-base
-chunks: the model ignored a request for files in 2 of 13 attempts and answered
-with analysis only. Knowing the request asks for files lets the Quality Gate
-flag a response that came without them. The prompt also insists on them, with
-no measured gain (8 of 8 with the old prompt and with the new one).
+Medido com um modelo gratuito: ele ignorou o pedido de arquivos em 2 de 13
+tentativas e respondeu só com análise. Sabendo do pedido, o Quality Gate aponta a
+resposta que veio sem eles; insistir no prompt não mostrou ganho medido.
 
-Only the fields that say what the person wants are checked (title, objective,
-follow-up question). The problem description often mentions files that are
-not being requested ("o arquivo de log mostra...").
+Só os campos que dizem o que a pessoa quer são lidos (título, objetivo, pergunta de
+acompanhamento): a descrição do problema cita arquivos que não estão sendo pedidos
+("o arquivo de log mostra...").
 """
 
 import re

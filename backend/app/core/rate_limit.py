@@ -37,16 +37,16 @@ limiter = InMemoryRateLimiter()
 
 
 def resolve_client_ip(request: Request) -> str:
-    """Returns the real client IP, trusting X-Forwarded-For only when the
-    directly-connecting peer is itself an allowlisted reverse proxy
-    (TRUSTED_PROXY_IPS) -- otherwise a request hitting the backend directly
-    could forge that header and dodge its own per-IP rate limit."""
+    """Devolve o IP real do cliente. Só confia no X-Forwarded-For quando quem conectou é
+    um proxy de TRUSTED_PROXY_IPS; senão, qualquer um forjaria o cabeçalho para escapar
+    do limite por IP.
+    """
     direct_ip = request.client.host if request.client else "unknown"
     trusted_proxies = settings.trusted_proxy_ip_list
     if trusted_proxies and direct_ip in trusted_proxies:
         forwarded_for = request.headers.get("X-Forwarded-For")
         if forwarded_for:
-            # nginx appends to this header; the first entry is the original client.
+            # O nginx acrescenta ao cabeçalho; o primeiro valor é o cliente original.
             first_hop = forwarded_for.split(",")[0].strip()
             if first_hop:
                 return first_hop

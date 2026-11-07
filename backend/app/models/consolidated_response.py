@@ -8,9 +8,8 @@ from app.core.database import Base
 
 
 class ConsolidatedResponse(Base):
-    """RFC §5.3 "Resposta Final Consolidada": the single synthesized answer
-    delivered to the user, distinct from each Agent Skill's partial response
-    (AgentSkillInvocation.result_payload). One per TechnicalRequest.
+    """Resposta final consolidada, uma por solicitação, separada da resposta parcial de
+    cada skill (AgentSkillInvocation.result_payload).
     """
 
     __tablename__ = "consolidated_responses"

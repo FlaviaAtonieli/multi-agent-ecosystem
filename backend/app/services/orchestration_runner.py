@@ -35,8 +35,10 @@ def has_target_skills(db: Session, technical_request: TechnicalRequest) -> bool:
 
 
 def claim_request_for_execution(db: Session, technical_request: TechnicalRequest) -> bool:
-    """Atomically moves a request to RUNNING, so two clicks on "Executar" can't
-    start two runs. FAILED is accepted so an interrupted run can be retried."""
+    """Passa a solicitação para RUNNING de forma atômica, para dois cliques em "Executar"
+    não abrirem duas execuções. FAILED é aceito, para uma execução interrompida poder
+    ser repetida.
+    """
     claimed = cast(
         CursorResult,
         db.execute(
@@ -94,7 +96,7 @@ async def _run_orchestration(request_id: str, user_id: str, requested_model: str
             db.rollback()
             _mark_cancelled(db, technical_request)
             raise
-        except Exception:  # noqa: BLE001 - no caller left to answer: record it on the request instead
+        except Exception:  # noqa: BLE001 - ninguém espera a resposta: o erro fica registrado na solicitação
             logger.exception("Falha na orquestração em segundo plano %s", technical_request.trace_id)
             db.rollback()
             _mark_failed(
@@ -153,20 +155,19 @@ def cancel_orchestration(db: Session, technical_request: TechnicalRequest) -> bo
 def start_orchestration_in_background(
     *, request_id: str, user_id: str, requested_model: str | None = None
 ) -> None:
-    """Runs the orchestration detached from the HTTP request: skills can take
-    minutes in total, longer than the 45 s the Static Web Apps
-    proxy allows a call to /api. The frontend follows progress through the
-    request's event timeline."""
+    """Roda a orquestração fora da requisição HTTP: as skills somam minutos, mais que os
+    45 s que o proxy do Static Web Apps espera. A tela acompanha pela linha do tempo.
+    """
     task = spawn(_run_orchestration(request_id, user_id, requested_model))
     _running_orchestrations[request_id] = task
     task.add_done_callback(lambda _: _running_orchestrations.pop(request_id, None))
 
 
 def fail_interrupted_orchestrations(db: Session) -> int:
-    """Called on startup. A background run only lives in this process, so any
-    request still RUNNING after a restart will never finish on its own. Assumes
-    a single worker process (see the CMD in backend/Dockerfile): with several,
-    this would also fail runs that are alive in another process."""
+    """Chamado na subida. A execução em segundo plano vive só neste processo, então uma
+    solicitação ainda RUNNING depois de reiniciar nunca termina. Supõe um processo só
+    (ver o CMD do backend/Dockerfile); com vários, falharia execuções vivas em outro.
+    """
     interrupted = list(
         db.scalars(select(TechnicalRequest).where(TechnicalRequest.status == RequestStatus.RUNNING))
     )

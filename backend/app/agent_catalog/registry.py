@@ -18,8 +18,9 @@ class AgentSkillNotFoundError(LookupError):
 
 
 def canonical_domain(db: Session, domain: str) -> str:
-    """Reuses the spelling already in the catalog, so "contabilidade" and
-    "Contabilidade" are one area: skills are selected by exact domain match."""
+    """Reaproveita a grafia já usada no catálogo, para "contabilidade" e "Contabilidade"
+    serem a mesma área: a seleção das skills compara o domínio exato.
+    """
     key = normalize_domain_key(domain)
     for existing in db.scalars(select(AgentSkill.domain).distinct()):
         if normalize_domain_key(existing) == key:
@@ -37,19 +38,11 @@ def register_skill(
     visibility: str = "OFFICIAL",
     clan_id: str | None = None,
 ) -> AgentSkill:
-    """Registers a new Agent Skill (RF01/RF02/RF04).
+    """Cadastra uma Agent Skill (RF01, RF02, RF04) se o manifesto passar na governança (RF03).
 
-    Only registers the skill if the manifest passes governance validation
-    (RF03/RFC §6.4); otherwise raises AgentSkillValidationError with the full
-    list of problems, so an invalid import (Cenário 2, Apêndice H) can report
-    everything wrong at once instead of failing on the first field.
-
-    visibility defaults to OFFICIAL (visible/executable by every authenticated
-    user, not just its owner).
-    owner_id is still recorded for attribution/audit; pass visibility="PRIVATE"
-    explicitly for a skill still being drafted/tested that shouldn't be
-    executable by anyone but its owner yet, or visibility="CLAN"
-    with clan_id set for a skill scoped to a specific clan's members.
+    Se não passar, AgentSkillValidationError traz todos os problemas de uma vez. A
+    visibilidade padrão é OFFICIAL; PRIVATE serve para uma skill ainda em teste, e
+    CLAN, com clan_id, para uma skill só dos membros de um clã.
     """
     result = validate_manifest(manifest)
     if not result.is_valid:
@@ -153,9 +146,9 @@ def list_active_skills(db: Session, *, viewer_id: str | None = None) -> list[Age
 
 
 def list_all_skills(db: Session, *, viewer_id: str | None = None) -> list[AgentSkill]:
-    """Like list_active_skills but includes pending/disabled skills too (admin
-    catalog management). Still owner-scoped: a non-official skill only shows
-    up here for its own owner, same rule as everywhere else in the catalog."""
+    """Como list_active_skills, mas inclui as skills pendentes e desativadas. Continua
+    restrita ao dono: uma skill não oficial só aparece para quem a criou.
+    """
     return list(
         db.scalars(
             select(AgentSkill)
@@ -166,12 +159,10 @@ def list_all_skills(db: Session, *, viewer_id: str | None = None) -> list[AgentS
 
 
 def official_skill_usage_ranking(db: Session, *, limit: int = 5) -> list[tuple[AgentSkill, int]]:
-    """Ranks OFFICIAL skills by successful invocation count, all-time.
+    """Ranking das skills OFFICIAL por execuções concluídas.
 
-    Restricted to OFFICIAL (never PRIVATE) since this powers a public "most used"
-    surface in the catalog -- showing usage counts for someone else's private skill
-    would leak activity information about it. Only status == COMPLETED counts:
-    a skill that gets invoked a lot but keeps failing shouldn't rank as "popular".
+    Só OFFICIAL, porque o ranking é público e mostraria o uso de skills privadas de
+    outras pessoas. Só COMPLETED, para uma skill que falha muito não parecer popular.
     """
     usage_count = func.count(AgentSkillInvocation.id).label("usage_count")
     rows = db.execute(
@@ -207,9 +198,9 @@ def update_skill(
     visibility: str,
     clan_id: str | None,
 ) -> AgentSkill:
-    """Edits a skill in place (same id), re-running the same governance
-    validation as register_skill. manifest_markdown is cleared: the stored
-    content now comes from the form, not from the originally imported file."""
+    """Edita a skill (mesmo id) com a mesma validação do cadastro. O manifest_markdown
+    é apagado, porque o conteúdo passa a vir do formulário, não do arquivo importado.
+    """
     result = validate_manifest(manifest)
     if not result.is_valid:
         raise AgentSkillValidationError(result.errors)

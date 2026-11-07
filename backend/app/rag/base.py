@@ -14,8 +14,8 @@ class EmbeddingProvider(ABC):
 
 
 class Retriever(ABC):
-    """Finds the knowledge chunks most relevant to a query."""
+    """Busca os trechos da base mais relevantes para uma pergunta."""
 
     @abstractmethod
     def retrieve(self, query: str, *, top_k: int) -> list[RetrievedChunk]:
-        """Returns up to top_k chunks ranked by relevance to the query."""
+        """Devolve até top_k trechos, do mais relevante ao menos relevante."""

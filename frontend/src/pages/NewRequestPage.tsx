@@ -200,11 +200,8 @@ export function NewRequestPage() {
         clan_id: clanId,
       })
 
-      // The request itself is already created at this point -- an attachment
-      // failing (e.g. a duplicate-named file the extension check still
-      // rejects for some other reason) shouldn't block navigation or read as
-      // "nothing was saved". Failures are collected and surfaced on the
-      // orchestration page instead of aborting here.
+      // A solicitação já foi criada aqui: um anexo que falha não deve travar a navegação
+      // nem parecer que nada foi salvo. As falhas aparecem na página da orquestração.
       const failedUploads: string[] = []
       for (const file of attachments) {
         try {

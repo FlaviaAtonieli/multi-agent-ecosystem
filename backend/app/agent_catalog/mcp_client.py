@@ -37,17 +37,11 @@ def _backend_root() -> Path:
 
 
 def _subprocess_env(config: Settings) -> dict[str, str]:
-    """Builds the child process environment from the *live* Settings object,
-    not just os.environ.
+    """Monta o ambiente do processo filho a partir do Settings vivo, não só do os.environ.
 
-    Settings can be overridden at runtime (tests do this via
-    `monkeypatch.setattr(settings, ...)`, which mutates the singleton without
-    touching any real environment variable). A subprocess started fresh only
-    sees actual env vars, so forwarding bare `os.environ` would silently give
-    it stale/default config — e.g. LLM_ENABLED back to False even though the
-    parent process has it on. Every current field is re-serialized here so the
-    child always sees the same effective config as its parent, regardless of
-    where that config came from.
+    O Settings pode mudar em execução (os testes usam monkeypatch), e um processo novo
+    só enxerga variáveis de ambiente reais. Sem isso, o filho voltaria aos valores
+    padrão, por exemplo com LLM_ENABLED desligado enquanto o pai está ligado.
     """
     env = dict(os.environ)
     for field_name in type(config).model_fields:
@@ -83,8 +77,8 @@ async def call_skill_tool(
         transport = stdio_client(params)
 
     async with Client(transport) as client:
-        # Real discovery, not decorative: proves the server actually exposes
-        # what the catalog says it should before we call it.
+        # Descoberta real: confere que o servidor expõe a ferramenta que o catálogo promete
+        # antes de chamá-la.
         await client.list_tools()
         result = await client.call_tool(_TOOL_NAME, {"entrada": tool_call.model_dump(mode="json")})
 

@@ -1,10 +1,7 @@
-"""RFC Apêndice C "Camada de Contratos": pure data contracts shared between the
-Orchestrator and every Agent Skill (input/output schemas), with no dependency
-on service-layer code -- kept separate from tool_interface.py's SkillExecutor
-implementations (which DO call into app.services.llm_service) specifically so
-app.schemas.orchestration can import SkillToolResult without a circular import
-(schemas.orchestration -> tool_interface -> llm_service -> orchestration_service
--> schemas.orchestration).
+"""Contratos trocados entre o orquestrador e as Agent Skills (entrada e saída).
+
+Ficam fora do tool_interface.py, que chama o llm_service, para que
+app.schemas.orchestration importe SkillToolResult sem import circular.
 """
 
 from typing import Literal
@@ -17,12 +14,10 @@ ConfidenceLevel = Literal["ALTO", "MEDIO", "BAIXO"]
 
 
 class SkillToolCall(BaseModel):
-    """Mirrors solicitacao_analise_schema.json (Apêndice C da RFC), simplified
-    to the fields the PoC executor actually consumes.
+    """Chamada de uma skill: leva ids, não texto.
 
-    Carries IDs, not prose: once a skill runs behind a real MCP transport
-    (app/agent_catalog/mcp_servers/), it has its own database session and
-    re-fetches the real rows instead of trusting a paraphrase from the caller.
+    O servidor MCP da skill abre a própria sessão de banco e busca de novo as linhas
+    reais, em vez de confiar num resumo de quem chamou.
     """
 
     trace_id: str
@@ -70,8 +65,9 @@ class ArquivoGerado(BaseModel):
 
 
 class SkillToolResult(BaseModel):
-    """Mirrors resposta_especialista_schema.json (Apêndice C da RFC): the
-    mandatory output contract for any Agent Skill in this ecosystem."""
+    """Contrato de saída obrigatório de toda Agent Skill (resposta_especialista_schema.json,
+    Apêndice C da RFC).
+    """
 
     trace_id: str
     agente_emissor: AgenteEmissor
@@ -81,14 +77,10 @@ class SkillToolResult(BaseModel):
 
 
 class SkillToolDescriptor(BaseModel):
-    """Catalog-facing listing, backed directly by the `agent_skills` table —
-    cheap and doesn't require talking to any skill's live MCP server. This is
-    what `GET /agent-skills/tools` returns for browsing.
+    """Item do catálogo, lido da tabela agent_skills (GET /agent-skills/tools).
 
-    It is distinct from the *live* `tools/list` discovery a real MCP `Client`
-    performs against a skill's server right before invoking it (see
-    `app/agent_catalog/mcp_client.py`), which reflects what that specific
-    server actually exposes at that moment, not what the catalog has on file.
+    Não conversa com o servidor MCP. A descoberta ao vivo (tools/list) acontece em
+    mcp_client.py, logo antes de cada chamada, e mostra o que o servidor expõe de fato.
     """
 
     name: str

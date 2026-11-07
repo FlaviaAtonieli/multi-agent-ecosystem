@@ -2,19 +2,17 @@ from pydantic import BaseModel
 
 
 class RetrievalEvalCase(BaseModel):
-    """A query with its known-relevant source artifacts, for measuring retrieval
-    quality against a real (not synthetic-random) ground truth."""
+    """Uma pergunta e os documentos que de fato a respondem, para medir a busca contra
+    um gabarito real.
+    """
 
     query: str
     relevant_artifacts: set[str]
 
 
 def _ranked_artifacts(retrieved_artifacts: list[str]) -> list[str]:
-    """Collapses repeated artifact names to their first (highest-ranked) occurrence.
-
-    A single file yields several chunks, so the raw retrieval list can contain the
-    same artifact more than once; precision/recall are defined over distinct
-    documents, not chunks.
+    """Junta nomes repetidos na primeira ocorrência, a mais bem colocada. Um arquivo rende
+    vários trechos, mas precisão e revocação contam documentos, não trechos.
     """
     seen: list[str] = []
     for name in retrieved_artifacts:
@@ -46,10 +44,7 @@ def reciprocal_rank(retrieved_artifacts: list[str], relevant_artifacts: set[str]
     return 0.0
 
 
-# Ground truth grounded in the real fixture content under
-# app/rag/fixtures/legacy_billing/ (the only domain with a populated knowledge
-# base today -- see docs/validation/evidence/2026-08-30-rag-quality-validation.md
-# for why the other three Agent Skill domains are out of scope for this measurement).
+# Gabarito tirado do conteúdo real de app/rag/fixtures/legacy_billing/.
 LEGACY_BILLING_GROUND_TRUTH: list[RetrievalEvalCase] = [
     RetrievalEvalCase(
         query="Qual é o valor do limite de crédito hoje e em qual classe ele está definido?",
@@ -94,11 +89,9 @@ LEGACY_BILLING_GROUND_TRUTH: list[RetrievalEvalCase] = [
 ]
 
 
-# Ground truth for the "Regras de Negócio" domain, grounded in
-# app/rag/fixtures/business_rules/ -- distinct documents from legacy_billing,
-# but over the same underlying system, so retrieval must discriminate by
-# subject (business decision history vs. pricing policy), not just recognize
-# "credit limit" as a keyword.
+# Gabarito de Regras de Negócio (app/rag/fixtures/business_rules/). Os documentos
+# falam do mesmo sistema do legacy_billing, então a busca precisa separar pelo assunto,
+# não só reconhecer "limite de crédito".
 BUSINESS_RULES_GROUND_TRUTH: list[RetrievalEvalCase] = [
     RetrievalEvalCase(
         query=(
@@ -133,8 +126,7 @@ BUSINESS_RULES_GROUND_TRUTH: list[RetrievalEvalCase] = [
 ]
 
 
-# Ground truth for the "Arquitetura de Software" domain, grounded in
-# app/rag/fixtures/architecture/.
+# Gabarito de Arquitetura de Software (app/rag/fixtures/architecture/).
 ARCHITECTURE_GROUND_TRUTH: list[RetrievalEvalCase] = [
     RetrievalEvalCase(
         query=(
@@ -171,8 +163,7 @@ ARCHITECTURE_GROUND_TRUTH: list[RetrievalEvalCase] = [
 ]
 
 
-# Ground truth for the "Segurança da Informação" domain, grounded in
-# app/rag/fixtures/security/.
+# Gabarito de Segurança da Informação (app/rag/fixtures/security/).
 SECURITY_GROUND_TRUTH: list[RetrievalEvalCase] = [
     RetrievalEvalCase(
         query="As consultas do CustomerRepository são vulneráveis a SQL injection?",
@@ -197,9 +188,8 @@ SECURITY_GROUND_TRUTH: list[RetrievalEvalCase] = [
 ]
 
 
-# Ground truth for the six domains added after the original four (2026-11-06).
-# Each query is written the way a person would ask, avoiding the document's own
-# wording, and lists every fixture that actually answers it.
+# Gabarito dos seis domínios novos. Cada pergunta é escrita como uma pessoa
+# perguntaria, sem as palavras do documento, e lista todos os arquivos que a respondem.
 TEST_QUALITY_GROUND_TRUTH: list[RetrievalEvalCase] = [
     RetrievalEvalCase(
         query="Quais cenários do cálculo do limite de crédito têm teste automatizado hoje?",

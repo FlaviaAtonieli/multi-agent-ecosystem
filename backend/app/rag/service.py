@@ -16,9 +16,8 @@ def retrieve_context_for_request(
     *,
     config: Settings = settings,
 ) -> RagContext:
-    # RFC §6.1 "Proteção de Contexto": when scoped to a single skill's domain,
-    # bias the retrieval query towards that domain instead of the generic
-    # top-K every skill would otherwise share regardless of relevance.
+    # Proteção de contexto: com o domínio da skill, a busca puxa para a área dela em vez
+    # de devolver o mesmo top-K para todas.
     query_parts = [safe_request.problem, safe_request.objective, safe_request.context]
     if safe_request.analysis_domain_label:
         query_parts.append(f"Domínio: {safe_request.analysis_domain_label}")
