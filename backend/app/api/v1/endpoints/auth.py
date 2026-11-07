@@ -1,6 +1,6 @@
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -100,6 +100,7 @@ from app.services.session_service import (
     set_auth_cookies,
     set_public_csrf_cookie,
 )
+from app.services.welcome_email_service import send_welcome_email
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
@@ -129,6 +130,7 @@ def register(
     request: Request,
     response: Response,
     payload: UserCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     _csrf: None = Depends(require_public_csrf),
     _rate: None = Depends(register_rate_limit),
@@ -162,6 +164,7 @@ def register(
     db.refresh(auth_session)
 
     set_auth_cookies(response, raw_token, csrf_token)
+    background_tasks.add_task(send_welcome_email, to=user.email, name=user.name)
     return AuthResponse(user=_to_user_read(user), session_expires_at=auth_session.expires_at)
 
 
@@ -296,6 +299,13 @@ def forgot_password(
 ) -> dict[str, str]:
     """Resposta sempre igual, exista ou não a conta (não revela e-mails
     cadastrados). Contas só com GitHub/Google não têm senha para redefinir."""
+    if settings.is_production and settings.email_backend == "console":
+        # Sem SMTP, o link não sai: melhor dizer isso do que prometer um e-mail
+        # que não vai chegar. A resposta é igual para qualquer e-mail.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="A recuperação de senha por e-mail não está configurada neste ambiente.",
+        )
     user = db.scalar(select(User).where(User.email == normalize_email(str(payload.email))))
     if user is not None and user.is_active and user.password_hash is not None:
         try:
@@ -589,6 +599,7 @@ def github_login(_rate: None = Depends(github_oauth_rate_limit)) -> RedirectResp
 @router.get("/github/callback")
 def github_callback(
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     code: str | None = None,
     state: str | None = None,
@@ -635,6 +646,8 @@ def github_callback(
             redirect = _frontend_redirect("/login", error="login_code_failed")
             _clear_github_state_cookie(redirect)
             return redirect
+        if created:
+            background_tasks.add_task(send_welcome_email, to=user.email, name=user.name)
         redirect = _frontend_redirect("/login", verify="1")
         set_login_challenge_cookie(redirect, challenge_token)
         _clear_github_state_cookie(redirect)
@@ -649,6 +662,8 @@ def github_callback(
         details={"provider": "github", "session_id": auth_session.id},
     )
     db.commit()
+    if created:
+        background_tasks.add_task(send_welcome_email, to=user.email, name=user.name)
 
     redirect = _frontend_redirect("/dashboard")
     set_auth_cookies(redirect, raw_token, csrf_token)
@@ -690,6 +705,7 @@ def google_login(_rate: None = Depends(google_oauth_rate_limit)) -> RedirectResp
 @router.get("/google/callback")
 def google_callback(
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     code: str | None = None,
     state: str | None = None,
@@ -736,6 +752,8 @@ def google_callback(
             redirect = _frontend_redirect("/login", error="login_code_failed")
             _clear_google_state_cookie(redirect)
             return redirect
+        if created:
+            background_tasks.add_task(send_welcome_email, to=user.email, name=user.name)
         redirect = _frontend_redirect("/login", verify="1")
         set_login_challenge_cookie(redirect, challenge_token)
         _clear_google_state_cookie(redirect)
@@ -750,6 +768,8 @@ def google_callback(
         details={"provider": "google", "session_id": auth_session.id},
     )
     db.commit()
+    if created:
+        background_tasks.add_task(send_welcome_email, to=user.email, name=user.name)
 
     redirect = _frontend_redirect("/dashboard")
     set_auth_cookies(redirect, raw_token, csrf_token)
