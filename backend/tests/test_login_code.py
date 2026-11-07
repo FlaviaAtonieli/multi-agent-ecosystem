@@ -21,9 +21,15 @@ def _enable_login_code(monkeypatch) -> None:
     console_outbox.clear()
 
 
+def _code_emails() -> list:
+    # O cadastro também manda o e-mail de conta criada; aqui só interessam os códigos.
+    return [m for m in console_outbox if re.search(r"\b\d{6}\b", m["Subject"])]
+
+
 def _last_code() -> str:
-    assert console_outbox, "nenhum e-mail foi enviado"
-    match = re.search(r"\b(\d{6})\b", console_outbox[-1]["Subject"])
+    emails = _code_emails()
+    assert emails, "nenhum código foi enviado"
+    match = re.search(r"\b(\d{6})\b", emails[-1]["Subject"])
     assert match
     return match.group(1)
 
@@ -53,7 +59,7 @@ def test_login_on_new_device_requires_code(client: TestClient) -> None:
     assert response.json()["verification_required"] is True
     assert response.json()["email_hint"].endswith("@example.com")
     assert USER["email"] not in response.json()["email_hint"]  # e-mail mascarado
-    assert console_outbox[-1]["To"] == USER["email"]
+    assert _code_emails()[-1]["To"] == USER["email"]
 
     # Sem confirmar o código, não há sessão.
     assert client.get("/api/v1/auth/me").status_code == 401
@@ -127,7 +133,7 @@ def test_resend_respects_cooldown_and_sends_new_code(client: TestClient, monkeyp
     monkeypatch.setattr(settings, "login_code_resend_cooldown_seconds", 0)
     resent = client.post("/api/v1/auth/login/resend", headers=csrf_headers(client))
     assert resent.status_code == 200
-    assert len(console_outbox) == 2
+    assert len(_code_emails()) == 2
 
     new_code = _last_code()
     if new_code != first_code:
@@ -188,7 +194,7 @@ def test_github_login_on_new_device_requires_code(client: TestClient, monkeypatc
     assert response.status_code == 302
     assert response.headers["location"] == f"{settings.frontend_base_url}/login?verify=1"
     assert client.get("/api/v1/auth/me").status_code == 401
-    assert console_outbox[-1]["To"] == "dev.codigo@example.com"
+    assert _code_emails()[-1]["To"] == "dev.codigo@example.com"
 
     assert _verify(client, _last_code()).status_code == 200
     assert client.get("/api/v1/auth/me").json()["email"] == "dev.codigo@example.com"
