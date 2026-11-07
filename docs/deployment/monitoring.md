@@ -18,9 +18,65 @@ O painel **"Multi-Agent Ecosystem — Visão geral"** abre como página inicial 
 
 `/metrics` fica fora do prefixo `/api`, então o nginx do frontend (porta 3000) não o expõe.
 
-## Monitorar o backend no Azure
+## Monitorar a produção no Azure (24 h)
 
-`docker-compose.azure-monitoring.yml` roda Prometheus e Grafana **no seu computador**, lendo o backend que está no Azure. Não há custo no Azure, mas só há coleta enquanto os containers estiverem rodando, e o histórico fica na sua máquina. Com o backend parado, o painel mostra "Backend no ar" zerado e o alerta `BackendFora` dispara, o que é esperado.
+Prometheus e Grafana rodam numa imagem só (`monitoring/azure/`), como mais um app no **mesmo plano do App Service do backend**. O plano é cobrado pelo plano, não por app, então não há custo a mais enquanto houver memória (B1: 1,75 GB).
+
+```text
+Grafana (público, com login) ──> Prometheus (só dentro do contêiner) ──Bearer token──> /metrics do backend
+```
+
+- Só o Grafana fica exposto, e pede login. O Prometheus escuta em `127.0.0.1` dentro do contêiner.
+- O token de `/metrics` e a senha do Grafana são gerados no Cloud Shell e ficam só nas configurações do App Service.
+- A imagem é publicada no `ghcr.io` pelo `publish-images.yml`, junto com a do backend. Na primeira vez, torne o pacote `multi-agent-ecosystem-monitoring` público, como o do backend ([azure.md](azure.md)).
+
+No Cloud Shell (bash):
+
+```bash
+RG='Flav.ia'
+BACKEND=multi-agent-ecosystem-back
+MONITOR=multi-agent-ecosystem-monitor   # se o nome já existir no Azure, troque
+PLAN=$(az webapp show -g "$RG" -n "$BACKEND" --query appServicePlanId -o tsv)
+BACKEND_HOST=$(az webapp show -g "$RG" -n "$BACKEND" --query defaultHostName -o tsv)
+TOKEN=$(openssl rand -hex 32)
+GRAFANA_PASSWORD=$(openssl rand -base64 18)
+
+# 1. Liga as métricas no backend e libera só /metrics na autenticação do linked
+#    backend. O caminho continua protegido pelo token.
+az webapp config appsettings set -g "$RG" -n "$BACKEND" -o none   --settings METRICS_ENABLED=true METRICS_TOKEN="$TOKEN"
+az webapp auth update -g "$RG" -n "$BACKEND" --excluded-paths '["/metrics"]' -o none
+
+# 2. Cria o app do monitoramento no mesmo plano.
+az webapp create -g "$RG" -n "$MONITOR" --plan "$PLAN" -o none   --deployment-container-image-name ghcr.io/flaviaatonieli/multi-agent-ecosystem-monitoring:latest
+MONITOR_HOST=$(az webapp show -g "$RG" -n "$MONITOR" --query defaultHostName -o tsv)
+az webapp config appsettings set -g "$RG" -n "$MONITOR" -o none --settings   WEBSITES_PORT=3000 BACKEND_HOST="$BACKEND_HOST" METRICS_TOKEN="$TOKEN"   GF_SECURITY_ADMIN_PASSWORD="$GRAFANA_PASSWORD" GF_SERVER_ROOT_URL="https://$MONITOR_HOST"
+# Always On: sem ele, o app dorme sem visitas e o Prometheus para de coletar.
+az webapp config set -g "$RG" -n "$MONITOR" --always-on true -o none
+az webapp update -g "$RG" -n "$MONITOR" --https-only true -o none
+
+echo "Grafana: https://$MONITOR_HOST (usuário admin)"
+echo "Senha do Grafana, guarde num gerenciador de senhas: $GRAFANA_PASSWORD"
+```
+
+**Conferir:** no Grafana, o painel "Backend no ar" deve mostrar 1. Em **Explore**, a consulta `up{job="agenthub-backend"}` deve dar 1. Se der 0:
+- veja se o Prometheus recebeu `401` (token diferente do backend);
+- confira o caminho liberado com `az webapp auth show -g "$RG" -n "$BACKEND"`.
+
+**Memória do plano:** os três apps dividem a memória do B1. Para acompanhar:
+
+```bash
+az monitor metrics list --resource "$PLAN" --metric MemoryPercentage --interval PT5M -o table
+```
+
+**Limitações:**
+- O histórico do Prometheus fica no disco temporário do contêiner e se perde quando o app reinicia.
+- O Grafana não guarda nada além do que vem na imagem: o painel e a fonte de dados.
+
+**Para economizar crédito:** desligue e ligue o monitoramento junto com o resto (`az webapp stop` e `az webapp start -g "$RG" -n "$MONITOR"`). Com o backend desligado, o alerta `BackendFora` dispara, e isso é o esperado.
+
+### Alternativa: no seu computador
+
+`docker-compose.azure-monitoring.yml` roda a mesma coleta no seu computador, sem nada novo no Azure. Só coleta enquanto os contêineres estiverem rodando.
 
 No Azure, pelo Cloud Shell:
 
@@ -121,3 +177,4 @@ Com `METRICS_TOKEN` definido, grave o mesmo valor em `monitoring/prometheus/metr
 - `monitoring/prometheus/prometheus.yml`: coleta; `alerts.yml`: regras
 - `monitoring/grafana/provisioning/`: fonte de dados e provedor de painéis
 - `monitoring/grafana/dashboards/agenthub-overview.json`: o painel
+- `monitoring/azure/`: imagem com Prometheus e Grafana para rodar no App Service (`Dockerfile`, `start.sh`, `prometheus.yml.template`); reaproveita o painel e os alertas acima

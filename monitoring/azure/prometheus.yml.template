@@ -1,0 +1,23 @@
+# Coleta as métricas do backend no Azure. Usado pela imagem de monitoring/azure
+# (start.sh troca __BACKEND_HOST__ pelo host do App Service).
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/monitoring/alerts.yml
+
+scrape_configs:
+  - job_name: agenthub-backend
+    metrics_path: /metrics
+    scheme: __BACKEND_SCHEME__
+    static_configs:
+      - targets: ["__BACKEND_HOST__"]
+    # start.sh grava este arquivo a partir de METRICS_TOKEN, o mesmo do backend.
+    authorization:
+      type: Bearer
+      credentials_file: /tmp/monitoring/metrics_token
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
