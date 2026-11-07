@@ -203,7 +203,7 @@ Comece pelo [índice da documentação](docs/README.md). Os mais procurados:
 
 - [Requisitos do Portfólio](docs/requisitos-portfolio.md)
 - [API (Swagger/OpenAPI)](docs/api/README.md)
-- [Arquitetura](docs/architecture/overview.md) e [Pipeline de IA](docs/architecture/ai-pipeline.md)
+- [Arquitetura](docs/architecture/overview.md), [Decisões de arquitetura](docs/architecture/decisions.md) e [Pipeline de IA](docs/architecture/ai-pipeline.md)
 - [Relatório de validação](docs/validation/README.md)
 
 O RFC acadêmico permanece como a especificação principal do projeto. Os documentos deste repositório registram o que já foi implementado e as limitações conhecidas da PoC.
