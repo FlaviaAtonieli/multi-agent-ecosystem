@@ -42,6 +42,29 @@ jobs:
           docker push "$IMAGE:latest"
           docker push "$IMAGE:${{ github.sha }}"
 
+  publish-monitoring:
+    name: Monitoring image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e push
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/multi-agent-ecosystem-monitoring
+          IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          docker build -t "$IMAGE:latest" -t "$IMAGE:${{ github.sha }}" -f monitoring/azure/Dockerfile monitoring
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:${{ github.sha }}"
+
   deploy-backend:
     name: Deploy do backend no App Service
     needs: publish-backend

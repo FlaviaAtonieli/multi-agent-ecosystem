@@ -201,3 +201,6 @@ jobs:
 
       - name: Build do frontend
         run: docker build -t frontend-teste frontend
+
+      - name: Build do monitoramento (Prometheus + Grafana do Azure)
+        run: docker build -t monitoring-teste -f monitoring/azure/Dockerfile monitoring
