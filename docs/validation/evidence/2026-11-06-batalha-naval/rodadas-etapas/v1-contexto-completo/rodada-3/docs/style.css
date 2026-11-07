@@ -1,0 +1,32 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+.board {
+    display: inline-grid;
+    grid-template-columns: repeat(10, 30px);
+    grid-gap: 2px;
+    margin: 10px;
+}
+
+.cell {
+    width: 30px;
+    height: 30px;
+    background-color: #ccc;
+    border: 1px solid #000;
+    cursor: pointer;
+}
+
+.cell.hit {
+    background-color: red;
+}
+
+.cell.miss {
+    background-color: blue;
+}
+
+#message {
+    margin: 20px;
+    font-size: 1.2em;
+}

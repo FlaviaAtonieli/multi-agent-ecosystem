@@ -1,3 +1,4 @@
+from app.llm.file_request import asks_for_files
 from app.llm.schemas import LLMPlanRequest
 
 TECHNICAL_PLANNER_INSTRUCTIONS = (
@@ -38,16 +39,32 @@ def build_technical_planner_prompt(request: LLMPlanRequest) -> str:
             "Incorpore esse direcionamento na análise, sem deixar de responder no schema pedido."
         )
 
+    if request.team_context:
+        lines.append(
+            "Entregas dos outros agentes desta solicitação. Elas trazem requisitos, critérios de teste e "
+            "recomendações para o que você entrega. Siga o que se aplica e não contradiga essas entregas "
+            f"sem justificar:\n{request.team_context}"
+        )
+
     if request.additional_question:
         lines.append(
             f"Pergunta de acompanhamento do usuário: {request.additional_question}. "
             "Responda especificamente a essa pergunta, além do já analisado acima."
         )
 
-    lines.append(
-        "Se a solicitação pedir explicitamente um arquivo, código ou projeto, coloque cada arquivo em "
-        "generated_files, com o caminho relativo em filename e o texto completo em content. Caso contrário, "
-        "devolva generated_files como lista vazia. Esses arquivos são só propostas: nada é executado."
-    )
+    if asks_for_files(request.title, request.objective, request.additional_question):
+        lines.append(
+            "A solicitação pede arquivos explicitamente. Entregue cada arquivo pedido em generated_files, "
+            "com o caminho relativo em filename e o texto completo em content. Não deixe generated_files "
+            "vazio e não coloque o conteúdo dos arquivos no resumo. Esses arquivos são só propostas: "
+            "nada é executado."
+        )
+    else:
+        lines.append(
+            "Se a solicitação pedir explicitamente um arquivo, código ou projeto, coloque cada arquivo em "
+            "generated_files, com o caminho relativo em filename e o texto completo em content. Caso "
+            "contrário, devolva generated_files como lista vazia. Esses arquivos são só propostas: nada é "
+            "executado."
+        )
 
     return "\n".join(lines)

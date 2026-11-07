@@ -47,6 +47,9 @@ class LLMPlanRequest(BaseModel):
     # PR #24 code review) -- concatenated and labeled by filename, goes through
     # the same sanitize_content/truncation pipeline as every other field here.
     attachments_context: str | None = None
+    # Deliverables of the skills that ran before, for a skill that writes code
+    # (app/services/team_context.py). Sanitized and truncated like the rest.
+    team_context: str | None = None
 
 
 class LLMGeneratedFile(BaseModel):

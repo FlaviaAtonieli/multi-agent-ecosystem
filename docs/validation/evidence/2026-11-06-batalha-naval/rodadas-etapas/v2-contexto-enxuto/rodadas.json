@@ -1,0 +1,126 @@
+[
+ {
+  "rodada": 1,
+  "trace": "TRC-20261107-96194B",
+  "status": "VALIDATING",
+  "segundos": 452,
+  "arquivos": [
+   "Metodologia de Desenvolvimento de Jogos: game.js",
+   "Metodologia de Desenvolvimento de Jogos: index.html",
+   "Metodologia de Desenvolvimento de Jogos: style.css",
+   "Qualidade e Testes de Jogos: PLANO_DE_TESTES.md",
+   "Game Design: GDD.md",
+   "Programação de Jogos Web: game.js",
+   "Programação de Jogos Web: index.html",
+   "Programação de Jogos Web: style.css"
+  ],
+  "contexto_compartilhado": {
+   "advisors": [
+    "Game Design",
+    "Metodologia de Desenvolvimento de Jogos",
+    "Qualidade e Testes de Jogos"
+   ],
+   "implementers": [
+    "Programação de Jogos Web"
+   ],
+   "documents": [
+    "GDD.md",
+    "game.js",
+    "index.html",
+    "style.css",
+    "PLANO_DE_TESTES.md"
+   ],
+   "context_chars": 1821
+  },
+  "quality_gate": {
+   "approved": false,
+   "requires_human_review": true,
+   "reasons": [
+    "4 resposta(s) com nível de confiança BAIXO: Game Design, Metodologia de Desenvolvimento de Jogos, Qualidade e Testes de Jogos, Programação de Jogos Web"
+   ]
+  },
+  "falhas": [
+   "A chamada falhou e nenhuma ação automática foi executada.",
+   "A execução falhou e nenhuma ação automática foi executada."
+  ]
+ },
+ {
+  "rodada": 2,
+  "trace": "TRC-20261107-EFFD04",
+  "status": "VALIDATING",
+  "segundos": 266,
+  "arquivos": [
+   "Qualidade e Testes de Jogos: PLANO_DE_TESTES.md",
+   "Game Design: GDD.md",
+   "UX e Acessibilidade de Jogos: ACESSIBILIDADE.md",
+   "Metodologia de Desenvolvimento de Jogos: BACKLOG.md",
+   "Programação de Jogos Web: game.js",
+   "Programação de Jogos Web: index.html",
+   "Programação de Jogos Web: style.css"
+  ],
+  "contexto_compartilhado": {
+   "advisors": [
+    "Game Design",
+    "Metodologia de Desenvolvimento de Jogos",
+    "Qualidade e Testes de Jogos",
+    "UX e Acessibilidade de Jogos"
+   ],
+   "implementers": [
+    "Programação de Jogos Web"
+   ],
+   "documents": [
+    "GDD.md",
+    "BACKLOG.md",
+    "PLANO_DE_TESTES.md",
+    "ACESSIBILIDADE.md"
+   ],
+   "context_chars": 2354
+  },
+  "quality_gate": {
+   "approved": false,
+   "requires_human_review": true,
+   "reasons": [
+    "5 resposta(s) com nível de confiança BAIXO: Game Design, Metodologia de Desenvolvimento de Jogos, Qualidade e Testes de Jogos, UX e Acessibilidade de Jogos, Programação de Jogos Web"
+   ]
+  },
+  "falhas": []
+ },
+ {
+  "rodada": 3,
+  "trace": "TRC-20261107-4AA252",
+  "status": "VALIDATING",
+  "segundos": 331,
+  "arquivos": [
+   "Metodologia de Desenvolvimento de Jogos: BACKLOG.md",
+   "Qualidade e Testes de Jogos: PLANO_DE_TESTES.md",
+   "Game Design: GDD.md",
+   "UX e Acessibilidade de Jogos: ACESSIBILIDADE.md"
+  ],
+  "contexto_compartilhado": {
+   "advisors": [
+    "Game Design",
+    "Metodologia de Desenvolvimento de Jogos",
+    "Qualidade e Testes de Jogos",
+    "UX e Acessibilidade de Jogos"
+   ],
+   "implementers": [
+    "Programação de Jogos Web"
+   ],
+   "documents": [
+    "GDD.md",
+    "BACKLOG.md",
+    "PLANO_DE_TESTES.md",
+    "ACESSIBILIDADE.md"
+   ],
+   "context_chars": 1933
+  },
+  "quality_gate": {
+   "approved": false,
+   "requires_human_review": true,
+   "reasons": [
+    "5 resposta(s) com nível de confiança BAIXO: Game Design, Metodologia de Desenvolvimento de Jogos, Qualidade e Testes de Jogos, UX e Acessibilidade de Jogos, Programação de Jogos Web"
+   ]
+  },
+  "falhas": []
+ }
+]

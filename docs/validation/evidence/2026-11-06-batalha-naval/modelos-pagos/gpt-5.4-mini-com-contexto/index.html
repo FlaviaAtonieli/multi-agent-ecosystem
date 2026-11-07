@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Batalha Naval</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="app__header">
+      <h1>Batalha Naval</h1>
+      <p id="statusMessage" class="status" aria-live="polite">Carregando jogo...</p>
+      <button id="restartButton" type="button">Reiniciar jogo</button>
+    </header>
+
+    <section class="boards" aria-label="Tabuleiros do jogo">
+      <article class="board-panel">
+        <h2>Seu tabuleiro</h2>
+        <div id="playerBoard" class="board" aria-label="Tabuleiro do jogador"></div>
+      </article>
+
+      <article class="board-panel">
+        <h2>Tabuleiro do computador</h2>
+        <div id="computerBoard" class="board" aria-label="Tabuleiro do computador"></div>
+      </article>
+    </section>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>

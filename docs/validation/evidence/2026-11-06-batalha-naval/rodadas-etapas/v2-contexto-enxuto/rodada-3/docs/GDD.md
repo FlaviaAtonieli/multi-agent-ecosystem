@@ -1,0 +1,1 @@
+Plano técnico estruturado para criação do jogo de batalha naval, incluindo análise de game design, regras, preparação, turnos, feedback, condições de vitória e delimitações da primeira versão.

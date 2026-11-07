@@ -90,6 +90,7 @@ Resultado esperado do `alembic current`:
 - [Medição de KPIs (M7)](evidence/2026-08-m7-kpi-measurement.md) — com modelo gratuito e execução em sequência; ainda não repetida com o código atual
 - [Qualidade do RAG (domínio Código Legado)](evidence/2026-08-30-rag-quality-validation.md)
 - [Testes com a IA real em modelos gratuitos](evidence/2026-11-05-real-llm-free-models.md) (05/11/2026)
+- [Cenário: clã de jogos gerando uma batalha naval, testada jogando](evidence/2026-11-06-batalha-naval.md) (06/11/2026)
 - [Repetição da resposta do modelo](evidence/2026-11-05-reproducibility.md) (05/11/2026)
 - [Qualidade do RAG nos 4 domínios de Agent Skill](evidence/2026-09-rag-multi-domain-quality-validation.md)
 - [Qualidade do RAG nas 10 áreas, com modelo gratuito](evidence/2026-11-06-rag-ten-domains.md) (06/11/2026)

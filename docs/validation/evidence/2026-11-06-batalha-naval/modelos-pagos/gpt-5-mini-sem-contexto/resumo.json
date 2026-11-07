@@ -1,0 +1,14 @@
+{
+ "modelo": "openai/gpt-5-mini",
+ "segundos": 53,
+ "tokens_entrada": 762,
+ "tokens_saida": 6937,
+ "contexto_do_time_chars": 0,
+ "entrada_truncada": false,
+ "arquivos": [
+  "index.html",
+  "style.css",
+  "game.js"
+ ],
+ "resumo": "Plano técnico para criar um jogo de Batalha Naval (Battleship) para navegador usando apenas HTML, CSS e JavaScript puro. Fornece três arquivos completos (index.html, style.css, game.js) que implementam um jogo jogável localmente ao abrir index.html. O jogo tem duas grades 10x10 (jogador e computador), frota padrão posicionada aleatoriamente sem sobreposição, interações por clique no tabuleiro do computador, resposta do computador com tiro aleatório em célula ainda não atingida, indicação de acerto/erro/navio afundado e anúncio de vitória/derrota com botão de reiniciar. Documentação das áreas incluída no index.html e comentários no game.js."
+}

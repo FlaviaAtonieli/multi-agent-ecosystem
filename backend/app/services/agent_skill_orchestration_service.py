@@ -16,6 +16,7 @@ from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.metrics import QUALITY_GATE_VERDICTS, SKILL_INVOCATIONS, SKILL_LATENCY
 from app.core.security import utc_now
+from app.llm.file_request import asks_for_files
 from app.llm.security import content_sha256
 from app.models import (
     AgentSkill,
@@ -28,9 +29,10 @@ from app.models import (
     User,
 )
 from app.quality_gate.service import QualityGateVerdict, evaluate
-from app.services.artifact_service import prepare_files
+from app.services.artifact_service import check_package, prepare_files
 from app.services.clan_service import is_member
 from app.services.orchestration_service import RequestStatus, append_event
+from app.services.team_context import TeamEntry, build_team_context, is_code_file, writes_code
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +178,7 @@ async def _invoke_skill(
     user: User,
     requested_model: str | None = None,
     additional_question: str | None = None,
+    team_context: str | None = None,
 ) -> tuple[AgentSkillInvocation, SkillToolResult | None]:
     tool_call = SkillToolCall(
         trace_id=technical_request.trace_id,
@@ -185,6 +188,7 @@ async def _invoke_skill(
         analises_requeridas=technical_request.requested_domains,
         requested_model=requested_model,
         additional_question=additional_question,
+        team_context=team_context,
     )
     input_hash = content_sha256(tool_call.model_dump_json())
     invocation_id = str(uuid4())
@@ -302,6 +306,7 @@ async def _invoke_skills(
     user: User,
     requested_model: str | None = None,
     additional_question: str | None = None,
+    team_context: str | None = None,
 ) -> tuple[list[AgentSkillInvocation], list[SkillToolResult]]:
     """Runs the skills concurrently, up to orchestration_max_parallel_skills.
 
@@ -321,12 +326,147 @@ async def _invoke_skills(
                 user=user,
                 requested_model=requested_model,
                 additional_question=additional_question,
+                team_context=team_context,
             )
 
     outcomes = await asyncio.gather(*(invoke_limited(skill) for skill in skills))
     invocations = [invocation for invocation, _ in outcomes]
     results = [result for _, result in outcomes if result is not None]
     return invocations, results
+
+
+def _invocation_files(db: Session, invocation: AgentSkillInvocation) -> list[tuple[str, str]]:
+    return [
+        (artifact.filename, artifact.content)
+        for artifact in db.scalars(
+            select(SkillArtifact)
+            .where(SkillArtifact.invocation_id == invocation.id)
+            .order_by(SkillArtifact.filename)
+        )
+    ]
+
+
+def _team_entries(
+    db: Session,
+    skills: list[AgentSkill],
+    invocations: list[AgentSkillInvocation],
+    results: list[SkillToolResult],
+) -> list[TeamEntry]:
+    names = {skill.id: skill.name for skill in skills}
+    summaries = {
+        result.agente_emissor.nome: result.analise_estruturada.resumo_executivo for result in results
+    }
+    entries: list[TeamEntry] = []
+    for invocation in invocations:
+        if invocation.status != "COMPLETED" or invocation.agent_skill_id not in names:
+            continue
+        name = names[invocation.agent_skill_id]
+        entries.append((name, summaries.get(name, ""), _invocation_files(db, invocation)))
+    return entries
+
+
+async def _invoke_in_stages(
+    db: Session,
+    *,
+    skills: list[AgentSkill],
+    technical_request: TechnicalRequest,
+    user: User,
+    requested_model: str | None,
+    files_requested: bool,
+) -> tuple[list[AgentSkillInvocation], list[SkillToolResult]]:
+    """Com pedido de arquivos, quem escreve código roda depois e recebe as entregas
+    das outras skills (app/services/team_context.py). Sem pedido de arquivos, ou
+    sem as duas turmas, todas rodam juntas como antes."""
+    implementers = [skill for skill in skills if writes_code(skill.manifest_json or {})]
+    advisors = [skill for skill in skills if skill not in implementers]
+    if not files_requested or not implementers or not advisors:
+        return await _invoke_skills(
+            db, skills=skills, technical_request=technical_request, user=user, requested_model=requested_model
+        )
+
+    first_invocations, first_results = await _invoke_skills(
+        db, skills=advisors, technical_request=technical_request, user=user, requested_model=requested_model
+    )
+    entries = _team_entries(db, advisors, first_invocations, first_results)
+    team_context = build_team_context(entries) if entries else None
+    append_event(
+        db,
+        technical_request,
+        event_type="TEAM_CONTEXT_SHARED",
+        actor="ORCHESTRATOR",
+        title="Entregas compartilhadas com quem escreve o código",
+        message=(
+            f"{len(entries)} entrega(s) de {', '.join(name for name, _, _ in entries) or 'nenhuma skill'} "
+            f"seguem para {', '.join(skill.name for skill in implementers)}."
+        ),
+        payload={
+            "advisors": [name for name, _, _ in entries],
+            "implementers": [skill.name for skill in implementers],
+            "documents": [filename for _, _, files in entries for filename, _ in files],
+            "context_chars": len(team_context or ""),
+        },
+    )
+    db.commit()
+
+    second_invocations, second_results = await _invoke_skills(
+        db,
+        skills=implementers,
+        technical_request=technical_request,
+        user=user,
+        requested_model=requested_model,
+        team_context=team_context,
+    )
+
+    # Medido em 06/11/2026: com o contexto, o modelo gratuito às vezes devolveu só um
+    # plano. Quem não entregou código tenta de novo uma vez, sem o contexto.
+    names = {skill.id: skill for skill in implementers}
+    without_code = [
+        names[invocation.agent_skill_id]
+        for invocation in second_invocations
+        if invocation.agent_skill_id in names
+        and not any(is_code_file(filename) for filename, _ in _invocation_files(db, invocation))
+    ]
+    if without_code and team_context:
+        append_event(
+            db,
+            technical_request,
+            event_type="IMPLEMENTER_RETRIED",
+            actor="ORCHESTRATOR",
+            title="Nova tentativa sem as entregas do time",
+            message=(
+                f"{', '.join(skill.name for skill in without_code)} não entregou código com as entregas "
+                "do time. Tentando de novo uma vez, só com a solicitação."
+            ),
+            payload={"implementers": [skill.name for skill in without_code]},
+        )
+        db.commit()
+        retry_invocations, retry_results = await _invoke_skills(
+            db,
+            skills=without_code,
+            technical_request=technical_request,
+            user=user,
+            requested_model=requested_model,
+        )
+        retried = {skill.name for skill in without_code}
+        second_results = [r for r in second_results if r.agente_emissor.nome not in retried] + retry_results
+        second_invocations = second_invocations + retry_invocations
+
+    return first_invocations + second_invocations, first_results + second_results
+
+
+def _package_issues(db: Session, invocations: list[AgentSkillInvocation]) -> list[str]:
+    issues: list[str] = []
+    for invocation in invocations:
+        issues.extend(check_package(_invocation_files(db, invocation)))
+    return issues
+
+
+def _stored_any_file(db: Session, invocations: list[AgentSkillInvocation]) -> bool:
+    ids = [invocation.id for invocation in invocations]
+    if not ids:
+        return False
+    count = db.scalar(select(func.count(SkillArtifact.id)).where(SkillArtifact.invocation_id.in_(ids)))
+    return bool(count)
 
 
 async def execute_orchestration_step(
@@ -374,11 +514,22 @@ async def execute_orchestration_step(
         )
     db.commit()
 
-    invocations, results = await _invoke_skills(
-        db, skills=skills, technical_request=technical_request, user=user, requested_model=requested_model
+    files_requested = asks_for_files(technical_request.title, technical_request.objective)
+    invocations, results = await _invoke_in_stages(
+        db,
+        skills=skills,
+        technical_request=technical_request,
+        user=user,
+        requested_model=requested_model,
+        files_requested=files_requested,
     )
 
-    verdict = evaluate(results)
+    verdict = evaluate(
+        results,
+        files_requested=files_requested,
+        files_delivered=_stored_any_file(db, invocations),
+        package_issues=_package_issues(db, invocations),
+    )
     QUALITY_GATE_VERDICTS.labels(
         "approved" if verdict.approved and not verdict.requires_human_review else "human_review"
     ).inc()
@@ -745,7 +896,7 @@ async def _answer_follow_up(
     target_domain: str | None,
     requested_model: str | None,
 ) -> FollowUpExchange:
-    _, results = await _invoke_skills(
+    invocations, results = await _invoke_skills(
         db,
         skills=skills,
         technical_request=technical_request,
@@ -754,7 +905,11 @@ async def _answer_follow_up(
         additional_question=question,
     )
 
-    verdict = evaluate(results)
+    verdict = evaluate(
+        results,
+        files_requested=asks_for_files(question),
+        files_delivered=_stored_any_file(db, invocations),
+    )
     append_event(
         db,
         technical_request,

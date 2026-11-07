@@ -1,0 +1,14 @@
+{
+ "modelo": "openai/gpt-5-mini",
+ "segundos": 54,
+ "tokens_entrada": 1394,
+ "tokens_saida": 6824,
+ "contexto_do_time_chars": 2181,
+ "entrada_truncada": false,
+ "arquivos": [
+  "index.html",
+  "style.css",
+  "game.js"
+ ],
+ "resumo": "Plano técnico para implementar um jogo de Batalha Naval (naval battle) para navegador usando apenas HTML, CSS e JavaScript puros. A entrega consiste em três arquivos estáticos (index.html, style.css, game.js) que funcionam abrindo index.html via file://. O jogo cria dois tabuleiros 10x10 (jogador e computador), posiciona aleatoriamente a frota completa sem sobreposição, permite que o jogador atire clicando ou usando teclado/atalhos, o computador responde com tiros aleatórios em casas não atingidas, exibe acerto/erro/afundado, anuncia vitória/derrota e oferece botão para reiniciar. Elementos principais possuem ids estáveis: player-board, computer-board, status e restart-btn. O plano inclui geração dos três arquivos completos e executáveis localmente."
+}

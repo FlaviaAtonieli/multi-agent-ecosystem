@@ -1,0 +1,127 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #0f172a;
+  --panel: #111827;
+  --text: #e5e7eb;
+  --muted: #94a3b8;
+  --water: #1d4ed8;
+  --ship: #475569;
+  --hit: #dc2626;
+  --miss: #eab308;
+  --border: #334155;
+  --focus: #22c55e;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.app__header {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.status {
+  margin: 0;
+  color: var(--muted);
+  min-height: 1.5rem;
+}
+
+#restartButton {
+  justify-self: start;
+  border: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+
+#restartButton:hover,
+#restartButton:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.boards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.board-panel {
+  background: rgba(17, 24, 39, 0.75);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.board-panel h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(28px, 1fr));
+  gap: 4px;
+}
+
+.cell {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  user-select: none;
+  background: var(--water);
+}
+
+.cell--header {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-weight: bold;
+}
+
+.cell--ship { background: var(--ship); }
+.cell--hit { background: var(--hit); color: white; }
+.cell--miss { background: var(--miss); color: #111827; }
+.cell--hidden { color: transparent; }
+
+.cell[role="button"] {
+  cursor: pointer;
+}
+
+.cell:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.cell[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.9;
+}
+
+@media (max-width: 800px) {
+  .boards {
+    grid-template-columns: 1fr;
+  }
+}

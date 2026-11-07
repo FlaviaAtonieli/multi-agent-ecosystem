@@ -21,6 +21,9 @@ class OpenRouterEmbeddingProvider(EmbeddingProvider):
             api_key=api_key,
             base_url=config.openrouter_base_url,
             timeout=config.llm_timeout_seconds,
+            # Sem repetição escondida: quando o cliente desiste por tempo, a chamada
+            # original continua rodando e é cobrada. Quem repete é retry_on_transient_error.
+            max_retries=0,
         )
 
     def embed(self, texts: list[str]) -> list[list[float]]:
