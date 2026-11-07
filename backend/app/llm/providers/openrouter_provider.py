@@ -32,6 +32,9 @@ class OpenRouterLLMProvider(LLMProvider):
             api_key=api_key,
             base_url=config.openrouter_base_url,
             timeout=config.llm_timeout_seconds,
+            # Sem repetição escondida: quando o cliente desiste por tempo, a chamada
+            # original continua rodando e é cobrada. Quem repete é retry_on_transient_error.
+            max_retries=0,
         )
 
     def generate_plan(
@@ -116,6 +119,9 @@ class OpenRouterLLMProvider(LLMProvider):
                 ValidationError,
                 RateLimitError,
                 APIConnectionError,
-                APITimeoutError,
             ),
+            # APITimeoutError é subclasse de APIConnectionError, mas não se repete: o
+            # provedor continua processando a chamada que estourou o tempo, e repetir
+            # pagaria duas vezes.
+            never_retry=(APITimeoutError,),
         )
