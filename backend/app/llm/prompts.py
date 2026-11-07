@@ -39,6 +39,13 @@ def build_technical_planner_prompt(request: LLMPlanRequest) -> str:
             "Incorpore esse direcionamento na análise, sem deixar de responder no schema pedido."
         )
 
+    if request.team_context:
+        lines.append(
+            "Entregas dos outros agentes desta solicitação. Elas trazem requisitos, critérios de teste e "
+            "recomendações para o que você entrega. Siga o que se aplica e não contradiga essas entregas "
+            f"sem justificar:\n{request.team_context}"
+        )
+
     if request.additional_question:
         lines.append(
             f"Pergunta de acompanhamento do usuário: {request.additional_question}. "

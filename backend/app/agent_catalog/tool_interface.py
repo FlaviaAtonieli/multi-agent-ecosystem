@@ -84,6 +84,7 @@ class LegacyCodeSkillExecutor(SkillExecutor):
             requested_model=tool_call.requested_model,
             analysis_domain_label=DOMAIN_LABELS.get(skill.domain),
             additional_question=tool_call.additional_question,
+            team_context=tool_call.team_context,
         )
 
         retrieved_chunks: list[KnowledgeChunk] = []
@@ -178,6 +179,7 @@ class BusinessRulesSkillExecutor(SkillExecutor):
             requested_model=tool_call.requested_model,
             analysis_domain_label=DOMAIN_LABELS.get(skill.domain),
             additional_question=tool_call.additional_question,
+            team_context=tool_call.team_context,
         )
 
         retrieved_chunks: list[KnowledgeChunk] = []
@@ -270,6 +272,7 @@ class ArchitectureSkillExecutor(SkillExecutor):
             requested_model=tool_call.requested_model,
             analysis_domain_label=DOMAIN_LABELS.get(skill.domain),
             additional_question=tool_call.additional_question,
+            team_context=tool_call.team_context,
         )
 
         retrieved_chunks: list[KnowledgeChunk] = []
@@ -364,6 +367,7 @@ class SecuritySkillExecutor(SkillExecutor):
             requested_model=tool_call.requested_model,
             analysis_domain_label=DOMAIN_LABELS.get(skill.domain),
             additional_question=tool_call.additional_question,
+            team_context=tool_call.team_context,
         )
 
         retrieved_chunks: list[KnowledgeChunk] = []
@@ -461,6 +465,7 @@ class GenericSkillExecutor(SkillExecutor):
             requested_model=tool_call.requested_model,
             analysis_domain_label=DOMAIN_LABELS.get(skill.domain, skill.domain),
             additional_question=tool_call.additional_question,
+            team_context=tool_call.team_context,
             persona_instructions=skill.persona_instructions,
         )
 
