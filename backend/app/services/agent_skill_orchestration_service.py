@@ -426,6 +426,14 @@ def _package_issues(db: Session, invocations: list[AgentSkillInvocation]) -> lis
     return issues
 
 
+def _stored_any_file(db: Session, invocations: list[AgentSkillInvocation]) -> bool:
+    ids = [invocation.id for invocation in invocations]
+    if not ids:
+        return False
+    count = db.scalar(select(func.count(SkillArtifact.id)).where(SkillArtifact.invocation_id.in_(ids)))
+    return bool(count)
+
+
 async def execute_orchestration_step(
     db: Session,
     *,
@@ -484,6 +492,7 @@ async def execute_orchestration_step(
     verdict = evaluate(
         results,
         files_requested=files_requested,
+        files_delivered=_stored_any_file(db, invocations),
         package_issues=_package_issues(db, invocations),
     )
     QUALITY_GATE_VERDICTS.labels(
@@ -852,7 +861,7 @@ async def _answer_follow_up(
     target_domain: str | None,
     requested_model: str | None,
 ) -> FollowUpExchange:
-    _, results = await _invoke_skills(
+    invocations, results = await _invoke_skills(
         db,
         skills=skills,
         technical_request=technical_request,
@@ -861,7 +870,11 @@ async def _answer_follow_up(
         additional_question=question,
     )
 
-    verdict = evaluate(results, files_requested=asks_for_files(question))
+    verdict = evaluate(
+        results,
+        files_requested=asks_for_files(question),
+        files_delivered=_stored_any_file(db, invocations),
+    )
     append_event(
         db,
         technical_request,

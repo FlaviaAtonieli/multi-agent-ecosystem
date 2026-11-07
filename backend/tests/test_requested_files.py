@@ -109,3 +109,50 @@ def test_quality_gate_sem_pedido_nao_cobra_arquivos() -> None:
     verdict = evaluate([skill_result(confidence="ALTO")])
 
     assert not verdict.requires_human_review
+
+
+# --- pelo caminho real da orquestração ------------------------------------------
+# O orquestrador tira o conteúdo dos arquivos da resposta depois de guardá-los
+# (skill_artifacts). Conferir result.arquivos ali dava sempre "não vieram".
+
+
+def _orchestrate(client, monkeypatch, files: list[ArquivoGerado]) -> list[str]:
+    from app.services import agent_skill_orchestration_service as service
+    from tests.conftest import authenticated_csrf_headers, create_qualified_request, register
+    from tests.test_background_orchestration import _start_url, _wait_for_status
+    from tests.test_human_review import FIXTURE_MANIFEST
+
+    async def fake(skill, tool_call) -> SkillToolResult:
+        return SkillToolResult(
+            trace_id=tool_call.trace_id,
+            agente_emissor=AgenteEmissor(nome=skill.name, dominio=skill.domain),
+            analise_estruturada=AnaliseEstruturada(resumo_executivo="Índice proposto."),
+            governanca=Governanca(nivel_confianca="ALTO", justificativa_confianca="ok"),
+            arquivos=files,
+        )
+
+    monkeypatch.setattr(service, "call_skill_tool", fake)
+    register(
+        client,
+        {"name": "Pede Arquivo", "email": "pede.arquivo@example.com", "password": "StrongPassword!123"},
+    )
+    headers = authenticated_csrf_headers(client)
+    client.post("/api/v1/agent-skills/import", json={"manifest_markdown": FIXTURE_MANIFEST}, headers=headers)
+    request = create_qualified_request(client, objective="Gere um arquivo SQL com o índice composto.")
+    client.post(_start_url(request["id"]), headers=authenticated_csrf_headers(client))
+    _wait_for_status(client, request["id"], "COMPLETED", "VALIDATING", "FAILED")
+    events = client.get(f"/api/v1/orchestrations/{request['trace_id']}").json()["events"]
+    return next(e for e in events if e["event_type"] == "QUALITY_GATE_EVALUATED")["payload"]["reasons"]
+
+
+def test_orquestracao_com_os_arquivos_pedidos_nao_acusa_falta(client, monkeypatch) -> None:
+    sql = ArquivoGerado(nome="indice.sql", conteudo="CREATE INDEX x;")
+    reasons = _orchestrate(client, monkeypatch, [sql])
+
+    assert not any("pediu arquivos" in reason for reason in reasons)
+
+
+def test_orquestracao_sem_os_arquivos_pedidos_acusa_falta(client, monkeypatch) -> None:
+    reasons = _orchestrate(client, monkeypatch, [])
+
+    assert any("pediu arquivos" in reason for reason in reasons)
