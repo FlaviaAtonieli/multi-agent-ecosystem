@@ -21,5 +21,7 @@ ENV GF_USERS_ALLOW_SIGN_UP=false \
     GF_AUTH_ANONYMOUS_ENABLED=false \
     GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/agenthub-overview.json
 
+# Usuário sem privilégios da imagem do Grafana: Prometheus e Grafana não rodam como root.
+USER grafana
 EXPOSE 3000
 ENTRYPOINT ["/usr/local/bin/start-monitoring.sh"]
