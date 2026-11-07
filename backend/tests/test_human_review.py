@@ -32,7 +32,7 @@ OUTSIDER = {
 
 def _create_request_pending_review(client: TestClient, monkeypatch) -> dict:
     """Executes a skill with no knowledge base ingested: zero retrieved chunks
-    forces BAIXO confidence in LegacyCodeSkillExecutor, so the Quality Gate
+    forces BAIXO confidence in SkillExecutor, so the Quality Gate
     rejects and flags requires_human_review — a deterministic way to land a
     request in VALIDATING without depending on LLM output variance."""
     register(client, TECHNICIAN)

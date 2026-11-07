@@ -49,10 +49,8 @@ class AgentSkill(Base):
     clan_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("clans.id", ondelete="SET NULL"), index=True, nullable=True
     )
-    # Free-text "voice"/focus for a user-created skill, fed into the shared
-    # planner prompt (see app/llm/prompts.py) instead of domain-specific Python
-    # logic -- the 4 official skills don't use this, they keep their own
-    # SkillExecutor subclasses.
+    # Instruções da skill no prompt do planejador (app/llm/prompts.py). As 4 oficiais
+    # originais não têm: seguem só pela área.
     persona_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Motor de sugestão. Adiado porque só ele lê o vetor, e o catálogo lista todas as skills.
     embedding: Mapped[list[float] | None] = mapped_column(JSON, nullable=True, deferred=True)

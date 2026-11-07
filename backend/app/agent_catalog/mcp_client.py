@@ -1,7 +1,5 @@
-"""MCP client side of the Orchestrator: connects to a skill's real MCP server
-and invokes it, over either transport supported by the SDK.
-
-Domain -> server module mapping replaces the old in-process `_EXECUTORS` dict.
+"""Lado cliente do MCP no orquestrador: sobe o servidor da Agent Skill e chama a
+ferramenta `executar`, por stdio (um processo por chamada) ou em memória (testes).
 """
 
 import importlib
@@ -16,35 +14,19 @@ from app.agent_catalog.tool_interface import SkillToolCall, SkillToolResult
 from app.core.config import Settings, settings
 from app.models import AgentSkill
 
-_DOMAIN_SERVER_MODULES: dict[str, str] = {
-    "codigo_legado": "app.agent_catalog.mcp_servers.legacy_code_server",
-    "regras_negocio": "app.agent_catalog.mcp_servers.business_rules_server",
-    "arquitetura_software": "app.agent_catalog.mcp_servers.architecture_server",
-    # Added post-hoc, as evidence for RFC §5.5 criterio 7 (extensibilidade
-    # plug-and-play): this line and the domain's entry in
-    # app/agent_manifest/manifest.py were the only two touch points needed.
-    "seguranca_informacao": "app.agent_catalog.mcp_servers.security_server",
-}
-
-_GENERIC_SKILL_SERVER_MODULE = "app.agent_catalog.mcp_servers.generic_skill_server"
+SKILL_SERVER_MODULE = "app.agent_catalog.mcp_servers.skill_server"
 
 
-def _module_for_skill(skill: AgentSkill) -> str | None:
-    # A user-created skill (owner_id set) always routes to the generic,
-    # persona-driven server -- regardless of which domain it declares --
-    # since it has no dedicated SkillExecutor/server module of its own.
-    if skill.owner_id is not None:
-        return _GENERIC_SKILL_SERVER_MODULE
-    return _DOMAIN_SERVER_MODULES.get(skill.domain)
+def _module_for_skill(skill: AgentSkill) -> str:
+    # Toda skill usa o mesmo servidor: o que muda entre elas está nos dados
+    # (persona e área), então uma área nova não precisa de código novo.
+    return SKILL_SERVER_MODULE
+
 
 _TOOL_NAME = "executar"
 
 
 class SkillMCPError(RuntimeError):
-    pass
-
-
-class SkillServerNotImplementedError(SkillMCPError):
     pass
 
 
@@ -87,10 +69,6 @@ async def call_skill_tool(
     config: Settings = settings,
 ) -> SkillToolResult:
     module_path = _module_for_skill(skill)
-    if module_path is None:
-        raise SkillServerNotImplementedError(
-            f"Não há servidor MCP implementado para o domínio '{skill.domain}' nesta PoC."
-        )
 
     if config.mcp_skill_transport == "memory":
         server_module = importlib.import_module(module_path)

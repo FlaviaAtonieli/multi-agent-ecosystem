@@ -112,10 +112,8 @@ def _find_manageable_skill(db: Session, skill_id: str, user: User) -> AgentSkill
 
 
 def _find_toggleable_skill(db: Session, skill_id: str, user: User) -> AgentSkill:
-    """As skills oficiais sem dono rodam no próprio servidor MCP, e dar um dono a elas
-    as mandaria para o servidor genérico (ver _module_for_skill em mcp_client.py). Por
-    isso continuam sem dono, e a conta inicial pode só ligar e desligar: o que elas
-    fazem está no código, então editar o manifesto pela tela não mudaria o resultado."""
+    """As skills oficiais do seed ficam sem dono, como parte do sistema, e a conta
+    inicial pode só ligar e desligar (RF16)."""
     try:
         skill = get_skill(db, skill_id)
     except AgentSkillNotFoundError as exc:

@@ -39,9 +39,7 @@ class LLMPlanRequest(BaseModel):
     # prompt so the model addresses it specifically, on top of the original
     # problem/objective/context.
     additional_question: str | None = None
-    # Set only when invoked on behalf of a user-created skill (GenericSkillExecutor)
-    # -- shapes the model's voice/focus beyond the domain label, without a
-    # dedicated SkillExecutor subclass per custom skill.
+    # Instruções da skill (persona), quando ela tem.
     persona_instructions: str | None = None
     # Text extracted from documents attached to the request (RequestAttachment,
     # PR #24 code review) -- concatenated and labeled by filename, goes through

@@ -134,12 +134,7 @@ class AgentSkillManifest(BaseModel):
     usage_examples: list[str] = Field(default_factory=list)
     validation_criteria: list[str] = Field(default_factory=list)
     uses_external_services: bool = False
-    # Drives GenericSkillExecutor, which every skill in this catalog runs
-    # through today -- register_skill() has no API-reachable path that
-    # creates a skill with owner_id=None, so the per-domain SkillExecutor
-    # subclasses in tool_interface.py (LegacyCodeSkillExecutor and friends)
-    # are never actually selected by mcp_client._module_for_skill() in
-    # practice, even for the "official" skills.
+    # Instruções da skill, levadas ao prompt pelo SkillExecutor (tool_interface.py).
     persona_instructions: str | None = Field(default=None, max_length=4000)
 
 

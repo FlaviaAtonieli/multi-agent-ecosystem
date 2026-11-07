@@ -17,7 +17,7 @@ from app.agent_catalog.contracts import (
     Governanca,
     SkillToolResult,
 )
-from app.agent_catalog.tool_interface import GenericSkillExecutor, SkillToolCall
+from app.agent_catalog.tool_interface import SkillExecutor, SkillToolCall
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.llm.prompts import build_technical_planner_prompt
@@ -181,7 +181,7 @@ class TestModelContract:
         with SessionLocal() as db:
             skill = db.get(AgentSkill, created["id"])
             user = db.scalar(select(User))
-            result = GenericSkillExecutor().execute(
+            result = SkillExecutor().execute(
                 db,
                 skill=skill,
                 technical_request=TechnicalRequest(id="r", trace_id="TRC"),

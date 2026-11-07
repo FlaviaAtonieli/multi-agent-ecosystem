@@ -9,7 +9,7 @@ from uuid import uuid4
 from sqlalchemy import CursorResult, func, select, update
 from sqlalchemy.orm import Session
 
-from app.agent_catalog.mcp_client import SkillServerNotImplementedError, call_skill_tool
+from app.agent_catalog.mcp_client import call_skill_tool
 from app.agent_catalog.registry import canonical_domain, list_clan_skills
 from app.agent_catalog.tool_interface import SkillToolCall, SkillToolResult
 from app.core.config import settings
@@ -260,24 +260,6 @@ async def _invoke_skill(
         )
         db.commit()
         return invocation, result
-    except SkillServerNotImplementedError:
-        latency_ms = round((time.perf_counter() - started) * 1000)
-        invocation.status = "FAILED"
-        invocation.error_code = "EXECUTOR_NOT_IMPLEMENTED"
-        SKILL_INVOCATIONS.labels(skill.domain, "FAILED").inc()
-        invocation.latency_ms = latency_ms
-        invocation.completed_at = utc_now()
-        append_event(
-            db,
-            technical_request,
-            event_type="AGENT_SKILL_INVOCATION_FAILED",
-            actor="ORCHESTRATOR",
-            title=f"Agent Skill indisponível: {skill.name}",
-            message=f"Não há servidor MCP implementado para o domínio '{skill.domain}' nesta PoC.",
-            payload={"agent_skill_id": skill.id, "error_code": "EXECUTOR_NOT_IMPLEMENTED"},
-        )
-        db.commit()
-        return invocation, None
     except Exception as exc:  # noqa: BLE001 - covers SkillMCPError; mirrors llm_service's fail-closed pattern
         latency_ms = round((time.perf_counter() - started) * 1000)
         invocation.status = "FAILED"
