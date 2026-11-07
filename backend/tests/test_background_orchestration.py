@@ -7,6 +7,7 @@ from app.agent_catalog.contracts import AgenteEmissor, AnaliseEstruturada, Gover
 from app.core.database import SessionLocal
 from app.models import AuditLog, TechnicalRequest
 from app.services import agent_skill_orchestration_service as service
+from app.services import orchestration_runner
 from tests.conftest import authenticated_csrf_headers, create_qualified_request, register
 from tests.test_human_review import FIXTURE_MANIFEST
 
@@ -96,7 +97,7 @@ def test_start_marks_request_failed_on_unexpected_error_and_allows_retry(
     async def _broken_step(*_, **__):
         raise RuntimeError("falha inesperada")
 
-    monkeypatch.setattr(service, "execute_orchestration_step", _broken_step)
+    monkeypatch.setattr(orchestration_runner, "execute_orchestration_step", _broken_step)
     technical_request = _prepare_request(client)
 
     response = client.post(_start_url(technical_request["id"]), headers=authenticated_csrf_headers(client))
@@ -143,7 +144,7 @@ def test_startup_marks_interrupted_runs_as_failed(client: TestClient) -> None:
         db.commit()
 
     with SessionLocal() as db:
-        assert service.fail_interrupted_orchestrations(db) == 1
-        assert service.fail_interrupted_orchestrations(db) == 0
+        assert orchestration_runner.fail_interrupted_orchestrations(db) == 1
+        assert orchestration_runner.fail_interrupted_orchestrations(db) == 0
 
     assert client.get(f"/api/v1/requests/{technical_request['id']}").json()["status"] == "FAILED"

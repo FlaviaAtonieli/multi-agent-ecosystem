@@ -22,10 +22,8 @@ from app.core.middleware import (
 )
 from app.core.security import secure_compare
 from app.db.init_db import bootstrap_admin, create_tables_if_enabled
-from app.services.agent_skill_orchestration_service import (
-    fail_interrupted_follow_ups,
-    fail_interrupted_orchestrations,
-)
+from app.services.follow_up_service import fail_interrupted_follow_ups
+from app.services.orchestration_runner import fail_interrupted_orchestrations
 
 logging.basicConfig(
     level=logging.INFO,

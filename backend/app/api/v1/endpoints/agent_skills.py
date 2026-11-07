@@ -40,16 +40,7 @@ from app.schemas.agent_skill import (
 from app.schemas.orchestration import FollowUpExchangeRead, FollowUpQuestionCreate
 from app.services.agent_skill_orchestration_service import (
     NoAgentSkillsAvailableError,
-    ask_follow_up_question,
-    cancel_orchestration,
-    claim_request_for_execution,
     execute_orchestration_step,
-    has_follow_up_skills,
-    has_pending_follow_up,
-    has_target_skills,
-    record_follow_up_question,
-    start_follow_up_in_background,
-    start_orchestration_in_background,
 )
 from app.services.audit_service import record_audit
 from app.services.clan_service import (
@@ -59,7 +50,20 @@ from app.services.clan_service import (
     get_clan,
     is_member,
 )
+from app.services.follow_up_service import (
+    ask_follow_up_question,
+    has_follow_up_skills,
+    has_pending_follow_up,
+    record_follow_up_question,
+    start_follow_up_in_background,
+)
 from app.services.llm_service import LLMQuotaExceededError
+from app.services.orchestration_runner import (
+    cancel_orchestration,
+    claim_request_for_execution,
+    has_target_skills,
+    start_orchestration_in_background,
+)
 from app.services.skill_suggestion_service import suggest_skills
 
 
