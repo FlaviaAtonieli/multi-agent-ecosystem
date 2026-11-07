@@ -127,3 +127,22 @@ describe('ArtifactsPanel', () => {
 async function waitForCall(api: ReturnType<typeof mockApi>, path: string) {
   await waitFor(() => expect(api.callsTo('GET', path).length).toBeGreaterThan(0))
 }
+
+describe('ArtifactsPanel como material desenvolvido', () => {
+  it('chama a seção de material desenvolvido e separa os arquivos por agente', async () => {
+    mockApi({
+      [`GET ${LIST}`]: [
+        artifact('a', 'index.html', { agent_skill_name: 'Programação de Jogos Web' }),
+        artifact('b', 'game.js', { agent_skill_name: 'Programação de Jogos Web' }),
+        artifact('c', 'GDD.md', { agent_skill_name: 'Game Design' }),
+      ],
+    })
+    renderPanel()
+
+    expect(await screen.findByRole('heading', { name: 'Material desenvolvido (3 arquivos)' })).toBeInTheDocument()
+    const code = screen.getByRole('group', { name: 'Programação de Jogos Web' })
+    expect(within(code).getByText('index.html')).toBeInTheDocument()
+    expect(within(code).getByText('game.js')).toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: 'Game Design' })).getByText('GDD.md')).toBeInTheDocument()
+  })
+})
