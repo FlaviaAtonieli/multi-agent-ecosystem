@@ -73,7 +73,7 @@ Quando a solicitação pede um arquivo, código ou projeto, o modelo também dev
 
 ## 6. Validação
 
-A qualidade da recuperação foi medida com um gabarito manual, usando Precision@3, Recall@3 e MRR ([`evaluation.py`](../../backend/app/rag/evaluation.py)). Este tipo de pipeline não treina modelo, então k-fold e holdout não se aplicam: a técnica adequada é comparar o que foi recuperado com o gabarito.
+A qualidade da recuperação foi medida com um gabarito manual, usando Precision@3, Recall@3 e MRR ([`evaluation.py`](../../backend/app/rag/evaluation.py)). Este tipo de pipeline não treina modelo, então k-fold e holdout não se aplicam à recuperação: a técnica adequada é comparar o que foi recuperado com o gabarito. O único número ajustado com dados, o limite do motor de sugestão, foi calibrado por k-fold (ver adiante).
 
 | Área | Perguntas | Precision@3 | Recall@3 | MRR |
 |---|---:|---:|---:|---:|
@@ -97,9 +97,14 @@ As outras 6 áreas ganharam gabarito em 06/11/2026 e foram medidas, junto com as
 
 Com o modelo gratuito, Código Legado cai de MRR 0,875 para 0,500. As áreas mais fracas são as que dividem assunto com outras (o `RiskBatchJob` aparece em testes, observabilidade e performance).
 
+### Limite do motor de sugestão
+
+`SKILL_SUGGESTION_MIN_SCORE` foi escolhido por k-fold estratificado (k=4): 20 perguntas do assunto e 12 fora dele. Em cada rodada, o limite é escolhido em 3 partes e medido na quarta ([`calibration.py`](../../backend/app/rag/calibration.py)). Com o modelo de embeddings gratuito, a acurácia balanceada média nas partes de fora foi 0,958, com limites entre 0,112 e 0,118 ([medição](../validation/evidence/2026-11-07-suggestion-threshold-kfold.md)). O limite depende do modelo: o 0,35 configurado precisa ser conferido com o modelo pago de produção.
+
 **O que ainda não foi medido:**
 
 - As 6 áreas novas com o modelo de embeddings pago, usado em produção.
+- O limite do motor de sugestão com o modelo de embeddings pago.
 - A qualidade da resposta final do modelo: as medições cobrem a recuperação.
 - Os KPIs da RFC com o código e o modelo atuais. A [rodada de agosto](../validation/evidence/2026-08-m7-kpi-measurement.md) usou um modelo gratuito e execução em sequência.
 
@@ -126,6 +131,7 @@ Antes de registrar a solicitação, a pessoa pode verificar se alguma skill fora
 | Quality Gate | Sim, para as mesmas respostas das skills |
 | Sugestão de skills | Sim, com os mesmos embeddings e o mesmo limite |
 | Texto gerado pelo modelo | **Não.** O projeto envia `temperature=0` e `seed=42` e guarda os valores em cada chamada (`llm_invocations`), mas, em 3 modelos gratuitos, 4 repetições deram 4 respostas diferentes ([medição de 05/11/2026](../validation/evidence/2026-11-05-reproducibility.md)) |
+| Conteúdo gerado pelo modelo | **Em boa parte.** As repetições têm similaridade média de 0,79 a 0,84 entre si, contra no máximo 0,50 com a resposta a outra pergunta, em 2 modelos gratuitos ([medição de 07/11/2026](../validation/evidence/2026-11-07-content-repeatability.md), [script](../../backend/scripts/measure_repeatability.py)) |
 
 Para repetir as medições, rode os testes marcados com `llm` (ver README). Eles exigem uma `OPENROUTER_API_KEY` real e geram custo.
 
