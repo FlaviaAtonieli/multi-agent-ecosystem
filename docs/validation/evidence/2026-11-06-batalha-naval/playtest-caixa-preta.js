@@ -90,8 +90,18 @@ const cell = (page, board, index) => ({
   focus: async () => { await boards(page); return page.locator(`[data-qa-cell="${board}-${index}"]`).focus() },
 })
 
+// Atira e espera a jogada do computador: vários jogos esperam ~1 s antes dela.
+async function shoot(page, enemy, mine, index) {
+  const before = JSON.stringify(await signature(page, mine))
+  await cell(page, enemy, index).click({ timeout: 2000 }).catch(() => {})
+  for (let waited = 0; waited < 2500; waited += 100) {
+    if (JSON.stringify(await signature(page, mine)) !== before || END.test(await pageText(page))) break
+    await page.waitForTimeout(100)
+  }
+}
+
 // Atira em ordem embaralhada (pela semente) até o jogo anunciar o fim.
-async function playToEnd(page, enemy, seed = 0) {
+async function playToEnd(page, enemy, mine, seed = 0) {
   const order = [...Array(100).keys()]
   let a = seed + 7
   for (let i = order.length - 1; i > 0; i--) {
@@ -99,12 +109,15 @@ async function playToEnd(page, enemy, seed = 0) {
     const j = a % (i + 1)
     ;[order[i], order[j]] = [order[j], order[i]]
   }
+  const start = JSON.stringify(await signature(page, mine))
   for (let i = 0; i < 100; i++) {
-    await cell(page, enemy, order[i]).click({ timeout: 2000 }).catch(() => {})
+    await shoot(page, enemy, mine, order[i])
     const text = await pageText(page)
-    if (END.test(text)) return { text, shots: i + 1 }
+    if (END.test(text)) return { text, shots: i + 1, broken: false }
+    // Se o computador não jogou em 10 tiros, o jogo está travado: não adianta seguir.
+    if (i === 9 && JSON.stringify(await signature(page, mine)) === start) return { text, shots: 10, broken: true }
   }
-  return { text: await pageText(page), shots: 100 }
+  return { text: await pageText(page), shots: 100, broken: false }
 }
 
 ;(async () => {
@@ -130,17 +143,23 @@ async function playToEnd(page, enemy, seed = 0) {
   check('a casa atingida muda na tela', enemyAfter[0] !== enemyBefore[0])
   const after = await pageText(page)
   const newLines = after.split('\n').map((l) => l.trim()).filter((l) => l && !before.includes(l))
-  const own = newLines.filter((l) => !/computador|inimigo|advers/i.test(l) && /acert|água|agua|err|afund|tiro|hit|miss/i.test(l))
+  // Linha sobre o tiro do jogador: tem resultado e não descreve o tiro do computador.
+  const computerShot = /(computador|inimigo|advers[aá]rio)\s+(acertou|errou|atirou|afundou)|seu navio|sua frota/i
+  const own = newLines.filter((l) => !computerShot.test(l) && /acert|água|agua|err|afund|tiro|hit|miss/i.test(l))
   check('o jogador vê o resultado do próprio tiro', own.length > 0, newLines.join(' / ').slice(0, 140))
+  for (let waited = 0; waited < 2500; waited += 100) {
+    if ((await signature(page, mine)).some((s, i) => s !== start[i])) break
+    await page.waitForTimeout(100)
+  }
   const mineAfterOne = await signature(page, mine)
   const changedOne = mineAfterOne.filter((s, i) => s !== start[i]).length
   check('o computador responde com um tiro', changedOne === 1, `casas mudadas: ${changedOne}`)
-  await cell(page, enemy, 0).click()
+  await shoot(page, enemy, mine, 0)
   const changedTwo = (await signature(page, mine)).filter((s, i) => s !== start[i]).length
   check('tiro repetido na mesma casa é ignorado', changedTwo === changedOne)
 
   console.log('--- partida inteira')
-  const end = await playToEnd(page, enemy)
+  const end = await playToEnd(page, enemy, mine)
   check('a partida termina e anuncia o resultado', END.test(end.text), `${end.shots} tiros`)
   const finalMine = await signature(page, mine)
   const hitShip = new Set(), hitWater = new Set()
@@ -179,11 +198,12 @@ async function playToEnd(page, enemy, seed = 0) {
 
   console.log('--- vitória e derrota em partidas diferentes')
   let wins = 0, losses = 0
-  for (let seed = 10; seed < 50 && !(wins && losses); seed++) {
+  for (let seed = 10; seed < 22 && !(wins && losses); seed++) {
     const game = await newGame(browser, seed, errors)
-    const result = await playToEnd(game.page, game.enemy, seed)
+    const result = await playToEnd(game.page, game.enemy, game.mine, seed)
     if (END.test(result.text)) LOSS.test(result.text) ? losses++ : wins++
     await game.page.close()
+    if (result.broken) break
   }
   check('vitória e derrota acontecem e são anunciadas', wins > 0 && losses > 0, `vitórias ${wins}, derrotas ${losses}`)
   check('nenhum erro de JavaScript em todas as partidas', errors.length === 0, errors.join(' | ').slice(0, 120))

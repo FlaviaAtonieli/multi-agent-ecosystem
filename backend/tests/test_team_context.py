@@ -46,22 +46,34 @@ def test_skill_que_entrega_documento_ou_analise_nao_e() -> None:
 # --- o que o implementador recebe ----------------------------------------------
 
 
-def test_contexto_do_time_traz_nome_resumo_e_documentos() -> None:
-    context = build_team_context(
-        [("Game Design", "Regras definidas.", [("GDD.md", "Vitória ao afundar a frota.")])]
+def test_contexto_do_time_leva_so_os_requisitos_dos_documentos() -> None:
+    # Medido em 06/11/2026: com os documentos inteiros (~6 mil caracteres), o modelo
+    # gratuito entregou plano em vez de código. Vão só as linhas de requisito.
+    gdd = (
+        "# GDD\n\nTexto corrido de contexto que não entra.\n\n"
+        "- Vitória ao afundar a frota.\n1. Tiro repetido é ignorado."
     )
+    context = build_team_context([("Game Design", "Regras definidas.", [("GDD.md", gdd)])])
 
     assert "Game Design" in context
-    assert "Regras definidas." in context
-    assert "GDD.md" in context
     assert "Vitória ao afundar a frota." in context
+    assert "Tiro repetido é ignorado." in context
+    assert "Texto corrido" not in context
+
+
+def test_contexto_do_time_ignora_codigo_de_outros_agentes() -> None:
+    files = [("game.js", "- isto parece lista mas é código"), ("GDD.md", "- Requisito real.")]
+    context = build_team_context([("Game Design", "Resumo.", files)])
+
+    assert "Requisito real." in context
+    assert "parece lista" not in context
 
 
 def test_contexto_do_time_tem_limite_de_tamanho() -> None:
-    longo = "x" * 50_000
-    context = build_team_context([("QA", "Resumo.", [("PLANO.md", longo)])], max_chars=4000)
+    linhas = "\n".join(f"- requisito {numero} " + "x" * 80 for numero in range(500))
+    context = build_team_context([("QA", "Resumo.", [("PLANO.md", linhas)])], max_chars=2500)
 
-    assert len(context) <= 4000
+    assert len(context) <= 2500
 
 
 def test_prompt_inclui_as_entregas_do_time() -> None:
@@ -152,17 +164,18 @@ def _create_skill(client: TestClient, name: str, domain: str, outputs: list[str]
     assert response.status_code == 201, response.text
 
 
-def _spy(monkeypatch) -> list:
+def _spy(monkeypatch, *, code_with_context: bool = True) -> list:
     calls: list = []
 
     async def fake(skill, tool_call) -> SkillToolResult:
         calls.append((skill.name, tool_call.team_context))
         await asyncio.sleep(0.05)
-        files = (
-            [ArquivoGerado(nome="ACESSIBILIDADE.md", conteudo="Jogar só com teclado.")]
-            if skill.name == "UX"
-            else [ArquivoGerado(nome="index.html", conteudo="<p>jogo</p>")]
-        )
+        if skill.name == "UX":
+            files = [ArquivoGerado(nome="ACESSIBILIDADE.md", conteudo="- Jogar só com teclado.")]
+        elif tool_call.team_context and not code_with_context:
+            files = [ArquivoGerado(nome="technical_plan.md", conteudo="# Plano")]
+        else:
+            files = [ArquivoGerado(nome="index.html", conteudo="<p>jogo</p>")]
         return SkillToolResult(
             trace_id=tool_call.trace_id,
             agente_emissor=AgenteEmissor(nome=skill.name, dominio=skill.domain),
@@ -227,3 +240,39 @@ def test_so_implementadores_rodam_juntos_como_antes(client: TestClient, monkeypa
     _run(client, "Gere o código-fonte do jogo em index.html e game.js.")
 
     assert calls == [("Programação", None)]
+
+
+def test_se_o_implementador_nao_entrega_codigo_tenta_de_novo_sem_o_contexto(
+    client: TestClient, monkeypatch
+) -> None:
+    # Medido em 06/11/2026: com o contexto, o modelo gratuito às vezes devolveu só um plano.
+    register(client, USER)
+    _create_skill(client, "Programação", "programacao_jogos", ["index.html", "game.js"])
+    _create_skill(client, "UX", "ux_jogos", ["ACESSIBILIDADE.md"])
+    calls = _spy(monkeypatch, code_with_context=False)
+
+    request = _run(client, "Gere o código-fonte do jogo em index.html e game.js.")
+
+    assert [name for name, _ in calls] == ["UX", "Programação", "Programação"]
+    assert calls[1][1] is not None
+    assert calls[2][1] is None
+    events = client.get(f"/api/v1/orchestrations/{request['trace_id']}").json()["events"]
+    assert [e for e in events if e["event_type"] == "IMPLEMENTER_RETRIED"]
+    artifacts = client.get(f"/api/v1/orchestrations/{request['trace_id']}/artifacts").json()
+    files = [artifact["filename"] for artifact in artifacts]
+    assert "index.html" in files
+    detail = client.get(f"/api/v1/orchestrations/{request['trace_id']}").json()
+    assert detail["technical_request"]["status"] in ("COMPLETED", "VALIDATING")
+
+
+def test_implementador_que_entrega_codigo_nao_repete(client: TestClient, monkeypatch) -> None:
+    register(client, USER)
+    _create_skill(client, "Programação", "programacao_jogos", ["index.html", "game.js"])
+    _create_skill(client, "UX", "ux_jogos", ["ACESSIBILIDADE.md"])
+    calls = _spy(monkeypatch)
+
+    request = _run(client, "Gere o código-fonte do jogo em index.html e game.js.")
+
+    assert len(calls) == 2
+    events = client.get(f"/api/v1/orchestrations/{request['trace_id']}").json()["events"]
+    assert not [e for e in events if e["event_type"] == "IMPLEMENTER_RETRIED"]

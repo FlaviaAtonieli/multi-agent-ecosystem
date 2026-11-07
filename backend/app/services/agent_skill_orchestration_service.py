@@ -32,7 +32,7 @@ from app.quality_gate.service import QualityGateVerdict, evaluate
 from app.services.artifact_service import check_package, prepare_files
 from app.services.clan_service import is_member
 from app.services.orchestration_service import RequestStatus, append_event
-from app.services.team_context import TeamEntry, build_team_context, writes_code
+from app.services.team_context import TeamEntry, build_team_context, is_code_file, writes_code
 
 logger = logging.getLogger(__name__)
 
@@ -416,6 +416,41 @@ async def _invoke_in_stages(
         requested_model=requested_model,
         team_context=team_context,
     )
+
+    # Medido em 06/11/2026: com o contexto, o modelo gratuito às vezes devolveu só um
+    # plano. Quem não entregou código tenta de novo uma vez, sem o contexto.
+    names = {skill.id: skill for skill in implementers}
+    without_code = [
+        names[invocation.agent_skill_id]
+        for invocation in second_invocations
+        if invocation.agent_skill_id in names
+        and not any(is_code_file(filename) for filename, _ in _invocation_files(db, invocation))
+    ]
+    if without_code and team_context:
+        append_event(
+            db,
+            technical_request,
+            event_type="IMPLEMENTER_RETRIED",
+            actor="ORCHESTRATOR",
+            title="Nova tentativa sem as entregas do time",
+            message=(
+                f"{', '.join(skill.name for skill in without_code)} não entregou código com as entregas "
+                "do time. Tentando de novo uma vez, só com a solicitação."
+            ),
+            payload={"implementers": [skill.name for skill in without_code]},
+        )
+        db.commit()
+        retry_invocations, retry_results = await _invoke_skills(
+            db,
+            skills=without_code,
+            technical_request=technical_request,
+            user=user,
+            requested_model=requested_model,
+        )
+        retried = {skill.name for skill in without_code}
+        second_results = [r for r in second_results if r.agente_emissor.nome not in retried] + retry_results
+        second_invocations = second_invocations + retry_invocations
+
     return first_invocations + second_invocations, first_results + second_results
 
 
