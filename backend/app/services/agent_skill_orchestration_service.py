@@ -330,6 +330,14 @@ async def _invoke_skills(
     return invocations, results
 
 
+def _stored_any_file(db: Session, invocations: list[AgentSkillInvocation]) -> bool:
+    ids = [invocation.id for invocation in invocations]
+    if not ids:
+        return False
+    count = db.scalar(select(func.count(SkillArtifact.id)).where(SkillArtifact.invocation_id.in_(ids)))
+    return bool(count)
+
+
 async def execute_orchestration_step(
     db: Session,
     *,
@@ -382,6 +390,7 @@ async def execute_orchestration_step(
     verdict = evaluate(
         results,
         files_requested=asks_for_files(technical_request.title, technical_request.objective),
+        files_delivered=_stored_any_file(db, invocations),
     )
     QUALITY_GATE_VERDICTS.labels(
         "approved" if verdict.approved and not verdict.requires_human_review else "human_review"
@@ -749,7 +758,7 @@ async def _answer_follow_up(
     target_domain: str | None,
     requested_model: str | None,
 ) -> FollowUpExchange:
-    _, results = await _invoke_skills(
+    invocations, results = await _invoke_skills(
         db,
         skills=skills,
         technical_request=technical_request,
@@ -758,7 +767,11 @@ async def _answer_follow_up(
         additional_question=question,
     )
 
-    verdict = evaluate(results, files_requested=asks_for_files(question))
+    verdict = evaluate(
+        results,
+        files_requested=asks_for_files(question),
+        files_delivered=_stored_any_file(db, invocations),
+    )
     append_event(
         db,
         technical_request,

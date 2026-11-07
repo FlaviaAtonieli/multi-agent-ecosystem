@@ -23,7 +23,12 @@ def _jaccard_similarity(a: set[str], b: set[str]) -> float:
     return intersection / union if union else 0.0
 
 
-def evaluate(results: list[SkillToolResult], *, files_requested: bool = False) -> QualityGateVerdict:
+def evaluate(
+    results: list[SkillToolResult],
+    *,
+    files_requested: bool = False,
+    files_delivered: bool | None = None,
+) -> QualityGateVerdict:
     """Cross-checks the consolidated Agent Skill responses before delivery (RF11).
 
     Rules are explicit and explainable — not a second LLM acting as judge — which
@@ -75,7 +80,11 @@ def evaluate(results: list[SkillToolResult], *, files_requested: bool = False) -
         )
 
     # O modelo às vezes ignora o pedido de arquivos (ver app/llm/file_request.py).
-    missing_files = files_requested and not any(result.arquivos for result in results)
+    # Na orquestração, o conteúdo dos arquivos sai da resposta depois de guardado
+    # (skill_artifacts): quem chama informa se algum arquivo foi guardado.
+    if files_delivered is None:
+        files_delivered = any(result.arquivos for result in results)
+    missing_files = files_requested and not files_delivered
     if missing_files:
         reasons.append("A solicitação pediu arquivos, mas nenhuma Agent Skill os gerou.")
 
