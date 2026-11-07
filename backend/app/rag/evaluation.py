@@ -197,9 +197,157 @@ SECURITY_GROUND_TRUTH: list[RetrievalEvalCase] = [
 ]
 
 
+# Ground truth for the six domains added after the original four (2026-11-06).
+# Each query is written the way a person would ask, avoiding the document's own
+# wording, and lists every fixture that actually answers it.
+TEST_QUALITY_GROUND_TRUTH: list[RetrievalEvalCase] = [
+    RetrievalEvalCase(
+        query="Quais cenários do cálculo do limite de crédito têm teste automatizado hoje?",
+        relevant_artifacts={"CreditLimitServiceTest.java", "test-coverage-audit.md"},
+    ),
+    RetrievalEvalCase(
+        query="Existe algum teste para clientes do segmento corporativo?",
+        relevant_artifacts={"CreditLimitServiceTest.java", "test-coverage-audit.md"},
+    ),
+    RetrievalEvalCase(
+        query="Por que um teste de integração do fluxo de pedidos falha de vez em quando no pipeline?",
+        relevant_artifacts={"test-coverage-audit.md"},
+    ),
+    RetrievalEvalCase(
+        query="O job noturno de risco e o relatório financeiro têm testes próprios?",
+        relevant_artifacts={"test-coverage-audit.md"},
+    ),
+    RetrievalEvalCase(
+        query="Que rede de segurança criar antes de mudar a regra de cálculo do limite?",
+        relevant_artifacts={"test-coverage-audit.md"},
+    ),
+]
+
+OBSERVABILITY_GROUND_TRUTH: list[RetrievalEvalCase] = [
+    RetrievalEvalCase(
+        query="Por que ninguém percebeu durante quase uma semana que o processamento noturno parou?",
+        relevant_artifacts={"incident-postmortem-riskbatchjob.md"},
+    ),
+    RetrievalEvalCase(
+        query="Quais componentes do módulo de crédito têm métricas, dashboards ou alertas?",
+        relevant_artifacts={"logging-metrics-gaps.md"},
+    ),
+    RetrievalEvalCase(
+        query="Os logs da aprovação de pedidos permitem correlacionar as linhas de uma mesma requisição?",
+        relevant_artifacts={"logging-metrics-gaps.md"},
+    ),
+    RetrievalEvalCase(
+        query="O que causou a falha de conexão do job e como foi corrigida?",
+        relevant_artifacts={"incident-postmortem-riskbatchjob.md"},
+    ),
+    RetrievalEvalCase(
+        query="Que instrumentação mínima foi recomendada antes de alterar a regra de negócio?",
+        relevant_artifacts={"logging-metrics-gaps.md", "incident-postmortem-riskbatchjob.md"},
+    ),
+]
+
+PERFORMANCE_GROUND_TRUTH: list[RetrievalEvalCase] = [
+    RetrievalEvalCase(
+        query="Por que o job de risco fica mais lento a cada mês?",
+        relevant_artifacts={"riskbatchjob-performance-profile.md"},
+    ),
+    RetrievalEvalCase(
+        query="Quanto tempo o processamento em lote leva e qual é a janela noturna disponível?",
+        relevant_artifacts={"riskbatchjob-performance-profile.md"},
+    ),
+    RetrievalEvalCase(
+        query="Que consulta agregada e que índice resolveriam as idas repetidas ao banco?",
+        relevant_artifacts={"riskbatchjob-performance-profile.md"},
+    ),
+    RetrievalEvalCase(
+        query="O limite de crédito tem cache no caminho síncrono da aprovação?",
+        relevant_artifacts={"capacity-planning-notes.md"},
+    ),
+    RetrievalEvalCase(
+        query="Existe SLA de latência ou teste de carga para datas promocionais?",
+        relevant_artifacts={"capacity-planning-notes.md"},
+    ),
+]
+
+DATA_PRIVACY_GROUND_TRUTH: list[RetrievalEvalCase] = [
+    RetrievalEvalCase(
+        query="Por quanto tempo os dados de clientes inativos ficam guardados?",
+        relevant_artifacts={"data-retention-notes.md", "lgpd-gap-audit.md"},
+    ),
+    RetrievalEvalCase(
+        query="Como atender um titular que pede para ver ou apagar os próprios dados?",
+        relevant_artifacts={"lgpd-gap-audit.md"},
+    ),
+    RetrievalEvalCase(
+        query="Qual base legal justifica o tratamento dos dados de cada cliente?",
+        relevant_artifacts={"lgpd-gap-audit.md"},
+    ),
+    RetrievalEvalCase(
+        query="A consulta de clientes traz nome e e-mail mesmo quando só o segmento é necessário?",
+        relevant_artifacts={"data-retention-notes.md"},
+    ),
+    RetrievalEvalCase(
+        query="O relatório mensal de exposição identifica os clientes pelo nome?",
+        relevant_artifacts={"lgpd-gap-audit.md"},
+    ),
+]
+
+INFRASTRUCTURE_GROUND_TRUTH: list[RetrievalEvalCase] = [
+    RetrievalEvalCase(
+        query="Como uma nova versão do sistema chega ao servidor de produção?",
+        relevant_artifacts={"deployment-process-notes.md"},
+    ),
+    RetrievalEvalCase(
+        query="Dá para voltar para a versão anterior rapidamente se o deploy der errado?",
+        relevant_artifacts={"deployment-process-notes.md"},
+    ),
+    RetrievalEvalCase(
+        query="Onde fica guardada a senha do banco usada pelos componentes?",
+        relevant_artifacts={"deployment-process-notes.md"},
+    ),
+    RetrievalEvalCase(
+        query="Por que uma mudança aprovada no ambiente de teste quebrou em produção?",
+        relevant_artifacts={"environment-parity-gaps.md"},
+    ),
+    RetrievalEvalCase(
+        query="Quais diferenças existem entre o ambiente de homologação e o de produção?",
+        relevant_artifacts={"environment-parity-gaps.md", "deployment-process-notes.md"},
+    ),
+]
+
+API_INTEGRATION_GROUND_TRUTH: list[RetrievalEvalCase] = [
+    RetrievalEvalCase(
+        query="O que acontece com a aprovação se o serviço de score externo ficar lento?",
+        relevant_artifacts={"external-score-integration-notes.md"},
+    ),
+    RetrievalEvalCase(
+        query="A chamada ao bureau de crédito tem timeout e circuit breaker?",
+        relevant_artifacts={"external-score-integration-notes.md"},
+    ),
+    RetrievalEvalCase(
+        query="Como o fornecedor mudou o formato da resposta sem avisar e o que quebrou?",
+        relevant_artifacts={"breaking-change-incident.md"},
+    ),
+    RetrievalEvalCase(
+        query="Por que a falha de leitura da resposta externa passou despercebida por dias?",
+        relevant_artifacts={"breaking-change-incident.md"},
+    ),
+    RetrievalEvalCase(
+        query="A URL da integração externa tem versão e existe teste de contrato?",
+        relevant_artifacts={"external-score-integration-notes.md"},
+    ),
+]
+
+
 GROUND_TRUTH_BY_DOMAIN: dict[str, list[RetrievalEvalCase]] = {
     "Código Legado": LEGACY_BILLING_GROUND_TRUTH,
     "Regras de Negócio": BUSINESS_RULES_GROUND_TRUTH,
     "Arquitetura de Software": ARCHITECTURE_GROUND_TRUTH,
     "Segurança da Informação": SECURITY_GROUND_TRUTH,
+    "Qualidade e Testes": TEST_QUALITY_GROUND_TRUTH,
+    "Observabilidade e Monitoramento": OBSERVABILITY_GROUND_TRUTH,
+    "Performance e Escalabilidade": PERFORMANCE_GROUND_TRUTH,
+    "Dados e Privacidade (LGPD)": DATA_PRIVACY_GROUND_TRUTH,
+    "Infraestrutura e DevOps": INFRASTRUCTURE_GROUND_TRUTH,
+    "APIs e Integrações": API_INTEGRATION_GROUND_TRUTH,
 }

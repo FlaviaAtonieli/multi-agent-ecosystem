@@ -82,11 +82,24 @@ A qualidade da recuperação foi medida com um gabarito manual, usando Precision
 | Arquitetura de Software | 5 | 0,567 | 0,900 | 0,900 |
 | Segurança da Informação | 5 | 0,767 | 1,000 | 1,000 |
 
-Fonte: [medição de 21/09/2026](../validation/evidence/2026-09-rag-multi-domain-quality-validation.md). `test_retrieval_quality_against_ground_truth` falha se a qualidade cair abaixo dos limites fixados.
+Fonte: [medição de 21/09/2026](../validation/evidence/2026-09-rag-multi-domain-quality-validation.md), com o modelo de embeddings pago. `test_retrieval_quality_against_ground_truth` falha se a qualidade cair abaixo dos limites fixados.
+
+As outras 6 áreas ganharam gabarito em 06/11/2026 e foram medidas, junto com as 4 primeiras, só com um modelo de embeddings gratuito ([medição](../validation/evidence/2026-11-06-rag-ten-domains.md)):
+
+| Área | Perguntas | Precision@3 | Recall@3 | MRR |
+|---|---:|---:|---:|---:|
+| Qualidade e Testes | 5 | 0,267 | 0,400 | 0,367 |
+| Observabilidade e Monitoramento | 5 | 0,267 | 0,600 | 0,600 |
+| Performance e Escalabilidade | 5 | 0,300 | 0,800 | 0,700 |
+| Dados e Privacidade (LGPD) | 5 | 0,533 | 1,000 | 1,000 |
+| Infraestrutura e DevOps | 5 | 0,667 | 1,000 | 1,000 |
+| APIs e Integrações | 5 | 0,400 | 1,000 | 0,667 |
+
+Com o modelo gratuito, Código Legado cai de MRR 0,875 para 0,500. As áreas mais fracas são as que dividem assunto com outras (o `RiskBatchJob` aparece em testes, observabilidade e performance).
 
 **O que ainda não foi medido:**
 
-- As outras 6 áreas oficiais.
+- As 6 áreas novas com o modelo de embeddings pago, usado em produção.
 - A qualidade da resposta final do modelo: as medições cobrem a recuperação.
 - Os KPIs da RFC com o código e o modelo atuais. A [rodada de agosto](../validation/evidence/2026-08-m7-kpi-measurement.md) usou um modelo gratuito e execução em sequência.
 
