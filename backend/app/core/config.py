@@ -112,7 +112,9 @@ class Settings(BaseSettings):
         "openai/gpt-5-mini,"
         "dots-studio/dots-3-note-preview:free"
     )
-    llm_timeout_seconds: int = 45
+    # Modelos que raciocinam (gpt-5-mini) levam de 45 a 90 s em respostas com código.
+    # Com 45 s, o cliente desistia e repetia, e a OpenRouter cobrava as duas (07/11/2026).
+    llm_timeout_seconds: int = 180
     # Reasoning models (e.g. openai/gpt-5-mini) spend part of this budget on
     # hidden chain-of-thought tokens before writing visible output; fixed caps
     # (1200, then 3000) kept leaving content=None (finish_reason "length") on
