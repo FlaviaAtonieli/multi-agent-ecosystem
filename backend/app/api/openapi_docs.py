@@ -29,6 +29,7 @@ from app.api.v1.endpoints import (
     agent_skills,
     audit,
     auth,
+    auth_oauth,
     clans,
     dashboard,
     health,
@@ -399,7 +400,7 @@ _ERROR_DESCRIPTIONS = {
     "503": "Serviço externo indisponível",
 }
 
-_ENDPOINT_MODULES = (health, auth, dashboard, requests, orchestrations, llm, agent_skills, audit, clans)
+_ENDPOINT_MODULES = (health, auth, auth_oauth, dashboard, requests, orchestrations, llm, agent_skills, audit, clans)
 
 
 def _dependency_calls(dependant: Dependant) -> Iterator[Callable[..., Any]]:

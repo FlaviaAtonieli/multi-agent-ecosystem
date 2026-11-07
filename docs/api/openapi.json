@@ -1022,7 +1022,6 @@
           "Autenticação"
         ],
         "summary": "Entrar com GitHub",
-        "description": "Redireciona o navegador para a autorização do GitHub. Abra pela barra de endereço, não por fetch.",
         "operationId": "github_login_api_v1_auth_github_login_get",
         "responses": {
           "200": {
@@ -1044,6 +1043,7 @@
             }
           }
         },
+        "description": "Redireciona o navegador para a autorização do GitHub. Abra pela barra de endereço, não por fetch.",
         "security": []
       }
     },
@@ -1128,7 +1128,6 @@
           "Autenticação"
         ],
         "summary": "Entrar com Google",
-        "description": "Redireciona o navegador para a autorização do Google. Abra pela barra de endereço, não por fetch.",
         "operationId": "google_login_api_v1_auth_google_login_get",
         "responses": {
           "200": {
@@ -1150,6 +1149,7 @@
             }
           }
         },
+        "description": "Redireciona o navegador para a autorização do Google. Abra pela barra de endereço, não por fetch.",
         "security": []
       }
     },

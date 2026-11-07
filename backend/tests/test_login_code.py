@@ -177,9 +177,11 @@ def test_github_login_on_new_device_requires_code(client: TestClient, monkeypatc
     monkeypatch.setattr(settings, "github_oauth_enabled", True)
     monkeypatch.setattr(settings, "github_client_id", "fake-client-id")
     monkeypatch.setattr(settings, "github_client_secret", SecretStr("fake-client-secret"))
-    monkeypatch.setattr("app.api.v1.endpoints.auth.exchange_code_for_access_token", lambda code: "token")
     monkeypatch.setattr(
-        "app.api.v1.endpoints.auth.fetch_github_profile",
+        "app.api.v1.endpoints.auth_oauth.exchange_code_for_access_token", lambda code: "token"
+    )
+    monkeypatch.setattr(
+        "app.api.v1.endpoints.auth_oauth.fetch_github_profile",
         lambda token: GitHubProfile(
             github_id="770001", name="Dev Codigo", email="dev.codigo@example.com", avatar_url=None
         ),

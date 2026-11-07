@@ -1,7 +1,5 @@
-from urllib.parse import urlencode
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
-from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -14,8 +12,6 @@ from app.api.dependencies import (
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import (
-    github_oauth_rate_limit,
-    google_oauth_rate_limit,
     login_code_rate_limit,
     login_rate_limit,
     password_reset_rate_limit,
@@ -27,7 +23,6 @@ from app.core.security import (
     hash_password,
     is_initial_account,
     normalize_email,
-    secure_compare,
     utc_now,
     verify_password,
 )
@@ -51,24 +46,6 @@ from app.schemas.user import (
 from app.services.audit_service import record_audit
 from app.services.auth_service import authenticate_user
 from app.services.email_service import EmailDeliveryError
-from app.services.github_oauth_service import (
-    GitHubAccountConflictError,
-    GitHubOAuthError,
-    build_authorize_url,
-    exchange_code_for_access_token,
-    fetch_github_profile,
-    find_or_create_user,
-)
-from app.services.google_oauth_service import (
-    GoogleAccountConflictError,
-    GoogleOAuthError,
-    fetch_google_profile,
-)
-from app.services.google_oauth_service import build_authorize_url as build_google_authorize_url
-from app.services.google_oauth_service import (
-    exchange_code_for_access_token as exchange_google_code_for_access_token,
-)
-from app.services.google_oauth_service import find_or_create_user as find_or_create_google_user
 from app.services.login_verification_service import (
     LOGIN_CHALLENGE_COOKIE,
     LoginChallengeError,
@@ -104,8 +81,6 @@ from app.services.welcome_email_service import send_welcome_email
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
-GITHUB_OAUTH_STATE_COOKIE = "agenthub_github_oauth_state"
-GOOGLE_OAUTH_STATE_COOKIE = "agenthub_google_oauth_state"
 
 
 def _to_user_read(user: User) -> UserRead:
@@ -168,7 +143,7 @@ def register(
     return AuthResponse(user=_to_user_read(user), session_expires_at=auth_session.expires_at)
 
 
-def _open_login_challenge(db: Session, request: Request, user: User, provider: str) -> str:
+def open_login_challenge(db: Session, request: Request, user: User, provider: str) -> str:
     """Abre o desafio de código por e-mail e retorna o token do cookie. Falha
     de envio vira EmailDeliveryError para cada chamador tratar do seu jeito."""
     try:
@@ -197,7 +172,7 @@ def login(
     user = authenticate_user(db, request, str(payload.email), payload.password)
     if requires_login_code(db, request, user):
         try:
-            raw_token = _open_login_challenge(db, request, user, "password")
+            raw_token = open_login_challenge(db, request, user, "password")
         except EmailDeliveryError as exc:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
         set_login_challenge_cookie(response, raw_token)
@@ -553,225 +528,3 @@ def revoke_own_session(
         clear_auth_cookies(response)
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
-
-
-def _frontend_redirect(path: str, **query: str) -> RedirectResponse:
-    url = f"{settings.frontend_base_url}{path}"
-    if query:
-        url = f"{url}?{urlencode(query)}"
-    return RedirectResponse(url, status_code=status.HTTP_302_FOUND)
-
-
-def _clear_github_state_cookie(response: Response) -> None:
-    response.delete_cookie(GITHUB_OAUTH_STATE_COOKIE, path=f"{settings.api_v1_prefix}/auth/github")
-
-
-def _require_github_oauth_enabled() -> None:
-    if not settings.github_oauth_enabled:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Login com GitHub não está habilitado."
-        )
-
-
-@router.get("/github/login")
-def github_login(_rate: None = Depends(github_oauth_rate_limit)) -> RedirectResponse:
-    """Redirects to GitHub's authorize screen. The `state` value is GitHub
-    OAuth's own CSRF protection (distinct from the app's session CSRF token,
-    which can't be used here -- this leg of the flow is a plain browser
-    navigation, not a fetch call from our own frontend): it's generated here,
-    stashed in a short-lived cookie, and checked back on /github/callback."""
-    _require_github_oauth_enabled()
-
-    state = generate_csrf_token()
-    redirect = RedirectResponse(build_authorize_url(state), status_code=status.HTTP_302_FOUND)
-    redirect.set_cookie(
-        key=GITHUB_OAUTH_STATE_COOKIE,
-        value=state,
-        max_age=600,
-        path=f"{settings.api_v1_prefix}/auth/github",
-        secure=settings.cookie_secure,
-        httponly=True,
-        samesite="lax",
-    )
-    return redirect
-
-
-@router.get("/github/callback")
-def github_callback(
-    request: Request,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    code: str | None = None,
-    state: str | None = None,
-    _rate: None = Depends(github_oauth_rate_limit),
-) -> RedirectResponse:
-    _require_github_oauth_enabled()
-
-    cookie_state = request.cookies.get(GITHUB_OAUTH_STATE_COOKIE)
-    if not code or not state or not cookie_state or not secure_compare(state, cookie_state):
-        record_audit(db, request, "AUTH_GITHUB_STATE_MISMATCH")
-        db.commit()
-        redirect = _frontend_redirect("/login", error="github_oauth_failed")
-        _clear_github_state_cookie(redirect)
-        return redirect
-
-    try:
-        access_token = exchange_code_for_access_token(code)
-        profile = fetch_github_profile(access_token)
-        user, created = find_or_create_user(db, profile)
-    except GitHubAccountConflictError:
-        redirect = _frontend_redirect("/login", error="github_email_in_use")
-        _clear_github_state_cookie(redirect)
-        return redirect
-    except GitHubOAuthError:
-        record_audit(db, request, "AUTH_GITHUB_OAUTH_FAILED")
-        db.commit()
-        redirect = _frontend_redirect("/login", error="github_oauth_failed")
-        _clear_github_state_cookie(redirect)
-        return redirect
-
-    if not user.is_active:
-        redirect = _frontend_redirect("/login", error="account_inactive")
-        _clear_github_state_cookie(redirect)
-        return redirect
-
-    if requires_login_code(db, request, user):
-        if created:
-            record_audit(
-                db, request, "AUTH_REGISTER_SUCCESS", user_id=user.id, details={"provider": "github"}
-            )
-        try:
-            challenge_token = _open_login_challenge(db, request, user, "github")
-        except EmailDeliveryError:
-            redirect = _frontend_redirect("/login", error="login_code_failed")
-            _clear_github_state_cookie(redirect)
-            return redirect
-        if created:
-            background_tasks.add_task(send_welcome_email, to=user.email, name=user.name)
-        redirect = _frontend_redirect("/login", verify="1")
-        set_login_challenge_cookie(redirect, challenge_token)
-        _clear_github_state_cookie(redirect)
-        return redirect
-
-    auth_session, raw_token, csrf_token = create_session(db, user, request)
-    record_audit(
-        db,
-        request,
-        "AUTH_REGISTER_SUCCESS" if created else "AUTH_LOGIN_SUCCESS",
-        user_id=user.id,
-        details={"provider": "github", "session_id": auth_session.id},
-    )
-    db.commit()
-    if created:
-        background_tasks.add_task(send_welcome_email, to=user.email, name=user.name)
-
-    redirect = _frontend_redirect("/dashboard")
-    set_auth_cookies(redirect, raw_token, csrf_token)
-    _clear_github_state_cookie(redirect)
-    return redirect
-
-
-def _clear_google_state_cookie(response: Response) -> None:
-    response.delete_cookie(GOOGLE_OAUTH_STATE_COOKIE, path=f"{settings.api_v1_prefix}/auth/google")
-
-
-def _require_google_oauth_enabled() -> None:
-    if not settings.google_oauth_enabled:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Login com Google não está habilitado."
-        )
-
-
-@router.get("/google/login")
-def google_login(_rate: None = Depends(google_oauth_rate_limit)) -> RedirectResponse:
-    """Mirrors github_login: `state` is Google OAuth's own CSRF protection,
-    stashed in a short-lived cookie and checked back on /google/callback."""
-    _require_google_oauth_enabled()
-
-    state = generate_csrf_token()
-    redirect = RedirectResponse(build_google_authorize_url(state), status_code=status.HTTP_302_FOUND)
-    redirect.set_cookie(
-        key=GOOGLE_OAUTH_STATE_COOKIE,
-        value=state,
-        max_age=600,
-        path=f"{settings.api_v1_prefix}/auth/google",
-        secure=settings.cookie_secure,
-        httponly=True,
-        samesite="lax",
-    )
-    return redirect
-
-
-@router.get("/google/callback")
-def google_callback(
-    request: Request,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    code: str | None = None,
-    state: str | None = None,
-    _rate: None = Depends(google_oauth_rate_limit),
-) -> RedirectResponse:
-    _require_google_oauth_enabled()
-
-    cookie_state = request.cookies.get(GOOGLE_OAUTH_STATE_COOKIE)
-    if not code or not state or not cookie_state or not secure_compare(state, cookie_state):
-        record_audit(db, request, "AUTH_GOOGLE_STATE_MISMATCH")
-        db.commit()
-        redirect = _frontend_redirect("/login", error="google_oauth_failed")
-        _clear_google_state_cookie(redirect)
-        return redirect
-
-    try:
-        access_token = exchange_google_code_for_access_token(code)
-        profile = fetch_google_profile(access_token)
-        user, created = find_or_create_google_user(db, profile)
-    except GoogleAccountConflictError:
-        redirect = _frontend_redirect("/login", error="google_email_in_use")
-        _clear_google_state_cookie(redirect)
-        return redirect
-    except GoogleOAuthError:
-        record_audit(db, request, "AUTH_GOOGLE_OAUTH_FAILED")
-        db.commit()
-        redirect = _frontend_redirect("/login", error="google_oauth_failed")
-        _clear_google_state_cookie(redirect)
-        return redirect
-
-    if not user.is_active:
-        redirect = _frontend_redirect("/login", error="account_inactive")
-        _clear_google_state_cookie(redirect)
-        return redirect
-
-    if requires_login_code(db, request, user):
-        if created:
-            record_audit(
-                db, request, "AUTH_REGISTER_SUCCESS", user_id=user.id, details={"provider": "google"}
-            )
-        try:
-            challenge_token = _open_login_challenge(db, request, user, "google")
-        except EmailDeliveryError:
-            redirect = _frontend_redirect("/login", error="login_code_failed")
-            _clear_google_state_cookie(redirect)
-            return redirect
-        if created:
-            background_tasks.add_task(send_welcome_email, to=user.email, name=user.name)
-        redirect = _frontend_redirect("/login", verify="1")
-        set_login_challenge_cookie(redirect, challenge_token)
-        _clear_google_state_cookie(redirect)
-        return redirect
-
-    auth_session, raw_token, csrf_token = create_session(db, user, request)
-    record_audit(
-        db,
-        request,
-        "AUTH_REGISTER_SUCCESS" if created else "AUTH_LOGIN_SUCCESS",
-        user_id=user.id,
-        details={"provider": "google", "session_id": auth_session.id},
-    )
-    db.commit()
-    if created:
-        background_tasks.add_task(send_welcome_email, to=user.email, name=user.name)
-
-    redirect = _frontend_redirect("/dashboard")
-    set_auth_cookies(redirect, raw_token, csrf_token)
-    _clear_google_state_cookie(redirect)
-    return redirect

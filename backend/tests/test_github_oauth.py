@@ -27,11 +27,11 @@ def _stub_github_profile(
     avatar_url: str | None = "https://avatars.example/dev.png",
 ) -> None:
     monkeypatch.setattr(
-        "app.api.v1.endpoints.auth.exchange_code_for_access_token",
+        "app.api.v1.endpoints.auth_oauth.exchange_code_for_access_token",
         lambda code: "fake-access-token",  # noqa: ARG005
     )
     monkeypatch.setattr(
-        "app.api.v1.endpoints.auth.fetch_github_profile",
+        "app.api.v1.endpoints.auth_oauth.fetch_github_profile",
         lambda token: GitHubProfile(  # noqa: ARG005
             github_id=github_id, name=name, email=email, avatar_url=avatar_url
         ),
