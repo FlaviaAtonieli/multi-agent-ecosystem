@@ -31,7 +31,7 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 | Requisito | Situação | Evidência |
 |---|---|---|
 | Hospedagem pública | ✅ | Azure, aceito pelo professor. Conferido em [05/11/2026](validation/evidence/2026-11-05-production-validation.md): HTTPS, HSTS e CSP. **Precisa estar ligado até sair a nota final** |
-| Funcionalidades conforme a RFC | 🟡 | Clãs, arquivos e sugestão mudaram o escopo: registrar na [RFC](rfc) |
+| Funcionalidades conforme a RFC | ✅ | RF17 a RF21 acrescentados e Apêndice J da [RFC](rfc), com o motivo de cada mudança e os desvios (RF09, RNF07 e RNF08), no PR #111 |
 | Interface funcional | ✅ | Jornadas conferidas no Chrome |
 | Arquitetura modular | ✅ | [Visão da arquitetura](architecture/overview.md) |
 | Requisitos, casos de uso e C4 | ✅ | [RFC](rfc), seções 2 e 3 |
