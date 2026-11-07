@@ -37,6 +37,8 @@ async function boards(page) {
     for (const el of document.querySelectorAll('body *')) {
       const groups = {}
       for (const child of el.children) {
+        // Rótulos de linha e coluna (A–J, 1–10) dentro da grade não são casas.
+        if (/header|label|coord|legend/i.test(child.className)) continue
         const key = child.tagName + '.' + (child.classList[0] || '')
         ;(groups[key] = groups[key] || []).push(child)
       }
@@ -57,7 +59,9 @@ const signature = async (page, board) => {
   return page.evaluate((b) =>
     [...document.querySelectorAll(`[data-qa-cell^="${b}-"]`)].map((cell) => {
       const style = getComputedStyle(cell)
-      return [style.backgroundColor, style.backgroundImage, style.color, cell.textContent.trim()].join('|')
+      // Coordenada escrita na casa (A1, J10) é rótulo, não estado: fica de fora.
+      const text = cell.textContent.replace(/\b[A-Ja-j]\s?(10|[1-9])\b/g, '').replace(/\b(10|[1-9])\b/g, '').trim()
+      return [style.backgroundColor, style.backgroundImage, style.color, text].join('|')
     }), board)
 }
 

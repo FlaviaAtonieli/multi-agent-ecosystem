@@ -61,12 +61,62 @@ Os arquivos ficam em [`2026-11-06-batalha-naval/`](2026-11-06-batalha-naval/):
 ## O que isso mostra sobre a arquitetura
 
 1. **O resultado é utilizável.** Um jogo funcional, em 80 s e com modelo gratuito, com regras corretas e sem erros de execução. Os 3 defeitos são de feedback e acessibilidade, não de lógica.
-2. **Os agentes não leem uns aos outros.** O `ACESSIBILIDADE.md` pede casas focáveis e navegação por teclado, e o `PLANO_DE_TESTES.md` tem casos que pegariam o feedback sobrescrito. Mas o código foi escrito ao mesmo tempo, sem ver esses documentos. É o limite de executar as skills em paralelo e de forma independente. Uma segunda etapa, com a skill de programação recebendo os documentos das outras, provavelmente evitaria 2 dos 3 defeitos. Isso não foi testado.
+2. **Os agentes não leem uns aos outros.** O `ACESSIBILIDADE.md` pede casas focáveis e navegação por teclado, e o `PLANO_DE_TESTES.md` tem casos que pegariam o feedback sobrescrito. Mas o código foi escrito ao mesmo tempo, sem ver esses documentos. Isso levou à segunda etapa, descrita abaixo.
 3. **A confiança penaliza áreas sem base de conhecimento.** Para temas fora da base, como jogos, a confiança sempre sai BAIXA, mesmo quando a entrega funciona. A regra mede se há evidência documental, não se a resposta é boa.
 4. **A revisão humana foi acionada corretamente.** O Quality Gate não aprovou sozinho um código que tinha defeitos.
 
+## Segunda etapa: o programador recebe os requisitos do time (06 e 07/11/2026)
+
+Implementado no PR do `team_context`. Quando a solicitação pede arquivos:
+- as skills que entregam código rodam **depois** das outras;
+- elas recebem as **linhas de requisito** dos documentos dos outros agentes (até 2.500 caracteres);
+- se o programador não entregar código, tenta de novo uma vez sem esse contexto.
+
+### Teste de caixa-preta
+
+O `playtest-caixa-preta.js` só olha a tela e clica, sem ler variáveis do jogo, porque cada geração usa nomes diferentes. Ele tem 17 verificações. Foi corrigido várias vezes, sempre a favor de não acusar o jogo por engano:
+- espera a jogada do computador, que em alguns jogos leva 1 s;
+- não conta a derrota "o computador venceu" como vitória;
+- ignora os rótulos de coordenada (A1, J10) escritos nas casas e na borda da grade.
+
+Com a versão final, o jogo original continua com 13 de 17.
+
+### Resultados
+
+| Programador | Requisitos do time | Nota | Custo |
+|---|---|---|---|
+| `dots-3-note:free`, uma etapa (o original) | não | 13 de 17 | grátis |
+| `dots-3-note:free`, duas etapas, documentos inteiros (~6 mil caracteres), 3 rodadas | sim | jogo quebrado, plano em vez de código, nenhum arquivo | grátis |
+| `dots-3-note:free`, duas etapas, só requisitos (~2.300 caracteres), 3 rodadas | sim | 2 jogos que não terminam a partida (o navegador travou) e 1 rodada sem código mesmo com a nova tentativa | grátis |
+| `openai/gpt-5-mini` | **sim** | **17 de 17** | US$ 0,014 |
+| `openai/gpt-5-mini` | não | 11 de 17 | US$ 0,014 |
+| `openai/gpt-5.4-mini` | **sim** | **16 de 17** | US$ 0,019 |
+
+As 3 chamadas pagas usaram só a skill de programação, com o mesmo prompt que o orquestrador monta ([`modelos-pagos/implementer_call.py`](2026-11-06-batalha-naval/modelos-pagos/implementer_call.py)). Os requisitos do time vieram dos documentos já gerados:
+- GDD, backlog e plano de testes vieram do `gpt-5-mini`, na rodada paga anterior;
+- o documento de acessibilidade veio do modelo gratuito, porque o agente de UX falhou na rodada paga.
+
+**Falhas confirmadas à mão:**
+- Jogo do `gpt-5-mini` sem requisitos: o tiro do jogador não aparece no tabuleiro do computador (a casa continua branca), e não há jogo pelo teclado. Os outros 4 FAILs desse jogo não foram confirmados na inspeção manual.
+- Jogo do `gpt-5.4-mini`: a falha é real. O resultado do tiro aparece na casa (O ou X), mas a mensagem é trocada na hora pela jogada do computador.
+
+### O que isso mostra
+
+1. **Com um modelo capaz, a segunda etapa resolveu os defeitos que o time já tinha apontado.**
+   - O mesmo `gpt-5-mini` fez 17 de 17 com os requisitos e 11 de 17 sem eles.
+   - Teclado, feedback do tiro e marcação de acerto e erro aparecem quando o programador recebe o `ACESSIBILIDADE.md` e o plano de testes.
+2. **Com o modelo gratuito, a orquestração não compensa o modelo.** Com ou sem a segunda etapa, ele entregou código quebrado ou nenhum código na maioria das rodadas. O limite ali é o modelo.
+3. **É uma amostra pequena:** uma execução por condição no pago. Os números mostram a direção, não uma taxa.
+
+### Achado de custo
+
+A primeira rodada paga (orquestração completa) custou US$ 0,076. **4 respostas usaram 7 chamadas pagas**, e o programador não chegou a rodar:
+- o cliente desistia aos 45 s e repetia sozinho;
+- a chamada original continuava na OpenRouter e era cobrada.
+
+A correção está no PR #113. Total pago nos testes de 07/11/2026: **US$ 0,122**.
+
 ## O que não foi feito
 
-- O cenário não rodou em produção. Pode ser repetido com o script do clã e uma conta real.
-- Foi uma execução só: com outro sorteio, o modelo pode gerar outro jogo.
-- A segunda etapa com os documentos das outras skills não foi implementada.
+- O cenário completo não rodou em produção. Pode ser repetido com o script do clã e uma conta real.
+- Não há repetições suficientes para medir taxa de acerto por modelo.

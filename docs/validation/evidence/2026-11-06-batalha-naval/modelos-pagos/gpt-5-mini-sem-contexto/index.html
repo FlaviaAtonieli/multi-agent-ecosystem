@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Batalha Naval — Flav.IA</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Batalha Naval</h1>
+    <p id="status">Carregando o jogo...</p>
+  </header>
+
+  <main>
+    <section class="boards">
+      <div class="board-container">
+        <h2>Seu Tabuleiro</h2>
+        <div id="player-board" class="board" aria-label="Seu tabuleiro" role="grid"></div>
+      </div>
+
+      <div class="board-container">
+        <h2>Tabuleiro do Computador</h2>
+        <div id="computer-board" class="board" aria-label="Tabuleiro do computador" role="grid"></div>
+      </div>
+    </section>
+
+    <section class="controls">
+      <button id="restart-button">Reiniciar Jogo</button>
+      <div class="legend">
+        <span class="legend-item"><i class="dot ship"></i> Seu navio</span>
+        <span class="legend-item"><i class="dot hit"></i> Acerto</span>
+        <span class="legend-item"><i class="dot miss"></i> Erro</span>
+        <span class="legend-item"><i class="dot sunk"></i> Afundado</span>
+      </div>
+    </section>
+
+    <section class="documentation">
+      <h3>Documentação (arquitetura e áreas)</h3>
+      <p>Este jogo foi concebido para ser simples, sem dependências. Os arquivos são:</p>
+      <ul>
+        <li><strong>index.html</strong> — marcação do jogo, áreas principais (tabuleiros, status, botão reiniciar) e a seção de documentação. IDs estáveis: <code>player-board</code>, <code>computer-board</code>, <code>status</code>, <code>restart-button</code>.</li>
+        <li><strong>style.css</strong> — estilos para os tabuleiros (grid 10x10), estados das células (navio, acerto, erro, afundado) e layout responsivo simples.</li>
+        <li><strong>game.js</strong> — toda a lógica do jogo: criação de tabuleiros 10x10, posicionamento aleatório de frota (porta-aviões 5, encouraçado 4, cruzador 3, submarino 3, destróier 2), detecção de acerto/erro/afundado, jogadas do jogador por clique, jogadas do computador por escolha aleatória de célula ainda não atingida, detecção de vitória/derrota e reinicialização.</li>
+      </ul>
+
+      <h4>Fluxos principais</h4>
+      <ol>
+        <li>Ao iniciar: ambos os tabuleiros são gerados e as frotas posicionadas aleatoriamente sem sobreposição.</li>
+        <li>Jogador clica em uma célula do tabuleiro do computador para atirar. A célula só pode ser atacada uma vez.</li>
+        <li>Se houver navio: marca <em>acerto</em> e, se todas as células do navio estiverem atingidas, marca <em>afundado</em>. Mensagem aparece no elemento de status.</li>
+        <li>Depois do jogador, o computador faz um tiro aleatório em uma célula ainda não atingida do tabuleiro do jogador. Mesmas regras de acerto/afundado se aplicam.</li>
+        <li>Quando todas as embarcações de um lado forem afundadas, o jogo anuncia vitória/derrota e permite reiniciar.</li>
+      </ol>
+
+      <p>Observações: o computador usa estratégia totalmente aleatória. Para QA, teste múltiplas partidas para validar que o posicionamento aleatório nunca sobrepõe navios e que os estados de célula (acerto/erro/afundado) atualizam corretamente.</p>
+    </section>
+  </main>
+
+  <footer>
+    <small>Trace ID: TRC-IMPLEMENTADOR</small>
+  </footer>
+
+  <script src="game.js"></script>
+</body>
+</html>
