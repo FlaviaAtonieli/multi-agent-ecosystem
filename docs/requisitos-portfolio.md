@@ -57,8 +57,8 @@ Em produção, em 05/11/2026, foram conferidos o cadastro e o login do fluxo 1, 
 | Dados justificados | ✅ | Sintéticos, com a justificativa no [pipeline](architecture/ai-pipeline.md#1-dados-e-indexação) |
 | Pipeline completo | ✅ | Dados, pré-processamento, modelo e pós-processamento |
 | Ética e LGPD | ✅ | Mascaramento, [política de privacidade](../frontend/src/pages/PrivacyPage.tsx) e exclusão de conta |
-| Resultados replicáveis | 🟡 | Busca e métricas podem ser repetidas. O texto do modelo varia mesmo com `temperature` e `seed` fixos ([medição](validation/evidence/2026-11-05-reproducibility.md)): falta a posição do professor |
-| Avaliação do resultado | 🟡 | Busca medida nas 10 áreas: as 4 primeiras com o modelo pago e as 10 com modelo gratuito (medição de 06/11/2026, no PR #110). Motor de sugestão medido. Orquestração completa em produção com modelo gratuito ([05/11/2026](validation/evidence/2026-11-05-production-validation.md)). Falta avaliar a qualidade da resposta final |
+| Resultados replicáveis | 🟡 | Busca e métricas podem ser repetidas. O texto do modelo varia mesmo com `temperature` e `seed` fixos ([medição](validation/evidence/2026-11-05-reproducibility.md)), mas o conteúdo se repete: similaridade média de 0,79 a 0,84 entre repetições, contra no máximo 0,50 com outra pergunta ([medição](validation/evidence/2026-11-07-content-repeatability.md)). Falta a posição do professor |
+| Avaliação do resultado | 🟡 | Busca medida nas 10 áreas: as 4 primeiras com o modelo pago e as 10 com modelo gratuito (medição de 06/11/2026, no PR #110). Motor de sugestão medido, com o limite escolhido por k-fold ([medição](validation/evidence/2026-11-07-suggestion-threshold-kfold.md)). Orquestração completa em produção com modelo gratuito ([05/11/2026](validation/evidence/2026-11-05-production-validation.md)). Falta avaliar a qualidade da resposta final |
 
 ## O que depende de pessoas
 
