@@ -1,3 +1,4 @@
+from app.llm.file_request import asks_for_files
 from app.llm.schemas import LLMPlanRequest
 
 TECHNICAL_PLANNER_INSTRUCTIONS = (
@@ -44,10 +45,19 @@ def build_technical_planner_prompt(request: LLMPlanRequest) -> str:
             "Responda especificamente a essa pergunta, além do já analisado acima."
         )
 
-    lines.append(
-        "Se a solicitação pedir explicitamente um arquivo, código ou projeto, coloque cada arquivo em "
-        "generated_files, com o caminho relativo em filename e o texto completo em content. Caso contrário, "
-        "devolva generated_files como lista vazia. Esses arquivos são só propostas: nada é executado."
-    )
+    if asks_for_files(request.title, request.objective, request.additional_question):
+        lines.append(
+            "A solicitação pede arquivos explicitamente. Entregue cada arquivo pedido em generated_files, "
+            "com o caminho relativo em filename e o texto completo em content. Não deixe generated_files "
+            "vazio e não coloque o conteúdo dos arquivos no resumo. Esses arquivos são só propostas: "
+            "nada é executado."
+        )
+    else:
+        lines.append(
+            "Se a solicitação pedir explicitamente um arquivo, código ou projeto, coloque cada arquivo em "
+            "generated_files, com o caminho relativo em filename e o texto completo em content. Caso "
+            "contrário, devolva generated_files como lista vazia. Esses arquivos são só propostas: nada é "
+            "executado."
+        )
 
     return "\n".join(lines)

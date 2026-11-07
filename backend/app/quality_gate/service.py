@@ -23,7 +23,7 @@ def _jaccard_similarity(a: set[str], b: set[str]) -> float:
     return intersection / union if union else 0.0
 
 
-def evaluate(results: list[SkillToolResult]) -> QualityGateVerdict:
+def evaluate(results: list[SkillToolResult], *, files_requested: bool = False) -> QualityGateVerdict:
     """Cross-checks the consolidated Agent Skill responses before delivery (RF11).
 
     Rules are explicit and explainable — not a second LLM acting as judge — which
@@ -74,8 +74,13 @@ def evaluate(results: list[SkillToolResult]) -> QualityGateVerdict:
             + "; ".join(divergent_pairs)
         )
 
+    # O modelo às vezes ignora o pedido de arquivos (ver app/llm/file_request.py).
+    missing_files = files_requested and not any(result.arquivos for result in results)
+    if missing_files:
+        reasons.append("A solicitação pediu arquivos, mas nenhuma Agent Skill os gerou.")
+
     approved = not low_confidence and not divergent_pairs
-    requires_human_review = not approved or bool(medium_confidence)
+    requires_human_review = not approved or bool(medium_confidence) or missing_files
 
     if approved and not reasons:
         reasons.append("Todas as respostas passaram na validação de contrato e confiança.")
