@@ -21,23 +21,23 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 
 | Requisito | Situação | Evidência |
 |---|---|---|
-| Wiki no repositório | ✅ | [Wiki](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki) |
-| CI/CD | 🟡 | CI ativo. O deploy automático do backend depende do segredo do webhook ([guia](deployment/azure.md)) |
-| Análise estática e de segurança | ✅ | `ruff`, `mypy`, `tsc` e [SonarCloud](https://sonarcloud.io/project/overview?id=FlaviaAtonieli_multi-agent-ecosystem) |
-| Monitoramento | 🟡 | Prometheus e Grafana [prontos](deployment/monitoring.md). Falta ler o backend em produção |
+| Wiki no repositório | 🟡 | [Wiki](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki), atualizada em 03/11/2026. Faltam os PRs #101 a #105 |
+| CI/CD | 🟡 | CI, publicação das imagens e deploy do frontend automáticos. O backend ainda precisa de `az webapp restart` manual: falta o segredo `AZURE_BACKEND_DEPLOY_WEBHOOK` ([guia](deployment/azure.md)) |
+| Análise estática e de segurança | ✅ | `ruff`, `mypy`, `tsc` e [SonarCloud](https://sonarcloud.io/project/overview?id=FlaviaAtonieli_multi-agent-ecosystem): quality gate OK, 0 bugs, 0 vulnerabilidades, nota A nos três critérios e 1,3% de duplicação ([05/11/2026](validation/evidence/2026-11-05-production-validation.md)) |
+| Monitoramento | 🟡 | Prometheus e Grafana [prontos](deployment/monitoring.md). Em produção, o linked backend do Azure bloqueia o acesso a `/metrics`: falta liberar esse caminho |
 
 ## Linha de Web Apps
 
 | Requisito | Situação | Evidência |
 |---|---|---|
-| Hospedagem pública | 🟡 | Azure, aceito pelo professor. **Precisa estar ligado até sair a nota final** |
-| Funcionalidades conforme a RFC | 🟡 | Clãs, arquivos e sugestão mudaram o escopo: registrar na [RFC](rfc) |
+| Hospedagem pública | ✅ | Azure, aceito pelo professor. Conferido em [05/11/2026](validation/evidence/2026-11-05-production-validation.md): HTTPS, HSTS e CSP. **Precisa estar ligado até sair a nota final** |
+| Funcionalidades conforme a RFC | ✅ | RF17 a RF21 acrescentados e Apêndice J da [RFC](rfc), com o motivo de cada mudança e os desvios (RF09, RNF07 e RNF08), no PR #111 |
 | Interface funcional | ✅ | Jornadas conferidas no Chrome |
 | Arquitetura modular | ✅ | [Visão da arquitetura](architecture/overview.md) |
 | Requisitos, casos de uso e C4 | ✅ | [RFC](rfc), seções 2 e 3 |
 | Instruções de deploy | ✅ | [Guia](deployment/azure.md) |
-| 3 fluxos de negócio completos | ✅ | Ver abaixo |
-| Cobertura de 75% no backend e 25% no frontend | ✅ | Exigida pelo CI. Números em [Relatório de validação](validation/README.md) |
+| 3 fluxos de negócio completos | ✅ | Ver abaixo. Conferidos em produção em [05/11/2026](validation/evidence/2026-11-05-production-validation.md) |
+| Cobertura de 75% no backend e 25% no frontend | ✅ | Exigida pelo CI. No `main` em 05/11/2026: 85,9% no backend e 56,5% de linhas no frontend |
 | TDD | 🟡 | Usado nas funcionalidades recentes, não no início do projeto. Falta saber como é cobrado |
 
 **Fluxos de negócio:**
@@ -45,6 +45,8 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 1. **Conta e acesso:** cadastro, login, código por e-mail, recuperação de senha e exclusão de conta.
 2. **Catálogo e clãs:** criar ou importar skill, publicar, montar clã e receber sugestões.
 3. **Orquestração:** solicitação, qualificação, execução, Quality Gate, revisão humana, arquivos e perguntas.
+
+Em produção, em 05/11/2026, foram conferidos o cadastro e o login do fluxo 1, a criação de clã com skill do fluxo 2 e o fluxo 3 inteiro (contexto barrado, interromper, executar de novo, Quality Gate e revisão humana). Ficaram fora o código por e-mail, a recuperação de senha, a exclusão de conta, a importação de skill, as sugestões e as perguntas.
 
 ## Linha de IA
 
@@ -56,14 +58,14 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 | Pipeline completo | ✅ | Dados, pré-processamento, modelo e pós-processamento |
 | Ética e LGPD | ✅ | Mascaramento, [política de privacidade](../frontend/src/pages/PrivacyPage.tsx) e exclusão de conta |
 | Resultados replicáveis | 🟡 | Busca e métricas podem ser repetidas. O texto do modelo varia mesmo com `temperature` e `seed` fixos ([medição](validation/evidence/2026-11-05-reproducibility.md)): falta a posição do professor |
-| Avaliação do resultado | 🟡 | Busca medida em 4 de 10 áreas, e repetida com modelo gratuito em 05/11/2026. Motor de sugestão medido. Falta a resposta final |
+| Avaliação do resultado | 🟡 | Busca medida nas 10 áreas: as 4 primeiras com o modelo pago e as 10 com modelo gratuito (medição de 06/11/2026, no PR #110). Motor de sugestão medido. Orquestração completa em produção com modelo gratuito ([05/11/2026](validation/evidence/2026-11-05-production-validation.md)). Falta avaliar a qualidade da resposta final |
 
 ## O que depende de pessoas
 
 | Requisito | Situação |
 |---|---|
 | 5 orientações evidenciadas | ⏳ 4 de 5, segundo a autora |
-| Review por colegas em PRs, testes cruzados e issues | ⏳ Nenhum registrado no repositório até 04/11/2026 |
+| Review por colegas em PRs, testes cruzados e issues | 🟡 49 comentários de 2 colegas em PRs (AmandKorcz 44, PHV00 5), 9 deles com análise. Nenhuma review formal do GitHub (Approve ou Request changes) e nenhuma issue até 05/11/2026 |
 | Aceite do parceiro externo e feedbacks | ⏳ Em andamento |
 | Pôster A0 com QR Code | ⏳ |
 | Prova de autoria | ⏳ Até 30/11/2026 |
@@ -74,4 +76,6 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 - O limite de requisições por IP enxerga o IP da infraestrutura do Azure, não o de cada usuário.
 - A execução em segundo plano assume um único processo no backend.
 - A base de conhecimento só tem documentos técnicos de exemplo.
+- O modelo às vezes ignora um pedido explícito de arquivos (2 de 13 tentativas com o modelo gratuito). O Quality Gate manda esses casos para revisão humana (PR #107).
+- A barreira de contexto vale para o contexto. Problema e objetivo sem conteúdo passam a ser recusados no cadastro com o PR #108. O título continua livre.
 - A suíte automática simula a IA. Os testes marcados com `llm` chamam o modelo real e ficam fora do CI.
