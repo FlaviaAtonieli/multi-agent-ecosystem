@@ -121,3 +121,84 @@ def test_openrouter_style_key_is_redacted_by_security_sanitizer() -> None:
     assert "[REDACTED_API_KEY]" in sanitized.value
     assert "sk-or-v1" not in sanitized.value
     assert sanitized.redacted_fields_count == 1
+
+
+# --- Uma chamada lenta não pode virar duas cobranças --------------------------
+# 07/11/2026: com timeout de 45 s, o cliente da OpenAI desistia das respostas do
+# gpt-5-mini (45 a 90 s) e repetia a chamada sozinho (max_retries=2 por padrão),
+# enquanto a primeira continuava rodando e era cobrada na OpenRouter.
+
+import httpx  # noqa: E402
+import pytest  # noqa: E402
+from openai import APIConnectionError, APITimeoutError  # noqa: E402
+
+_REQUEST = httpx.Request("POST", "https://openrouter.ai/api/v1/chat/completions")
+
+
+def _provider_with(monkeypatch, create) -> tuple[OpenRouterLLMProvider, list[dict]]:
+    init_kwargs: list[dict] = []
+
+    class _Completions:
+        def create(self, **kwargs):
+            return create()
+
+    class _Client:
+        def __init__(self, **kwargs) -> None:
+            init_kwargs.append(kwargs)
+            self.chat = type("Chat", (), {"completions": _Completions()})()
+
+    monkeypatch.setattr("openai.OpenAI", _Client)
+    monkeypatch.setattr("app.core.retry.time.sleep", lambda _seconds: None)
+    return OpenRouterLLMProvider(_build_settings()), init_kwargs
+
+
+def test_cliente_nao_repete_chamadas_por_conta_propria(monkeypatch) -> None:
+    _, init_kwargs = _provider_with(monkeypatch, lambda: None)
+
+    assert init_kwargs[0]["max_retries"] == 0
+
+
+def test_timeout_padrao_cobre_modelos_que_raciocinam() -> None:
+    assert Settings().llm_timeout_seconds >= 180
+
+
+def test_chamada_que_estoura_o_tempo_nao_e_repetida(monkeypatch) -> None:
+    calls: list[int] = []
+
+    def slow():
+        calls.append(1)
+        raise APITimeoutError(request=_REQUEST)
+
+    provider, _ = _provider_with(monkeypatch, slow)
+
+    with pytest.raises(APITimeoutError):
+        provider.generate_plan(_build_request(), llm_call_id="c", model="openai/gpt-5-mini")
+    assert len(calls) == 1
+
+
+def test_falha_de_conexao_ainda_tenta_de_novo(monkeypatch) -> None:
+    calls: list[int] = []
+
+    def offline():
+        calls.append(1)
+        raise APIConnectionError(request=_REQUEST)
+
+    provider, _ = _provider_with(monkeypatch, offline)
+
+    with pytest.raises(APIConnectionError):
+        provider.generate_plan(_build_request(), llm_call_id="c", model="openai/gpt-5-mini")
+    assert len(calls) == 2
+
+
+def test_embeddings_e_openai_tambem_sem_repeticao_escondida(monkeypatch) -> None:
+    from app.llm.providers.openai_provider import OpenAILLMProvider
+    from app.rag.providers.openrouter_embedding_provider import OpenRouterEmbeddingProvider
+
+    captured: list[dict] = []
+    monkeypatch.setattr("openai.OpenAI", lambda **kwargs: captured.append(kwargs) or object())
+
+    OpenRouterEmbeddingProvider(_build_settings())
+    openai_settings = _build_settings(llm_provider="openai", openai_api_key="sk-fake-openai-key-000000000000")
+    OpenAILLMProvider(openai_settings)
+
+    assert [kwargs["max_retries"] for kwargs in captured] == [0, 0]
