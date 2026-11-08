@@ -41,17 +41,37 @@ TOP_K = 3
 # Floors leave room for one flipped query without treating normal embedding
 # variance as a regression: 1/8=0.125 for the 8-query domain, 1/5=0.20 for the
 # three 5-query domains.
+#
+# The other six domains got their ground truth on 2026-11-06 and were measured
+# only with the free embedding model liquid/lfm-2.5-embedding-350m:free (the
+# paid default was not run, to keep the measurement at zero cost) -- see
+# docs/validation/evidence/2026-11-06-rag-ten-domains.md. Their floors sit about
+# one flipped query (0.20) below those free-model numbers, so they are a lower
+# bound: on the four domains measured with both, the paid model scored higher
+# or equal (Regras de Negócio tied at MRR 1.0).
 MIN_MEAN_RECIPROCAL_RANK_BY_DOMAIN: dict[str, float] = {
     "Código Legado": 0.75,
     "Regras de Negócio": 0.80,
     "Arquitetura de Software": 0.70,
     "Segurança da Informação": 0.80,
+    "Qualidade e Testes": 0.15,
+    "Observabilidade e Monitoramento": 0.40,
+    "Performance e Escalabilidade": 0.50,
+    "Dados e Privacidade (LGPD)": 0.80,
+    "Infraestrutura e DevOps": 0.80,
+    "APIs e Integrações": 0.45,
 }
 MIN_MEAN_RECALL_AT_K_BY_DOMAIN: dict[str, float] = {
     "Código Legado": 0.60,
     "Regras de Negócio": 0.80,
     "Arquitetura de Software": 0.70,
     "Segurança da Informação": 0.80,
+    "Qualidade e Testes": 0.20,
+    "Observabilidade e Monitoramento": 0.40,
+    "Performance e Escalabilidade": 0.60,
+    "Dados e Privacidade (LGPD)": 0.80,
+    "Infraestrutura e DevOps": 0.80,
+    "APIs e Integrações": 0.80,
 }
 
 
