@@ -114,6 +114,20 @@ describe('NewRequestPage', () => {
     expect(api.jsonBody('POST', '/requests').requested_domains).toEqual(['Contabilidade'])
   })
 
+  it('mostra o motivo quando o servidor recusa o problema', async () => {
+    const user = userEvent.setup()
+    const reason = 'Descreva o problema com palavras que expliquem a situação, sem repetições como "TESTE TESTE".'
+    mockApi({
+      ...baseRoutes,
+      'POST /requests': apiError(422, 'Revise os dados informados.', [{ field: 'problem', message: reason }]),
+    })
+    renderPage()
+    await goToLastStep(user)
+    await submit(user)
+
+    expect(await screen.findByText(reason)).toBeInTheDocument()
+  })
+
   it('continua funcionando quando o catálogo não carrega', async () => {
     const user = userEvent.setup()
     mockApi({
