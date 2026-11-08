@@ -43,6 +43,13 @@ export const domainLabels: Record<string, string> = {
   apis_integracoes: 'APIs e Integrações',
 }
 
+// Área livre sem rótulo conhecido: "game_design" vira "Game design".
+export function domainLabel(domain: string): string {
+  if (domainLabels[domain]) return domainLabels[domain]
+  const text = domain.replace(/_/g, ' ').trim()
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
 // A área agora é texto livre, então um marcador só é reconhecido se for uma área
 // conhecida: o resumo vem do modelo e pode trazer colchetes por outros motivos.
 export function parseSynthesisByDomain(text: string, domains: string[] = []): Array<{ domain: string; text: string }> {
@@ -64,7 +71,7 @@ export function SynthesisByDomain({ text, domains }: { text: string; domains?: s
     <div className="workspace-synthesis-list">
       {parts.map((part, index) => (
         <div key={`${part.domain}-${index}`} className="workspace-synthesis-item">
-          {part.domain && <span className="workspace-synthesis-domain">{domainLabels[part.domain] ?? part.domain}</span>}
+          {part.domain && <span className="workspace-synthesis-domain">{domainLabel(part.domain)}</span>}
           <p>{part.text}</p>
         </div>
       ))}
@@ -124,21 +131,58 @@ function CodeBlock({ code, filenameHint }: { code: string; filenameHint: string 
   )
 }
 
-export function SkillResultCard({ result }: { result: SkillToolResult }) {
-  const findings = result.analise_estruturada.descobertas_tecnicas
+type SkillResultCardProps = {
+  result: SkillToolResult
+  // Na resposta final, os cards começam fechados e o painel controla abrir e fechar.
+  // Nas perguntas de acompanhamento, continuam sempre abertos.
+  collapsible?: boolean
+  open?: boolean
+  onToggle?: () => void
+}
+
+export function SkillResultCard({ result, collapsible = false, open = true, onToggle }: SkillResultCardProps) {
   const [findingsOpen, setFindingsOpen] = useState(false)
+  const expanded = !collapsible || open
+
+  const heading = (
+    <>
+      <div>
+        <strong>{result.agente_emissor.nome}</strong>
+        <span className="workspace-skill-card-domain">{domainLabel(result.agente_emissor.dominio)}</span>
+      </div>
+      <span className={`workspace-confidence-pill workspace-confidence-${result.governanca.nivel_confianca.toLowerCase()}`}>
+        {confidenceLabels[result.governanca.nivel_confianca]}
+      </span>
+    </>
+  )
 
   return (
-    <article className="workspace-execution-skill-card">
-      <header>
-        <div>
-          <strong>{result.agente_emissor.nome}</strong>
-          <span className="workspace-skill-card-domain">{domainLabels[result.agente_emissor.dominio] ?? result.agente_emissor.dominio}</span>
-        </div>
-        <span className={`workspace-confidence-pill workspace-confidence-${result.governanca.nivel_confianca.toLowerCase()}`}>
-          {confidenceLabels[result.governanca.nivel_confianca]}
-        </span>
-      </header>
+    <article className={`workspace-execution-skill-card${collapsible ? ' workspace-skill-card-collapsible' : ''}`}>
+      {collapsible ? (
+        <button type="button" className="workspace-skill-card-toggle" aria-expanded={expanded} onClick={onToggle}>
+          <span aria-hidden="true" className="workspace-skill-card-chevron">{expanded ? '▾' : '▸'}</span>
+          {heading}
+        </button>
+      ) : (
+        <header>{heading}</header>
+      )}
+      {expanded && <SkillResultBody result={result} findingsOpen={findingsOpen} onToggleFindings={() => setFindingsOpen((value) => !value)} />}
+    </article>
+  )
+}
+
+function SkillResultBody({
+  result,
+  findingsOpen,
+  onToggleFindings,
+}: {
+  result: SkillToolResult
+  findingsOpen: boolean
+  onToggleFindings: () => void
+}) {
+  const findings = result.analise_estruturada.descobertas_tecnicas
+  return (
+    <>
       <p>{result.analise_estruturada.resumo_executivo}</p>
 
       {findings.length > 0 && (
@@ -146,7 +190,7 @@ export function SkillResultCard({ result }: { result: SkillToolResult }) {
           <button
             type="button"
             className="workspace-findings-toggle"
-            onClick={() => setFindingsOpen((value) => !value)}
+            onClick={onToggleFindings}
             aria-expanded={findingsOpen}
           >
             {findingsOpen ? '▾' : '▸'} {findings.length} achado{findings.length === 1 ? '' : 's'} técnico{findings.length === 1 ? '' : 's'}
@@ -168,6 +212,6 @@ export function SkillResultCard({ result }: { result: SkillToolResult }) {
       )}
 
       <small className="workspace-skill-card-justification">{result.governanca.justificativa_confianca}</small>
-    </article>
+    </>
   )
 }

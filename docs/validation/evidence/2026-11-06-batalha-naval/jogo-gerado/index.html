@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batalha Naval</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Batalha Naval</h1>
+    <div id="game-container">
+        <div id="boards-container">
+            <div id="player-board-container">
+                <h2>Seu Tabuleiro</h2>
+                <div id="player-board" class="board"></div>
+            </div>
+            <div id="computer-board-container">
+                <h2>Tabuleiro do Computador</h2>
+                <div id="computer-board" class="board"></div>
+            </div>
+        </div>
+        <div id="status-container">
+            <p id="status-message">Clique nas casas do tabuleiro do computador para atirar!</p>
+            <button id="restart-button">Reiniciar Jogo</button>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>

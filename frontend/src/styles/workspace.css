@@ -1378,3 +1378,19 @@
 .workspace-danger-action:disabled { opacity: 0.6; cursor: default; }
 .workspace-context-issues { padding: 12px 14px; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 11px; color: var(--text-primary); background: rgba(245, 158, 11, 0.1); font-size: 0.9rem; line-height: 1.45; }
 .workspace-context-issues ul { margin: 6px 0 0; padding-left: 18px; }
+
+.workspace-result-section { display: grid; gap: 12px; padding: 16px 0; border-top: 1px solid var(--border-subtle); }
+.workspace-result-section:first-child { border-top: 0; padding-top: 0; }
+.workspace-result-section h3 { margin: 0; font-size: 1rem; }
+.workspace-result-section-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.workspace-result-facts { color: var(--text-secondary); font-size: 0.85rem; }
+.workspace-result-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.workspace-artifact-group { display: grid; gap: 6px; }
+.workspace-artifact-group h4 { margin: 4px 0 0; font-size: 0.85rem; color: var(--text-secondary); }
+.workspace-skill-card-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; padding: 0; border: 0; color: inherit; background: none; font: inherit; text-align: left; cursor: pointer; }
+.workspace-skill-card-toggle > div { flex: 1; }
+.workspace-skill-card-chevron { color: var(--text-secondary); }
+.workspace-skill-card-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
+.workspace-skill-card-toggle > div { display: grid; gap: 3px; }
+.workspace-skill-card-collapsible .workspace-skill-card-toggle + * { margin-top: 10px; }
+.workspace-artifacts .workspace-code-block { max-height: 480px; overflow: auto; }
