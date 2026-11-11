@@ -93,5 +93,6 @@ Resultado esperado do `alembic current`:
 - [Cenário: clã de jogos gerando uma batalha naval, testada jogando](evidence/2026-11-06-batalha-naval.md) (06/11/2026)
 - [Repetição da resposta do modelo](evidence/2026-11-05-reproducibility.md) (05/11/2026)
 - [Qualidade do RAG nos 4 domínios de Agent Skill](evidence/2026-09-rag-multi-domain-quality-validation.md)
+- [Qualidade do RAG nas 10 áreas, com modelo gratuito](evidence/2026-11-06-rag-ten-domains.md) (06/11/2026)
 
 Essas evidências registram o sistema na época em que foram feitas, inclusive os papéis de usuário e a lista fechada de domínios, que depois mudaram.

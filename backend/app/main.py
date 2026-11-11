@@ -103,7 +103,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     details = [
         {
             "field": ".".join(str(part) for part in error["loc"] if part != "body"),
-            "message": error["msg"],
+            "message": str(error["msg"]).removeprefix("Value error, "),
         }
         for error in exc.errors()
     ]

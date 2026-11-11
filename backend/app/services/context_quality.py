@@ -11,6 +11,8 @@ import unicodedata
 
 CONTEXT_MIN_LENGTH = 40
 MIN_CONTENT_WORDS = 5
+# Problema e objetivo podem ser curtos ("O job demora."), mas não vazios de sentido.
+MIN_DESCRIPTION_WORDS = 2
 # Abaixo disso, a maior parte das sequências de três palavras se repete.
 MIN_DISTINCT_TRIGRAM_RATIO = 0.5
 _MIN_TOKENS_FOR_REPETITION = 12
@@ -74,6 +76,12 @@ def _is_repetitive(tokens: list[str]) -> bool:
         return False
     trigrams = list(zip(tokens, tokens[1:], tokens[2:], strict=False))
     return len(set(trigrams)) / len(trigrams) < MIN_DISTINCT_TRIGRAM_RATIO
+
+
+def describes_something(text: str | None) -> bool:
+    """Regra mais leve, para problema e objetivo: ao menos 2 palavras com conteúdo e sem repetição."""
+    tokens = _tokens(text or "")
+    return _content_word_count(tokens) >= MIN_DESCRIPTION_WORDS and not _is_repetitive(tokens)
 
 
 def context_issues(context: str | None) -> list[str]:

@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 from app.agent_catalog.contracts import SkillToolResult
 from app.agent_manifest.manifest import DomainName
+from app.services.context_quality import describes_something
 
 
 class TechnicalRequestCreate(BaseModel):
@@ -20,6 +21,19 @@ class TechnicalRequestCreate(BaseModel):
     @classmethod
     def strip_required_text(cls, value: str) -> str:
         return value.strip()
+
+    @field_validator("problem", "objective")
+    @classmethod
+    def require_meaningful_text(cls, value: str, info: ValidationInfo) -> str:
+        # Só o contexto pode ser complementado depois; aqui o texto precisa
+        # dizer algo já no cadastro (ver app/services/context_quality.py).
+        if not describes_something(value):
+            field = "o problema" if info.field_name == "problem" else "o objetivo"
+            raise ValueError(
+                f"Descreva {field} com palavras que expliquem a situação, "
+                'sem repetições como "TESTE TESTE".'
+            )
+        return value
 
     @field_validator("context")
     @classmethod

@@ -117,7 +117,8 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
     "POST /auth/register": (
         "Criar conta",
         "Cria a conta com e-mail e senha e já inicia a sessão. A senha precisa de 12+ caracteres com "
-        "maiúscula, minúscula, número e caractere especial. Desligado com `ALLOW_REGISTRATION=false`.",
+        "maiúscula, minúscula, número e caractere especial. Desligado com `ALLOW_REGISTRATION=false`. "
+        "Depois da resposta, envia o e-mail de conta criada; uma falha no envio não desfaz o cadastro.",
     ),
     "POST /auth/login": (
         "Entrar com e-mail e senha",
@@ -144,7 +145,8 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
     "POST /auth/password/forgot": (
         "Esqueci minha senha",
         "Envia um link de redefinição ao e-mail, se ele estiver cadastrado. A resposta é sempre a mesma, "
-        "exista ou não a conta, para não revelar e-mails cadastrados.",
+        "exista ou não a conta, para não revelar e-mails cadastrados. Em produção sem SMTP "
+        "(`EMAIL_BACKEND=console`), devolve 503 em vez de prometer um e-mail que não sai.",
     ),
     "POST /auth/password/reset": (
         "Redefinir senha",
