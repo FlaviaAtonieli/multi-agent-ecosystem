@@ -90,7 +90,7 @@ def _resolve_visibility(
 
 def _can_manage_skill(db: Session, skill: AgentSkill, user: User) -> bool:
     """Quem criou a skill a gerencia (editar, ativar, desativar). Numa skill de
-    clã, o dono do clã também pode -- é quem responde pelo catálogo do clã."""
+    comitê, o dono do comitê também pode -- é quem responde pelo catálogo do comitê."""
     if skill.owner_id == user.id:
         return True
     if skill.visibility == "CLAN" and skill.clan_id:
@@ -109,7 +109,7 @@ def _find_manageable_skill(db: Session, skill_id: str, user: User) -> AgentSkill
     if not _can_manage_skill(db, skill, user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Só quem criou a skill (ou o dono do clã, numa skill de clã) pode alterá-la.",
+            detail="Só quem criou a skill (ou o dono do comitê, numa skill de comitê) pode alterá-la.",
         )
     return skill
 
@@ -214,7 +214,7 @@ def suggest(
     if not is_member(db, clan_id=clan.id, user_id=user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Só um membro do clã pode pedir sugestões para ele.",
+            detail="Só um membro do comitê pode pedir sugestões para ele.",
         )
 
     result = suggest_skills(
@@ -524,7 +524,7 @@ async def start_skills_for_request(
     if not has_target_skills(db, technical_request):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Nenhuma Agent Skill ativa no clã da solicitação foi encontrada.",
+            detail="Nenhuma Agent Skill ativa no comitê da solicitação foi encontrada.",
         )
     if not claim_request_for_execution(db, technical_request):
         raise HTTPException(

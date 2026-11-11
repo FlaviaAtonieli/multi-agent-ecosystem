@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Validar uma arquitetura de integração de agentes especialistas em ambientes corporativos. O foco não é criar um agente universal, mas coordenar capacidades com responsabilidades, contratos e limites definidos: uma solicitação técnica é qualificada, ganha um `Trace ID`, vai para as Agent Skills de um clã, passa pelo Quality Gate e pode ser reconstruída pela auditoria.
+Validar uma arquitetura de integração de agentes especialistas em ambientes corporativos. O foco não é criar um agente universal, mas coordenar capacidades com responsabilidades, contratos e limites definidos: uma solicitação técnica é qualificada, ganha um `Trace ID`, vai para as Agent Skills de um comitê, passa pelo Quality Gate e pode ser reconstruída pela auditoria.
 
 Os diagramas C4 e os requisitos estão na [RFC](../rfc/). Este documento descreve o que está implementado.
 
@@ -20,7 +20,7 @@ backend/   FastAPI e SQLAlchemy: regras, autorização, persistência e auditori
 | Pasta em `backend/app/` | Responsabilidade |
 |---|---|
 | `api/` | Rotas REST e documentação OpenAPI |
-| `services/` | Orquestração, clãs, arquivos, sugestão de skills, autenticação e LLM |
+| `services/` | Orquestração, comitês, arquivos, sugestão de skills, autenticação e LLM |
 | `agent_catalog/` | Catálogo de skills, cliente MCP, servidores MCP e contratos |
 | `agent_manifest/` | Leitura e validação do manifesto `modelo.md` |
 | `quality_gate/` | Regras explícitas sobre as respostas das skills |
@@ -34,10 +34,10 @@ backend/   FastAPI e SQLAlchemy: regras, autorização, persistência e auditori
 
 ```text
 Pessoa autenticada
-  -> cria a solicitação e escolhe o clã (pode pedir sugestões de skills fora dele)
+  -> cria a solicitação e escolhe o comitê (pode pedir sugestões de skills fora dele)
   -> contexto avaliado: AWAITING_CONTEXT ou QUALIFIED, com Trace ID
   -> POST /start responde na hora, e a execução segue em segundo plano
-  -> para cada skill ativa do clã, até 3 ao mesmo tempo, por MCP:
+  -> para cada skill ativa do comitê, até 3 ao mesmo tempo, por MCP:
        mascaramento -> busca na base (RAG) -> modelo -> contrato de saída
   -> arquivos gerados são validados e guardados
   -> Quality Gate aprova ou pede revisão humana

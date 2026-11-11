@@ -133,7 +133,7 @@ LLM_REDACT_SENSITIVE_DATA=true
 
 ## Limitações atuais
 
-- A seleção de Agent Skills é feita pelo clã e pelas áreas escolhidas. O motor de sugestão só recomenda, e não escolhe sozinho.
+- A seleção de Agent Skills é feita pelo comitê e pelas áreas escolhidas. O motor de sugestão só recomenda, e não escolhe sozinho.
 - O plano não executa tools.
 - O resultado não é publicado automaticamente.
 - O rate limit é local ao processo e precisa de uma solução distribuída antes de escalar horizontalmente.

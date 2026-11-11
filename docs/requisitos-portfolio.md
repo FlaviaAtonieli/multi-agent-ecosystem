@@ -11,7 +11,7 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 | **Protocolo MCP real**, tema que o guia marca como "Preferir" e pouco explorado: cada Agent Skill roda em um processo separado | [`mcp_client.py`](../backend/app/agent_catalog/mcp_client.py), testado por stdio em `test_skill_artifacts.py` |
 | **RAG com qualidade medida:** Precision@3, Recall@3 e MRR contra gabarito manual | [Pipeline de IA](architecture/ai-pipeline.md) |
 | **Governança de IA explicável:** Quality Gate por regras, revisão humana e `Trace ID` em cada etapa | [`quality_gate/service.py`](../backend/app/quality_gate/service.py) |
-| **Clã como escopo da orquestração:** evita chamadas de IA a skills fora do assunto | [`agent_skill_orchestration_service.py`](../backend/app/services/agent_skill_orchestration_service.py) |
+| **Comitê como escopo da orquestração:** evita chamadas de IA a skills fora do assunto | [`agent_skill_orchestration_service.py`](../backend/app/services/agent_skill_orchestration_service.py) |
 | **Respostas com arquivos e ZIP**, sem gastar tokens para mostrar ou baixar | [`artifact_service.py`](../backend/app/services/artifact_service.py) |
 | **Segurança além do básico:** sessão opaca, CSRF, Argon2, OAuth, código por e-mail, mascaramento de dados pessoais | [SECURITY.md](../SECURITY.md) |
 | **Testes que acusam defeitos:** o código é quebrado de propósito para conferir | [Relatório de validação](validation/README.md) |
@@ -43,10 +43,10 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 **Fluxos de negócio:**
 
 1. **Conta e acesso:** cadastro, login, código por e-mail, recuperação de senha e exclusão de conta.
-2. **Catálogo e clãs:** criar ou importar skill, publicar, montar clã e receber sugestões.
+2. **Catálogo e comitês:** criar ou importar skill, publicar, montar comitê e receber sugestões.
 3. **Orquestração:** solicitação, qualificação, execução, Quality Gate, revisão humana, arquivos e perguntas.
 
-Em produção, em 05/11/2026, foram conferidos o cadastro e o login do fluxo 1, a criação de clã com skill do fluxo 2 e o fluxo 3 inteiro (contexto barrado, interromper, executar de novo, Quality Gate e revisão humana). Ficaram fora o código por e-mail, a recuperação de senha, a exclusão de conta, a importação de skill, as sugestões e as perguntas.
+Em produção, em 05/11/2026, foram conferidos o cadastro e o login do fluxo 1, a criação de comitê com skill do fluxo 2 e o fluxo 3 inteiro (contexto barrado, interromper, executar de novo, Quality Gate e revisão humana). Ficaram fora o código por e-mail, a recuperação de senha, a exclusão de conta, a importação de skill, as sugestões e as perguntas.
 
 ## Linha de IA
 

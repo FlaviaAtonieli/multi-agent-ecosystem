@@ -94,9 +94,9 @@ def user_id_for(email: str) -> str:
 
 
 def create_test_clan(client: TestClient) -> str:
-    """Clã novo com todas as skills ativas que o usuário logado enxerga agora."""
+    """Comitê novo com todas as skills ativas que o usuário logado enxerga agora."""
     headers = authenticated_csrf_headers(client)
-    clan = client.post("/api/v1/clans", json={"name": f"Clã {uuid4().hex[:12]}"}, headers=headers)
+    clan = client.post("/api/v1/clans", json={"name": f"Comitê {uuid4().hex[:12]}"}, headers=headers)
     assert clan.status_code == 201, clan.text
     clan_id = clan.json()["id"]
     for skill in client.get("/api/v1/agent-skills?only_active=true").json():

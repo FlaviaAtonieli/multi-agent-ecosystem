@@ -119,7 +119,7 @@ export function AgentSkillsPage() {
 
   const clanNames = useMemo(() => new Map(myClans.map((clan) => [clan.id, clan.name])), [myClans])
 
-  // Espelha agent_skills._can_manage_skill: quem criou, ou o dono do clã numa skill de clã.
+  // Espelha agent_skills._can_manage_skill: quem criou, ou o dono do comitê numa skill de comitê.
   function canManage(skill: AgentSkill): boolean {
     if (skill.owner_id === user?.id) return true
     if (skill.visibility !== 'CLAN' || !skill.clan_id) return false
@@ -259,7 +259,7 @@ export function AgentSkillsPage() {
           <option value="MINE">Minhas privadas</option>
           {myClans.map((clan) => (
             <option key={clan.id} value={`clan:${clan.id}`}>
-              Clã · {clan.name}
+              Comitê · {clan.name}
             </option>
           ))}
         </select>
@@ -310,7 +310,7 @@ export function AgentSkillsPage() {
                   {skill.visibility === 'OFFICIAL'
                     ? 'Oficial do ecossistema'
                     : skill.visibility === 'CLAN'
-                      ? `Clã · ${(skill.clan_id && clanNames.get(skill.clan_id)) || 'outro clã'}`
+                      ? `Comitê · ${(skill.clan_id && clanNames.get(skill.clan_id)) || 'outro comitê'}`
                       : skill.owner_id === user?.id
                         ? 'Minha skill · privada'
                         : 'Skill privada'}

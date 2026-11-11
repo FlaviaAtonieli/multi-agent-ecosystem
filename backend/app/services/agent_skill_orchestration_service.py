@@ -134,8 +134,8 @@ def _consolidate(
 
 
 def active_clan_skills(db: Session, technical_request: TechnicalRequest) -> list[AgentSkill]:
-    """As skills que podem responder a esta solicitação. Solicitação antiga, sem clã,
-    ou de quem saiu do clã depois de criá-la não tem nenhuma."""
+    """As skills que podem responder a esta solicitação. Solicitação antiga, sem comitê,
+    ou de quem saiu do comitê depois de criá-la não tem nenhuma."""
     clan_id = technical_request.clan_id
     if clan_id is None or not is_member(db, clan_id=clan_id, user_id=technical_request.owner_id):
         return []

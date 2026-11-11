@@ -69,7 +69,7 @@ def main() -> None:
                 {"id": user_id, "email": email},
             )
         connection.execute(
-            text("INSERT INTO clans (id, name, created_by_id) VALUES (:id, 'Clã antigo', :owner)"),
+            text("INSERT INTO clans (id, name, created_by_id) VALUES (:id, 'Comitê antigo', :owner)"),
             {"id": clan_id, "owner": other_id},
         )
         core = _insert_skill(
@@ -110,7 +110,7 @@ def main() -> None:
                 {"name": name},
             )
         )
-        assert skills_in("Clã antigo") == {in_clan}, "skill CLAN precisa entrar no próprio clã"
+        assert skills_in("Comitê antigo") == {in_clan}, "skill CLAN precisa entrar no próprio comitê"
         ecosystem = skills_in("Ecossistema")
         assert ecosystem == {core, owned}, f"Ecossistema só recebe as oficiais do catálogo: {ecosystem}"
         assert published not in ecosystem

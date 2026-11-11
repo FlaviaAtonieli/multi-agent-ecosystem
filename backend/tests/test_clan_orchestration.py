@@ -43,7 +43,7 @@ def _skill(client: TestClient, domain: str, *, visibility: str = "OFFICIAL") -> 
 
 def _clan(client: TestClient, **settings) -> dict:
     response = client.post(
-        "/api/v1/clans", json={"name": f"Clã {uuid4().hex[:8]}", **settings}, headers=_headers(client)
+        "/api/v1/clans", json={"name": f"Comitê {uuid4().hex[:8]}", **settings}, headers=_headers(client)
     )
     assert response.status_code == 201, response.text
     return response.json()

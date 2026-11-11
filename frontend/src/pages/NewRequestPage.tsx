@@ -19,7 +19,7 @@ type ChecklistItem = {
   state: ChecklistState
 }
 
-const NO_ACTIVE_SKILLS_MESSAGE = 'Este clã ainda não tem Agent Skills ativas. Escolha outro ou adicione skills a ele.'
+const NO_ACTIVE_SKILLS_MESSAGE = 'Este comitê ainda não tem Agent Skills ativas. Escolha outro ou adicione skills a ele.'
 
 const contextSuggestions = ['Módulos', 'Tecnologias', 'Dependências', 'Comportamento esperado']
 
@@ -47,7 +47,7 @@ export function NewRequestPage() {
   const [joinableClans, setJoinableClans] = useState<Clan[]>([])
   const [clansLoaded, setClansLoaded] = useState(false)
   const [clanId, setClanId] = useState('')
-  // null enquanto carrega ou se falhar: o backend ainda confere o clã ao executar.
+  // null enquanto carrega ou se falhar: o backend ainda confere o comitê ao executar.
   const [availableDomains, setAvailableDomains] = useState<AgentSkillDomain[] | null>(null)
   const [selectedDomains, setSelectedDomains] = useState<AgentSkillDomain[]>([])
 
@@ -59,7 +59,7 @@ export function NewRequestPage() {
         setJoinableClans(all.filter((clan) => clan.is_open && !mineIds.has(clan.id)))
         if (mine.length === 1) setClanId(mine[0].id)
       })
-      .catch(() => setSubmitError('Não foi possível carregar os clãs.'))
+      .catch(() => setSubmitError('Não foi possível carregar os comitês.'))
       .finally(() => setClansLoaded(true))
   }, [])
 
@@ -90,7 +90,7 @@ export function NewRequestPage() {
       setJoinableClans((current) => current.filter((item) => item.id !== clan.id))
       setClanId(clan.id)
     } catch (caught) {
-      setSubmitError(caught instanceof ApiError ? caught.message : 'Não foi possível entrar no clã.')
+      setSubmitError(caught instanceof ApiError ? caught.message : 'Não foi possível entrar no comitê.')
     }
   }
 
@@ -103,7 +103,7 @@ export function NewRequestPage() {
       { key: 'title', label: 'Título', state: titleValid ? 'done' : step === 1 ? 'current' : 'pending' },
       { key: 'problem', label: 'Problema descrito', state: problemValid ? 'done' : step === 2 ? 'current' : 'pending' },
       { key: 'objective', label: 'Objetivo claro', state: objectiveValid ? 'done' : step === 2 ? 'current' : 'pending' },
-      { key: 'clan', label: 'Clã escolhido', state: step < 3 ? 'pending' : clanId ? 'done' : 'current' },
+      { key: 'clan', label: 'Comitê escolhido', state: step < 3 ? 'pending' : clanId ? 'done' : 'current' },
       { key: 'context', label: 'Contexto técnico completo', state: step < 3 ? 'pending' : context.trim() ? 'done' : 'current' },
       { key: 'restrictions', label: 'Restrições informadas', state: step < 3 ? 'pending' : restrictions.length > 0 ? 'done' : 'current' },
     ],
@@ -180,7 +180,7 @@ export function NewRequestPage() {
   async function handleFinalSubmit() {
     setSubmitError('')
     if (!clanId) {
-      setStepError('Escolha o clã que vai responder.')
+      setStepError('Escolha o comitê que vai responder.')
       return
     }
     if (availableDomains?.length === 0) {
@@ -351,9 +351,9 @@ export function NewRequestPage() {
               <div className="workspace-field workspace-field-full">
                 {myClans.length > 0 ? (
                   <label>
-                    Clã que vai responder
+                    Comitê que vai responder
                     <select value={clanId} onChange={(event) => setClanId(event.target.value)}>
-                      {myClans.length > 1 && <option value="">Escolha um clã</option>}
+                      {myClans.length > 1 && <option value="">Escolha um comitê</option>}
                       {myClans.map((clan) => (
                         <option key={clan.id} value={clan.id}>
                           {clan.name}
@@ -364,8 +364,8 @@ export function NewRequestPage() {
                 ) : (
                   clansLoaded && (
                     <span>
-                      Toda orquestração usa as Agent Skills de um clã, e você ainda não faz parte de nenhum.{' '}
-                      <Link to="/clans">Criar um clã</Link>
+                      Toda orquestração usa as Agent Skills de um comitê, e você ainda não faz parte de nenhum.{' '}
+                      <Link to="/comites">Criar um comitê</Link>
                     </span>
                   )
                 )}
@@ -383,7 +383,7 @@ export function NewRequestPage() {
                     ))}
                   </div>
                 )}
-                <small>Só as Agent Skills do clã escolhido são consultadas.</small>
+                <small>Só as Agent Skills do comitê escolhido são consultadas.</small>
                 {availableDomains?.length === 0 && <small>{NO_ACTIVE_SKILLS_MESSAGE}</small>}
               </div>
 

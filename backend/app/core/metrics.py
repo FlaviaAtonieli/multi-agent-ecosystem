@@ -9,7 +9,7 @@ Três grupos:
   Quality Gate, revisões humanas e eventos de auditoria (login, falhas de login,
   código por e-mail, redefinição de senha).
 - Banco (coletado a cada scrape): solicitações por status, Agent Skills ativas,
-  usuários, clãs e o uso do LLM. O LLM é chamado dentro do processo de cada skill
+  usuários, comitês e o uso do LLM. O LLM é chamado dentro do processo de cada skill
   (MCP por stdio), que termina ao fim da chamada: um contador em memória lá nunca
   chegaria a este /metrics. A tabela llm_invocations já registra cada chamada.
 """
@@ -219,7 +219,7 @@ class DatabaseStateCollector(Collector):
             "agenthub_agent_skills_active", "Agent Skills ativas no catálogo.", value=active_skills or 0
         )
         yield GaugeMetricFamily("agenthub_users", "Usuários cadastrados.", value=users or 0)
-        yield GaugeMetricFamily("agenthub_clans", "Clãs criados.", value=clans or 0)
+        yield GaugeMetricFamily("agenthub_clans", "Comitês criados.", value=clans or 0)
         yield from _llm_usage_metrics(llm_usage)
 
 

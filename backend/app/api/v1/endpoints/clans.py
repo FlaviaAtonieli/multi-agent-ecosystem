@@ -39,7 +39,7 @@ from app.services.clan_service import (
     update_clan_settings,
 )
 
-router = APIRouter(prefix="/clans", tags=["Clãs"])
+router = APIRouter(prefix="/clans", tags=["Comitês"])
 
 
 def _to_detail(clan: Clan) -> ClanDetailRead:
@@ -49,9 +49,7 @@ def _to_detail(clan: Clan) -> ClanDetailRead:
         created_by_id=clan.created_by_id,
         created_at=clan.created_at,
         members=[
-            ClanMemberRead(
-                user_id=m.user_id, name=m.user.name, email=m.user.email, joined_at=m.joined_at
-            )
+            ClanMemberRead(user_id=m.user_id, name=m.user.name, email=m.user.email, joined_at=m.joined_at)
             for m in clan.memberships
         ],
         is_open=clan.is_open,
@@ -62,7 +60,7 @@ def _to_detail(clan: Clan) -> ClanDetailRead:
 
 @router.get("", response_model=list[ClanRead])
 def list_all_clans(
-    mine: bool = Query(False, description="Se true, retorna só os clãs do usuário autenticado."),
+    mine: bool = Query(False, description="Se true, retorna só os comitês do usuário autenticado."),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> list:
@@ -268,11 +266,11 @@ def list_skills_of_clan(
     user: User = Depends(get_current_user),
 ) -> object:
     clan = _find_clan(db, clan_id)
-    # Num clã aberto, dá para ver as skills antes de decidir entrar.
+    # Num comitê aberto, dá para ver as skills antes de decidir entrar.
     if not clan.is_open and not is_member(db, clan_id=clan_id, user_id=user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Só um membro pode ver as Agent Skills de um clã fechado.",
+            detail="Só um membro pode ver as Agent Skills de um comitê fechado.",
         )
     return list_clan_skills(db, clan_id=clan_id)
 
@@ -293,7 +291,9 @@ def add_skill(
     if skill is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent Skill não encontrada.")
     if get_clan_skill_link(db, clan_id=clan_id, skill_id=skill.id) is not None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Esta Agent Skill já está no clã.")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Esta Agent Skill já está no comitê."
+        )
 
     add_skill_to_clan(db, clan_id=clan_id, skill_id=skill.id, added_by_id=user.id)
     record_audit(
@@ -320,7 +320,9 @@ def remove_skill(
     _ensure_can_change_skills(db, clan, user)
     link = get_clan_skill_link(db, clan_id=clan_id, skill_id=skill_id)
     if link is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Esta Agent Skill não está no clã.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Esta Agent Skill não está no comitê."
+        )
 
     db.delete(link)
     record_audit(

@@ -15,7 +15,7 @@ type Props = {
 }
 
 // Só compara embeddings: não consome o modelo de chat. Só roda a pedido da pessoa, e
-// o motor apenas sugere: a skill só entra no clã se ela escolher.
+// o motor apenas sugere: a skill só entra no comitê se ela escolher.
 export function SkillSuggestions({ clanId, title, problem, objective, context, onAdded }: Props) {
   const [result, setResult] = useState<SkillSuggestionsResult | null>(null)
   const [added, setAdded] = useState<string[]>([])
@@ -65,11 +65,11 @@ export function SkillSuggestions({ clanId, title, problem, objective, context, o
       </button>
       {error && <div className="alert alert-error">{error}</div>}
       {added.map((name) => (
-        <small key={name}>{name} entrou no clã.</small>
+        <small key={name}>{name} entrou no comitê.</small>
       ))}
       {result && !result.available && <small>A sugestão de skills está indisponível agora. Você pode seguir normalmente.</small>}
       {result?.available && result.suggestions.length === 0 && added.length === 0 && result.covered_by_clan && (
-        <small>As skills deste clã já parecem cobrir este assunto.</small>
+        <small>As skills deste comitê já parecem cobrir este assunto.</small>
       )}
       {result?.catalog_gap && (
         <small>
@@ -78,7 +78,7 @@ export function SkillSuggestions({ clanId, title, problem, objective, context, o
       )}
       {result && result.suggestions.length > 0 && (
         <>
-          {!result.can_add_to_clan && <small>Só o dono deste clã pode adicionar skills a ele.</small>}
+          {!result.can_add_to_clan && <small>Só o dono deste comitê pode adicionar skills a ele.</small>}
           <ul className="workspace-artifact-list">
             {result.suggestions.map((item) => (
               <li key={item.id} className="workspace-artifact-row">
@@ -93,7 +93,7 @@ export function SkillSuggestions({ clanId, title, problem, objective, context, o
                   <button
                     type="button"
                     className="workspace-secondary-action"
-                    aria-label={`Adicionar ${item.name} ao clã`}
+                    aria-label={`Adicionar ${item.name} ao comitê`}
                     onClick={() => add(item.id, item.name, item.domain)}
                   >
                     Adicionar

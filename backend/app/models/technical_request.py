@@ -24,7 +24,7 @@ class TechnicalRequest(Base):
     context: Mapped[str | None] = mapped_column(Text, nullable=True)
     restrictions: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     requested_domains: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
-    # Opcional só por causa das solicitações antigas: a API exige o clã nas novas.
+    # Opcional só por causa das solicitações antigas: a API exige o comitê nas novas.
     clan_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("clans.id", ondelete="SET NULL"), index=True, nullable=True
     )

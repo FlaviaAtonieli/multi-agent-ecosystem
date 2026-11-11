@@ -70,7 +70,7 @@ export function ClansPage() {
   // null = não está renomeando; string = rascunho do novo nome.
   const [renameDraft, setRenameDraft] = useState<string | null>(null)
   const [skills, setSkills] = useState<AgentSkill[]>([])
-  // null = sem acesso: clã fechado de que o usuário não é membro.
+  // null = sem acesso: comitê fechado de que o usuário não é membro.
   const [clanSkills, setClanSkills] = useState<AgentSkill[] | null>(null)
   const [skillToAdd, setSkillToAdd] = useState('')
 
@@ -84,7 +84,7 @@ export function ClansPage() {
     clansApi
       .list()
       .then(setClans)
-      .catch((caught) => setError(caught instanceof ApiError ? caught.message : 'Não foi possível carregar os clãs.'))
+      .catch((caught) => setError(caught instanceof ApiError ? caught.message : 'Não foi possível carregar os comitês.'))
   }
 
   useEffect(load, [])
@@ -111,7 +111,7 @@ export function ClansPage() {
     clansApi
       .get(clanId)
       .then(setSelected)
-      .catch((caught) => setError(caught instanceof ApiError ? caught.message : 'Não foi possível abrir o clã.'))
+      .catch((caught) => setError(caught instanceof ApiError ? caught.message : 'Não foi possível abrir o comitê.'))
   }
 
   async function handleCreate(event: FormEvent) {
@@ -126,13 +126,13 @@ export function ClansPage() {
       load()
       setSelected(clan)
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : 'Não foi possível criar o clã.')
+      setError(caught instanceof ApiError ? caught.message : 'Não foi possível criar o comitê.')
     } finally {
       setCreating(false)
     }
   }
 
-  // Envolve as ações sobre o clã selecionado: pending/erro e recarga da lista.
+  // Envolve as ações sobre o comitê selecionado: pending/erro e recarga da lista.
   async function runOnSelected(action: (clan: ClanDetail) => Promise<ClanDetail>, fallbackError: string) {
     if (!selected) return
     setPending(true)
@@ -164,7 +164,7 @@ export function ClansPage() {
   }
 
   function handleJoin() {
-    return runOnSelected((clan) => clansApi.join(clan.id), 'Não foi possível entrar no clã.')
+    return runOnSelected((clan) => clansApi.join(clan.id), 'Não foi possível entrar no comitê.')
   }
 
   async function changeClanSkills(action: (clanId: string) => Promise<unknown>, fallbackError: string) {
@@ -195,7 +195,7 @@ export function ClansPage() {
   function handleSettingsChange(patch: Partial<ClanSettings>) {
     return runOnSelected(
       (clan) => clansApi.updateSettings(clan.id, patch),
-      'Não foi possível salvar as configurações do clã.',
+      'Não foi possível salvar as configurações do comitê.',
     )
   }
 
@@ -207,7 +207,7 @@ export function ClansPage() {
       const updated = await clansApi.updateSettings(clan.id, { name })
       setRenameDraft(null)
       return updated
-    }, 'Não foi possível renomear o clã.')
+    }, 'Não foi possível renomear o comitê.')
   }
 
   const isOwner = Boolean(selected && selected.created_by_id === user?.id)
@@ -221,11 +221,11 @@ export function ClansPage() {
     <div className="workspace-page">
       <section className="workspace-page-heading fade-up">
         <div>
-          <span className="workspace-eyebrow">CLÃS</span>
-          <h1>Clãs do ecossistema</h1>
+          <span className="workspace-eyebrow">COMITÊS</span>
+          <h1>Comitês do ecossistema</h1>
           <p>
-            Qualquer pessoa pode criar um clã e definir as regras dele: se é aberto ou fechado, e quem pode adicionar
-            Agent Skills e membros. Toda orquestração usa as Agent Skills de um clã, então adicione aqui as skills
+            Qualquer pessoa pode criar um comitê e definir as regras dele: se é aberto ou fechado, e quem pode adicionar
+            Agent Skills e membros. Toda orquestração usa as Agent Skills de um comitê, então adicione aqui as skills
             publicadas no catálogo que fazem sentido para o grupo.
           </p>
         </div>
@@ -235,19 +235,19 @@ export function ClansPage() {
 
       <div className="workspace-detail-grid">
         <article className="workspace-panel">
-          <span className="workspace-card-kicker">TODOS OS CLÃS · {clans.length}</span>
+          <span className="workspace-card-kicker">TODOS OS COMITÊS · {clans.length}</span>
 
           <form className="workspace-clan-create-form" onSubmit={handleCreate}>
             <div className="workspace-clan-create">
               <input
                 type="text"
-                placeholder="Nome do novo clã..."
+                placeholder="Nome do novo comitê..."
                 value={newClanName}
                 onChange={(event) => setNewClanName(event.target.value)}
                 maxLength={120}
               />
               <button className="workspace-primary-action" type="submit" disabled={creating || !newClanName.trim()}>
-                {creating ? 'Criando…' : '+ Criar clã'}
+                {creating ? 'Criando…' : '+ Criar comitê'}
               </button>
             </div>
             <ClanSettingsFields
@@ -258,7 +258,7 @@ export function ClansPage() {
           </form>
 
           {clans.length === 0 ? (
-            <div className="workspace-empty">Nenhum clã criado ainda.</div>
+            <div className="workspace-empty">Nenhum comitê criado ainda.</div>
           ) : (
             <ul className="workspace-clan-list">
               {clans.map((clan) => (
@@ -282,7 +282,7 @@ export function ClansPage() {
 
         <article className="workspace-panel">
           {!selected ? (
-            <div className="workspace-empty">Selecione um clã à esquerda para ver os membros.</div>
+            <div className="workspace-empty">Selecione um comitê à esquerda para ver os membros.</div>
           ) : (
             <>
               {renameDraft !== null ? (
@@ -292,7 +292,7 @@ export function ClansPage() {
                     value={renameDraft}
                     onChange={(event) => setRenameDraft(event.target.value)}
                     maxLength={120}
-                    aria-label="Novo nome do clã"
+                    aria-label="Novo nome do comitê"
                   />
                   <button
                     className="workspace-primary-action"
@@ -335,7 +335,7 @@ export function ClansPage() {
                   disabled={pending}
                   onClick={handleJoin}
                 >
-                  Entrar no clã
+                  Entrar no comitê
                 </button>
               )}
 
@@ -393,18 +393,18 @@ export function ClansPage() {
               ) : (
                 <small className="workspace-clan-hint">
                   {selected.members_policy === 'OWNER_ONLY'
-                    ? 'Neste clã, só o dono pode adicionar ou remover pessoas.'
-                    : 'Só quem já é membro deste clã pode adicionar ou remover outras pessoas.'}
+                    ? 'Neste comitê, só o dono pode adicionar ou remover pessoas.'
+                    : 'Só quem já é membro deste comitê pode adicionar ou remover outras pessoas.'}
                 </small>
               )}
 
               <span className="workspace-card-kicker workspace-clan-skills-kicker">
-                AGENT SKILLS DO CLÃ · {clanSkills ? clanSkills.length : '—'}
+                AGENT SKILLS DO COMITÊ · {clanSkills ? clanSkills.length : '—'}
               </span>
               {!clanSkills ? (
-                <small className="workspace-clan-hint">Só membros do clã enxergam as Agent Skills dele.</small>
+                <small className="workspace-clan-hint">Só membros do comitê enxergam as Agent Skills dele.</small>
               ) : clanSkills.length === 0 ? (
-                <small className="workspace-clan-hint">Nenhuma skill neste clã ainda.</small>
+                <small className="workspace-clan-hint">Nenhuma skill neste comitê ainda.</small>
               ) : (
                 <ul className="workspace-clan-members">
                   {clanSkills.map((skill) => (
@@ -418,7 +418,7 @@ export function ClansPage() {
                           type="button"
                           className="workspace-secondary-action"
                           disabled={pending}
-                          aria-label={`Remover ${skill.name} do clã`}
+                          aria-label={`Remover ${skill.name} do comitê`}
                           onClick={() => handleRemoveSkill(skill.id)}
                         >
                           Remover

@@ -40,7 +40,9 @@ export function App() {
           <Route path="/agent-skills/new" element={<AgentSkillCreatePage />} />
           <Route path="/agent-skills/import" element={<AgentSkillImportPage />} />
           <Route path="/agent-skills/:skillId/edit" element={<AgentSkillCreatePage />} />
-          <Route path="/clans" element={<ClansPage />} />
+          <Route path="/comites" element={<ClansPage />} />
+          {/* Endereço antigo, de quando o comitê se chamava clã. */}
+          <Route path="/clans" element={<Navigate to="/comites" replace />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/auditoria" element={<AuditoriaPage />} />
         </Route>

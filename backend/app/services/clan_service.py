@@ -12,19 +12,19 @@ class ClanNotFoundError(LookupError):
 class ClanNameConflictError(ValueError):
     def __init__(self, name: str) -> None:
         self.name = name
-        super().__init__(f"Já existe um clã chamado '{name}'.")
+        super().__init__(f"Já existe um comitê chamado '{name}'.")
 
 
 class ClanPermissionError(PermissionError):
-    """As configurações do clã (is_open, members_policy, skills_policy) não permitem a
-    ação. O dono do clã pode tudo.
+    """As configurações do comitê (is_open, members_policy, skills_policy) não permitem a
+    ação. O dono do comitê pode tudo.
     """
 
     pass
 
 
 class NotClanMemberError(ClanPermissionError):
-    """Só membros atuais gerenciam o clã, não qualquer usuário cadastrado."""
+    """Só membros atuais gerenciam o comitê, não qualquer usuário cadastrado."""
 
     pass
 
@@ -39,18 +39,12 @@ def get_clan(db: Session, clan_id: str) -> Clan:
         populate_existing=True,
     )
     if clan is None:
-        raise ClanNotFoundError(f"Clã '{clan_id}' não encontrado.")
+        raise ClanNotFoundError(f"Comitê '{clan_id}' não encontrado.")
     return clan
 
 
 def list_clans(db: Session) -> list[Clan]:
-    return list(
-        db.scalars(
-            select(Clan)
-            .options(selectinload(Clan.memberships))
-            .order_by(Clan.name)
-        )
-    )
+    return list(db.scalars(select(Clan).options(selectinload(Clan.memberships)).order_by(Clan.name)))
 
 
 def list_user_clans(db: Session, user_id: str) -> list[Clan]:
@@ -84,9 +78,11 @@ def _allowed_by_policy(db: Session, clan: Clan, user: User, policy: str) -> bool
 
 def ensure_can_register_skills(db: Session, *, clan: Clan, user: User) -> None:
     if not is_member(db, clan_id=clan.id, user_id=user.id):
-        raise NotClanMemberError("Só um membro do clã pode registrar uma skill com visibilidade CLAN nele.")
+        raise NotClanMemberError(
+            "Só um membro do comitê pode registrar uma skill com visibilidade CLAN nele."
+        )
     if not _allowed_by_policy(db, clan, user, clan.skills_policy):
-        raise ClanPermissionError("Neste clã, só o dono pode registrar Agent Skills.")
+        raise ClanPermissionError("Neste comitê, só o dono pode registrar Agent Skills.")
 
 
 def create_clan(
@@ -132,7 +128,7 @@ def update_clan_settings(
 ) -> Clan:
     clan = get_clan(db, clan_id)
     if clan.created_by_id != updated_by.id:
-        raise ClanPermissionError("Só o dono do clã pode alterar as configurações.")
+        raise ClanPermissionError("Só o dono do comitê pode alterar as configurações.")
     if name is not None and name.strip() != clan.name:
         clean_name = name.strip()
         if db.scalar(select(Clan.id).where(Clan.name == clean_name, Clan.id != clan.id)) is not None:
@@ -161,7 +157,7 @@ def join_clan(db: Session, *, clan_id: str, user: User) -> ClanMembership:
         return existing
     if not clan.is_open:
         raise ClanPermissionError(
-            "Este clã é fechado: só entra quem for adicionado por um membro autorizado."
+            "Este comitê é fechado: só entra quem for adicionado por um membro autorizado."
         )
 
     membership = ClanMembership(clan_id=clan_id, user_id=user.id, added_by_id=user.id)
@@ -173,9 +169,9 @@ def join_clan(db: Session, *, clan_id: str, user: User) -> ClanMembership:
 def add_member(db: Session, *, clan_id: str, user_to_add: User, added_by: User) -> ClanMembership:
     clan = get_clan(db, clan_id)  # raises ClanNotFoundError if missing
     if not is_member(db, clan_id=clan_id, user_id=added_by.id):
-        raise NotClanMemberError("Só um membro do clã pode adicionar novos membros.")
+        raise NotClanMemberError("Só um membro do comitê pode adicionar novos membros.")
     if not _allowed_by_policy(db, clan, added_by, clan.members_policy):
-        raise ClanPermissionError("Neste clã, só o dono pode adicionar membros.")
+        raise ClanPermissionError("Neste comitê, só o dono pode adicionar membros.")
 
     existing = _get_membership(db, clan_id=clan_id, user_id=user_to_add.id)
     if existing is not None:
@@ -189,14 +185,14 @@ def add_member(db: Session, *, clan_id: str, user_to_add: User, added_by: User) 
 
 def remove_member(db: Session, *, clan_id: str, user_id: str, removed_by: User) -> None:
     clan = get_clan(db, clan_id)  # raises ClanNotFoundError if missing
-    leaving = user_id == removed_by.id  # sair do clã é sempre permitido
+    leaving = user_id == removed_by.id  # sair do comitê é sempre permitido
     if not leaving:
         if not is_member(db, clan_id=clan_id, user_id=removed_by.id):
-            raise NotClanMemberError("Só um membro do clã pode remover membros.")
+            raise NotClanMemberError("Só um membro do comitê pode remover membros.")
         if not _allowed_by_policy(db, clan, removed_by, clan.members_policy):
-            raise ClanPermissionError("Neste clã, só o dono pode remover membros.")
+            raise ClanPermissionError("Neste comitê, só o dono pode remover membros.")
         if user_id == clan.created_by_id:
-            raise ClanPermissionError("O dono do clã não pode ser removido por outro membro.")
+            raise ClanPermissionError("O dono do comitê não pode ser removido por outro membro.")
 
     membership = _get_membership(db, clan_id=clan_id, user_id=user_id)
     if membership is not None:

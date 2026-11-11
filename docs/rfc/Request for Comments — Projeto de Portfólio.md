@@ -361,8 +361,8 @@ Tabela 2: Requisitos Funcionais
 | RF14 | O sistema deve tratar falhas e exceções durante a execução, apresentando mensagens compreensíveis ao usuário e registrando os erros para análise posterior e melhoria da governança do ecossistema. |
 | RF15 | O sistema deve permitir que usuários autorizados consultem o histórico de solicitações, respostas consolidadas, agentes utilizados, decisões registradas e evidências associadas aos fluxos anteriores. |
 | RF16 | O sistema deve permitir que usuários autorizados habilitem ou desabilitem Agent Skills no catálogo, controlando quais agentes estarão disponíveis para uso nos fluxos de orquestração. |
-| RF17 | O sistema deve permitir que os usuários organizem Agent Skills e pessoas em clãs, e cada solicitação deve indicar o clã cujas Agent Skills vão respondê-la. *(Adicionado na implementação; ver Apêndice J.)* |
-| RF18 | O sistema deve sugerir Agent Skills adequadas a cada solicitação, inclusive de fora do clã escolhido, sem acioná-las sem a escolha do usuário. *(Adicionado na implementação.)* |
+| RF17 | O sistema deve permitir que os usuários organizem Agent Skills e pessoas em comitês, e cada solicitação deve indicar o comitê cujas Agent Skills vão respondê-la. *(Adicionado na implementação; ver Apêndice J. Chamado de "clã" até novembro de 2026; no código, `clan`.)* |
+| RF18 | O sistema deve sugerir Agent Skills adequadas a cada solicitação, inclusive de fora do comitê escolhido, sem acioná-las sem a escolha do usuário. *(Adicionado na implementação.)* |
 | RF19 | Quando a solicitação pedir arquivos, as Agent Skills devem devolvê-los como propostas, que o usuário visualiza e baixa um a um ou em um ZIP, sem que nada seja executado. *(Adicionado na implementação.)* |
 | RF20 | O sistema deve permitir que o usuário interrompa uma orquestração em andamento, complemente o contexto e a execute de novo. *(Adicionado na implementação.)* |
 | RF21 | O sistema deve permitir perguntas de acompanhamento sobre uma resposta já entregue, respondidas pelas mesmas Agent Skills e registradas na mesma linha do tempo. *(Adicionado na implementação.)* |
@@ -2572,8 +2572,8 @@ Este apêndice registra o que mudou em relação ao texto original desta RFC dur
 
 | Mudança | Requisito | Motivo |
 |:--|:--|:--|
-| **Clãs** como escopo da orquestração | RF17 | Executar todas as Agent Skills ativas em cada solicitação gastava chamadas de modelo com áreas sem relação com o problema. O clã limita a execução às skills que fazem sentido para um time ou assunto. |
-| **Motor de sugestão** por embeddings e similaridade de cosseno | RF18 | Ajuda a escolher skills sem entregar a decisão ao sistema, mantendo a RN02 (decisão humana). Só sugere, inclusive skills de fora do clã. |
+| **Comitês** como escopo da orquestração | RF17 | Executar todas as Agent Skills ativas em cada solicitação gastava chamadas de modelo com áreas sem relação com o problema. O comitê limita a execução às skills que fazem sentido para um time ou assunto. |
+| **Motor de sugestão** por embeddings e similaridade de cosseno | RF18 | Ajuda a escolher skills sem entregar a decisão ao sistema, mantendo a RN02 (decisão humana). Só sugere, inclusive skills de fora do comitê. |
 | **Arquivos e ZIP** nas respostas | RF19 | Recomendações técnicas costumam envolver código ou scripts. Os arquivos ficam guardados e são baixados sem gastar tokens de novo. Continuam sendo só propostas, o que mantém a RN01 (atuação consultiva). |
 | **Interromper a execução** | RF20 | Se o usuário percebe no meio da execução que faltou uma informação, ele não precisa esperar até o fim nem perder o que já registrou. A interrupção fica na linha do tempo (RN10). |
 | **Perguntas de acompanhamento** | RF21 | Permitem aprofundar uma resposta sem abrir uma nova solicitação, mantendo o mesmo Trace ID. |
@@ -2584,9 +2584,9 @@ Este apêndice registra o que mudou em relação ao texto original desta RFC dur
 
 | Requisito | O que a RFC previa | O que a PoC faz | Motivo |
 |:--|:--|:--|:--|
-| RF09 | O Orquestrador seleciona as Agent Skills mais adequadas. | O usuário escolhe as skills dentro do clã, com a ajuda do motor de sugestão. Sem escolha, rodam todas as skills ativas do clã. | Uma seleção automática por modelo seria mais uma decisão opaca e mais uma chamada paga. A escolha humana com sugestão explicável respeita a RN02. |
+| RF09 | O Orquestrador seleciona as Agent Skills mais adequadas. | O usuário escolhe as skills dentro do comitê, com a ajuda do motor de sugestão. Sem escolha, rodam todas as skills ativas do comitê. | Uma seleção automática por modelo seria mais uma decisão opaca e mais uma chamada paga. A escolha humana com sugestão explicável respeita a RN02. |
 | RNF07 | Tempo médio de resposta de até 10 segundos. | Em produção, em 05/11/2026, uma orquestração com uma skill e um modelo gratuito levou 71 s. Só a chamada ao modelo levou 39 s. | O tempo é dominado pelo modelo de linguagem. A meta de 10 s não foi atingida. A execução roda em segundo plano, e a tela acompanha o andamento. |
-| RNF08 e RF16 | Funções administrativas restritas a usuários autorizados. | Desde 14/10/2026 não há papéis de usuário. O acesso é por propriedade: cada skill e cada solicitação têm dono, e cada clã define quem altera skills e membros. A conta inicial habilita e desabilita as 4 skills oficiais sem dono. | Os papéis exigiam um painel de administração e criavam caminhos de permissão difíceis de testar. A propriedade cobre os mesmos riscos com regras mais simples. |
+| RNF08 e RF16 | Funções administrativas restritas a usuários autorizados. | Desde 14/10/2026 não há papéis de usuário. O acesso é por propriedade: cada skill e cada solicitação têm dono, e cada comitê define quem altera skills e membros. A conta inicial habilita e desabilita as 4 skills oficiais sem dono. | Os papéis exigiam um painel de administração e criavam caminhos de permissão difíceis de testar. A propriedade cobre os mesmos riscos com regras mais simples. |
 
 ### J.3 Onde conferir
 

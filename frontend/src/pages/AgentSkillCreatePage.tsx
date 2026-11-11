@@ -121,7 +121,7 @@ export function AgentSkillCreatePage() {
       return
     }
     if (step === 1 && visibility === 'CLAN' && !clanId) {
-      setStepError('Escolha em qual clã essa skill vai ficar visível.')
+      setStepError('Escolha em qual comitê essa skill vai ficar visível.')
       return
     }
     setStepError('')
@@ -183,7 +183,7 @@ export function AgentSkillCreatePage() {
           <p>
             {isEdit
               ? 'As alterações valem para as próximas execuções. Lembre de aumentar a versão quando mudar o comportamento.'
-              : 'Escolha quem pode ver e executar essa skill: só você, um clã específico, ou todo o ecossistema.'}
+              : 'Escolha quem pode ver e executar essa skill: só você, um comitê específico, ou todo o ecossistema.'}
           </p>
         </div>
       </section>
@@ -251,7 +251,7 @@ export function AgentSkillCreatePage() {
                   onChange={(event) => setVisibility(event.target.value as 'PRIVATE' | 'OFFICIAL' | 'CLAN')}
                 >
                   <option value="PRIVATE">Privada — só eu vejo</option>
-                  <option value="CLAN">Clã — visível pros membros de um clã</option>
+                  <option value="CLAN">Comitê — visível pros membros de um comitê</option>
                   <option value="OFFICIAL">Oficial — visível a todo o ecossistema</option>
                 </select>
                 <small>Dá pra mudar depois, editando a skill.</small>
@@ -259,15 +259,15 @@ export function AgentSkillCreatePage() {
 
               {visibility === 'CLAN' && (
                 <label className="workspace-field workspace-field-full">
-                  Clã
+                  Comitê
                   {myClans.length === 0 ? (
                     <small>
-                      Você não faz parte de nenhum clã onde possa adicionar Agent Skills. <a href="/clans">Crie ou entre em um</a> antes de
+                      Você não faz parte de nenhum comitê onde possa adicionar Agent Skills. <a href="/comites">Crie ou entre em um</a> antes de
                       continuar.
                     </small>
                   ) : (
                     <select value={clanId} onChange={(event) => setClanId(event.target.value)}>
-                      <option value="">Selecione um clã...</option>
+                      <option value="">Selecione um comitê...</option>
                       {myClans.map((clan) => (
                         <option key={clan.id} value={clan.id}>
                           {clan.name}

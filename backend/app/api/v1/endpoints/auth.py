@@ -443,7 +443,7 @@ def delete_my_account(
 ) -> Response:
     """Desativa a conta em vez de apagar a linha.
 
-    Várias tabelas apontam para users.id com ondelete=RESTRICT (skills, clãs, chamadas
+    Várias tabelas apontam para users.id com ondelete=RESTRICT (skills, comitês, chamadas
     ao LLM...), então um DELETE falharia para quase toda conta que já usou o sistema.
     Nome, e-mail e identidades são apagados; o histórico que aponta para a conta fica.
     """

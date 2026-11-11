@@ -99,7 +99,7 @@ export function AccountPage() {
         <div>
           <span className="workspace-eyebrow">MINHA CONTA</span>
           <h1>Conta e preferências</h1>
-          <p>Gerencie seus dados de perfil, segurança e participação em clãs.</p>
+          <p>Gerencie seus dados de perfil, segurança e participação em comitês.</p>
         </div>
       </section>
 
@@ -175,9 +175,9 @@ export function AccountPage() {
         )}
 
         <article className="workspace-panel">
-          <span className="workspace-card-kicker">CLÃS · {myClans.length}</span>
+          <span className="workspace-card-kicker">COMITÊS · {myClans.length}</span>
           {myClans.length === 0 ? (
-            <div className="workspace-empty">Você ainda não participa de nenhum clã.</div>
+            <div className="workspace-empty">Você ainda não participa de nenhum comitê.</div>
           ) : (
             <ul className="workspace-account-clan-list">
               {myClans.map((clan) => (
@@ -190,8 +190,8 @@ export function AccountPage() {
               ))}
             </ul>
           )}
-          <Link className="workspace-secondary-action workspace-account-clan-link" to="/clans">
-            Gerenciar clãs →
+          <Link className="workspace-secondary-action workspace-account-clan-link" to="/comites">
+            Gerenciar comitês →
           </Link>
         </article>
 
@@ -199,7 +199,7 @@ export function AccountPage() {
           <span className="workspace-card-kicker workspace-danger-kicker">ZONA DE RISCO</span>
           <p>
             Excluir a conta desativa seu acesso e remove seus dados pessoais visíveis (nome, e-mail). O
-            histórico de solicitações, skills e clãs que você criou permanece registrado, sem ficar
+            histórico de solicitações, skills e comitês que você criou permanece registrado, sem ficar
             atribuído ao seu nome.
           </p>
           {!confirmingDelete ? (

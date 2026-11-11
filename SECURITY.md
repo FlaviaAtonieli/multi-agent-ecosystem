@@ -54,8 +54,8 @@ Desde 14/10/2026 não há papéis de usuário (os antigos `USER`, `TECHNICIAN`, 
 |---|---|
 | Solicitações, orquestrações e revisão humana | Só quem abriu a solicitação (lookup owner-scoped, 404 para os demais) |
 | Trilha de auditoria | Cada usuário vê apenas os eventos das próprias solicitações |
-| Agent Skills | Qualquer usuário cria ou importa, inclusive `OFFICIAL`; editar, desativar e reativar fica com quem criou (numa skill `CLAN`, também com o dono do clã). As 4 oficiais sem dono só são desativadas e reativadas pela conta inicial (`BOOTSTRAP_ADMIN_EMAIL`), e ninguém as edita pela tela |
-| Clãs | Regras por clã (`is_open`, `skills_policy`, `members_policy`); o dono (`created_by_id`) altera as configurações |
+| Agent Skills | Qualquer usuário cria ou importa, inclusive `OFFICIAL`; editar, desativar e reativar fica com quem criou (numa skill `CLAN`, também com o dono do comitê). As 4 oficiais sem dono só são desativadas e reativadas pela conta inicial (`BOOTSTRAP_ADMIN_EMAIL`), e ninguém as edita pela tela |
+| Comitês | Regras por comitê (`is_open`, `skills_policy`, `members_policy`); o dono (`created_by_id`) altera as configurações |
 
 Não há mais painel de administração: desativar a conta de outro usuário deixou de existir pela interface.
 
@@ -64,7 +64,7 @@ Não há mais painel de administração: desativar a conta de outro usuário dei
 Independentes entre si e avaliadas nesta ordem -- cada uma só é checada se a anterior já passou:
 
 1. **Propriedade** (controla *sobre o que* a pessoa age). Toda solicitação, orquestração e revisão é do usuário que a criou.
-2. **Visibilidade da Agent Skill** (controla *o que* existe pra executar). `OFFICIAL` é visível a qualquer usuário autenticado; `PRIVATE` fica restrita ao dono; `CLAN` fica restrita aos membros do clã (`clan_id`) associado.
+2. **Visibilidade da Agent Skill** (controla *o que* existe pra executar). `OFFICIAL` é visível a qualquer usuário autenticado; `PRIVATE` fica restrita ao dono; `CLAN` fica restrita aos membros do comitê (`clan_id`) associado.
 3. **Cota diária de tokens** (controla *quanto* cada pessoa pode executar naquele dia; desligada por padrão -- `LLM_DAILY_TOKEN_LIMIT_PER_USER=0`). Vale para todas as contas. Detalhes: [docs/integrations/model-provider.md](docs/integrations/model-provider.md#cota-diária-de-tokens-por-usuário).
 
 > Como o cadastro é aberto por padrão (`ALLOW_REGISTRATION=true`) e todo usuário executa orquestrações e publica skills `OFFICIAL`, um deploy exposto publicamente deve considerar reativar a cota diária de tokens (item 3) e/ou fechar o cadastro.

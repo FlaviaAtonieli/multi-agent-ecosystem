@@ -64,7 +64,7 @@ def create_request(
     if not is_member(db, clan_id=payload.clan_id, user_id=current_session.user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Só um membro do clã pode usá-lo numa solicitação.",
+            detail="Só um membro do comitê pode usá-lo numa solicitação.",
         )
 
     technical_request = create_technical_request(

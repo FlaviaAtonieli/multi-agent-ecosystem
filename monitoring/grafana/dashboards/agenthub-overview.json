@@ -161,7 +161,7 @@
     {
       "id": 5,
       "type": "stat",
-      "title": "Clãs",
+      "title": "Comitês",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
