@@ -1,0 +1,2 @@
+# O token do Prometheus local nunca entra no contexto de build.
+prometheus/metrics_token
