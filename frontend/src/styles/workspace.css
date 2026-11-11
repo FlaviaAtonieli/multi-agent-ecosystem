@@ -1294,7 +1294,7 @@
 
 @media (max-width: 1120px) {
   .workspace-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .workspace-dashboard-grid, .workspace-detail-grid, .workspace-wizard-grid { grid-template-columns: 1fr; }
+  .workspace-dashboard-grid, .workspace-detail-grid, .workspace-wizard-grid { grid-template-columns: minmax(0, 1fr); }
   .workspace-skill-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .workspace-core-agents-grid { grid-template-columns: 1fr; }
   .workspace-account-grid { grid-template-columns: 1fr; }
@@ -1325,6 +1325,7 @@
   .workspace-metric-grid { grid-template-columns: 1fr; }
   .workspace-skill-grid { grid-template-columns: 1fr; }
   .workspace-form-panel, .workspace-panel { padding: 18px; }
+  .workspace-content { padding-left: 16px; padding-right: 16px; }
   .workspace-user > div:not(.workspace-avatar), .workspace-breadcrumb { display: none; }
   .workspace-definition-list > div { grid-template-columns: 1fr; gap: 7px; }
   .workspace-nav-link > span { display: none; }
