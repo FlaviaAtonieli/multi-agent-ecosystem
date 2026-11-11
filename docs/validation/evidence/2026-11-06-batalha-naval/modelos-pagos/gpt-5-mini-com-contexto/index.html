@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Batalha Naval</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Batalha Naval</h1>
+    <p id="instructions">Clique nas células do "Tabuleiro do computador" para atirar. Use teclado: letras A-J para coluna e números 1-0 para linha (0 = 10). Navegue com Tab e pressione Enter ou Espaço para atirar na célula focada.</p>
+  </header>
+
+  <main>
+    <section class="boards">
+      <div class="board-wrapper">
+        <h2>Seu tabuleiro</h2>
+        <div id="player-board" class="board" aria-label="Tabuleiro do jogador"></div>
+      </div>
+
+      <div class="board-wrapper">
+        <h2>Tabuleiro do computador</h2>
+        <div id="computer-board" class="board" aria-label="Tabuleiro do computador"></div>
+      </div>
+    </section>
+
+    <aside class="status-area">
+      <div id="status" aria-live="polite">Carregando jogo...</div>
+      <button id="restart-btn" type="button">Reiniciar jogo</button>
+    </aside>
+  </main>
+
+  <footer>
+    <p>Frota: Porta-aviões (5), Encouracado (4), Cruzador (3), Submarino (3), Destróier (2).</p>
+  </footer>
+
+  <script src="game.js"></script>
+</body>
+</html>

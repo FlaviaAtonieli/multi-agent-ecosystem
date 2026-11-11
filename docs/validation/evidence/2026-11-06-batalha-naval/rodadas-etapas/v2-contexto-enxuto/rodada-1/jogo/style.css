@@ -1,0 +1,142 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  min-height: 100vh;
+  color: white;
+  padding: 20px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+h1 {
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.boards-container {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin: 30px 0;
+  flex-wrap: wrap;
+}
+
+.board-section {
+  text-align: center;
+}
+
+h2 {
+  margin-bottom: 15px;
+  font-size: 1.5em;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(10, 35px);
+  grid-template-rows: repeat(10, 35px);
+  gap: 2px;
+  background-color: rgba(0,0,0,0.3);
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.cell {
+  width: 35px;
+  height: 35px;
+  background-color: #4a90e2;
+  border: 1px solid #2a5298;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.cell:hover {
+  background-color: #5aa0f0;
+  transform: scale(1.05);
+}
+
+.cell.player-ship {
+  background-color: #8B4513;
+}
+
+.cell.hit {
+  background-color: #ff4444;
+}
+
+.cell.miss {
+  background-color: #cccccc;
+}
+
+.cell.sunk {
+  background-color: #8B0000;
+}
+
+.controls {
+  margin-top: 30px;
+}
+
+#restart-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-bottom: 20px;
+}
+
+#restart-btn:hover {
+  background-color: #218838;
+}
+
+.status-message {
+  font-size: 1.2em;
+  margin: 10px 0;
+  min-height: 30px;
+  font-weight: bold;
+}
+
+.victory {
+  color: #28a745;
+  animation: pulse 1s infinite;
+}
+
+.defeat {
+  color: #dc3545;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .boards-container {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .cell {
+    width: 30px;
+    height: 30px;
+  }
+}

@@ -1,0 +1,139 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 1000px;
+    width: 100%;
+}
+
+h1 {
+    text-align: center;
+    color: #1e3c72;
+    margin-bottom: 30px;
+    font-size: 2.5em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.game-area {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.board-section {
+    text-align: center;
+}
+
+.board-section h2 {
+    color: #1e3c72;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(10, 40px);
+    grid-template-rows: repeat(10, 40px);
+    gap: 2px;
+    background-color: #0056b3;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.cell {
+    width: 40px;
+    height: 40px;
+    background-color: #e0f7ff;
+    border: 1px solid #0056b3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.cell:hover {
+    background-color: #b3e5fc;
+    transform: scale(1.05);
+}
+
+.cell.hit {
+    background-color: #ff4444;
+    color: white;
+}
+
+.cell.miss {
+    background-color: #cccccc;
+    color: #666;
+}
+
+.cell.ship {
+    background-color: #8B4513;
+}
+
+.status-area {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.status-message {
+    font-size: 1.2em;
+    color: #1e3c72;
+    margin-bottom: 20px;
+    min-height: 30px;
+    font-weight: bold;
+}
+
+.restart-button {
+    background-color: #1e3c72;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 1em;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.restart-button:hover {
+    background-color: #2a5298;
+}
+
+@media (max-width: 768px) {
+    .board {
+        grid-template-columns: repeat(10, 30px);
+        grid-template-rows: repeat(10, 30px);
+    }
+    
+    .cell {
+        width: 30px;
+        height: 30px;
+        font-size: 0.8em;
+    }
+    
+    h1 {
+        font-size: 2em;
+    }
+}

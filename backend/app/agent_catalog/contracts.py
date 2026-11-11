@@ -32,6 +32,9 @@ class SkillToolCall(BaseModel):
     analises_requeridas: list[str] = Field(default_factory=list)
     requested_model: str | None = None
     additional_question: str | None = None
+    # Entregas das skills que rodaram antes, para as que escrevem código (ver
+    # app/services/team_context.py).
+    team_context: str | None = None
 
 
 class AgenteEmissor(BaseModel):

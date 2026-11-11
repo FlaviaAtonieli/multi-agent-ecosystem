@@ -28,6 +28,7 @@ def evaluate(
     *,
     files_requested: bool = False,
     files_delivered: bool | None = None,
+    package_issues: list[str] | None = None,
 ) -> QualityGateVerdict:
     """Cross-checks the consolidated Agent Skill responses before delivery (RF11).
 
@@ -88,8 +89,14 @@ def evaluate(
     if missing_files:
         reasons.append("A solicitação pediu arquivos, mas nenhuma Agent Skill os gerou.")
 
+    # Checagem sem IA do pacote entregue (app/services/artifact_service.check_package).
+    if package_issues:
+        reasons.append("Pacote de arquivos incompleto: " + " ".join(package_issues))
+
     approved = not low_confidence and not divergent_pairs
-    requires_human_review = not approved or bool(medium_confidence) or missing_files
+    requires_human_review = (
+        not approved or bool(medium_confidence) or missing_files or bool(package_issues)
+    )
 
     if approved and not reasons:
         reasons.append("Todas as respostas passaram na validação de contrato e confiança.")

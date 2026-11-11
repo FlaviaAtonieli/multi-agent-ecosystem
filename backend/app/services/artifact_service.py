@@ -23,6 +23,9 @@ MAX_TOTAL_BYTES = 2_000_000
 MAX_PATH_LENGTH = 200
 
 _WINDOWS_DRIVE = re.compile(r"^[A-Za-z]:")
+# Alguns modelos repetem o nome do campo do schema como pasta ("generated_files/GDD.md").
+_SCHEMA_FIELD_FOLDER = "generated_files/"
+_LOCAL_REFERENCE = re.compile(r"""(?:src|href)\s*=\s*["']([^"'#?]+)["']""", re.IGNORECASE)
 
 
 def safe_relative_path(raw_name: str) -> str | None:
@@ -59,7 +62,10 @@ def prepare_files(files: Iterable[ArquivoGerado]) -> tuple[list[ArquivoGerado], 
     total_bytes = 0
 
     for file in files:
-        path = safe_relative_path(file.nome)
+        raw_name = file.nome.strip()
+        if raw_name.lower().startswith(_SCHEMA_FIELD_FOLDER) and len(raw_name) > len(_SCHEMA_FIELD_FOLDER):
+            raw_name = raw_name[len(_SCHEMA_FIELD_FOLDER) :]
+        path = safe_relative_path(raw_name)
         size = len(file.conteudo.encode("utf-8", errors="replace"))
         too_much = (
             len(accepted) >= MAX_FILES_PER_RESPONSE
@@ -74,6 +80,29 @@ def prepare_files(files: Iterable[ArquivoGerado]) -> tuple[list[ArquivoGerado], 
         total_bytes += size
 
     return accepted, rejected
+
+
+def check_package(files: Iterable[tuple[str, str]]) -> list[str]:
+    """Confere, sem IA, se as páginas HTML de uma skill carregam arquivos que vieram junto.
+
+    Recebe (caminho, conteúdo) dos arquivos de uma mesma skill, que ficam na mesma
+    pasta do ZIP. Endereços externos, âncoras e data: não contam.
+    """
+    files = list(files)
+    paths = {path for path, _ in files}
+    issues: list[str] = []
+    for path, content in files:
+        if not path.lower().endswith((".html", ".htm")):
+            continue
+        base = PurePosixPath(path).parent
+        for reference in _LOCAL_REFERENCE.findall(content):
+            reference = reference.strip()
+            if not reference or "://" in reference or reference.startswith(("//", "data:", "mailto:", "/")):
+                continue
+            target = safe_relative_path(str(base / reference))
+            if target is not None and target not in paths:
+                issues.append(f"{path} carrega {reference}, que não foi entregue.")
+    return issues
 
 
 def build_zip(files: Iterable[tuple[str, str, str]]) -> bytes:
