@@ -36,9 +36,10 @@ def test_validacao_cruzada_sai_igual_com_a_mesma_semente() -> None:
     positives = [0.4, 0.5, 0.6, 0.7, 0.45, 0.55]
     negatives = [0.1, 0.2, 0.3, 0.42, 0.25, 0.35]
 
-    assert cross_validate_threshold(positives, negatives, k=3) == cross_validate_threshold(
-        positives, negatives, k=3
-    )
+    first = cross_validate_threshold(positives, negatives, k=3)
+    second = cross_validate_threshold(positives, negatives, k=3)
+
+    assert first == second
 
 
 def test_validacao_cruzada_exige_notas_suficientes() -> None:
