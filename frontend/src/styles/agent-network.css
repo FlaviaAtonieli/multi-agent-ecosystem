@@ -70,7 +70,7 @@
   .network-copy { width: 100%; margin-top: 28px; margin-bottom: 24px; transform: none; }
   .network-kicker { font-size: 0.58rem; letter-spacing: 0.14em; }
   .network-kicker::before, .network-kicker::after { width: 16px; }
-  .network-copy h1 { font-size: clamp(2.65rem, 15vw, 4.4rem); }
+  .network-copy h1 { font-size: clamp(2.1rem, 10.5vw, 4.4rem); }
   .network-copy p { margin-top: 20px; font-size: 0.9rem; line-height: 1.55; }
 }
 @media (prefers-reduced-motion: reduce) { .agent-network-canvas { opacity: 0.72; } }

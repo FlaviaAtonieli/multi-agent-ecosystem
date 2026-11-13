@@ -32,7 +32,7 @@ from app.api.v1.endpoints import (
 from app.core.config import settings
 
 API_DESCRIPTION = """
-API do **Multi-Agent Ecosystem**: um Orquestrador recebe solicitações técnicas,
+API da **Flav.IA — Plataforma de Orquestração de Agentes**: um Orquestrador recebe solicitações técnicas,
 seleciona as Agent Skills de cada domínio, consolida as respostas e passa o
 resultado pelo Conselheiro (Quality Gate) antes da entrega.
 

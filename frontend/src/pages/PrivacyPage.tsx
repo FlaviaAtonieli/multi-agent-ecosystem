@@ -5,7 +5,7 @@ export function PrivacyPage() {
     <main className="workspace-page workspace-page-narrow workspace-privacy">
       <h1>Política de privacidade</h1>
       <p>
-        O Flav.IA é um projeto acadêmico, uma Prova de Conceito do Trabalho de Conclusão de Curso da autora. Esta página
+        A Flav.IA é um projeto acadêmico, uma Prova de Conceito do Trabalho de Conclusão de Curso da autora. Esta página
         explica, em linguagem direta, como ele trata os seus dados, conforme a LGPD (Lei nº 13.709/2018).
       </p>
       <p>

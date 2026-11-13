@@ -1,8 +1,8 @@
-# Multi-Agent Ecosystem
+# Flav.IA — Plataforma de Orquestração de Agentes
 
 [![CI](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/actions/workflows/ci.yml)
 
-Projeto acadêmico **Arquitetura de Integração de Agentes Especialistas em Ambientes Corporativos**.
+Projeto acadêmico **Arquitetura de Integração de Agentes Especialistas em Ambientes Corporativos**. O código e os recursos no Azure mantêm o nome técnico `multi-agent-ecosystem`.
 
 A proposta é validar uma arquitetura modular para registrar, selecionar, coordenar e auditar capacidades especializadas. A Prova de Conceito usa solicitações técnicas como entrada e mantém o vínculo entre contexto, decisões, chamadas de modelo e eventos por meio de um `Trace ID`.
 

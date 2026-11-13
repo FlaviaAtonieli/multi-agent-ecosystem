@@ -249,11 +249,11 @@ export function AgentNetworkHero({ variant = 'login' }: AgentNetworkHeroProps) {
       <canvas ref={canvasRef} className="agent-network-canvas" aria-hidden="true" tabIndex={-1} />
       <div className="network-noise" aria-hidden="true" />
       <div className="network-copy">
-        <span className="network-kicker">ECOSSISTEMA MODULAR E RASTREÁVEL</span>
+        <span className="network-kicker">MODULAR E RASTREÁVEL</span>
         <p className="network-brand">Flav.IA</p>
         <h1>
-          <span>multi-agent</span>
-          <strong>ecosystem</strong>
+          <span>plataforma de</span>
+          <strong>orquestração de agentes</strong>
         </h1>
         <p>Arquitetura de Integração de Agentes Especialistas em Ambientes Corporativos</p>
       </div>

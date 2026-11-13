@@ -60,7 +60,7 @@ export function AppShell() {
       <div className="workspace-main">
         <header className="workspace-topbar">
           <div>
-            <span className="workspace-breadcrumb">MULTI-AGENT ECOSYSTEM</span>
+            <span className="workspace-breadcrumb">PLATAFORMA DE ORQUESTRAÇÃO DE AGENTES</span>
           </div>
           <div className="workspace-user">
             <Link className="workspace-account-link" to="/account" title="Minha conta">

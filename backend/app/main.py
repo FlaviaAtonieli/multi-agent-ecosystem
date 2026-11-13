@@ -45,7 +45,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="Flav.IA API",
+    title="Flav.IA — Plataforma de Orquestração de Agentes (API)",
     version="0.1.0",
     lifespan=lifespan,
     # Auditoria de seguranca P1: Swagger/Redoc/schema nao ficam servidos em
