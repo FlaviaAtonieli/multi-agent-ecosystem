@@ -59,7 +59,7 @@ Antes de qualquer chamada externa, [`llm/security.py`](../../backend/app/llm/sec
 
 Cada Agent Skill é chamada por meio do protocolo MCP e faz uma chamada à OpenRouter, com as instruções da skill, os trechos recuperados e a solicitação. O modelo padrão é `openai/gpt-5-mini`, escolhido depois que o modelo gratuito anterior saiu do catálogo. O usuário escolhe outro entre os permitidos em `LLM_ALLOWED_MODELS`.
 
-Só as skills ativas do **clã escolhido** são chamadas, o que evita gastar tokens com skills fora do assunto.
+Só as skills ativas do **comitê escolhido** são chamadas, o que evita gastar tokens com skills fora do assunto.
 
 Quando a solicitação pede um arquivo, código ou projeto, o modelo também devolve `generated_files`. Os nomes e o conteúdo são tratados como não confiáveis: caminhos que poderiam sair da pasta do projeto são recusados, e nada é executado. Depois de gerados, mostrar, baixar e compactar os arquivos não chama o modelo.
 
@@ -116,7 +116,7 @@ Com o modelo gratuito, Código Legado cai de MRR 0,875 para 0,500. As áreas mai
 
 ## Motor de sugestão de skills
 
-Antes de registrar a solicitação, a pessoa pode verificar se alguma skill fora do clã ajudaria. O texto da solicitação, mascarado, e o de cada skill ativa (nome, área, objetivo e capacidades) viram embeddings, comparados por similaridade de cosseno. O vetor de cada skill fica guardado até o texto dela mudar. O motor só sugere, e a pessoa decide.
+Antes de registrar a solicitação, a pessoa pode verificar se alguma skill fora do comitê ajudaria. O texto da solicitação, mascarado, e o de cada skill ativa (nome, área, objetivo e capacidades) viram embeddings, comparados por similaridade de cosseno. O vetor de cada skill fica guardado até o texto dela mudar. O motor só sugere, e a pessoa decide.
 
 **Por que não uma CNN ou outro modelo treinado:** não há exemplos rotulados de "solicitação e skill certa", e um dataset pronto como dados da solução reprova na linha de IA. A similaridade dispensa treino e pode ser medida com gabarito.
 

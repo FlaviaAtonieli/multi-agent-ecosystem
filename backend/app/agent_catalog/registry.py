@@ -42,7 +42,7 @@ def register_skill(
 
     Se não passar, AgentSkillValidationError traz todos os problemas de uma vez. A
     visibilidade padrão é OFFICIAL; PRIVATE serve para uma skill ainda em teste, e
-    CLAN, com clan_id, para uma skill só dos membros de um clã.
+    CLAN, com clan_id, para uma skill só dos membros de um comitê.
     """
     result = validate_manifest(manifest)
     if not result.is_valid:
@@ -116,9 +116,9 @@ def get_skill(db: Session, skill_id: str) -> AgentSkill:
 def _visibility_filter(viewer_id: str | None):
     """Um usuário enxerga skills OFFICIAL (o padrão para toda skill nova, ver
     register_skill), as que ele mesmo criou como PRIVATE (nunca a de outro
-    usuário), e as CLAN de qualquer clã do qual ele seja membro. Seguro por
+    usuário), e as CLAN de qualquer comitê do qual ele seja membro. Seguro por
     padrão: sem viewer_id, só as oficiais aparecem (nunca vaza skill privada
-    nem de clã de ninguém)."""
+    nem de comitê de ninguém)."""
     if viewer_id is None:
         return AgentSkill.visibility == "OFFICIAL"
     member_clan_ids = select(ClanMembership.clan_id).where(ClanMembership.user_id == viewer_id)

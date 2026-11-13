@@ -25,7 +25,7 @@ export function AgentSkillImportPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (visibility === 'CLAN' && !clanId) {
-      setError('Escolha em qual clã esse manifesto vai ficar visível.')
+      setError('Escolha em qual comitê esse manifesto vai ficar visível.')
       return
     }
     setSubmitting(true)
@@ -76,22 +76,22 @@ export function AgentSkillImportPage() {
               onChange={(event) => setVisibility(event.target.value as 'OFFICIAL' | 'PRIVATE' | 'CLAN')}
             >
               <option value="OFFICIAL">Oficial — visível a todo o ecossistema</option>
-              <option value="CLAN">Clã — visível pros membros de um clã</option>
+              <option value="CLAN">Comitê — visível pros membros de um comitê</option>
               <option value="PRIVATE">Privada — só eu vejo</option>
             </select>
           </label>
 
           {visibility === 'CLAN' && (
             <label className="workspace-field workspace-field-full">
-              Clã
+              Comitê
               {myClans.length === 0 ? (
                 <small>
-                  Você não faz parte de nenhum clã onde possa adicionar Agent Skills. <a href="/clans">Crie ou entre em um</a> antes de
+                  Você não faz parte de nenhum comitê onde possa adicionar Agent Skills. <a href="/comites">Crie ou entre em um</a> antes de
                   continuar.
                 </small>
               ) : (
                 <select value={clanId} onChange={(event) => setClanId(event.target.value)}>
-                  <option value="">Selecione um clã...</option>
+                  <option value="">Selecione um comitê...</option>
                   {myClans.map((clan) => (
                     <option key={clan.id} value={clan.id}>
                       {clan.name}

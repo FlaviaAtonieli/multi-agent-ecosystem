@@ -26,13 +26,15 @@ Registro curto das decisões que mais moldam o sistema. Cada uma diz o contexto,
 
 **Custo.** Não escala para milhares de documentos. Nesse ponto, o caminho é pgvector ou um banco vetorial, atrás da mesma interface `Retriever`.
 
-## 4. O clã define quem responde
+## 4. O comitê define quem responde
 
 **Contexto.** Chamar todas as skills a cada solicitação gasta tokens com áreas fora do assunto.
 
-**Decisão.** A solicitação escolhe um clã, e só as skills ativas dele respondem. O [motor de sugestão](../../backend/app/services/skill_suggestion_service.py) indica skills de fora que podem ajudar, por embeddings, e a pessoa decide se as adiciona.
+**Decisão.** A solicitação escolhe um comitê, e só as skills ativas dele respondem. O [motor de sugestão](../../backend/app/services/skill_suggestion_service.py) indica skills de fora que podem ajudar, por embeddings, e a pessoa decide se as adiciona.
 
-**Custo.** Um clã mal montado dá uma resposta pobre. A sugestão ajuda, mas não corrige sozinha.
+**Nome.** Até novembro de 2026 o comitê se chamava clã. A troca valeu para as telas e os documentos; no código, no banco e na API o nome continua `clan`, e o endereço antigo `/clans` leva para `/comites`.
+
+**Custo.** Um comitê mal montado dá uma resposta pobre. A sugestão ajuda, mas não corrige sozinha.
 
 ## 5. Quality Gate por regras, sem um LLM como juiz
 
@@ -54,7 +56,7 @@ Registro curto das decisões que mais moldam o sistema. Cada uma diz o contexto,
 
 **Contexto.** Os papéis de usuário não correspondiam a quem de fato podia mexer em cada coisa.
 
-**Decisão.** Quem criou a solicitação ou a skill pode mexer nela. A visibilidade da skill (oficial, privada ou de clã) diz quem pode usá-la, e a cota diária de tokens limita o gasto de cada pessoa. Detalhes em [SECURITY.md](../../SECURITY.md#autorização).
+**Decisão.** Quem criou a solicitação ou a skill pode mexer nela. A visibilidade da skill (oficial, privada ou de comitê) diz quem pode usá-la, e a cota diária de tokens limita o gasto de cada pessoa. Detalhes em [SECURITY.md](../../SECURITY.md#autorização).
 
 **Custo.** Não há uma pessoa administradora geral. A conta inicial só liga e desliga as skills oficiais sem dono.
 

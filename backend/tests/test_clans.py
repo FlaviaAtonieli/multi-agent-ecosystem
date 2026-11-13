@@ -174,7 +174,7 @@ def test_creating_clan_skill_without_clan_id_is_422(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-# --- configurações do clã (migration 0015) ---------------------------------
+# --- configurações do comitê (migration 0015) ---------------------------------
 
 
 def _create_configured_clan(client: TestClient, name: str, **settings) -> dict:
@@ -252,7 +252,7 @@ def test_owner_only_members_policy_blocks_other_members(client: TestClient) -> N
     )
     assert response.status_code == 403
 
-    # Sair do clã continua livre, mesmo com OWNER_ONLY.
+    # Sair do comitê continua livre, mesmo com OWNER_ONLY.
     leave = client.delete(
         f"/api/v1/clans/{clan['id']}/members/{bob_id}", headers=authenticated_csrf_headers(client)
     )

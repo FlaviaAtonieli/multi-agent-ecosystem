@@ -14,7 +14,7 @@ class TechnicalRequestCreate(BaseModel):
     objective: str = Field(min_length=5, max_length=5_000)
     context: str | None = Field(default=None, max_length=20_000)
     restrictions: list[str] = Field(default_factory=list, max_length=20)
-    clan_id: str = Field(min_length=1, max_length=36, description="Clã cujas Agent Skills vão responder.")
+    clan_id: str = Field(min_length=1, max_length=36, description="Comitê cujas Agent Skills vão responder.")
     requested_domains: list[DomainName] = Field(default_factory=list, max_length=50)
 
     @field_validator("title", "problem", "objective")

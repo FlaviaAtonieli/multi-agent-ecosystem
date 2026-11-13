@@ -33,8 +33,8 @@ const catalog = [
 ]
 
 const clans = [
-  { id: 'cla-1', name: 'Meu clã', created_by_id: testUser.id },
-  { id: 'cla-2', name: 'Clã alheio', created_by_id: 'outra-pessoa' },
+  { id: 'cla-1', name: 'Meu comitê', created_by_id: testUser.id },
+  { id: 'cla-2', name: 'Comitê alheio', created_by_id: 'outra-pessoa' },
 ]
 
 function routes(overrides: Record<string, unknown> = {}) {
@@ -90,14 +90,14 @@ describe('AgentSkillsPage', () => {
       mockApi(routes())
       renderPage()
       const element = await card(`Skill ${id}`)
-      // O dono do clã só é conhecido depois que a lista de clãs carrega.
-      await screen.findByRole('option', { name: 'Clã · Meu clã' })
+      // O dono do comitê só é conhecido depois que a lista de comitês carrega.
+      await screen.findByRole('option', { name: 'Comitê · Meu comitê' })
 
       expect(within(element).queryByRole('link', { name: 'Editar' }) !== null).toBe(visible)
       expect(within(element).queryByRole('button', { name: 'Desativar' }) !== null).toBe(visible)
     })
 
-    it('o dono do clã gerencia uma skill do clã criada por outra pessoa', async () => {
+    it('o dono do comitê gerencia uma skill do comitê criada por outra pessoa', async () => {
       mockApi(routes())
       renderPage()
       const element = await card('Skill cla-meu')
@@ -210,12 +210,12 @@ describe('AgentSkillsPage', () => {
     it.each([
       ['Oficiais do ecossistema', ['Skill sem-dono', 'Skill oficial-minha', 'Skill oficial-outra', 'Skill desativada']],
       ['Minhas privadas', ['Skill privada-minha']],
-      ['Clã · Meu clã', ['Skill cla-meu']],
+      ['Comitê · Meu comitê', ['Skill cla-meu']],
     ])('filtra pela origem: %s', async (option, expected) => {
       const user = userEvent.setup()
       mockApi(routes())
       renderPage()
-      await screen.findByRole('option', { name: 'Clã · Meu clã' })
+      await screen.findByRole('option', { name: 'Comitê · Meu comitê' })
 
       await user.selectOptions(screen.getByLabelText('Filtrar por origem'), option)
 

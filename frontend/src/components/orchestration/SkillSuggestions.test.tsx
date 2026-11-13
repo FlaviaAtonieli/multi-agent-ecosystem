@@ -61,7 +61,7 @@ describe('SkillSuggestions', () => {
     })
   })
 
-  it('adiciona a skill ao clã e avisa o formulário', async () => {
+  it('adiciona a skill ao comitê e avisa o formulário', async () => {
     const user = userEvent.setup()
     const api = mockApi({
       [`POST ${URL}`]: response(),
@@ -70,15 +70,15 @@ describe('SkillSuggestions', () => {
     const onAdded = renderPanel()
     await check(user)
 
-    await user.click(await screen.findByRole('button', { name: 'Adicionar Skill de Impostos ao clã' }))
+    await user.click(await screen.findByRole('button', { name: 'Adicionar Skill de Impostos ao comitê' }))
 
-    expect(await screen.findByText(/Skill de Impostos entrou no clã/)).toBeInTheDocument()
+    expect(await screen.findByText(/Skill de Impostos entrou no comitê/)).toBeInTheDocument()
     expect(onAdded).toHaveBeenCalledWith('Contabilidade')
     expect(api.jsonBody('POST', '/clans/clan-1/skills')).toEqual({ agent_skill_id: 's1' })
-    expect(screen.queryByRole('button', { name: 'Adicionar Skill de Impostos ao clã' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Adicionar Skill de Impostos ao comitê' })).not.toBeInTheDocument()
   })
 
-  it('sem permissão no clã, mostra a sugestão sem o botão', async () => {
+  it('sem permissão no comitê, mostra a sugestão sem o botão', async () => {
     const user = userEvent.setup()
     mockApi({ [`POST ${URL}`]: response({ can_add_to_clan: false }) })
     renderPanel()
@@ -87,17 +87,17 @@ describe('SkillSuggestions', () => {
 
     await screen.findByText('Skill de Impostos')
     expect(screen.queryByRole('button', { name: /^Adicionar/ })).not.toBeInTheDocument()
-    expect(screen.getByText(/Só o dono deste clã pode adicionar/)).toBeInTheDocument()
+    expect(screen.getByText(/Só o dono deste comitê pode adicionar/)).toBeInTheDocument()
   })
 
-  it('avisa quando o clã já cobre o assunto', async () => {
+  it('avisa quando o comitê já cobre o assunto', async () => {
     const user = userEvent.setup()
     mockApi({ [`POST ${URL}`]: response({ suggestions: [], covered_by_clan: true }) })
     renderPanel()
 
     await check(user)
 
-    expect(await screen.findByText(/As skills deste clã já parecem cobrir/)).toBeInTheDocument()
+    expect(await screen.findByText(/As skills deste comitê já parecem cobrir/)).toBeInTheDocument()
   })
 
   it('avisa quando o catálogo não cobre o assunto e oferece criar uma skill', async () => {
@@ -135,14 +135,14 @@ describe('SkillSuggestions', () => {
     const user = userEvent.setup()
     mockApi({
       [`POST ${URL}`]: response(),
-      'POST /clans/clan-1/skills': apiError(403, 'Neste clã, só o dono pode registrar Agent Skills.'),
+      'POST /clans/clan-1/skills': apiError(403, 'Neste comitê, só o dono pode registrar Agent Skills.'),
     })
     const onAdded = renderPanel()
     await check(user)
 
-    await user.click(await screen.findByRole('button', { name: 'Adicionar Skill de Impostos ao clã' }))
+    await user.click(await screen.findByRole('button', { name: 'Adicionar Skill de Impostos ao comitê' }))
 
-    expect(await screen.findByText('Neste clã, só o dono pode registrar Agent Skills.')).toBeInTheDocument()
+    expect(await screen.findByText('Neste comitê, só o dono pode registrar Agent Skills.')).toBeInTheDocument()
     expect(onAdded).not.toHaveBeenCalled()
   })
 })

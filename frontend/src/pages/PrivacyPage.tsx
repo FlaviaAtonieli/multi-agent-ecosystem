@@ -17,7 +17,7 @@ export function PrivacyPage() {
       <ul>
         <li>Conta: nome, e-mail, senha protegida por hash e, se usar login social, o identificador do GitHub ou do Google.</li>
         <li>Sessão e auditoria: endereço IP, navegador, data das ações e eventos de segurança.</li>
-        <li>Uso: solicitações, anexos, Agent Skills, clãs, respostas e arquivos gerados.</li>
+        <li>Uso: solicitações, anexos, Agent Skills, comitês, respostas e arquivos gerados.</li>
       </ul>
 
       <h2>Para que usamos</h2>
@@ -43,7 +43,7 @@ export function PrivacyPage() {
       <h2>Seus direitos</h2>
       <p>
         Em <Link to="/account">Minha conta</Link>, você corrige o nome e exclui a conta. A exclusão desativa o acesso e remove o
-        nome e o e-mail. O histórico de solicitações, skills e clãs permanece, sem ficar atribuído a você. Para outros pedidos,
+        nome e o e-mail. O histórico de solicitações, skills e comitês permanece, sem ficar atribuído a você. Para outros pedidos,
         abra uma{' '}
         <a href="https://github.com/FlaviaAtonieli/multi-agent-ecosystem/issues" target="_blank" rel="noreferrer">
           issue no repositório do projeto

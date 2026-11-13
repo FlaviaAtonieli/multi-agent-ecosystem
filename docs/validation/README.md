@@ -21,9 +21,9 @@ detalhadas em [`docs/validation/evidence/`](evidence) — este documento
 - hashes SHA-256 da entrada e saída, sem conteúdo integral em `llm_invocations` por padrão;
 - mascaramento de e-mail, senha, token e padrões de chave antes de qualquer chamada externa;
 - catálogo de Agent Skills: 10 oficiais e skills de usuário em área livre, com visibilidade
-  `OFFICIAL`, `PRIVATE` (só o dono) ou `CLAN` (membros do clã);
+  `OFFICIAL`, `PRIVATE` (só o dono) ou `CLAN` (membros do comitê);
 - anexo de documentos de texto como contexto adicional de uma solicitação;
-- clã obrigatório na orquestração, respostas com arquivos e ZIP, e sugestão de skills por embeddings;
+- comitê obrigatório na orquestração, respostas com arquivos e ZIP, e sugestão de skills por embeddings;
 - pipeline RAG com qualidade medida (Precision@k, Recall@k e MRR) em 4 das 10 áreas
   oficiais (ver [`docs/ai-pipeline.md`](../architecture/ai-pipeline.md));
 - métricas de IA, execução e autenticação em `/metrics`, com painel e alertas no Grafana.
@@ -90,7 +90,7 @@ Resultado esperado do `alembic current`:
 - [Medição de KPIs (M7)](evidence/2026-08-m7-kpi-measurement.md) — com modelo gratuito e execução em sequência; ainda não repetida com o código atual
 - [Qualidade do RAG (domínio Código Legado)](evidence/2026-08-30-rag-quality-validation.md)
 - [Testes com a IA real em modelos gratuitos](evidence/2026-11-05-real-llm-free-models.md) (05/11/2026)
-- [Cenário: clã de jogos gerando uma batalha naval, testada jogando](evidence/2026-11-06-batalha-naval.md) (06/11/2026)
+- [Cenário: comitê de jogos gerando uma batalha naval, testada jogando](evidence/2026-11-06-batalha-naval.md) (06/11/2026)
 - [Repetição da resposta do modelo](evidence/2026-11-05-reproducibility.md) (05/11/2026)
 - [Qualidade do RAG nos 4 domínios de Agent Skill](evidence/2026-09-rag-multi-domain-quality-validation.md)
 - [Qualidade do RAG nas 10 áreas, com modelo gratuito](evidence/2026-11-06-rag-ten-domains.md) (06/11/2026)

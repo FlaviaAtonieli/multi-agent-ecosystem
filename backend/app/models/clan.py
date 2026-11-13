@@ -10,8 +10,8 @@ from app.core.database import Base
 class Clan(Base):
     """Grupo que qualquer pessoa cria, sem aprovação: quem cria vira membro e dono.
 
-    Quem adiciona membros ou cadastra skills do clã é configurável (members_policy,
-    skills_policy), e um clã aberto aceita qualquer pessoa.
+    Quem adiciona membros ou cadastra skills do comitê é configurável (members_policy,
+    skills_policy), e um comitê aberto aceita qualquer pessoa.
     """
 
     __tablename__ = "clans"
@@ -41,9 +41,9 @@ class Clan(Base):
 
 
 class ClanSkill(Base):
-    """Uma Agent Skill disponível num clã. Só as skills do clã escolhido rodam numa
+    """Uma Agent Skill disponível num comitê. Só as skills do comitê escolhido rodam numa
     orquestração, o que evita chamar skills fora do assunto. Uma skill pode estar em
-    vários clãs, inclusive os de outras pessoas, quando é publicada."""
+    vários comitês, inclusive os de outras pessoas, quando é publicada."""
 
     __tablename__ = "clan_skills"
     __table_args__ = (UniqueConstraint("clan_id", "agent_skill_id", name="uq_clan_skill"),)
@@ -64,7 +64,7 @@ class ClanSkill(Base):
 
 
 class ClanMembership(Base):
-    """Ligação entre usuário e clã; uma pessoa pode estar em vários. added_by_id registra
+    """Ligação entre usuário e comitê; uma pessoa pode estar em vários. added_by_id registra
     quem adicionou quem, já que não há convite nem aprovação.
     """
 

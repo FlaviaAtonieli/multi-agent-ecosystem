@@ -67,7 +67,7 @@ export const clansApi = {
     ),
 }
 
-/** Espelha clan_service.ensure_can_register_skills: a lista de clãs vem de
+/** Espelha clan_service.ensure_can_register_skills: a lista de comitês vem de
  * listMine (o usuário já é membro), então basta checar skills_policy. */
 export function canRegisterSkillsIn(clan: Clan, user: { id: string } | null | undefined): boolean {
   if (!user) return false

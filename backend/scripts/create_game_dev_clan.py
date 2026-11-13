@@ -1,4 +1,4 @@
-"""Cria o clã "Desenvolvimento de Jogos" com 5 Agent Skills, pela API.
+"""Cria o comitê "Desenvolvimento de Jogos" com 5 Agent Skills, pela API.
 
 Cenário de teste: uma orquestração que pede o código-fonte de um jogo simples.
 As skills não conversam entre si (cada uma recebe a mesma solicitação), então
@@ -50,7 +50,7 @@ SKILLS = [
             "Uma partida completa termina com vitória ou derrota",
         ],
         "persona_instructions": (
-            "Você é a única skill do clã que escreve o código-fonte do jogo. Entregue em generated_files "
+            "Você é a única skill do comitê que escreve o código-fonte do jogo. Entregue em generated_files "
             "exatamente três arquivos completos e funcionais: index.html, style.css e game.js. "
             "O jogo precisa rodar abrindo o index.html direto no navegador, sem servidor, build "
             "ou biblioteca externa. Use "
@@ -146,12 +146,12 @@ def main() -> int:
     existing = next((clan for clan in mine if clan["name"] == CLAN_NAME), None)
     if existing:
         clan_id = existing["id"]
-        print(f"Clã já existia: {CLAN_NAME} ({clan_id})")
+        print(f"Comitê já existia: {CLAN_NAME} ({clan_id})")
     else:
         clan = client.post(f"{api}/clans", json={"name": CLAN_NAME}, headers=headers)
         clan.raise_for_status()
         clan_id = clan.json()["id"]
-        print(f"Clã criado: {CLAN_NAME} ({clan_id})")
+        print(f"Comitê criado: {CLAN_NAME} ({clan_id})")
 
     for skill in SKILLS:
         payload = {**_COMMON, **skill, "visibility": "CLAN", "clan_id": clan_id}
@@ -162,7 +162,7 @@ def main() -> int:
         print(f"  skill criada: {skill['name']}")
 
     in_clan = client.get(f"{api}/clans/{clan_id}/skills").json()
-    print(f"Skills no clã: {len(in_clan)}")
+    print(f"Skills no comitê: {len(in_clan)}")
     return 0
 
 

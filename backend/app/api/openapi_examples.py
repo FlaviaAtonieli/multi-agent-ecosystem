@@ -9,12 +9,12 @@ o teste falhar. Todos os dados aqui são fictícios.
 from typing import Any
 
 _MODEL = "Modelo da lista permitida (`LLM_ALLOWED_MODELS`). Sem valor, usa o modelo padrão."
-_VISIBILITY = "`OFFICIAL` publica no catálogo, `PRIVATE` deixa só para você e `CLAN` registra a skill em um clã."
+_VISIBILITY = "`OFFICIAL` publica no catálogo, `PRIVATE` deixa só para você e `CLAN` registra a skill em um comitê."
 _CLAN_ID = "Obrigatório quando `visibility` é `CLAN`."
 _NEW_SECRET_RULE = "Nova senha: pelo menos 12 caracteres, com maiúscula, minúscula, número e caractere especial."
-_SKILLS_POLICY = "Quem adiciona e remove Agent Skills do clã: `ALL_MEMBERS` ou `OWNER_ONLY`."
+_SKILLS_POLICY = "Quem adiciona e remove Agent Skills do comitê: `ALL_MEMBERS` ou `OWNER_ONLY`."
 _MEMBERS_POLICY = "Quem adiciona e remove membros: `ALL_MEMBERS` ou `OWNER_ONLY`."
-_IS_OPEN = "Se verdadeiro, qualquer pessoa pode entrar no clã sozinha."
+_IS_OPEN = "Se verdadeiro, qualquer pessoa pode entrar no comitê sozinha."
 
 # Campos que a API recebe. Um campo novo sem descrição faz o teste falhar.
 FIELD_DOCS: dict[str, dict[str, str]] = {
@@ -48,7 +48,7 @@ FIELD_DOCS: dict[str, dict[str, str]] = {
         "file": "Arquivo de texto puro, como código, Markdown ou JSON. PDF e DOCX não são aceitos.",
     },
     "ClanCreate": {
-        "name": "Nome do clã. Precisa ser único.",
+        "name": "Nome do comitê. Precisa ser único.",
         "is_open": _IS_OPEN,
         "skills_policy": _SKILLS_POLICY,
         "members_policy": _MEMBERS_POLICY,
@@ -60,7 +60,7 @@ FIELD_DOCS: dict[str, dict[str, str]] = {
         "skills_policy": _SKILLS_POLICY,
         "members_policy": _MEMBERS_POLICY,
     },
-    "ClanSkillAdd": {"agent_skill_id": "Skill publicada, ou sua, para adicionar ao clã."},
+    "ClanSkillAdd": {"agent_skill_id": "Skill publicada, ou sua, para adicionar ao comitê."},
     "FollowUpQuestionCreate": {
         "question": "Pergunta sobre a análise já feita.",
         "target_domain": "Área que deve responder. Sem valor, todas as áreas envolvidas respondem.",
@@ -72,7 +72,7 @@ FIELD_DOCS: dict[str, dict[str, str]] = {
     "PasswordForgot": {"email": "E-mail da conta."},
     "PasswordReset": {"token": "Token recebido no link por e-mail.", "new_password": _NEW_SECRET_RULE},
     "SkillSuggestionRequest": {
-        "clan_id": "Clã que vai responder. Só skills fora dele são sugeridas.",
+        "clan_id": "Comitê que vai responder. Só skills fora dele são sugeridas.",
         "title": "Título da solicitação.",
         "problem": "Problema a analisar.",
         "objective": "Resultado esperado.",
@@ -85,8 +85,8 @@ FIELD_DOCS: dict[str, dict[str, str]] = {
         "objective": "Resposta ou resultado esperado.",
         "context": "Módulos, tecnologias e dependências. Contexto insuficiente deixa a solicitação em `AWAITING_CONTEXT`.",
         "restrictions": "O que a análise deve respeitar.",
-        "clan_id": "Clã cujas Agent Skills vão responder. É preciso ser membro.",
-        "requested_domains": "Áreas escolhidas dentro do clã. Vazio significa todas as skills ativas do clã.",
+        "clan_id": "Comitê cujas Agent Skills vão responder. É preciso ser membro.",
+        "requested_domains": "Áreas escolhidas dentro do comitê. Vazio significa todas as skills ativas do comitê.",
     },
     "TechnicalRequestReview": {
         "decision": "`approve` aprova e `reject` rejeita a resposta.",

@@ -38,7 +38,7 @@ class AgentSkill(Base):
     visibility: Mapped[str] = mapped_column(
         String(20), index=True, nullable=False, default="OFFICIAL"
     )
-    # Só com visibility == "CLAN": o clã da skill. SET NULL, e não CASCADE: se o clã
+    # Só com visibility == "CLAN": o comitê da skill. SET NULL, e não CASCADE: se o comitê
     # for apagado, a skill fica visível só para o dono, mas não some junto.
     clan_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("clans.id", ondelete="SET NULL"), index=True, nullable=True

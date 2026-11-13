@@ -94,7 +94,7 @@ TAGS_METADATA: list[dict[str, str]] = [
         ),
     },
     {"name": "Integração com LLM", "description": "Status do provedor de modelo, planejamento e rastros de invocação."},
-    {"name": "Clãs", "description": "Grupos de usuários com regras próprias e Agent Skills visíveis só aos membros."},
+    {"name": "Comitês", "description": "Grupos de usuários com regras próprias e Agent Skills visíveis só aos membros."},
     {"name": "Auditoria", "description": "Trilha de eventos das solicitações do próprio usuário."},
 ]
 
@@ -241,18 +241,18 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
     # Agent Skills
     "GET /agent-skills": (
         "Catálogo de Agent Skills",
-        "Skills visíveis ao usuário: oficiais, as próprias e as dos clãs de que participa. "
+        "Skills visíveis ao usuário: oficiais, as próprias e as dos comitês de que participa. "
         "`only_active=false` inclui as desativadas.",
     ),
     "POST /agent-skills": (
         "Criar Agent Skill",
         "Cria uma skill pelo formulário assistido. O manifesto passa pela validação de governança "
-        "(`422` lista todos os problemas). `visibility=CLAN` exige `clan_id` e permissão no clã.",
+        "(`422` lista todos os problemas). `visibility=CLAN` exige `clan_id` e permissão no comitê.",
     ),
     "POST /agent-skills/suggestions": (
         "Sugerir Agent Skills",
         "Compara a solicitação com as skills ativas por similaridade de embeddings e sugere as que não "
-        "estão no clã. Não chama o modelo de chat, e `available=false` indica provedor indisponível.",
+        "estão no comitê. Não chama o modelo de chat, e `available=false` indica provedor indisponível.",
     ),
     "GET /agent-skills/tools": (
         "Skills como tools",
@@ -266,7 +266,7 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
     "PUT /agent-skills/{skill_id}": (
         "Editar Agent Skill",
         "Substitui o manifesto da skill (mesmo id), revalidando-o. Permitido a quem criou a skill ou, numa "
-        "skill de clã, ao dono do clã.",
+        "skill de comitê, ao dono do comitê.",
     ),
     "GET /agent-skills/{skill_id}": ("Detalhe da Agent Skill", "Retorna uma skill visível ao usuário."),
     "PATCH /agent-skills/{skill_id}/enable": (
@@ -324,39 +324,39 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
         "Baixar arquivo gerado",
         "Entrega o arquivo como download, sem abrir no navegador. Não chama o modelo.",
     ),
-    # Clãs
-    "GET /clans": ("Listar clãs", "Todos os clãs, ou só os do usuário com `mine=true`."),
+    # Comitês
+    "GET /clans": ("Listar comitês", "Todos os comitês, ou só os do usuário com `mine=true`."),
     "POST /clans": (
-        "Criar clã",
-        "Cria um clã com as regras de acesso (`is_open`) e de quem adiciona Agent Skills e membros. "
+        "Criar comitê",
+        "Cria um comitê com as regras de acesso (`is_open`) e de quem adiciona Agent Skills e membros. "
         "Quem cria vira dono e membro.",
     ),
-    "GET /clans/{clan_id}": ("Detalhe do clã", "Dados, regras e membros do clã."),
+    "GET /clans/{clan_id}": ("Detalhe do comitê", "Dados, regras e membros do comitê."),
     "GET /clans/{clan_id}/skills": (
-        "Listar skills do clã",
-        "Agent Skills disponíveis no clã. Num clã fechado, só para os membros.",
+        "Listar skills do comitê",
+        "Agent Skills disponíveis no comitê. Num comitê fechado, só para os membros.",
     ),
     "POST /clans/{clan_id}/skills": (
-        "Adicionar skill ao clã",
-        "Adiciona uma Agent Skill publicada ou do próprio usuário, seguindo o `skills_policy` do clã. "
-        "`404` se a skill não existir ou não estiver visível, `409` se já estiver no clã.",
+        "Adicionar skill ao comitê",
+        "Adiciona uma Agent Skill publicada ou do próprio usuário, seguindo o `skills_policy` do comitê. "
+        "`404` se a skill não existir ou não estiver visível, `409` se já estiver no comitê.",
     ),
     "DELETE /clans/{clan_id}/skills/{skill_id}": (
-        "Remover skill do clã",
-        "Tira a Agent Skill do clã, sem apagá-la do catálogo. Segue o `skills_policy` do clã.",
+        "Remover skill do comitê",
+        "Tira a Agent Skill do comitê, sem apagá-la do catálogo. Segue o `skills_policy` do comitê.",
     ),
     "PATCH /clans/{clan_id}/settings": (
-        "Alterar clã",
-        "Renomeia o clã e altera as regras. Só o dono. `409` se o nome já existir.",
+        "Alterar comitê",
+        "Renomeia o comitê e altera as regras. Só o dono. `409` se o nome já existir.",
     ),
-    "POST /clans/{clan_id}/join": ("Entrar no clã", "Entra num clã aberto. `403` se o clã for fechado."),
+    "POST /clans/{clan_id}/join": ("Entrar no comitê", "Entra num comitê aberto. `403` se o comitê for fechado."),
     "POST /clans/{clan_id}/members": (
         "Adicionar membro",
-        "Adiciona um usuário pelo e-mail, conforme a regra `members_policy` do clã.",
+        "Adiciona um usuário pelo e-mail, conforme a regra `members_policy` do comitê.",
     ),
     "DELETE /clans/{clan_id}/members/{user_id}": (
         "Remover membro",
-        "Remove um membro conforme `members_policy`. Sair do clã (o próprio id) é sempre permitido; o dono "
+        "Remove um membro conforme `members_policy`. Sair do comitê (o próprio id) é sempre permitido; o dono "
         "não pode ser removido por outro membro.",
     ),
 }

@@ -187,7 +187,7 @@ jobs:
       - name: Instalar dependências
         run: "pip install --only-binary :all: --require-hashes -r requirements.lock"
 
-      - name: Conferir a migração dos clãs com dados
+      - name: Conferir a migração dos comitês com dados
         run: python scripts/check_clan_migration.py
 
   docker-images:

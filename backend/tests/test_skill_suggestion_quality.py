@@ -4,7 +4,7 @@ Fica fora do CI, como os demais testes `llm`. Roda com uma OPENROUTER_API_KEY re
 
     pytest tests/test_skill_suggestion_quality.py -m llm -s
 
-Cada pergunta traz a área que deveria ser sugerida, com um clã vazio, de modo que
+Cada pergunta traz a área que deveria ser sugerida, com um comitê vazio, de modo que
 todo o catálogo oficial concorre. As perguntas evitam repetir o nome das áreas, para
 a medição não premiar só a coincidência de palavras.
 

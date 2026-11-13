@@ -17,4 +17,6 @@
 | Ver os controles de segurança | [SECURITY.md](../SECURITY.md) |
 | Ver o histórico de decisões | [CHANGELOG.md](../CHANGELOG.md) |
 
+O **comitê** se chamava **clã** até novembro de 2026. As evidências e o CHANGELOG mantêm o nome antigo, e o código usa `clan`.
+
 A [RFC](rfc/) é a especificação do projeto. As evidências registram o sistema na época em que foram feitas, e o [CHANGELOG](../CHANGELOG.md) também: eles não são atualizados depois.

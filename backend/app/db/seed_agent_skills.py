@@ -243,7 +243,7 @@ ECOSYSTEM_CLAN_NAME = "Ecossistema"
 
 
 def _ensure_ecosystem_clan(db: Session, admin: User) -> None:
-    """Clã aberto com as skills oficiais: toda orquestração exige um clã, então quem
+    """Comitê aberto com as skills oficiais: toda orquestração exige um comitê, então quem
     acabou de chegar precisa de um para usar. Fica sem as skills que usuários publicam."""
     clan = db.scalar(select(Clan).where(Clan.name == ECOSYSTEM_CLAN_NAME))
     if clan is None:

@@ -10,8 +10,8 @@ A proposta é validar uma arquitetura modular para registrar, selecionar, coorde
 
 - **Agentes em processos separados, por MCP real:** cada Agent Skill roda como um servidor MCP, e o Orquestrador é o cliente.
 - **RAG com qualidade medida:** Precision@3, Recall@3 e MRR contra gabarito manual, nas 10 áreas do catálogo. Ver [Pipeline de IA](docs/architecture/ai-pipeline.md).
-- **Clã como escopo:** só as skills do clã escolhido respondem, o que evita chamadas de IA fora do assunto.
-- **Motor de sugestão:** indica skills fora do clã que podem ajudar, por similaridade de embeddings, sem chamar o modelo de chat.
+- **Comitê como escopo:** só as skills do comitê escolhido respondem, o que evita chamadas de IA fora do assunto.
+- **Motor de sugestão:** indica skills fora do comitê que podem ajudar, por similaridade de embeddings, sem chamar o modelo de chat.
 - **Governança:** Quality Gate por regras explícitas, revisão humana e `Trace ID` em cada etapa.
 - **Respostas com arquivos e ZIP:** só gerar consome tokens. Mostrar e baixar, não.
 - **Testes verificados:** o código é quebrado de propósito para conferir se a suíte acusa. Ver [Relatório de validação](docs/validation/README.md#os-testes-acusam-defeitos).
@@ -31,8 +31,8 @@ Situação item a item frente aos requisitos do Portfólio: [docs/requisitos-por
 - Solicitação técnica → qualificação de contexto → execução por Agent Skills (RAG + LLM) → Quality Gate → resposta consolidada, tudo rastreado por `Trace ID`.
 - Catálogo de 10 domínios de Agent Skill oficiais, com áreas de atuação livres para skills de outras áreas (contabilidade, jurídico...), extensível por manifesto `modelo.md` sem alterar o núcleo do Orquestrador (evidência: `docs/validation/evidence/2026-08-plug-and-play-extensibility.md`).
 - Revisão humana obrigatória de solicitações sinalizadas pelo Quality Gate, feita por quem abriu a solicitação.
-- Clãs (grupos auto-serviço): toda orquestração escolhe um clã, e só as skills dele respondem. Uma skill pode estar em vários clãs.
-- Sugestão de skills fora do clã e respostas com arquivos e ZIP.
+- Comitês (grupos auto-serviço): toda orquestração escolhe um comitê, e só as skills dele respondem. Uma skill pode estar em vários comitês.
+- Sugestão de skills fora do comitê e respostas com arquivos e ZIP.
 - Página de conta com exclusão lógica (preserva histórico referenciado por outras tabelas).
 - CI em todo push e PR: análise estática, testes em SQLite e PostgreSQL, cobertura mínima, migrações e build das imagens (`.github/workflows/ci.yml`), além de análise de segurança no SonarCloud.
 
@@ -133,10 +133,10 @@ Na base atual, o resultado esperado é:
 
 ```text
 Usuário autenticado
-  -> cria uma solicitação técnica e escolhe o clã
-  -> pode pedir sugestões de skills fora do clã
+  -> cria uma solicitação técnica e escolhe o comitê
+  -> pode pedir sugestões de skills fora do comitê
   -> contexto é avaliado (AWAITING_CONTEXT ou QUALIFIED)
-  -> execução aciona as Agent Skills do clã, ou as áreas escolhidas dentro dele
+  -> execução aciona as Agent Skills do comitê, ou as áreas escolhidas dentro dele
   -> Quality Gate aprova ou sinaliza revisão humana
   -> resposta final consolidada, com os arquivos gerados, se houver
 ```

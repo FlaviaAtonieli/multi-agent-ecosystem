@@ -13,7 +13,7 @@ function skill(id: string, overrides: Record<string, unknown> = {}) {
 function clan(overrides: Record<string, unknown> = {}) {
   return {
     id: 'clan-1',
-    name: 'Clã de Teste',
+    name: 'Comitê de Teste',
     created_by_id: testUser.id,
     created_at: '2026-11-01T00:00:00Z',
     member_count: 1,
@@ -47,21 +47,21 @@ async function openClan(user: ReturnType<typeof userEvent.setup>) {
       </MemoryRouter>
     </AuthProvider>,
   )
-  await user.click(await screen.findByRole('button', { name: /Clã de Teste/ }))
+  await user.click(await screen.findByRole('button', { name: /Comitê de Teste/ }))
 }
 
-describe('Agent Skills do clã', () => {
-  it('mostra as skills que vieram do clã, mesmo sem serem exclusivas dele', async () => {
+describe('Agent Skills do comitê', () => {
+  it('mostra as skills que vieram do comitê, mesmo sem serem exclusivas dele', async () => {
     const user = userEvent.setup()
     mockApi(routes())
 
     await openClan(user)
 
     expect(await screen.findByText('Skill dentro')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Remover Skill fora do clã' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Remover Skill fora do comitê' })).not.toBeInTheDocument()
   })
 
-  it('oferece só as skills ativas que ainda não estão no clã', async () => {
+  it('oferece só as skills ativas que ainda não estão no comitê', async () => {
     const user = userEvent.setup()
     mockApi(routes())
 
@@ -90,11 +90,11 @@ describe('Agent Skills do clã', () => {
     await user.selectOptions(await screen.findByRole('combobox', { name: 'Skill para adicionar' }), 'fora')
     await user.click(screen.getByRole('button', { name: 'Adicionar skill' }))
 
-    expect(await screen.findByRole('button', { name: 'Remover Skill fora do clã' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Remover Skill fora do comitê' })).toBeInTheDocument()
     expect(api.jsonBody('POST', '/clans/clan-1/skills')).toEqual({ agent_skill_id: 'fora' })
   })
 
-  it('remove uma skill do clã', async () => {
+  it('remove uma skill do comitê', async () => {
     const user = userEvent.setup()
     let inClan = [skill('dentro')]
     const api = mockApi(
@@ -108,21 +108,21 @@ describe('Agent Skills do clã', () => {
     )
     await openClan(user)
 
-    await user.click(await screen.findByRole('button', { name: 'Remover Skill dentro do clã' }))
+    await user.click(await screen.findByRole('button', { name: 'Remover Skill dentro do comitê' }))
 
-    expect(await screen.findByText(/Nenhuma skill neste clã ainda/)).toBeInTheDocument()
+    expect(await screen.findByText(/Nenhuma skill neste comitê ainda/)).toBeInTheDocument()
     expect(api.callsTo('DELETE', '/clans/clan-1/skills/dentro')).toHaveLength(1)
   })
 
   it('mostra o motivo quando o backend recusa', async () => {
     const user = userEvent.setup()
-    mockApi(routes(clan(), { 'POST /clans/clan-1/skills': apiError(409, 'Esta Agent Skill já está no clã.') }))
+    mockApi(routes(clan(), { 'POST /clans/clan-1/skills': apiError(409, 'Esta Agent Skill já está no comitê.') }))
     await openClan(user)
 
     await user.selectOptions(await screen.findByRole('combobox', { name: 'Skill para adicionar' }), 'fora')
     await user.click(screen.getByRole('button', { name: 'Adicionar skill' }))
 
-    expect(await screen.findByText('Esta Agent Skill já está no clã.')).toBeInTheDocument()
+    expect(await screen.findByText('Esta Agent Skill já está no comitê.')).toBeInTheDocument()
   })
 
   it('não deixa alterar quando só o dono pode', async () => {
@@ -136,7 +136,7 @@ describe('Agent Skills do clã', () => {
     expect(screen.queryByRole('button', { name: /^Remover Skill/ })).not.toBeInTheDocument()
   })
 
-  it('mostra as skills de um clã aberto antes de entrar, sem deixar alterar', async () => {
+  it('mostra as skills de um comitê aberto antes de entrar, sem deixar alterar', async () => {
     const user = userEvent.setup()
     mockApi(routes(clan({ created_by_id: 'outra', is_open: true, members: [someoneElse] })))
 
@@ -146,7 +146,7 @@ describe('Agent Skills do clã', () => {
     expect(screen.queryByRole('combobox', { name: 'Skill para adicionar' })).not.toBeInTheDocument()
   })
 
-  it('em clã fechado de outra pessoa, explica que só membros veem', async () => {
+  it('em comitê fechado de outra pessoa, explica que só membros veem', async () => {
     const user = userEvent.setup()
     mockApi(
       routes(clan({ created_by_id: 'outra', members: [someoneElse] }), {
@@ -156,6 +156,6 @@ describe('Agent Skills do clã', () => {
 
     await openClan(user)
 
-    expect(await screen.findByText('Só membros do clã enxergam as Agent Skills dele.')).toBeInTheDocument()
+    expect(await screen.findByText('Só membros do comitê enxergam as Agent Skills dele.')).toBeInTheDocument()
   })
 })

@@ -12,10 +12,10 @@ const skills = ['codigo_legado', 'regras_negocio', 'seguranca_informacao', 'Cont
   enabled: true,
   status: 'approved',
 }))
-const clan = { id: 'clan-1', name: 'Meu clã', is_open: false }
-const otherClan = { id: 'clan-2', name: 'Outro clã', is_open: false }
+const clan = { id: 'clan-1', name: 'Meu comitê', is_open: false }
+const otherClan = { id: 'clan-2', name: 'Outro comitê', is_open: false }
 const openClan = { id: 'clan-open', name: 'Ecossistema', is_open: true }
-const closedClan = { id: 'clan-closed', name: 'Clã fechado', is_open: false }
+const closedClan = { id: 'clan-closed', name: 'Comitê fechado', is_open: false }
 const baseRoutes = {
   'GET /clans?mine=true': [clan],
   'GET /clans': [clan, openClan, closedClan],
@@ -137,15 +137,15 @@ describe('NewRequestPage', () => {
     })
     renderPage()
     await goToLastStep(user)
-    await screen.findByRole('combobox', { name: 'Clã que vai responder' })
+    await screen.findByRole('combobox', { name: 'Comitê que vai responder' })
 
     await submit(user)
 
     expect(await screen.findByText(/^Orquestração/)).toBeInTheDocument()
   })
 
-  describe('clã da solicitação', () => {
-    it('com um clã só, já o seleciona e o envia', async () => {
+  describe('comitê da solicitação', () => {
+    it('com um comitê só, já o seleciona e o envia', async () => {
       const user = userEvent.setup()
       const api = mockApi({ ...baseRoutes, 'POST /requests': created })
       renderPage()
@@ -158,7 +158,7 @@ describe('NewRequestPage', () => {
       expect(api.jsonBody('POST', '/requests').clan_id).toBe('clan-1')
     })
 
-    it('com vários clãs, exige escolher antes de registrar', async () => {
+    it('com vários comitês, exige escolher antes de registrar', async () => {
       const user = userEvent.setup()
       const api = mockApi({
         ...baseRoutes,
@@ -167,19 +167,19 @@ describe('NewRequestPage', () => {
       })
       renderPage()
       await goToLastStep(user)
-      await screen.findByRole('option', { name: 'Outro clã' })
+      await screen.findByRole('option', { name: 'Outro comitê' })
 
       await submit(user)
 
-      expect(screen.getByText('Escolha o clã que vai responder.')).toBeInTheDocument()
+      expect(screen.getByText('Escolha o comitê que vai responder.')).toBeInTheDocument()
       expect(api.callsTo('POST', '/requests')).toHaveLength(0)
 
-      await user.selectOptions(screen.getByRole('combobox', { name: 'Clã que vai responder' }), 'clan-1')
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Comitê que vai responder' }), 'clan-1')
 
-      expect(screen.queryByText('Escolha o clã que vai responder.')).not.toBeInTheDocument()
+      expect(screen.queryByText('Escolha o comitê que vai responder.')).not.toBeInTheDocument()
     })
 
-    it('mostra só os agentes do clã escolhido e limpa a escolha ao trocar', async () => {
+    it('mostra só os agentes do comitê escolhido e limpa a escolha ao trocar', async () => {
       const user = userEvent.setup()
       const api = mockApi({
         ...baseRoutes,
@@ -189,8 +189,8 @@ describe('NewRequestPage', () => {
       })
       renderPage()
       await goToLastStep(user)
-      const select = await screen.findByRole('combobox', { name: 'Clã que vai responder' })
-      await screen.findByRole('option', { name: 'Outro clã' })
+      const select = await screen.findByRole('combobox', { name: 'Comitê que vai responder' })
+      await screen.findByRole('option', { name: 'Outro comitê' })
 
       await user.selectOptions(select, 'clan-1')
       await user.click(await screen.findByRole('button', { name: 'Contabilidade' }))
@@ -203,7 +203,7 @@ describe('NewRequestPage', () => {
       expect(api.jsonBody('POST', '/requests')).toMatchObject({ clan_id: 'clan-2', requested_domains: [] })
     })
 
-    it('ignora skills desativadas do clã', async () => {
+    it('ignora skills desativadas do comitê', async () => {
       const user = userEvent.setup()
       mockApi({
         ...baseRoutes,
@@ -219,7 +219,7 @@ describe('NewRequestPage', () => {
       expect(screen.queryByRole('button', { name: 'Contabilidade' })).not.toBeInTheDocument()
     })
 
-    it('skill adicionada pela sugestão passa a ser um agente do clã', async () => {
+    it('skill adicionada pela sugestão passa a ser um agente do comitê', async () => {
       const user = userEvent.setup()
       mockApi({
         ...baseRoutes,
@@ -239,12 +239,12 @@ describe('NewRequestPage', () => {
       await screen.findByRole('button', { name: 'Código Legado' })
 
       await user.click(screen.getByRole('button', { name: 'Verificar skills que podem ajudar' }))
-      await user.click(await screen.findByRole('button', { name: 'Adicionar Skill Nova ao clã' }))
+      await user.click(await screen.findByRole('button', { name: 'Adicionar Skill Nova ao comitê' }))
 
       expect(await screen.findByRole('button', { name: 'Jurídico' })).toBeInTheDocument()
     })
 
-    it('não deixa registrar com um clã sem skills ativas', async () => {
+    it('não deixa registrar com um comitê sem skills ativas', async () => {
       const user = userEvent.setup()
       const api = mockApi({ ...baseRoutes, 'GET /clans/clan-1/skills': [], 'POST /requests': created })
       renderPage()
@@ -253,11 +253,11 @@ describe('NewRequestPage', () => {
 
       await submit(user)
 
-      expect(screen.getByText('Este clã ainda não tem Agent Skills ativas. Escolha outro ou adicione skills a ele.', { selector: '.alert' })).toBeInTheDocument()
+      expect(screen.getByText('Este comitê ainda não tem Agent Skills ativas. Escolha outro ou adicione skills a ele.', { selector: '.alert' })).toBeInTheDocument()
       expect(api.callsTo('POST', '/requests')).toHaveLength(0)
     })
 
-    it('sem clã, oferece entrar em um clã aberto e passa a usá-lo', async () => {
+    it('sem comitê, oferece entrar em um comitê aberto e passa a usá-lo', async () => {
       const user = userEvent.setup()
       const api = mockApi({
         ...baseRoutes,
@@ -270,7 +270,7 @@ describe('NewRequestPage', () => {
       renderPage()
       await goToLastStep(user)
 
-      expect(screen.queryByRole('button', { name: 'Entrar em Clã fechado' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Entrar em Comitê fechado' })).not.toBeInTheDocument()
       await user.click(await screen.findByRole('button', { name: 'Entrar em Ecossistema' }))
       await screen.findByRole('button', { name: 'Contabilidade' })
       await submit(user)
@@ -280,12 +280,12 @@ describe('NewRequestPage', () => {
       expect(api.jsonBody('POST', '/requests').clan_id).toBe('clan-open')
     })
 
-    it('sem clã, não registra a solicitação', async () => {
+    it('sem comitê, não registra a solicitação', async () => {
       const user = userEvent.setup()
       const api = mockApi({ 'GET /clans?mine=true': [], 'GET /clans': [], 'POST /requests': created })
       renderPage()
       await goToLastStep(user)
-      await screen.findByRole('link', { name: 'Criar um clã' })
+      await screen.findByRole('link', { name: 'Criar um comitê' })
 
       await submit(user)
 

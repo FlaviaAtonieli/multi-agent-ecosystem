@@ -2879,7 +2879,7 @@
             }
           }
         },
-        "description": "Skills visíveis ao usuário: oficiais, as próprias e as dos clãs de que participa. `only_active=false` inclui as desativadas.",
+        "description": "Skills visíveis ao usuário: oficiais, as próprias e as dos comitês de que participa. `only_active=false` inclui as desativadas.",
         "security": [
           {
             "sessionCookie": []
@@ -2970,7 +2970,7 @@
             }
           }
         },
-        "description": "Cria uma skill pelo formulário assistido. O manifesto passa pela validação de governança (`422` lista todos os problemas). `visibility=CLAN` exige `clan_id` e permissão no clã.",
+        "description": "Cria uma skill pelo formulário assistido. O manifesto passa pela validação de governança (`422` lista todos os problemas). `visibility=CLAN` exige `clan_id` e permissão no comitê.",
         "security": [
           {
             "sessionCookie": [],
@@ -3197,7 +3197,7 @@
             }
           }
         },
-        "description": "Compara a solicitação com as skills ativas por similaridade de embeddings e sugere as que não estão no clã. Não chama o modelo de chat, e `available=false` indica provedor indisponível.",
+        "description": "Compara a solicitação com as skills ativas por similaridade de embeddings e sugere as que não estão no comitê. Não chama o modelo de chat, e `available=false` indica provedor indisponível.",
         "security": [
           {
             "sessionCookie": [],
@@ -3354,7 +3354,7 @@
             }
           }
         },
-        "description": "Substitui o manifesto da skill (mesmo id), revalidando-o. Permitido a quem criou a skill ou, numa skill de clã, ao dono do clã.",
+        "description": "Substitui o manifesto da skill (mesmo id), revalidando-o. Permitido a quem criou a skill ou, numa skill de comitê, ao dono do comitê.",
         "security": [
           {
             "sessionCookie": [],
@@ -4188,9 +4188,9 @@
     "/api/v1/clans": {
       "get": {
         "tags": [
-          "Clãs"
+          "Comitês"
         ],
-        "summary": "Listar clãs",
+        "summary": "Listar comitês",
         "operationId": "list_all_clans_api_v1_clans_get",
         "parameters": [
           {
@@ -4199,11 +4199,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Se true, retorna só os clãs do usuário autenticado.",
+              "description": "Se true, retorna só os comitês do usuário autenticado.",
               "default": false,
               "title": "Mine"
             },
-            "description": "Se true, retorna só os clãs do usuário autenticado."
+            "description": "Se true, retorna só os comitês do usuário autenticado."
           }
         ],
         "responses": {
@@ -4252,7 +4252,7 @@
             }
           }
         },
-        "description": "Todos os clãs, ou só os do usuário com `mine=true`.",
+        "description": "Todos os comitês, ou só os do usuário com `mine=true`.",
         "security": [
           {
             "sessionCookie": []
@@ -4261,9 +4261,9 @@
       },
       "post": {
         "tags": [
-          "Clãs"
+          "Comitês"
         ],
-        "summary": "Criar clã",
+        "summary": "Criar comitê",
         "operationId": "create_new_clan_api_v1_clans_post",
         "requestBody": {
           "required": true,
@@ -4323,7 +4323,7 @@
             }
           }
         },
-        "description": "Cria um clã com as regras de acesso (`is_open`) e de quem adiciona Agent Skills e membros. Quem cria vira dono e membro.",
+        "description": "Cria um comitê com as regras de acesso (`is_open`) e de quem adiciona Agent Skills e membros. Quem cria vira dono e membro.",
         "security": [
           {
             "sessionCookie": [],
@@ -4335,9 +4335,9 @@
     "/api/v1/clans/{clan_id}": {
       "get": {
         "tags": [
-          "Clãs"
+          "Comitês"
         ],
-        "summary": "Detalhe do clã",
+        "summary": "Detalhe do comitê",
         "operationId": "get_clan_detail_api_v1_clans__clan_id__get",
         "parameters": [
           {
@@ -4402,7 +4402,7 @@
             }
           }
         },
-        "description": "Dados, regras e membros do clã.",
+        "description": "Dados, regras e membros do comitê.",
         "security": [
           {
             "sessionCookie": []
@@ -4413,9 +4413,9 @@
     "/api/v1/clans/{clan_id}/settings": {
       "patch": {
         "tags": [
-          "Clãs"
+          "Comitês"
         ],
-        "summary": "Alterar clã",
+        "summary": "Alterar comitê",
         "operationId": "update_settings_api_v1_clans__clan_id__settings_patch",
         "parameters": [
           {
@@ -4490,7 +4490,7 @@
             }
           }
         },
-        "description": "Renomeia o clã e altera as regras. Só o dono. `409` se o nome já existir.",
+        "description": "Renomeia o comitê e altera as regras. Só o dono. `409` se o nome já existir.",
         "security": [
           {
             "sessionCookie": [],
@@ -4502,9 +4502,9 @@
     "/api/v1/clans/{clan_id}/join": {
       "post": {
         "tags": [
-          "Clãs"
+          "Comitês"
         ],
-        "summary": "Entrar no clã",
+        "summary": "Entrar no comitê",
         "operationId": "join_api_v1_clans__clan_id__join_post",
         "parameters": [
           {
@@ -4569,7 +4569,7 @@
             }
           }
         },
-        "description": "Entra num clã aberto. `403` se o clã for fechado.",
+        "description": "Entra num comitê aberto. `403` se o comitê for fechado.",
         "security": [
           {
             "sessionCookie": [],
@@ -4581,7 +4581,7 @@
     "/api/v1/clans/{clan_id}/members": {
       "post": {
         "tags": [
-          "Clãs"
+          "Comitês"
         ],
         "summary": "Adicionar membro",
         "operationId": "add_clan_member_api_v1_clans__clan_id__members_post",
@@ -4658,7 +4658,7 @@
             }
           }
         },
-        "description": "Adiciona um usuário pelo e-mail, conforme a regra `members_policy` do clã.",
+        "description": "Adiciona um usuário pelo e-mail, conforme a regra `members_policy` do comitê.",
         "security": [
           {
             "sessionCookie": [],
@@ -4670,7 +4670,7 @@
     "/api/v1/clans/{clan_id}/members/{user_id}": {
       "delete": {
         "tags": [
-          "Clãs"
+          "Comitês"
         ],
         "summary": "Remover membro",
         "operationId": "remove_clan_member_api_v1_clans__clan_id__members__user_id__delete",
@@ -4746,7 +4746,7 @@
             }
           }
         },
-        "description": "Remove um membro conforme `members_policy`. Sair do clã (o próprio id) é sempre permitido; o dono não pode ser removido por outro membro.",
+        "description": "Remove um membro conforme `members_policy`. Sair do comitê (o próprio id) é sempre permitido; o dono não pode ser removido por outro membro.",
         "security": [
           {
             "sessionCookie": [],
@@ -4758,9 +4758,9 @@
     "/api/v1/clans/{clan_id}/skills": {
       "get": {
         "tags": [
-          "Clãs"
+          "Comitês"
         ],
-        "summary": "Listar skills do clã",
+        "summary": "Listar skills do comitê",
         "operationId": "list_skills_of_clan_api_v1_clans__clan_id__skills_get",
         "parameters": [
           {
@@ -4829,7 +4829,7 @@
             }
           }
         },
-        "description": "Agent Skills disponíveis no clã. Num clã fechado, só para os membros.",
+        "description": "Agent Skills disponíveis no comitê. Num comitê fechado, só para os membros.",
         "security": [
           {
             "sessionCookie": []
@@ -4838,9 +4838,9 @@
       },
       "post": {
         "tags": [
-          "Clãs"
+          "Comitês"
         ],
-        "summary": "Adicionar skill ao clã",
+        "summary": "Adicionar skill ao comitê",
         "operationId": "add_skill_api_v1_clans__clan_id__skills_post",
         "parameters": [
           {
@@ -4918,7 +4918,7 @@
             }
           }
         },
-        "description": "Adiciona uma Agent Skill publicada ou do próprio usuário, seguindo o `skills_policy` do clã. `404` se a skill não existir ou não estiver visível, `409` se já estiver no clã.",
+        "description": "Adiciona uma Agent Skill publicada ou do próprio usuário, seguindo o `skills_policy` do comitê. `404` se a skill não existir ou não estiver visível, `409` se já estiver no comitê.",
         "security": [
           {
             "sessionCookie": [],
@@ -4930,9 +4930,9 @@
     "/api/v1/clans/{clan_id}/skills/{skill_id}": {
       "delete": {
         "tags": [
-          "Clãs"
+          "Comitês"
         ],
-        "summary": "Remover skill do clã",
+        "summary": "Remover skill do comitê",
         "operationId": "remove_skill_api_v1_clans__clan_id__skills__skill_id__delete",
         "parameters": [
           {
@@ -4999,7 +4999,7 @@
             }
           }
         },
-        "description": "Tira a Agent Skill do clã, sem apagá-la do catálogo. Segue o `skills_policy` do clã.",
+        "description": "Tira a Agent Skill do comitê, sem apagá-la do catálogo. Segue o `skills_policy` do comitê.",
         "security": [
           {
             "sessionCookie": [],
@@ -5124,7 +5124,7 @@
             ],
             "title": "Visibility",
             "default": "OFFICIAL",
-            "description": "`OFFICIAL` publica no catálogo, `PRIVATE` deixa só para você e `CLAN` registra a skill em um clã."
+            "description": "`OFFICIAL` publica no catálogo, `PRIVATE` deixa só para você e `CLAN` registra a skill em um comitê."
           },
           "clan_id": {
             "anyOf": [
@@ -5283,7 +5283,7 @@
             ],
             "title": "Visibility",
             "default": "OFFICIAL",
-            "description": "`OFFICIAL` publica no catálogo, `PRIVATE` deixa só para você e `CLAN` registra a skill em um clã."
+            "description": "`OFFICIAL` publica no catálogo, `PRIVATE` deixa só para você e `CLAN` registra a skill em um comitê."
           },
           "clan_id": {
             "anyOf": [
@@ -5726,12 +5726,12 @@
             "maxLength": 120,
             "minLength": 2,
             "title": "Name",
-            "description": "Nome do clã. Precisa ser único."
+            "description": "Nome do comitê. Precisa ser único."
           },
           "is_open": {
             "type": "boolean",
             "title": "Is Open",
-            "description": "Se verdadeiro, qualquer pessoa pode entrar no clã sozinha.",
+            "description": "Se verdadeiro, qualquer pessoa pode entrar no comitê sozinha.",
             "default": false
           },
           "skills_policy": {
@@ -5741,7 +5741,7 @@
               "OWNER_ONLY"
             ],
             "title": "Skills Policy",
-            "description": "Quem adiciona e remove Agent Skills do clã: `ALL_MEMBERS` ou `OWNER_ONLY`.",
+            "description": "Quem adiciona e remove Agent Skills do comitê: `ALL_MEMBERS` ou `OWNER_ONLY`.",
             "default": "ALL_MEMBERS"
           },
           "members_policy": {
@@ -5948,7 +5948,7 @@
               }
             ],
             "title": "Is Open",
-            "description": "Se verdadeiro, qualquer pessoa pode entrar no clã sozinha."
+            "description": "Se verdadeiro, qualquer pessoa pode entrar no comitê sozinha."
           },
           "skills_policy": {
             "anyOf": [
@@ -5964,7 +5964,7 @@
               }
             ],
             "title": "Skills Policy",
-            "description": "Quem adiciona e remove Agent Skills do clã: `ALL_MEMBERS` ou `OWNER_ONLY`."
+            "description": "Quem adiciona e remove Agent Skills do comitê: `ALL_MEMBERS` ou `OWNER_ONLY`."
           },
           "members_policy": {
             "anyOf": [
@@ -5993,7 +5993,7 @@
             "maxLength": 36,
             "minLength": 1,
             "title": "Agent Skill Id",
-            "description": "Skill publicada, ou sua, para adicionar ao clã."
+            "description": "Skill publicada, ou sua, para adicionar ao comitê."
           }
         },
         "type": "object",
@@ -7341,7 +7341,7 @@
             "maxLength": 36,
             "minLength": 1,
             "title": "Clan Id",
-            "description": "Clã que vai responder. Só skills fora dele são sugeridas."
+            "description": "Comitê que vai responder. Só skills fora dele são sugeridas."
           },
           "title": {
             "anyOf": [
@@ -7541,7 +7541,7 @@
             "maxLength": 36,
             "minLength": 1,
             "title": "Clan Id",
-            "description": "Clã cujas Agent Skills vão responder. É preciso ser membro."
+            "description": "Comitê cujas Agent Skills vão responder. É preciso ser membro."
           },
           "requested_domains": {
             "items": {
@@ -7552,7 +7552,7 @@
             "type": "array",
             "maxItems": 50,
             "title": "Requested Domains",
-            "description": "Áreas escolhidas dentro do clã. Vazio significa todas as skills ativas do clã."
+            "description": "Áreas escolhidas dentro do comitê. Vazio significa todas as skills ativas do comitê."
           }
         },
         "type": "object",
@@ -7952,7 +7952,7 @@
       "description": "Status do provedor de modelo, planejamento e rastros de invocação."
     },
     {
-      "name": "Clãs",
+      "name": "Comitês",
       "description": "Grupos de usuários com regras próprias e Agent Skills visíveis só aos membros."
     },
     {

@@ -17,7 +17,7 @@ from app.main import app as fastapi_app
 PREFIX = "/api/v1"
 METHODS = {"get", "post", "put", "patch", "delete"}
 
-# O caminho principal de quem usa a API: cadastro, clã, solicitação, execução e resultado.
+# O caminho principal de quem usa a API: cadastro, comitê, solicitação, execução e resultado.
 MAIN_OPERATIONS = [
     ("post", "/auth/register"),
     ("post", "/auth/login"),

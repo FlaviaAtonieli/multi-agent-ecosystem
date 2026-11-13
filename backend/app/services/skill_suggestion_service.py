@@ -1,4 +1,4 @@
-"""Motor de sugestão: há alguma Agent Skill que ajudaria e ainda não está no clã?
+"""Motor de sugestão: há alguma Agent Skill que ajudaria e ainda não está no comitê?
 
 Compara o embedding da solicitação com o de cada skill ativa por similaridade de
 cosseno. Só usa o modelo de embeddings, nunca o de chat, e o vetor de cada skill fica
