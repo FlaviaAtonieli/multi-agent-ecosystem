@@ -1,3 +1,4 @@
+from app.models.agent_response_feedback import AgentResponseFeedback
 from app.models.agent_skill import AgentSkill
 from app.models.agent_skill_invocation import AgentSkillInvocation
 from app.models.audit_log import AuditLog
@@ -17,6 +18,7 @@ from app.models.technical_request import TechnicalRequest
 from app.models.user import User
 
 __all__ = [
+    "AgentResponseFeedback",
     "AgentSkill",
     "AgentSkillInvocation",
     "AuditLog",

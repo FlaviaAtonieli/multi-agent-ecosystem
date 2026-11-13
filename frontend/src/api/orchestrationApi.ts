@@ -56,6 +56,21 @@ export type OrchestrationDetail = {
   events: OrchestrationEvent[]
 }
 
+export type FeedbackReason = 'INCORRETA' | 'INCOMPLETA' | 'FORA_DO_ASSUNTO' | 'SEM_EVIDENCIA'
+
+export type AgentResponseFeedback = {
+  useful: boolean
+  reason: FeedbackReason | null
+  comment: string | null
+  updated_at: string
+}
+
+export type AgentResponseFeedbackInput = {
+  useful: boolean
+  reason?: FeedbackReason | null
+  comment?: string | null
+}
+
 export type AgentSkillInvocationResult = {
   id: string
   agent_skill_name: string
@@ -63,6 +78,7 @@ export type AgentSkillInvocationResult = {
   confidence_level: string | null
   result: SkillToolResult | null
   created_at: string
+  feedback: AgentResponseFeedback | null
 }
 
 export type CreateTechnicalRequestInput = {
@@ -133,6 +149,16 @@ export const orchestrationApi = {
     apiRequest<OrchestrationDetail>(`/orchestrations/${encodeURIComponent(traceId)}`),
   getSkillResults: (traceId: string) =>
     apiRequest<AgentSkillInvocationResult[]>(`/orchestrations/${encodeURIComponent(traceId)}/skill-results`),
+  rateSkillResult: (traceId: string, invocationId: string, input: AgentResponseFeedbackInput) =>
+    apiRequest<AgentResponseFeedback>(
+      `/orchestrations/${encodeURIComponent(traceId)}/skill-results/${encodeURIComponent(invocationId)}/feedback`,
+      { method: 'PUT', body: JSON.stringify(input) },
+    ),
+  removeSkillResultRating: (traceId: string, invocationId: string) =>
+    apiRequest<void>(
+      `/orchestrations/${encodeURIComponent(traceId)}/skill-results/${encodeURIComponent(invocationId)}/feedback`,
+      { method: 'DELETE' },
+    ),
   getFollowUps: (traceId: string) =>
     apiRequest<FollowUpExchange[]>(`/orchestrations/${encodeURIComponent(traceId)}/follow-ups`),
   addContext: (requestId: string, context: string) =>

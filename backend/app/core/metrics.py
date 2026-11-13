@@ -173,6 +173,7 @@ class DatabaseStateCollector(Collector):
     def collect(self) -> Iterator[Metric]:
         from app.core.database import SessionLocal
         from app.models import AgentSkill, Clan, LLMInvocation, TechnicalRequest, User
+        from app.services.feedback_service import feedback_counts
 
         latency_seconds = LLMInvocation.latency_ms / 1000.0
         bucket_counts = [
@@ -205,6 +206,7 @@ class DatabaseStateCollector(Collector):
                     .where(LLMInvocation.status.in_(_LLM_FINISHED_STATUSES))
                     .group_by(LLMInvocation.provider, LLMInvocation.model, LLMInvocation.status)
                 ).all()
+                feedback = feedback_counts(db)
         except Exception as exc:  # noqa: BLE001 - métricas nunca devem quebrar o scrape
             logger.warning("Não foi possível coletar métricas do banco: %s", type(exc).__name__)
             return
@@ -221,6 +223,16 @@ class DatabaseStateCollector(Collector):
         yield GaugeMetricFamily("agenthub_users", "Usuários cadastrados.", value=users or 0)
         yield GaugeMetricFamily("agenthub_clans", "Comitês criados.", value=clans or 0)
         yield from _llm_usage_metrics(llm_usage)
+
+        ratings = GaugeMetricFamily(
+            "agenthub_agent_response_feedback",
+            "Avaliações humanas das respostas dos agentes, por área, confiança declarada e "
+            "veredito do Quality Gate.",
+            labels=["domain", "confidence", "quality_gate", "useful"],
+        )
+        for domain, confidence, gate, useful, count in feedback:
+            ratings.add_metric([domain, confidence, gate, useful], count)
+        yield ratings
 
 
 _collector_registered = False

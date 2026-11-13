@@ -1395,3 +1395,27 @@
 .workspace-skill-card-toggle > div { display: grid; gap: 3px; }
 .workspace-skill-card-collapsible .workspace-skill-card-toggle + * { margin-top: 10px; }
 .workspace-artifacts .workspace-code-block { max-height: 480px; overflow: auto; }
+
+.workspace-agent-feedback { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
+.workspace-agent-feedback-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.workspace-agent-feedback-question { margin-right: 4px; color: var(--text-secondary); font-size: 0.82rem; }
+.workspace-agent-feedback-button {
+  padding: 5px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.workspace-agent-feedback-button:hover:not(:disabled) { color: var(--text-primary); border-color: var(--primary-light); }
+.workspace-agent-feedback-button[aria-pressed='true'] { color: var(--text-primary); border-color: var(--accent); background: rgba(34, 211, 238, 0.12); }
+.workspace-agent-feedback-button:disabled { opacity: 0.6; cursor: wait; }
+.workspace-agent-feedback .workspace-agent-feedback-saved, .workspace-agent-feedback .workspace-agent-feedback-status { margin: 0; color: var(--text-muted); font-size: 0.78rem; }
+.workspace-agent-feedback-form { display: grid; gap: 8px; }
+.workspace-agent-feedback-form fieldset { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; border: 0; }
+.workspace-agent-feedback-form legend { margin-bottom: 6px; padding: 0; color: var(--text-secondary); font-size: 0.82rem; }
+.workspace-agent-feedback-reason { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+.workspace-agent-feedback-form label[for] { color: var(--text-secondary); font-size: 0.78rem; }
+.workspace-agent-feedback-form textarea { width: 100%; min-width: 0; }
+.workspace-agent-feedback-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }

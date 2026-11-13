@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { SkillToolResult } from '../../api/agentSkillsApi'
 
 export const confidenceLabels: Record<string, string> = { ALTO: 'Alta', MEDIO: 'Média', BAIXO: 'Baixa' }
@@ -138,9 +138,11 @@ type SkillResultCardProps = {
   collapsible?: boolean
   open?: boolean
   onToggle?: () => void
+  // Aparece no fim do card aberto, como a avaliação da resposta.
+  footer?: ReactNode
 }
 
-export function SkillResultCard({ result, collapsible = false, open = true, onToggle }: SkillResultCardProps) {
+export function SkillResultCard({ result, collapsible = false, open = true, onToggle, footer }: SkillResultCardProps) {
   const [findingsOpen, setFindingsOpen] = useState(false)
   const expanded = !collapsible || open
 
@@ -167,6 +169,7 @@ export function SkillResultCard({ result, collapsible = false, open = true, onTo
         <header>{heading}</header>
       )}
       {expanded && <SkillResultBody result={result} findingsOpen={findingsOpen} onToggleFindings={() => setFindingsOpen((value) => !value)} />}
+      {expanded && footer}
     </article>
   )
 }

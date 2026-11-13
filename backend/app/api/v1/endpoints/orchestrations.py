@@ -1,10 +1,10 @@
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.api.dependencies import get_current_session
+from app.api.dependencies import get_current_session, require_authenticated_csrf
 from app.core.database import get_db
 from app.models import (
     AgentSkill,
@@ -16,6 +16,8 @@ from app.models import (
     TechnicalRequest,
 )
 from app.schemas.orchestration import (
+    AgentResponseFeedbackRead,
+    AgentResponseFeedbackWrite,
     AgentSkillInvocationResultRead,
     FollowUpExchangeRead,
     OrchestrationDetail,
@@ -24,6 +26,7 @@ from app.schemas.orchestration import (
     SkillArtifactRead,
 )
 from app.services.artifact_service import build_zip
+from app.services.feedback_service import feedback_by_invocation, remove_feedback, save_feedback
 
 router = APIRouter(prefix="/orchestrations", tags=["Orquestrações"])
 
@@ -93,6 +96,7 @@ def get_orchestration_skill_results(
         )
         .order_by(AgentSkillInvocation.created_at.asc())
     ).all()
+    feedback = feedback_by_invocation(db, [invocation.id for invocation, _ in rows])
     return [
         AgentSkillInvocationResultRead(
             id=invocation.id,
@@ -101,9 +105,50 @@ def get_orchestration_skill_results(
             confidence_level=invocation.confidence_level,
             result=invocation.result_payload,
             created_at=invocation.created_at,
+            feedback=feedback.get(invocation.id),
         )
         for invocation, skill_name in rows
     ]
+
+
+@router.put("/{trace_id}/skill-results/{invocation_id}/feedback", response_model=AgentResponseFeedbackRead)
+def rate_skill_result(
+    trace_id: str,
+    invocation_id: str,
+    payload: AgentResponseFeedbackWrite,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_session: AuthSession = Depends(require_authenticated_csrf),
+) -> AgentResponseFeedbackRead:
+    technical_request = find_by_trace_id(db, trace_id, current_session.user_id)
+    feedback = save_feedback(
+        db,
+        request,
+        technical_request=technical_request,
+        invocation_id=invocation_id,
+        user_id=current_session.user_id,
+        data=payload,
+    )
+    return AgentResponseFeedbackRead.model_validate(feedback)
+
+
+@router.delete("/{trace_id}/skill-results/{invocation_id}/feedback", status_code=status.HTTP_204_NO_CONTENT)
+def remove_skill_result_rating(
+    trace_id: str,
+    invocation_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_session: AuthSession = Depends(require_authenticated_csrf),
+) -> Response:
+    technical_request = find_by_trace_id(db, trace_id, current_session.user_id)
+    remove_feedback(
+        db,
+        request,
+        technical_request=technical_request,
+        invocation_id=invocation_id,
+        user_id=current_session.user_id,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/{trace_id}/follow-ups", response_model=list[FollowUpExchangeRead])

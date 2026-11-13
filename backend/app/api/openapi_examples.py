@@ -53,6 +53,12 @@ FIELD_DOCS: dict[str, dict[str, str]] = {
         "skills_policy": _SKILLS_POLICY,
         "members_policy": _MEMBERS_POLICY,
     },
+    "AgentResponseFeedbackWrite": {
+        "useful": "Se a resposta do agente foi útil.",
+        "reason": "Só quando não foi útil, e então obrigatório: `INCORRETA`, `INCOMPLETA`, "
+        "`FORA_DO_ASSUNTO` ou `SEM_EVIDENCIA`.",
+        "comment": "Observação opcional, até 1.000 caracteres. Não vai para a auditoria.",
+    },
     "ClanMemberAdd": {"email": "E-mail de uma pessoa já cadastrada."},
     "ClanSettingsUpdate": {
         "name": "Novo nome. Sem valor, mantém o atual.",

@@ -219,6 +219,16 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
         "Resultados das Agent Skills",
         "Resposta estruturada de cada Agent Skill executada na orquestração.",
     ),
+    "PUT /orchestrations/{trace_id}/skill-results/{invocation_id}/feedback": (
+        "Avaliar resposta do agente",
+        "Marca a resposta de uma Agent Skill como útil ou não útil. Não útil exige `reason`. "
+        "Uma avaliação por resposta: enviar de novo substitui a anterior. Só registra: não muda a "
+        "resposta nem a decisão do Quality Gate.",
+    ),
+    "DELETE /orchestrations/{trace_id}/skill-results/{invocation_id}/feedback": (
+        "Remover avaliação",
+        "Apaga a avaliação da resposta. Sem avaliação, não faz nada.",
+    ),
     "GET /orchestrations/{trace_id}/follow-ups": (
         "Perguntas de acompanhamento",
         "Perguntas feitas depois da execução e as respostas das Agent Skills.",

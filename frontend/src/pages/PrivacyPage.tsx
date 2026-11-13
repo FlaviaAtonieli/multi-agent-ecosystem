@@ -17,7 +17,7 @@ export function PrivacyPage() {
       <ul>
         <li>Conta: nome, e-mail, senha protegida por hash e, se usar login social, o identificador do GitHub ou do Google.</li>
         <li>Sessão e auditoria: endereço IP, navegador, data das ações e eventos de segurança.</li>
-        <li>Uso: solicitações, anexos, Agent Skills, comitês, respostas e arquivos gerados.</li>
+        <li>Uso: solicitações, anexos, Agent Skills, comitês, respostas, arquivos gerados e as avaliações que você faz das respostas.</li>
       </ul>
 
       <h2>Para que usamos</h2>

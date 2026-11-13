@@ -130,6 +130,7 @@ Todas começam com `agenthub_`.
 | `agent_skill_invocation_duration_seconds` | histogram | `domain` | Latência das Agent Skills |
 | `quality_gate_verdicts_total` | counter | `outcome` | Veredito do Conselheiro: `approved` (entregue direto) ou `human_review` |
 | `human_reviews_total` | counter | `decision` | Revisões humanas (`approve` / `reject`) |
+| `agent_response_feedback` | gauge, lido do banco | `domain`, `confidence`, `quality_gate`, `useful` | Avaliações humanas da resposta de cada agente (útil ou não). Painel "Avaliação humana das respostas" |
 
 ### Segurança
 
