@@ -28,7 +28,7 @@ def retrieve_context_for_request(
 
     retriever = create_retriever(db, config)
     started = time.perf_counter()
-    chunks = retriever.retrieve(query, top_k=config.rag_top_k)
+    chunks = retriever.retrieve(query, top_k=config.rag_top_k, clan_id=technical_request.clan_id)
     latency_ms = round((time.perf_counter() - started) * 1000)
 
     return RagContext(chunks=chunks, query=query, retrieval_latency_ms=latency_ms)

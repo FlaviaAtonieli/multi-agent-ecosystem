@@ -1419,3 +1419,13 @@
 .workspace-agent-feedback-form label[for] { color: var(--text-secondary); font-size: 0.78rem; }
 .workspace-agent-feedback-form textarea { width: 100%; min-width: 0; }
 .workspace-agent-feedback-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
+.workspace-clan-repositories { display: grid; gap: 10px; }
+.workspace-clan-repositories .workspace-clan-members li { flex-wrap: wrap; }
+.workspace-clan-repositories .workspace-clan-members li small { white-space: normal; }
+.workspace-repository-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.workspace-clan-members li small.workspace-repository-ready { color: var(--success-light); }
+.workspace-clan-members li small.workspace-repository-failed { color: var(--danger-light); }
+.workspace-clan-members li small.workspace-repository-pending,
+.workspace-clan-members li small.workspace-repository-indexing { color: var(--accent); }
+.workspace-clan-repositories input[type='url'] { min-width: 0; flex: 1 1 220px; }

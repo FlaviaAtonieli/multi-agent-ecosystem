@@ -1,6 +1,6 @@
 import math
 
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import KnowledgeChunk
@@ -30,8 +30,12 @@ class InMemoryVectorRetriever(Retriever):
         self.db = db
         self.embedding_provider = embedding_provider
 
-    def retrieve(self, query: str, *, top_k: int) -> list[RetrievedChunk]:
-        chunks = list(self.db.scalars(select(KnowledgeChunk)))
+    def retrieve(self, query: str, *, top_k: int, clan_id: str | None = None) -> list[RetrievedChunk]:
+        # O repositório de um comitê nunca aparece na orquestração de outro.
+        scope: ColumnElement[bool] = KnowledgeChunk.clan_id.is_(None)
+        if clan_id is not None:
+            scope = or_(scope, KnowledgeChunk.clan_id == clan_id)
+        chunks = list(self.db.scalars(select(KnowledgeChunk).where(scope)))
         if not chunks:
             return []
 

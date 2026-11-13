@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import JSON, DateTime, Integer, String, Text, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -16,6 +16,14 @@ class KnowledgeChunk(Base):
     language: Mapped[str | None] = mapped_column(String(40), nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[list] = mapped_column(JSON, nullable=False)
+    # Sem comitê: base global, que toda orquestração consulta. Com comitê: veio de um
+    # repositório dele, e só as orquestrações desse comitê encontram.
+    clan_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("clans.id", ondelete="CASCADE"), index=True, nullable=True
+    )
+    repository_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("clan_repositories.id", ondelete="CASCADE"), index=True, nullable=True
+    )
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     char_start: Mapped[int] = mapped_column(Integer, nullable=False)
     char_end: Mapped[int] = mapped_column(Integer, nullable=False)

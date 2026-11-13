@@ -11,7 +11,7 @@ from app.agent_catalog.registry import (
 from app.api.dependencies import get_current_user, require_authenticated_csrf
 from app.core.database import get_db
 from app.core.security import normalize_email
-from app.models import AuthSession, Clan, User
+from app.models import AuthSession, Clan, ClanRepository, User
 from app.schemas.agent_skill import AgentSkillRead
 from app.schemas.clan import (
     ClanCreate,
@@ -19,6 +19,8 @@ from app.schemas.clan import (
     ClanMemberAdd,
     ClanMemberRead,
     ClanRead,
+    ClanRepositoryAdd,
+    ClanRepositoryRead,
     ClanSettingsUpdate,
     ClanSkillAdd,
 )
@@ -29,6 +31,7 @@ from app.services.clan_service import (
     ClanPermissionError,
     add_member,
     create_clan,
+    ensure_can_change_repositories,
     ensure_can_register_skills,
     get_clan,
     is_member,
@@ -37,6 +40,12 @@ from app.services.clan_service import (
     list_user_clans,
     remove_member,
     update_clan_settings,
+)
+from app.services.repository_service import (
+    find_repository,
+    parse_github_url,
+    remove_repository,
+    start_indexing_in_background,
 )
 
 router = APIRouter(prefix="/clans", tags=["Comitês"])
@@ -331,6 +340,138 @@ def remove_skill(
         "CLAN_SKILL_REMOVED",
         user_id=user.id,
         details={"clan_id": clan_id, "agent_skill_id": skill_id},
+    )
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def _ensure_can_see_repositories(db: Session, clan: Clan, user: User) -> None:
+    if not clan.is_open and not is_member(db, clan_id=clan.id, user_id=user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Só um membro pode ver os repositórios de um comitê fechado.",
+        )
+
+
+def _ensure_can_change_repositories(db: Session, clan: Clan, user: User) -> None:
+    try:
+        ensure_can_change_repositories(db, clan=clan, user=user)
+    except ClanPermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+
+def _find_repository(db: Session, clan_id: str, repository_id: str) -> ClanRepository:
+    repository = db.get(ClanRepository, repository_id)
+    if repository is None or repository.clan_id != clan_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Repositório não encontrado.")
+    return repository
+
+
+@router.get("/{clan_id}/repositories", response_model=list[ClanRepositoryRead])
+def list_repositories(
+    clan_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> list[ClanRepository]:
+    clan = _find_clan(db, clan_id)
+    _ensure_can_see_repositories(db, clan, user)
+    return list(
+        db.scalars(
+            select(ClanRepository)
+            .where(ClanRepository.clan_id == clan_id)
+            .order_by(ClanRepository.created_at.asc())
+        )
+    )
+
+
+@router.post(
+    "/{clan_id}/repositories", response_model=ClanRepositoryRead, status_code=status.HTTP_201_CREATED
+)
+async def add_repository(
+    clan_id: str,
+    payload: ClanRepositoryAdd,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> ClanRepository:
+    clan = _find_clan(db, clan_id)
+    _ensure_can_change_repositories(db, clan, user)
+    owner, name = parse_github_url(payload.url)
+    if find_repository(db, clan_id=clan_id, owner=owner, name=name) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Este repositório já está no comitê."
+        )
+
+    repository = ClanRepository(
+        clan_id=clan_id, owner=owner, name=name, url=payload.url, status="PENDING", added_by_id=user.id
+    )
+    db.add(repository)
+    db.flush()
+    record_audit(
+        db,
+        request,
+        "CLAN_REPOSITORY_ADDED",
+        user_id=user.id,
+        details={"clan_id": clan_id, "repository_id": repository.id, "url": payload.url},
+    )
+    db.commit()
+    db.refresh(repository)
+    start_indexing_in_background(repository.id)
+    return repository
+
+
+@router.post(
+    "/{clan_id}/repositories/{repository_id}/reindex",
+    response_model=ClanRepositoryRead,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def reindex_repository(
+    clan_id: str,
+    repository_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> ClanRepository:
+    clan = _find_clan(db, clan_id)
+    _ensure_can_change_repositories(db, clan, user)
+    repository = _find_repository(db, clan_id, repository_id)
+    if repository.status in ("PENDING", "INDEXING"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Este repositório já está sendo indexado."
+        )
+    repository.status = "PENDING"
+    repository.error_message = None
+    db.commit()
+    db.refresh(repository)
+    start_indexing_in_background(repository.id)
+    return repository
+
+
+@router.delete("/{clan_id}/repositories/{repository_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_repository(
+    clan_id: str,
+    repository_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    _: AuthSession = Depends(require_authenticated_csrf),
+) -> Response:
+    clan = _find_clan(db, clan_id)
+    _ensure_can_change_repositories(db, clan, user)
+    repository = _find_repository(db, clan_id, repository_id)
+    if repository.status == "INDEXING":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Espere a indexação terminar para remover o repositório.",
+        )
+    remove_repository(db, repository)
+    record_audit(
+        db,
+        request,
+        "CLAN_REPOSITORY_REMOVED",
+        user_id=user.id,
+        details={"clan_id": clan_id, "repository_id": repository_id},
     )
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

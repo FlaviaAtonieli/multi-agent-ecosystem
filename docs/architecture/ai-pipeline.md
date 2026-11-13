@@ -157,5 +157,6 @@ Para repetir as medições, rode os testes marcados com `llm` (ver README). Eles
 ## Limitações conhecidas
 
 - O chunking não considera a estrutura do texto, então um trecho pode cortar uma função ou um parágrafo.
-- A base de conhecimento é compartilhada entre as áreas. Uma skill de outra área, como contabilidade, roda, mas só tem os próprios anexos da solicitação como evidência da área.
+- A base global é compartilhada entre as áreas. Uma skill de outra área, como contabilidade, roda, mas só tem os próprios anexos da solicitação e os repositórios do comitê como evidência.
+- Os repositórios do comitê entram como janelas de texto, sem a estrutura do código (imports, definições). O grafo do código é a fase 2 ([decisões, 10](decisions.md#10-repositório-do-github-como-base-de-conhecimento-do-comitê)).
 - Os anexos só aceitam texto puro, sem PDF ou DOCX.

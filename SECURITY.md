@@ -103,6 +103,19 @@ A implementação do catálogo deve respeitar estas regras:
 
 Uma Agent Skill não deve ser habilitada apenas porque o arquivo foi recebido. O registro depende de validação estrutural e autorização.
 
+## Repositórios do comitê
+
+Um comitê pode usar um repositório público do GitHub como base de conhecimento ([`repository_service.py`](backend/app/services/repository_service.py)). O código vem de fora, então:
+
+- só `https://github.com/dono/repositorio` é aceito, e o download vai sempre ao endereço da API do GitHub configurado. Um link não consegue apontar o servidor para outro endereço (SSRF);
+- o pacote é lido em memória. Nada é gravado em disco nem executado;
+- caminhos que saem da pasta (`../`), links simbólicos e arquivos binários são ignorados;
+- há limites de download (20 MB), de quantidade de arquivos (400), de tamanho por arquivo (200 KB), de caracteres no total e do tamanho descompactado, contra pacotes que descompactam para gigabytes;
+- os trechos ficam ligados ao comitê, e só as orquestrações dele os encontram;
+- quem adiciona ou remove segue a mesma regra de quem registra skills no comitê, e cada ação vai para a auditoria.
+
+O texto do repositório entra no prompt como o resto do contexto: sanitizado e truncado, mas ainda sujeito a prompt injection, como os anexos.
+
 ## Dados e auditoria
 
 A auditoria registra eventos operacionais sem armazenar senha, token de sessão ou chave de provedor.
