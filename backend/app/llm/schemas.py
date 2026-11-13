@@ -4,16 +4,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 def strict_json_schema(model: type[BaseModel]) -> dict:
-    """Builds a JSON schema compliant with OpenAI's strict Structured Outputs mode.
+    """Schema JSON aceito pelo modo strict de Structured Outputs da OpenAI.
 
-    Pydantic only lists a field in "required" when it has no Python-level
-    default -- but strict mode additionally requires every key in "properties"
-    to appear in "required" (optionality is expressed via the value's type/
-    default content, not by omission). Skipping this made a real, genuinely
-    OpenAI-backed model (openai/gpt-5-mini) reject every call outright with a
-    400 "invalid_json_schema" before any generation happened; a lenient/free
-    OpenRouter model tolerated the same malformed schema, which is why this
-    went unnoticed until a strict-mode model was actually exercised end-to-end.
+    O Pydantic só põe em "required" os campos sem valor padrão, mas o modo strict exige
+    todos. Sem isso, o openai/gpt-5-mini recusava toda chamada com 400
+    "invalid_json_schema"; o modelo gratuito aceitava o mesmo schema, por isso o erro
+    só apareceu com um modelo strict.
     """
     schema = model.model_json_schema()
     for object_schema in [schema, *schema.get("$defs", {}).values()]:
@@ -31,24 +27,19 @@ class LLMPlanRequest(BaseModel):
     context: str | None = None
     restrictions: list[str] = Field(default_factory=list)
     retrieved_context: str | None = None
-    # RFC §6.1 "Proteção de Contexto": which Agent Skill domain this specific
-    # call is scoped to, when invoked on behalf of one skill (None for the raw
-    # /llm/plan endpoint, which has no single skill to scope to).
+    # Área da skill a que esta chamada se limita (proteção de contexto); None no
+    # endpoint /llm/plan, que não é de uma skill.
     analysis_domain_label: str | None = None
-    # Set only for a follow-up exchange (POST .../ask) -- appended to the
-    # prompt so the model addresses it specifically, on top of the original
-    # problem/objective/context.
+    # Só numa pergunta de acompanhamento: vai ao fim do prompt, depois do problema, do
+    # objetivo e do contexto originais.
     additional_question: str | None = None
-    # Set only when invoked on behalf of a user-created skill (GenericSkillExecutor)
-    # -- shapes the model's voice/focus beyond the domain label, without a
-    # dedicated SkillExecutor subclass per custom skill.
+    # Instruções da skill (persona), quando ela tem.
     persona_instructions: str | None = None
-    # Text extracted from documents attached to the request (RequestAttachment,
-    # PR #24 code review) -- concatenated and labeled by filename, goes through
-    # the same sanitize_content/truncation pipeline as every other field here.
+    # Texto dos anexos, identificado pelo nome do arquivo, sanitizado e truncado como
+    # os outros campos.
     attachments_context: str | None = None
-    # Deliverables of the skills that ran before, for a skill that writes code
-    # (app/services/team_context.py). Sanitized and truncated like the rest.
+    # Entregas das skills que rodaram antes, para a skill que escreve código
+    # (app/services/team_context.py). Sanitizadas e truncadas como o resto.
     team_context: str | None = None
 
 

@@ -8,11 +8,11 @@ from app.core.database import Base
 
 
 class Clan(Base):
-    """A self-service group any user can create (RFC visibility tier `CLAN` on
-    AgentSkill, planned since migration 0010 but never built out). No approval
-    flow: the creator becomes a member automatically (and is the clan owner).
-    Who can add/remove members or register CLAN skills is configurable per
-    clan (members_policy / skills_policy), and an open clan lets anyone join."""
+    """Grupo que qualquer pessoa cria, sem aprovação: quem cria vira membro e dono.
+
+    Quem adiciona membros ou cadastra skills do clã é configurável (members_policy,
+    skills_policy), e um clã aberto aceita qualquer pessoa.
+    """
 
     __tablename__ = "clans"
 
@@ -64,9 +64,9 @@ class ClanSkill(Base):
 
 
 class ClanMembership(Base):
-    """Many-to-many join between User and Clan -- a user can belong to several
-    clans at once (confirmed scope). `added_by_id` keeps a lightweight audit
-    trail of who added whom, since membership has no approval/invite step."""
+    """Ligação entre usuário e clã; uma pessoa pode estar em vários. added_by_id registra
+    quem adicionou quem, já que não há convite nem aprovação.
+    """
 
     __tablename__ = "clan_memberships"
     __table_args__ = (UniqueConstraint("clan_id", "user_id", name="uq_clan_membership"),)

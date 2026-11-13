@@ -6,6 +6,7 @@
 | Entender a proposta e o escopo | [RFC](rfc/) |
 | Entender como o sistema funciona | [Visão da arquitetura](architecture/overview.md) |
 | Entender as regras de projeto | [Princípios](architecture/principles.md) |
+| Saber por que o sistema é assim | [Decisões de arquitetura](architecture/decisions.md) |
 | Entender a IA, os dados e as medições | [Pipeline de IA](architecture/ai-pipeline.md) |
 | Usar ou integrar a API | [API e Swagger](api/README.md) |
 | Publicar no Azure | [Deploy](deployment/azure.md) |

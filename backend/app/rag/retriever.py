@@ -20,12 +20,10 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 
 class InMemoryVectorRetriever(Retriever):
-    """Loads indexed chunks from the relational database and ranks them in memory.
+    """Carrega os trechos do banco e ordena em memória por similaridade de cosseno.
 
-    Deliberately avoids pgvector/ANN indexes: the PoC fixture holds a small number
-    of chunks (tens to a few hundred), so a linear scan with cosine similarity in
-    pure Python is fast enough and keeps the same schema portable across SQLite
-    (dev/tests) and PostgreSQL (production), where a Vector column would not be.
+    Sem pgvector: com dezenas a centenas de trechos, a varredura linear em Python é
+    rápida o bastante, e o mesmo schema roda no SQLite (testes) e no PostgreSQL.
     """
 
     def __init__(self, db: Session, embedding_provider: EmbeddingProvider) -> None:

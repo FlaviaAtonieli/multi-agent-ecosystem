@@ -15,17 +15,16 @@ GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
 
 
 class GoogleOAuthError(RuntimeError):
-    """Any failure talking to Google (network, malformed response, unverified
-    email). The callback endpoint catches this and redirects to the frontend
-    with a generic error -- internals never reach the browser."""
+    """Qualquer falha ao falar com o Google (rede, resposta malformada, e-mail não
+    verificado). O callback redireciona com um erro genérico; os detalhes nunca chegam
+    ao navegador.
+    """
 
 
 class GoogleAccountConflictError(RuntimeError):
-    """The verified Google email already belongs to an account not linked to
-    that google_id. Same reasoning as GitHubAccountConflictError (see
-    github_oauth_service.py): no silent auto-link by email, since this app
-    doesn't verify emails at password registration -- auto-linking would let
-    anyone claim an existing account just by registering its email first."""
+    """O e-mail verificado no Google já é de outra conta, não ligada a esse google_id.
+    Mesmo motivo de GitHubAccountConflictError: sem ligação automática pelo e-mail.
+    """
 
 
 @dataclass
@@ -110,10 +109,9 @@ def fetch_google_profile(access_token: str) -> GoogleProfile:
 
 
 def find_or_create_user(db: Session, profile: GoogleProfile) -> tuple[User, bool]:
-    """Returns (user, created). Mirrors github_oauth_service.find_or_create_user:
-    matches by google_id first (stable across email/name changes), only ever
-    creates a new row when no account -- neither Google-linked, GitHub-linked,
-    nor password-based -- already owns that email."""
+    """Devolve (usuário, criado), como no GitHub: procura primeiro pelo google_id e só
+    cria uma conta nova quando nenhuma outra (Google, GitHub ou senha) já usa o e-mail.
+    """
     existing_by_google = db.scalar(select(User).where(User.google_id == profile.google_id))
     if existing_by_google is not None:
         existing_by_google.name = profile.name

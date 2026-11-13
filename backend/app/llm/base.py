@@ -4,10 +4,10 @@ from app.llm.schemas import LLMPlanRequest, LLMProviderResult
 
 
 class LLMEmptyResponseError(RuntimeError):
-    """Raised when the provider returns no content because it exhausted
-    LLM_MAX_OUTPUT_TOKENS on hidden reasoning tokens before writing any visible
-    output (finish_reason="length") -- distinct from a transient empty response,
-    since retrying the identical request/budget fails the same way every time."""
+    """O provedor não devolveu conteúdo porque gastou LLM_MAX_OUTPUT_TOKENS em raciocínio
+    oculto (finish_reason "length"). Não é passageiro: repetir com o mesmo limite falha
+    do mesmo jeito.
+    """
 
 
 class LLMProvider(ABC):
@@ -21,8 +21,6 @@ class LLMProvider(ABC):
         llm_call_id: str,
         model: str,
     ) -> LLMProviderResult:
-        """Generate a structured plan without executing tools or publishing artifacts.
-
-        `model` is always resolved by the caller (llm_service.generate_technical_plan)
-        before this is called -- the provider never falls back to its own config.
+        """Gera um plano estruturado, sem executar ferramentas. O `model` é sempre resolvido
+        por quem chama; o provedor nunca escolhe um modelo por conta própria.
         """

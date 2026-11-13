@@ -62,9 +62,9 @@ def append_event(
     message: str,
     payload: dict | None = None,
 ) -> OrchestrationEvent:
-    # Skills running in parallel append from separate processes (MCP over stdio),
-    # so two of them can read the same max and collide on the unique constraint.
-    # The savepoint keeps a collision from discarding the caller's pending work.
+    # Skills em paralelo gravam de processos diferentes (MCP por stdio) e podem ler o
+    # mesmo máximo e colidir na restrição única. O savepoint impede que a colisão descarte
+    # o trabalho pendente de quem chamou.
     for attempt in range(1, _APPEND_EVENT_MAX_ATTEMPTS + 1):
         last_sequence = db.scalar(
             select(func.max(OrchestrationEvent.sequence_number)).where(
@@ -172,10 +172,9 @@ class RequestNotAwaitingReviewError(ValueError):
 
 
 class AttachmentRejectedError(ValueError):
-    """Raised for any reason an uploaded document can't become a
-    RequestAttachment -- disallowed extension, over the size cap, or bytes
-    that don't decode as UTF-8 text. The message is safe to return to the
-    caller as-is (no internals leak through it)."""
+    """Anexo recusado: extensão não permitida, maior que o limite ou que não é texto
+    UTF-8. A mensagem pode ir para quem chamou como está.
+    """
 
 
 def record_human_review(
@@ -186,12 +185,10 @@ def record_human_review(
     decision: str,
     notes: str | None = None,
 ) -> TechnicalRequest:
-    """Applies the requester's human-review decision to a request pending human review (RF11,
-    RFC §5.3 "Validação": aprovação ou rejeição com justificativa).
+    """Aplica a decisão da revisão humana (RF11): aprovar, ou rejeitar com justificativa.
 
-    Only requests the Quality Gate actually flagged (status VALIDATING) can be
-    reviewed — this is the "humano no loop" checkpoint, not a way to short-circuit
-    the automated pipeline before it runs.
+    Só vale para solicitações que o Quality Gate marcou (VALIDATING): é o ponto do
+    humano no loop, não um atalho para pular a validação automática.
     """
     if technical_request.status != RequestStatus.VALIDATING:
         raise RequestNotAwaitingReviewError(
@@ -296,15 +293,12 @@ def add_attachment(
     content_type: str | None,
     raw_bytes: bytes,
 ) -> RequestAttachment:
-    """Validates and stores an uploaded document as extra context for a
-    request (RFC UX suggestion, PR #24 code review). Deliberately orthogonal
-    to complement_context/has_sufficient_context: an attachment never changes
-    AWAITING_CONTEXT/QUALIFIED status by itself -- that qualification path is
-    specifically about the freeform context field's minimum length, and
-    conflating the two would mean a single tiny file could silently qualify
-    a request with no real textual context. The content still reaches the
-    planner prompt regardless of status (see llm_service._build_safe_request),
-    so it isn't ignored -- it just isn't a second route to "qualified"."""
+    """Valida e guarda um documento como contexto extra da solicitação.
+
+    O anexo não muda o status (AWAITING_CONTEXT/QUALIFIED): essa qualificação depende
+    do texto do contexto, e um arquivo pequeno não deve qualificar uma solicitação sem
+    contexto escrito. O conteúdo chega ao prompt do mesmo jeito.
+    """
     extension = Path(filename).suffix.lower()
     if not extension or extension not in settings.attachment_allowed_extension_list:
         raise AttachmentRejectedError(

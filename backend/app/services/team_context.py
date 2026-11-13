@@ -1,6 +1,6 @@
 """Entregas de umas skills como entrada das que escrevem código.
 
-No cenário da batalha naval (06/11/2026), as skills rodavam ao mesmo tempo e o
+No cenário da batalha naval, as skills rodavam ao mesmo tempo e o
 código foi escrito sem ver o ACESSIBILIDADE.md nem o PLANO_DE_TESTES.md, que já
 apontavam os três defeitos encontrados depois. Quando a solicitação pede
 arquivos, as skills que escrevem código passam a rodar depois das outras e

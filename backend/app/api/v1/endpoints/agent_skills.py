@@ -40,16 +40,7 @@ from app.schemas.agent_skill import (
 from app.schemas.orchestration import FollowUpExchangeRead, FollowUpQuestionCreate
 from app.services.agent_skill_orchestration_service import (
     NoAgentSkillsAvailableError,
-    ask_follow_up_question,
-    cancel_orchestration,
-    claim_request_for_execution,
     execute_orchestration_step,
-    has_follow_up_skills,
-    has_pending_follow_up,
-    has_target_skills,
-    record_follow_up_question,
-    start_follow_up_in_background,
-    start_orchestration_in_background,
 )
 from app.services.audit_service import record_audit
 from app.services.clan_service import (
@@ -59,15 +50,27 @@ from app.services.clan_service import (
     get_clan,
     is_member,
 )
+from app.services.follow_up_service import (
+    ask_follow_up_question,
+    has_follow_up_skills,
+    has_pending_follow_up,
+    record_follow_up_question,
+    start_follow_up_in_background,
+)
 from app.services.llm_service import LLMQuotaExceededError
+from app.services.orchestration_runner import (
+    cancel_orchestration,
+    claim_request_for_execution,
+    has_target_skills,
+    start_orchestration_in_background,
+)
 from app.services.skill_suggestion_service import suggest_skills
 
 
 def _resolve_visibility(
     db: Session, *, visibility: SkillVisibilityLiteral, clan_id: str | None, user: User
 ) -> str | None:
-    """Validates the visibility/clan_id combo from a create/import request and
-    returns the clan_id to persist (None for OFFICIAL/PRIVATE)."""
+    """Confere a combinação visibilidade/clan_id e devolve o clan_id a gravar (None fora de CLAN)."""
     if visibility != "CLAN":
         return None
 
@@ -112,10 +115,8 @@ def _find_manageable_skill(db: Session, skill_id: str, user: User) -> AgentSkill
 
 
 def _find_toggleable_skill(db: Session, skill_id: str, user: User) -> AgentSkill:
-    """As skills oficiais sem dono rodam no próprio servidor MCP, e dar um dono a elas
-    as mandaria para o servidor genérico (ver _module_for_skill em mcp_client.py). Por
-    isso continuam sem dono, e a conta inicial pode só ligar e desligar: o que elas
-    fazem está no código, então editar o manifesto pela tela não mudaria o resultado."""
+    """As skills oficiais do seed ficam sem dono, como parte do sistema, e a conta
+    inicial pode só ligar e desligar (RF16)."""
     try:
         skill = get_skill(db, skill_id)
     except AgentSkillNotFoundError as exc:

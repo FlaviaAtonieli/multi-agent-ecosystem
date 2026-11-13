@@ -94,9 +94,9 @@ class OrchestrationStartRead(BaseModel):
 
 
 class AgentSkillExecutionRequest(BaseModel):
-    """Optional model override for this specific execution (RFC 5.2 Model Gateway:
-    picking among LLM_ALLOWED_MODELS, not an arbitrary string). None keeps the
-    configured LLM_MODEL default."""
+    """Modelo opcional para esta execução, escolhido entre LLM_ALLOWED_MODELS (nunca um
+    texto livre). None usa o LLM_MODEL configurado.
+    """
 
     model: str | None = Field(default=None, max_length=200)
 

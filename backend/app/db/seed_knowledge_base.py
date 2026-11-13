@@ -18,11 +18,11 @@ _LANGUAGE_BY_SUFFIX = {
 
 
 def seed_knowledge_base() -> None:
-    """Indexes every fixture domain under app/rag/fixtures/ (legacy_billing,
-    business_rules, architecture, security) -- one entry per official Agent Skill
-    domain, all sharing the same knowledge_chunks table (see app/rag/retriever.py:
-    retrieval has no domain-scoped filter, so every domain needs its own indexed
-    evidence for retrieval to actually favor it over the other three)."""
+    """Indexa todos os domínios de app/rag/fixtures/ na mesma tabela knowledge_chunks.
+
+    A busca não filtra por domínio, então cada área precisa da própria evidência
+    indexada para ser favorecida em relação às outras.
+    """
     embedding_provider = create_embedding_provider(settings)
 
     with SessionLocal() as db:

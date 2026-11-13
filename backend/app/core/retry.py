@@ -10,13 +10,11 @@ def retry_on_transient_error[T](
     attempts: int = 2,
     delay_seconds: float = 1.5,
 ) -> T:
-    """Retries a real external call a bounded number of times on transient
-    failures -- rate limits, network blips, or a free/shared model that
-    occasionally ignores the requested response schema.
+    """Repete uma chamada externa, poucas vezes, em falhas passageiras (limite de taxa,
+    rede, modelo gratuito que ignora o schema pedido).
 
-    Not a substitute for correctness: only the exception types passed in
-    `exceptions` are retried, and the final attempt's exception always
-    propagates if every attempt fails.
+    Só repete os tipos de `exceptions`, nunca os de `never_retry`, e a exceção da
+    última tentativa sempre sobe.
     """
     last_exc: Exception
     for attempt in range(1, attempts + 1):

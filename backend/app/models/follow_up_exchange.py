@@ -8,10 +8,8 @@ from app.core.database import Base
 
 
 class FollowUpExchange(Base):
-    """A single question-and-answer round after the initial orchestration
-    execution, kept as its own row so the conversation history survives --
-    unlike ConsolidatedResponse (one per TechnicalRequest, RFC §5.3's single
-    "resposta final"), a request can have many follow-up exchanges.
+    """Uma pergunta e sua resposta depois da execução inicial. Cada rodada tem a própria
+    linha, para o histórico da conversa ficar guardado.
     """
 
     __tablename__ = "follow_up_exchanges"

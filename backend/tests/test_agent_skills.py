@@ -263,9 +263,9 @@ def test_new_agent_skill_couples_without_orchestrator_changes(
     generic codepath as the original three -- import via modelo.md, domain
     selection, MCP invocation, Quality Gate, consolidation -- with zero changes
     to agent_skill_orchestration_service.py, orchestration_service.py or
-    quality_gate/service.py (the Orquestrador's core). The only touch points
-    for this addition were a domain literal entry and one line in
-    mcp_client._DOMAIN_SERVER_MODULES -- see the comments there."""
+    quality_gate/service.py (the Orquestrador's core). Since the executors were
+    unified, a new area needs no code at all: every skill runs on the same MCP
+    server (mcp_client.SKILL_SERVER_MODULE)."""
     with SessionLocal() as db:
         ingest_artifact(
             db,
@@ -324,7 +324,7 @@ def test_new_agent_skill_couples_without_orchestrator_changes(
 def test_quality_domain_executes_with_real_rag_retrieval(client: TestClient, monkeypatch) -> None:
     """First of 6 new domains (RF da expansao de dominios pos-PAC-VIII):
     "Qualidade e Testes". Registrado via formulario assistido (nao /import),
-    ja que persona_instructions -- o que da ao GenericSkillExecutor seu
+    ja que persona_instructions -- o que da ao SkillExecutor seu
     enquadramento de dominio -- so e aceito por esse endpoint (ver
     AgentSkillManifestCreate vs. AgentSkillManifestImport). Prova retrieval
     real (ingestao real, sem mock) e nao so o contrato de saida."""
@@ -788,7 +788,7 @@ def test_api_integration_domain_executes_with_real_rag_retrieval(client: TestCli
 def test_execute_over_real_stdio_subprocess(client: TestClient, monkeypatch) -> None:
     """Same flow as test_execute_orchestration_step_runs_skill_and_quality_gate,
     but forces the "stdio" transport: the orchestrator spawns
-    `python -m app.agent_catalog.mcp_servers.legacy_code_server` as an actual OS
+    `python -m app.agent_catalog.mcp_servers.skill_server` as an actual OS
     subprocess and talks real MCP JSON-RPC to it, instead of the in-memory
     transport the rest of the suite uses for speed. This is the evidence that
     the contract isn't only real "in memory" — it survives a process boundary.

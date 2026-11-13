@@ -9,7 +9,7 @@ A proposta é validar uma arquitetura modular para registrar, selecionar, coorde
 ## Destaques
 
 - **Agentes em processos separados, por MCP real:** cada Agent Skill roda como um servidor MCP, e o Orquestrador é o cliente.
-- **RAG com qualidade medida:** Precision@3, Recall@3 e MRR contra gabarito manual, em 4 áreas. Ver [Pipeline de IA](docs/architecture/ai-pipeline.md).
+- **RAG com qualidade medida:** Precision@3, Recall@3 e MRR contra gabarito manual, nas 10 áreas do catálogo. Ver [Pipeline de IA](docs/architecture/ai-pipeline.md).
 - **Clã como escopo:** só as skills do clã escolhido respondem, o que evita chamadas de IA fora do assunto.
 - **Motor de sugestão:** indica skills fora do clã que podem ajudar, por similaridade de embeddings, sem chamar o modelo de chat.
 - **Governança:** Quality Gate por regras explícitas, revisão humana e `Trace ID` em cada etapa.
@@ -185,7 +185,17 @@ docker compose build frontend --no-cache
 
 ## Endereço da aplicação
 
-Produção no Azure: <https://jolly-grass-0a3af3f10.2.azurestaticapps.net>. O frontend e o backend são publicados pelo GitHub Actions a cada push na `main`; o guia está em [docs/deployment/azure.md](docs/deployment/azure.md).
+Produção no Azure: <https://jolly-grass-0a3af3f10.2.azurestaticapps.net>. A cada push na `main`, o GitHub Actions publica o frontend no Static Web Apps e a imagem do backend no GitHub Container Registry. O App Service só troca para a imagem nova sozinho quando o segredo `AZURE_BACKEND_DEPLOY_WEBHOOK` está configurado; sem ele, é preciso reiniciar o App Service. O guia está em [docs/deployment/azure.md](docs/deployment/azure.md).
+
+## Uso de IA no desenvolvimento
+
+Parte do código, dos testes e da documentação foi escrita com um assistente de programação (Claude Code). Os commits feitos com ele trazem a linha `Co-Authored-By: Claude`, então dá para conferir no histórico o que passou por ele (`git log --grep "Co-Authored-By: Claude"`).
+
+- **Da equipe:** o problema, os requisitos e o RFC, as decisões de arquitetura, a escolha do que entra em cada PR, a revisão e o merge, e os testes em produção.
+- **Do assistente:** rascunhos de código, testes e textos, sempre a partir de um pedido da equipe e revisados antes do merge.
+- **Como foi conferido:** CI com testes, lint, tipos e SonarCloud em todo PR; código quebrado de propósito para ver se os testes acusam ([relatório](docs/validation/README.md#os-testes-acusam-defeitos)); e execuções reais registradas em [docs/validation/evidence/](docs/validation/evidence/).
+
+O produto também usa IA (RAG e LLM pela OpenRouter). Isso é outra coisa e está descrito no [Pipeline de IA](docs/architecture/ai-pipeline.md), com os limites medidos.
 
 ## Documentação
 
@@ -193,7 +203,7 @@ Comece pelo [índice da documentação](docs/README.md). Os mais procurados:
 
 - [Requisitos do Portfólio](docs/requisitos-portfolio.md)
 - [API (Swagger/OpenAPI)](docs/api/README.md)
-- [Arquitetura](docs/architecture/overview.md) e [Pipeline de IA](docs/architecture/ai-pipeline.md)
+- [Arquitetura](docs/architecture/overview.md), [Decisões de arquitetura](docs/architecture/decisions.md) e [Pipeline de IA](docs/architecture/ai-pipeline.md)
 - [Relatório de validação](docs/validation/README.md)
 
 O RFC acadêmico permanece como a especificação principal do projeto. Os documentos deste repositório registram o que já foi implementado e as limitações conhecidas da PoC.

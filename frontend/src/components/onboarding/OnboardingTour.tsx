@@ -36,9 +36,8 @@ const SPOTLIGHT_PADDING = 8
 const TOOLTIP_WIDTH = 320
 const TOOLTIP_ESTIMATED_HEIGHT = 190
 
-// Tries right, then below, then above, then left of the target -- a plain
-// below/above heuristic breaks for a tall, narrow target like the full-height
-// sidebar (no room above or below within the viewport at all).
+// Tenta à direita, depois abaixo, acima e à esquerda do alvo: só abaixo/acima falha
+// num alvo alto e estreito como a barra lateral, que ocupa a altura toda.
 function placeTooltip(rect: DOMRect): { top: number; left: number } {
   const viewportWidth = window.innerWidth
   const viewportHeight = window.innerHeight

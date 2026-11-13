@@ -11,13 +11,9 @@ def normalize_domain_key(text: str) -> str:
     return " ".join(without_accents.lower().split())
 
 
-# The domain is the area a skill declares: free text, since a skill can belong to
-# any area (contabilidade, jurídico...), not only to the catalog below. These are
-# the 10 domains of the official catalog, with the spellings a manifest can use for
-# them, so they keep a single stored value. The Orquestrador itself
-# (agent_skill_orchestration_service.py, orchestration_service.py,
-# quality_gate/service.py) operates generically over "whichever skills matched the
-# requested domain," regardless of how many domains exist.
+# O domínio é texto livre: uma skill pode ser de qualquer área (contabilidade,
+# jurídico...). Estes são os 10 domínios do catálogo oficial, com as grafias que um
+# manifesto pode usar para cada um, para guardarem um valor só.
 _DOMAIN_ALIASES: dict[str, str] = {
     "codigo legado": "codigo_legado",
     "codigo_legado": "codigo_legado",
@@ -57,9 +53,8 @@ _DOMAIN_ALIASES: dict[str, str] = {
     "integracoes": "apis_integracoes",
 }
 
-# RFC §6.1 "Proteção de Contexto": human-readable label used to scope both the
-# RAG retrieval query and the LLM prompt to a single skill's domain, instead of
-# every skill seeing the exact same unscoped context.
+# Rótulo da área, usado para focar a busca no RAG e o prompt no domínio da skill
+# (proteção de contexto).
 DOMAIN_LABELS: dict[str, str] = {
     "codigo_legado": "Código Legado",
     "regras_negocio": "Regras de Negócio",
@@ -78,8 +73,9 @@ MAX_DOMAIN_LENGTH = 60
 
 
 def resolve_domain(raw_value: str) -> str:
-    """Maps a known spelling to its catalog domain. Any other area is kept as
-    typed, only with the whitespace cleaned up."""
+    """Troca uma grafia conhecida pelo domínio do catálogo. Qualquer outra área fica como
+    foi digitada, só com os espaços limpos.
+    """
     return _DOMAIN_ALIASES.get(normalize_domain_key(raw_value), " ".join(raw_value.split()))
 
 
@@ -134,12 +130,7 @@ class AgentSkillManifest(BaseModel):
     usage_examples: list[str] = Field(default_factory=list)
     validation_criteria: list[str] = Field(default_factory=list)
     uses_external_services: bool = False
-    # Drives GenericSkillExecutor, which every skill in this catalog runs
-    # through today -- register_skill() has no API-reachable path that
-    # creates a skill with owner_id=None, so the per-domain SkillExecutor
-    # subclasses in tool_interface.py (LegacyCodeSkillExecutor and friends)
-    # are never actually selected by mcp_client._module_for_skill() in
-    # practice, even for the "official" skills.
+    # Instruções da skill, levadas ao prompt pelo SkillExecutor (tool_interface.py).
     persona_instructions: str | None = Field(default=None, max_length=4000)
 
 
@@ -180,11 +171,10 @@ def _extract_identification_fields(block: str) -> dict[str, str]:
 
 
 def parse_modelo_md(content: str) -> AgentSkillManifest:
-    """Parses a modelo.md manifest (Apêndice G da RFC) into an AgentSkillManifest.
+    """Lê um manifesto modelo.md (Apêndice G da RFC).
 
-    Raises ManifestParseError listing every missing/invalid section at once,
-    so an invalid import (Cenário 2, Apêndice H da RFC) can show the user a
-    full list of what needs fixing instead of failing on the first problem.
+    ManifestParseError lista de uma vez todas as seções que faltam ou estão inválidas,
+    para a pessoa ver tudo o que precisa corrigir.
     """
     errors: list[str] = []
 

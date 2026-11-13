@@ -50,7 +50,7 @@ Detalhes da IA no [Pipeline de IA](ai-pipeline.md).
 ## Agent Skills
 
 - **Execução por MCP real**, com o SDK oficial. O Orquestrador é o cliente (`agent_catalog/mcp_client.py`). Em produção, cada chamada usa um subprocesso por stdio, que nunca fica exposto à rede.
-- **Dois caminhos de execução:** skills com dono rodam no servidor genérico, guiado pela persona do manifesto. As 4 oficiais originais ficam sem dono e rodam nos próprios servidores, em `agent_catalog/mcp_servers/`.
+- **Um executor e um servidor para todas as skills** (`agent_catalog/tool_interface.py` e `mcp_servers/skill_server.py`). O que muda de uma skill para outra está nos dados: a área, a persona do manifesto e as frases sobre a evidência. Até 08/11/2026 eram 5 executores e 5 servidores quase iguais (86% a 95% de texto em comum).
 - **Extensibilidade:** uma skill nova, em qualquer área, entra por formulário ou manifesto, sem mudança no núcleo do Orquestrador.
 
 ## Limites arquiteturais

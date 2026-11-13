@@ -16,17 +16,15 @@ class ClanNameConflictError(ValueError):
 
 
 class ClanPermissionError(PermissionError):
-    """Raised when the clan's settings (is_open / members_policy /
-    skills_policy) don't allow this user to do the action. The clan owner (created_by_id)
-    can do everything in it."""
+    """As configurações do clã (is_open, members_policy, skills_policy) não permitem a
+    ação. O dono do clã pode tudo.
+    """
 
     pass
 
 
 class NotClanMemberError(ClanPermissionError):
-    """Raised when someone who isn't a current member tries
-    to manage the clan -- self-service management is scoped to people already
-    inside the clan, not to every registered user."""
+    """Só membros atuais gerenciam o clã, não qualquer usuário cadastrado."""
 
     pass
 

@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlalchemy import func, select
 
-from app.agent_catalog.mcp_client import _module_for_skill
+from app.agent_catalog.mcp_client import SKILL_SERVER_MODULE, _module_for_skill
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.db.seed_agent_skills import seed_agent_skills
@@ -67,7 +67,7 @@ def test_seed_registers_all_domains_once_on_the_right_servers(client: TestClient
         assert db.scalar(select(func.count(AgentSkill.id))) == 10
         skills = {skill.domain: skill for skill in db.scalars(select(AgentSkill))}
 
-    assert _module_for_skill(skills["seguranca_informacao"]).endswith("security_server")
+    assert _module_for_skill(skills["seguranca_informacao"]) == SKILL_SERVER_MODULE
     assert skills["seguranca_informacao"].owner_id is None
-    assert _module_for_skill(skills["apis_integracoes"]).endswith("generic_skill_server")
+    assert _module_for_skill(skills["apis_integracoes"]) == SKILL_SERVER_MODULE
     assert all(skill.visibility == "OFFICIAL" and skill.enabled for skill in skills.values())

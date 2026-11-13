@@ -16,19 +16,19 @@ GITHUB_USER_EMAILS_URL = "https://api.github.com/user/emails"
 
 
 class GitHubOAuthError(RuntimeError):
-    """Any failure talking to GitHub (network, malformed response, no usable
-    email). The callback endpoint catches this and redirects to the frontend
-    with a generic error -- internals never reach the browser."""
+    """Qualquer falha ao falar com o GitHub (rede, resposta malformada, sem e-mail
+    utilizável). O callback redireciona com um erro genérico; os detalhes nunca chegam
+    ao navegador.
+    """
 
 
 class GitHubAccountConflictError(RuntimeError):
-    """The verified GitHub email already belongs to an account not linked to
-    that github_id. No silent auto-link by email: this app doesn't verify
-    emails at password registration, so auto-linking would let anyone claim
-    an existing account just by registering its email first -- an account
-    takeover path. There is no account-linking flow yet (see
-    docs/integrations/github-oauth.md); the user is told to log in with the
-    existing credentials instead."""
+    """O e-mail verificado no GitHub já é de outra conta, não ligada a esse github_id.
+
+    Não há ligação automática pelo e-mail: o cadastro com senha não verifica o e-mail,
+    então bastaria cadastrar antes o e-mail de alguém para tomar a conta. Ainda não há
+    fluxo para ligar contas; a pessoa entra com a senha da conta existente.
+    """
 
 
 @dataclass
@@ -123,10 +123,10 @@ def fetch_github_profile(access_token: str) -> GitHubProfile:
 
 
 def find_or_create_user(db: Session, profile: GitHubProfile) -> tuple[User, bool]:
-    """Returns (user, created). Matches by github_id first (stable across
-    email/name changes on GitHub); only ever creates a new row when no
-    account -- neither GitHub-linked nor password-based -- already owns that
-    email."""
+    """Devolve (usuário, criado). Procura primeiro pelo github_id, que não muda quando
+    a pessoa troca nome ou e-mail no GitHub. Só cria uma conta nova quando nenhuma
+    outra já usa aquele e-mail.
+    """
     existing_by_github = db.scalar(select(User).where(User.github_id == profile.github_id))
     if existing_by_github is not None:
         existing_by_github.name = profile.name

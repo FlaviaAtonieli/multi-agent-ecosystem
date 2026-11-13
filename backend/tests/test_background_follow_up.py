@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from app.core.database import SessionLocal
 from app.models import TechnicalRequest
 from app.services import agent_skill_orchestration_service as service
+from app.services import follow_up_service
 from tests.conftest import authenticated_csrf_headers, create_qualified_request, register
 from tests.test_background_orchestration import _fake_skill_tool
 from tests.test_human_review import FIXTURE_MANIFEST
@@ -89,7 +90,7 @@ def test_start_follow_up_records_unexpected_failure_and_allows_retry(client: Tes
         raise RuntimeError("falha inesperada")
 
     with monkeypatch.context() as patch:
-        patch.setattr(service, "_answer_follow_up", _broken_answer)
+        patch.setattr(follow_up_service, "_answer_follow_up", _broken_answer)
         response = client.post(
             _start_url(technical_request["id"]), json=QUESTION, headers=authenticated_csrf_headers(client)
         )
@@ -119,8 +120,10 @@ def test_startup_fails_interrupted_follow_ups(client: TestClient, monkeypatch) -
 
     with SessionLocal() as db:
         row = db.get(TechnicalRequest, technical_request["id"])
-        service.record_follow_up_question(db, row, question=QUESTION["question"], target_domain=None)
-        assert service.has_pending_follow_up(db, row) is True
-        assert service.fail_interrupted_follow_ups(db) == 1
-        assert service.has_pending_follow_up(db, row) is False
-        assert service.fail_interrupted_follow_ups(db) == 0
+        follow_up_service.record_follow_up_question(
+            db, row, question=QUESTION["question"], target_domain=None
+        )
+        assert follow_up_service.has_pending_follow_up(db, row) is True
+        assert follow_up_service.fail_interrupted_follow_ups(db) == 1
+        assert follow_up_service.has_pending_follow_up(db, row) is False
+        assert follow_up_service.fail_interrupted_follow_ups(db) == 0

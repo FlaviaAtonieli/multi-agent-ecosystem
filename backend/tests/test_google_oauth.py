@@ -27,11 +27,11 @@ def _stub_google_profile(
     avatar_url: str | None = "https://avatars.example/dev-google.png",
 ) -> None:
     monkeypatch.setattr(
-        "app.api.v1.endpoints.auth.exchange_google_code_for_access_token",
+        "app.api.v1.endpoints.auth_oauth.exchange_google_code_for_access_token",
         lambda code: "fake-access-token",  # noqa: ARG005
     )
     monkeypatch.setattr(
-        "app.api.v1.endpoints.auth.fetch_google_profile",
+        "app.api.v1.endpoints.auth_oauth.fetch_google_profile",
         lambda token: GoogleProfile(  # noqa: ARG005
             google_id=google_id, name=name, email=email, avatar_url=avatar_url
         ),

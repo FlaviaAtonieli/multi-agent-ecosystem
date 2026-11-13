@@ -213,11 +213,8 @@ async def upload_request_attachment(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Envie um arquivo com nome."
         )
-    # MaxBodySizeMiddleware already caps the whole request; this is a second,
-    # tighter check specific to attachments (settings.attachment_max_bytes is
-    # meant to be much smaller than MAX_REQUEST_BODY_BYTES -- see the
-    # validator in app/core/config.py) so a too-big file gets a clear 422
-    # about the attachment itself, not a generic 413 about the request body.
+    # O MaxBodySizeMiddleware já limita a requisição inteira. Este limite, menor, é só
+    # do anexo, para a resposta ser um 422 claro sobre o arquivo e não um 413 genérico.
     raw_bytes = await file.read(settings.attachment_max_bytes + 1)
 
     try:

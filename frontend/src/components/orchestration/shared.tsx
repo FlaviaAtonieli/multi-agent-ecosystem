@@ -3,8 +3,8 @@ import { SkillToolResult } from '../../api/agentSkillsApi'
 
 export const confidenceLabels: Record<string, string> = { ALTO: 'Alta', MEDIO: 'Média', BAIXO: 'Baixa' }
 
-// Média medida em produção (11/2026) com openai/gpt-5-mini. Usada antes de haver
-// tempo real da execução para calcular a estimativa.
+// Média medida em produção com openai/gpt-5-mini. Usada para a estimativa antes de
+// haver o tempo real da execução.
 export const DEFAULT_SECONDS_PER_SKILL = 45
 
 // Mesmo valor padrão de ORCHESTRATION_MAX_PARALLEL_SKILLS no backend. Durante a

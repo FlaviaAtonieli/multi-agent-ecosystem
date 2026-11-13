@@ -1,18 +1,10 @@
 # ruff: noqa: E501 -- módulo de textos de documentação; quebrar as frases piora a leitura.
-"""Documentação OpenAPI/Swagger da API.
+"""Documentação OpenAPI da API, com os textos num lugar só para revisar o conjunto.
 
-Os textos ficam centralizados aqui (e não espalhados em docstrings) para a
-documentação ser revisada como um todo. `build_openapi` gera o schema padrão do
-FastAPI e acrescenta:
-
-- descrição geral com o fluxo de autenticação (cookie de sessão + CSRF);
-- descrição de cada tag e resumo/descrição de cada operação;
-- esquemas de segurança, aplicados a cada rota conforme as dependências dela
-  (sessão via get_current_session, CSRF via require_*_csrf);
-- o formato de erro padrão nas respostas 4xx/5xx.
-
-`scripts/export_openapi.py` grava o resultado em docs/api/openapi.json, já que
-/docs e /openapi.json não são servidos em produção.
+`build_openapi` acrescenta ao schema do FastAPI o fluxo de autenticação (cookie de
+sessão e CSRF), a descrição de cada operação, os esquemas de segurança de cada rota,
+tirados das dependências dela, e o formato de erro padrão. `scripts/export_openapi.py`
+grava o resultado em docs/api/openapi.json, porque /docs não é servido em produção.
 """
 
 from collections.abc import Callable, Iterator
@@ -29,6 +21,7 @@ from app.api.v1.endpoints import (
     agent_skills,
     audit,
     auth,
+    auth_oauth,
     clans,
     dashboard,
     health,
@@ -399,7 +392,7 @@ _ERROR_DESCRIPTIONS = {
     "503": "Serviço externo indisponível",
 }
 
-_ENDPOINT_MODULES = (health, auth, dashboard, requests, orchestrations, llm, agent_skills, audit, clans)
+_ENDPOINT_MODULES = (health, auth, auth_oauth, dashboard, requests, orchestrations, llm, agent_skills, audit, clans)
 
 
 def _dependency_calls(dependant: Dependant) -> Iterator[Callable[..., Any]]:

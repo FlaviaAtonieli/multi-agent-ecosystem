@@ -13,9 +13,10 @@ class ValidationResult(BaseModel):
 
 
 def validate_manifest(manifest: AgentSkillManifest) -> ValidationResult:
-    """Checks governance rules from RF03/RFC §6.4: a skill is only registered
-    when it declares name, domain, version, I/O contracts, operating limits,
-    external-service usage, validation criteria and origin/owner."""
+    """Regras de governança (RF03): só entra a skill que declara nome, domínio, versão,
+    contratos de entrada e saída, limites, uso de serviços externos, critérios de
+    validação e origem.
+    """
     errors: list[str] = []
 
     if not manifest.name.strip():

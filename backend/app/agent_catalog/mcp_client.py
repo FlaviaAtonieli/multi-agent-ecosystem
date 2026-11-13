@@ -1,7 +1,5 @@
-"""MCP client side of the Orchestrator: connects to a skill's real MCP server
-and invokes it, over either transport supported by the SDK.
-
-Domain -> server module mapping replaces the old in-process `_EXECUTORS` dict.
+"""Lado cliente do MCP no orquestrador: sobe o servidor da Agent Skill e chama a
+ferramenta `executar`, por stdio (um processo por chamada) ou em memória (testes).
 """
 
 import importlib
@@ -16,35 +14,19 @@ from app.agent_catalog.tool_interface import SkillToolCall, SkillToolResult
 from app.core.config import Settings, settings
 from app.models import AgentSkill
 
-_DOMAIN_SERVER_MODULES: dict[str, str] = {
-    "codigo_legado": "app.agent_catalog.mcp_servers.legacy_code_server",
-    "regras_negocio": "app.agent_catalog.mcp_servers.business_rules_server",
-    "arquitetura_software": "app.agent_catalog.mcp_servers.architecture_server",
-    # Added post-hoc, as evidence for RFC §5.5 criterio 7 (extensibilidade
-    # plug-and-play): this line and the domain's entry in
-    # app/agent_manifest/manifest.py were the only two touch points needed.
-    "seguranca_informacao": "app.agent_catalog.mcp_servers.security_server",
-}
-
-_GENERIC_SKILL_SERVER_MODULE = "app.agent_catalog.mcp_servers.generic_skill_server"
+SKILL_SERVER_MODULE = "app.agent_catalog.mcp_servers.skill_server"
 
 
-def _module_for_skill(skill: AgentSkill) -> str | None:
-    # A user-created skill (owner_id set) always routes to the generic,
-    # persona-driven server -- regardless of which domain it declares --
-    # since it has no dedicated SkillExecutor/server module of its own.
-    if skill.owner_id is not None:
-        return _GENERIC_SKILL_SERVER_MODULE
-    return _DOMAIN_SERVER_MODULES.get(skill.domain)
+def _module_for_skill(skill: AgentSkill) -> str:
+    # Toda skill usa o mesmo servidor: o que muda entre elas está nos dados
+    # (persona e área), então uma área nova não precisa de código novo.
+    return SKILL_SERVER_MODULE
+
 
 _TOOL_NAME = "executar"
 
 
 class SkillMCPError(RuntimeError):
-    pass
-
-
-class SkillServerNotImplementedError(SkillMCPError):
     pass
 
 
@@ -55,17 +37,11 @@ def _backend_root() -> Path:
 
 
 def _subprocess_env(config: Settings) -> dict[str, str]:
-    """Builds the child process environment from the *live* Settings object,
-    not just os.environ.
+    """Monta o ambiente do processo filho a partir do Settings vivo, não só do os.environ.
 
-    Settings can be overridden at runtime (tests do this via
-    `monkeypatch.setattr(settings, ...)`, which mutates the singleton without
-    touching any real environment variable). A subprocess started fresh only
-    sees actual env vars, so forwarding bare `os.environ` would silently give
-    it stale/default config — e.g. LLM_ENABLED back to False even though the
-    parent process has it on. Every current field is re-serialized here so the
-    child always sees the same effective config as its parent, regardless of
-    where that config came from.
+    O Settings pode mudar em execução (os testes usam monkeypatch), e um processo novo
+    só enxerga variáveis de ambiente reais. Sem isso, o filho voltaria aos valores
+    padrão, por exemplo com LLM_ENABLED desligado enquanto o pai está ligado.
     """
     env = dict(os.environ)
     for field_name in type(config).model_fields:
@@ -87,10 +63,6 @@ async def call_skill_tool(
     config: Settings = settings,
 ) -> SkillToolResult:
     module_path = _module_for_skill(skill)
-    if module_path is None:
-        raise SkillServerNotImplementedError(
-            f"Não há servidor MCP implementado para o domínio '{skill.domain}' nesta PoC."
-        )
 
     if config.mcp_skill_transport == "memory":
         server_module = importlib.import_module(module_path)
@@ -105,8 +77,8 @@ async def call_skill_tool(
         transport = stdio_client(params)
 
     async with Client(transport) as client:
-        # Real discovery, not decorative: proves the server actually exposes
-        # what the catalog says it should before we call it.
+        # Descoberta real: confere que o servidor expõe a ferramenta que o catálogo promete
+        # antes de chamá-la.
         await client.list_tools()
         result = await client.call_tool(_TOOL_NAME, {"entrada": tool_call.model_dump(mode="json")})
 

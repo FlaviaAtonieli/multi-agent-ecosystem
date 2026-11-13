@@ -12,10 +12,8 @@ from app.models import AgentSkill, Clan, User
 from app.services.clan_service import create_clan
 
 # Os 4 domínios originais (codigo_legado, regras_negocio, arquitetura_software,
-# seguranca_informacao) vêm dos manifestos desta pasta e rodam no servidor MCP
-# próprio de cada um (owner_id vazio, ver _module_for_skill em mcp_client.py). Pela
-# tela não dá: skill criada por usuário vai para o servidor genérico, que depende de
-# persona, e esses manifestos não têm.
+# seguranca_informacao) vêm dos manifestos desta pasta, sem persona: seguem só pela
+# área. Ficam sem dono, como parte do sistema.
 MANIFEST_FIXTURES = Path(__file__).resolve().parent.parent / "agent_manifest" / "fixtures"
 
 # Cada entrada aqui é um domínio novo, executado pelo servidor genérico a partir da

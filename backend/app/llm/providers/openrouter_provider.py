@@ -10,17 +10,17 @@ from app.llm.schemas import LLMPlan, LLMPlanRequest, LLMProviderResult, LLMUsage
 
 
 class OpenRouterLLMProvider(LLMProvider):
-    """Model Gateway adapter for OpenRouter.
+    """Adaptador do Model Gateway para a OpenRouter.
 
-    Uses the Chat Completions surface (not the OpenAI Responses API): OpenRouter's
-    documented compatibility and structured-output support target /chat/completions,
-    and not every routed model implements the Responses API the same way OpenAI does.
+    Usa Chat Completions, e não a Responses API da OpenAI: é nela que a OpenRouter
+    documenta compatibilidade e saída estruturada, e nem todo modelo roteado implementa
+    a Responses API do mesmo jeito.
     """
 
     name = "openrouter"
 
     def __init__(self, config: Settings) -> None:
-        # Import is intentionally lazy: the project remains runnable with LLM disabled.
+        # Import dentro da função: o projeto roda sem esta biblioteca com o LLM desligado.
         from openai import OpenAI
 
         api_key = config.openrouter_api_key_value
@@ -84,21 +84,16 @@ class OpenRouterLLMProvider(LLMProvider):
             message = choice.message.content
             if not message:
                 if choice.finish_reason == "length":
-                    # Reasoning models (e.g. openai/gpt-5-mini) spend part of
-                    # max_tokens on hidden chain-of-thought before writing
-                    # visible output; a tight budget or a rich schema can burn
-                    # the whole budget on reasoning alone. Not worth retrying:
-                    # the same prompt/budget fails identically every attempt.
+                    # Modelos que raciocinam podem gastar todo o max_tokens antes da resposta visível.
+                    # Não adianta repetir: o mesmo prompt com o mesmo limite falha igual.
                     raise LLMEmptyResponseError(
                         "O modelo esgotou o orçamento de tokens de saída "
                         "(LLM_MAX_OUTPUT_TOKENS) processando raciocínio interno, "
                         "antes de gerar conteúdo visível."
                     )
                 raise RuntimeError("O provedor OpenRouter retornou uma resposta vazia.")
-            # A free/shared model occasionally ignores the strict json_schema and
-            # returns valid-but-incomplete JSON (missing required fields) instead
-            # of the documented structured_outputs contract -- retried below like
-            # any other transient failure of this specific call.
+            # Um modelo gratuito às vezes ignora o json_schema e devolve JSON válido, mas
+            # incompleto; é repetido abaixo como as outras falhas passageiras.
             plan = LLMPlan.model_validate(json.loads(message))
             usage = getattr(response, "usage", None)
             return LLMProviderResult(
