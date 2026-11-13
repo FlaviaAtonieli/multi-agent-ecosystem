@@ -46,20 +46,20 @@ export function AgentFeedback({ traceId, invocationId, agentName, initial }: Pro
 
   function toggleUseful() {
     if (feedback?.useful) {
-      run(async () => {
+      void run(async () => {
         await orchestrationApi.removeSkillResultRating(traceId, invocationId)
         return null
       })
       return
     }
-    run(() => orchestrationApi.rateSkillResult(traceId, invocationId, { useful: true }))
+    void run(() => orchestrationApi.rateSkillResult(traceId, invocationId, { useful: true }))
   }
 
   function saveNotUseful(event: FormEvent) {
     event.preventDefault()
     if (!reason) return
     const trimmed = comment.trim()
-    run(() =>
+    void run(() =>
       orchestrationApi.rateSkillResult(traceId, invocationId, {
         useful: false,
         reason,
