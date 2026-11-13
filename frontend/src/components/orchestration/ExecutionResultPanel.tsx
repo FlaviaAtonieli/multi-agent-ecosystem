@@ -6,11 +6,13 @@ type Props = {
   execution: OrchestrationExecutionResult
   // Arquivos e ZIP gerados pela orquestração, entre o resumo e as respostas dos agentes.
   material?: ReactNode
+  // Avaliação de cada resposta, na ordem de `execution.results`.
+  feedbackFor?: (index: number) => ReactNode
 }
 
 // A resposta final em três partes: o resumo para decidir rápido, o material
 // entregue (arquivos) e, fechada por padrão, a resposta completa de cada agente.
-export function ExecutionResultPanel({ execution, material }: Props) {
+export function ExecutionResultPanel({ execution, material, feedbackFor }: Props) {
   const { consolidated_response: consolidated, verdict, results } = execution
   const [openCards, setOpenCards] = useState<Set<number>>(new Set())
   const allOpen = results.length > 0 && openCards.size === results.length
@@ -91,6 +93,7 @@ export function ExecutionResultPanel({ execution, material }: Props) {
               collapsible
               open={openCards.has(index)}
               onToggle={() => toggleCard(index)}
+              footer={feedbackFor?.(index)}
             />
           ))}
         </div>

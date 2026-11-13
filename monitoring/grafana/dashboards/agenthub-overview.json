@@ -743,13 +743,240 @@
       }
     },
     {
+      "id": 23,
+      "type": "row",
+      "title": "Avaliação humana das respostas",
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "Respostas avaliadas",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 45,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(agenthub_agent_response_feedback) or vector(0)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "description": "Quantidade de avaliações. Leia as taxas ao lado sempre junto com este número."
+    },
+    {
+      "id": 25,
+      "type": "stat",
+      "title": "Taxa de aprovação humana",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 45,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "(sum(agenthub_agent_response_feedback{useful=\"true\"}) or sum(agenthub_agent_response_feedback) * 0) / sum(agenthub_agent_response_feedback)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "description": "Respostas marcadas como úteis sobre o total avaliado. É a percepção de quem usou, não uma acurácia contra gabarito."
+    },
+    {
+      "id": 26,
+      "type": "stat",
+      "title": "Aprovadas pelo Quality Gate, mas não úteis",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 45,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(agenthub_agent_response_feedback{quality_gate=\"approved\",useful=\"false\"}) or vector(0)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "description": "Respostas que passaram pelas regras do Quality Gate e a pessoa marcou como não úteis: o que as regras deixaram passar."
+    },
+    {
+      "id": 27,
+      "type": "bargauge",
+      "title": "Aprovação por área",
+      "description": "Taxa de aprovação humana por área da Agent Skill.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 50,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "(sum by (domain) (agenthub_agent_response_feedback{useful=\"true\"}) or sum by (domain) (agenthub_agent_response_feedback) * 0) / sum by (domain) (agenthub_agent_response_feedback)",
+          "refId": "A",
+          "instant": true,
+          "legendFormat": "{{domain}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 28,
+      "type": "bargauge",
+      "title": "Aprovação por confiança declarada",
+      "description": "Se a confiança que a skill declara significa algo, ALTO deve ser mais aprovado que BAIXO.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 50,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "(sum by (confidence) (agenthub_agent_response_feedback{useful=\"true\"}) or sum by (confidence) (agenthub_agent_response_feedback) * 0) / sum by (confidence) (agenthub_agent_response_feedback)",
+          "refId": "A",
+          "instant": true,
+          "legendFormat": "{{confidence}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
       "id": 21,
       "type": "row",
       "title": "Segurança",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 44,
+        "y": 58,
         "w": 24,
         "h": 1
       }
@@ -764,7 +991,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 45,
+        "y": 59,
         "w": 24,
         "h": 8
       },

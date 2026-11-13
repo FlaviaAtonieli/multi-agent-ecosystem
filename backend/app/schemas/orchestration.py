@@ -179,6 +179,39 @@ class SkillArtifactContentRead(SkillArtifactRead):
     content: str
 
 
+FeedbackReason = Literal["INCORRETA", "INCOMPLETA", "FORA_DO_ASSUNTO", "SEM_EVIDENCIA"]
+
+
+class AgentResponseFeedbackWrite(BaseModel):
+    """Útil ou não útil. Não útil exige um motivo da lista, para a métrica dizer o que falhou."""
+
+    useful: bool
+    reason: FeedbackReason | None = None
+    comment: str | None = Field(default=None, max_length=1_000)
+
+    @field_validator("comment")
+    @classmethod
+    def blank_comment_is_none(cls, value: str | None) -> str | None:
+        return (value or "").strip() or None
+
+    @model_validator(mode="after")
+    def reason_matches_rating(self) -> "AgentResponseFeedbackWrite":
+        if self.useful and self.reason is not None:
+            raise ValueError("Uma resposta útil não leva motivo.")
+        if not self.useful and self.reason is None:
+            raise ValueError("Diga o motivo de a resposta não ter sido útil.")
+        return self
+
+
+class AgentResponseFeedbackRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    useful: bool
+    reason: FeedbackReason | None
+    comment: str | None
+    updated_at: datetime
+
+
 class AgentSkillInvocationResultRead(BaseModel):
     """Resultado gravado de cada skill, para o detalhamento continuar na tela depois de
     recarregar a página.
@@ -190,6 +223,7 @@ class AgentSkillInvocationResultRead(BaseModel):
     confidence_level: str | None
     result: SkillToolResult | None
     created_at: datetime
+    feedback: AgentResponseFeedbackRead | None = None
 
 
 class FollowUpQuestionCreate(BaseModel):

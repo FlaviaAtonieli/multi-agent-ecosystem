@@ -2178,6 +2178,183 @@
         ]
       }
     },
+    "/api/v1/orchestrations/{trace_id}/skill-results/{invocation_id}/feedback": {
+      "put": {
+        "tags": [
+          "Orquestrações"
+        ],
+        "summary": "Avaliar resposta do agente",
+        "operationId": "rate_skill_result_api_v1_orchestrations__trace_id__skill_results__invocation_id__feedback_put",
+        "parameters": [
+          {
+            "name": "trace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trace Id"
+            }
+          },
+          {
+            "name": "invocation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Invocation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentResponseFeedbackWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponseFeedbackRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Marca a resposta de uma Agent Skill como útil ou não útil. Não útil exige `reason`. Uma avaliação por resposta: enviar de novo substitui a anterior. Só registra: não muda a resposta nem a decisão do Quality Gate.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Orquestrações"
+        ],
+        "summary": "Remover avaliação",
+        "operationId": "remove_skill_result_rating_api_v1_orchestrations__trace_id__skill_results__invocation_id__feedback_delete",
+        "parameters": [
+          {
+            "name": "trace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trace Id"
+            }
+          },
+          {
+            "name": "invocation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Invocation Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou CSRF inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Apaga a avaliação da resposta. Sem avaliação, não faz nada.",
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfHeader": []
+          }
+        ]
+      }
+    },
     "/api/v1/orchestrations/{trace_id}/follow-ups": {
       "get": {
         "tags": [
@@ -5040,6 +5217,101 @@
         ],
         "title": "AchadoTecnico"
       },
+      "AgentResponseFeedbackRead": {
+        "properties": {
+          "useful": {
+            "type": "boolean",
+            "title": "Useful"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "INCORRETA",
+                  "INCOMPLETA",
+                  "FORA_DO_ASSUNTO",
+                  "SEM_EVIDENCIA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "useful",
+          "reason",
+          "comment",
+          "updated_at"
+        ],
+        "title": "AgentResponseFeedbackRead"
+      },
+      "AgentResponseFeedbackWrite": {
+        "properties": {
+          "useful": {
+            "type": "boolean",
+            "title": "Useful",
+            "description": "Se a resposta do agente foi útil."
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "INCORRETA",
+                  "INCOMPLETA",
+                  "FORA_DO_ASSUNTO",
+                  "SEM_EVIDENCIA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Só quando não foi útil, e então obrigatório: `INCORRETA`, `INCOMPLETA`, `FORA_DO_ASSUNTO` ou `SEM_EVIDENCIA`."
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment",
+            "description": "Observação opcional, até 1.000 caracteres. Não vai para a auditoria."
+          }
+        },
+        "type": "object",
+        "required": [
+          "useful"
+        ],
+        "title": "AgentResponseFeedbackWrite",
+        "description": "Útil ou não útil. Não útil exige um motivo da lista, para a métrica dizer o que falhou."
+      },
       "AgentSkillExecutionRequest": {
         "properties": {
           "model": {
@@ -5099,6 +5371,16 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentResponseFeedbackRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

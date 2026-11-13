@@ -1,9 +1,10 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import { AgentSkillDomain, agentSkillsApi, FollowUpExchange } from '../api/agentSkillsApi'
+import { AgentSkillDomain, agentSkillsApi, FollowUpExchange, SkillToolResult } from '../api/agentSkillsApi'
 import { ApiError } from '../api/http'
 import { llmApi } from '../api/llmApi'
 import { AgentSkillInvocationResult, OrchestrationDetail, OrchestrationEvent, orchestrationApi } from '../api/orchestrationApi'
+import { AgentFeedback } from '../components/orchestration/AgentFeedback'
 import { ArtifactsPanel } from '../components/orchestration/ArtifactsPanel'
 import { AttachmentsSection } from '../components/orchestration/AttachmentsSection'
 import { ExecutionResultPanel } from '../components/orchestration/ExecutionResultPanel'
@@ -66,6 +67,11 @@ export function OrchestrationPage() {
       setError(caught instanceof ApiError ? caught.message : 'Não foi possível carregar a orquestração.')
     }
   }, [traceId])
+
+  const answeredSkillResults = useMemo(
+    () => pastSkillResults.filter((item): item is AgentSkillInvocationResult & { result: SkillToolResult } => item.result !== null),
+    [pastSkillResults],
+  )
 
   const participatingDomains = useMemo(() => {
     const domains = pastSkillResults
@@ -317,7 +323,7 @@ export function OrchestrationPage() {
               {detail.technical_request.consolidated_response && (
                 <ExecutionResultPanel
                   execution={{
-                    results: pastSkillResults.map((item) => item.result).filter((item) => item !== null),
+                    results: answeredSkillResults.map((item) => item.result),
                     verdict: {
                       approved: detail.technical_request.consolidated_response.quality_gate_approved,
                       requires_human_review: detail.technical_request.consolidated_response.requires_human_review,
@@ -327,6 +333,18 @@ export function OrchestrationPage() {
                     consolidated_response: detail.technical_request.consolidated_response,
                   }}
                   material={<ArtifactsPanel traceId={detail.technical_request.trace_id} refreshKey={followUps.length} />}
+                  feedbackFor={(index) => {
+                    const item = answeredSkillResults[index]
+                    return (
+                      <AgentFeedback
+                        key={item.id}
+                        traceId={detail.technical_request.trace_id}
+                        invocationId={item.id}
+                        agentName={item.agent_skill_name}
+                        initial={item.feedback}
+                      />
+                    )
+                  }}
                 />
               )}
             </article>

@@ -319,6 +319,27 @@ describe('OrchestrationPage', () => {
     })
   })
 
+  it('cada resposta de agente pode ser avaliada, e a avaliação salva aparece', async () => {
+    const rated = { ...skillResult, feedback: { useful: false, reason: 'INCOMPLETA', comment: null, updated_at: '2026-11-11T00:00:00Z' } }
+    const api = mockApi({
+      ...commonRoutes,
+      'GET /orchestrations/TRC-1/skill-results': [rated],
+      [`GET ${ORCHESTRATION}`]: detail('COMPLETED', { result: true }),
+      'PUT /orchestrations/TRC-1/skill-results/inv-1/feedback': { ...rated.feedback, useful: true, reason: null },
+    })
+    const user = setupUser()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: /Skill de Impostos/ }))
+    expect(screen.getByRole('group', { name: 'Avaliar a resposta de Skill de Impostos' })).toBeInTheDocument()
+    expect(screen.getByText('Motivo: Incompleta')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Útil' }))
+
+    expect(api.jsonBody('PUT', '/orchestrations/TRC-1/skill-results/inv-1/feedback')).toEqual({ useful: true })
+    expect(await screen.findByRole('button', { name: 'Útil' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('avisa quando o resultado aguarda revisão humana', async () => {
     let current = detail('RUNNING')
     mockApi({ ...commonRoutes, [`GET ${ORCHESTRATION}`]: () => current })

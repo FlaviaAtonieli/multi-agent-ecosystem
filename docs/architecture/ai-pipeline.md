@@ -101,11 +101,23 @@ Com o modelo gratuito, Código Legado cai de MRR 0,875 para 0,500. As áreas mai
 
 `SKILL_SUGGESTION_MIN_SCORE` foi escolhido por k-fold estratificado (k=4): 20 perguntas do assunto e 12 fora dele. Em cada rodada, o limite é escolhido em 3 partes e medido na quarta ([`calibration.py`](../../backend/app/rag/calibration.py)). Com o modelo de embeddings gratuito, a acurácia balanceada média nas partes de fora foi 0,958, com limites entre 0,112 e 0,118 ([medição](../validation/evidence/2026-11-07-suggestion-threshold-kfold.md)). O limite depende do modelo: o 0,35 configurado precisa ser conferido com o modelo pago de produção.
 
+### Avaliação humana das respostas
+
+Cada resposta de agente pode ser marcada como útil ou não útil. Não útil exige um motivo: incorreta, incompleta, fora do assunto ou sem evidência ([`feedback_service.py`](../../backend/app/services/feedback_service.py)). A avaliação só registra: não muda a resposta nem a decisão do Quality Gate.
+
+A métrica `agenthub_agent_response_feedback` cruza a avaliação com a área, a confiança que a skill declarou e o veredito do Quality Gate. Com isso dá para ver:
+
+- a **taxa de aprovação humana** por área;
+- se a confiança declarada significa algo: respostas de confiança alta deveriam ser mais aprovadas que as de confiança baixa;
+- quantas respostas **passaram pelo Quality Gate e foram marcadas como não úteis**, que é a medida do que as regras deixam passar.
+
+É a percepção de quem usou, não uma acurácia contra gabarito. Quem avalia é quem abriu a solicitação, e as pessoas tendem a avaliar mais quando gostam muito ou desgostam muito. Por isso cada taxa aparece junto com o número de avaliações. As avaliações também servem de rótulo para trabalhos futuros, como um classificador para a sugestão de skills ou um reordenador dos trechos do RAG.
+
 **O que ainda não foi medido:**
 
 - As 6 áreas novas com o modelo de embeddings pago, usado em produção.
 - O limite do motor de sugestão com o modelo de embeddings pago.
-- A qualidade da resposta final do modelo: as medições cobrem a recuperação.
+- A qualidade da resposta final com volume: a avaliação humana existe, mas até agora só a equipe avaliou.
 - Os KPIs da RFC com o código e o modelo atuais. A [rodada de agosto](../validation/evidence/2026-08-m7-kpi-measurement.md) usou um modelo gratuito e execução em sequência.
 
 ## Cache
