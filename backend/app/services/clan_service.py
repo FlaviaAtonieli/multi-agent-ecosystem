@@ -85,6 +85,15 @@ def ensure_can_register_skills(db: Session, *, clan: Clan, user: User) -> None:
         raise ClanPermissionError("Neste comitê, só o dono pode registrar Agent Skills.")
 
 
+def ensure_can_change_repositories(db: Session, *, clan: Clan, user: User) -> None:
+    """Repositório muda o que os agentes do comitê sabem, então segue a mesma regra de
+    quem pode registrar skills."""
+    if not is_member(db, clan_id=clan.id, user_id=user.id):
+        raise NotClanMemberError("Só um membro do comitê pode adicionar ou remover repositórios.")
+    if not _allowed_by_policy(db, clan, user, clan.skills_policy):
+        raise ClanPermissionError("Neste comitê, só o dono pode adicionar ou remover repositórios.")
+
+
 def create_clan(
     db: Session,
     *,

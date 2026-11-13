@@ -54,7 +54,7 @@ Em produção, em 05/11/2026, foram conferidos o cadastro e o login do fluxo 1, 
 |---|---|---|
 | Abordagem de IA fundamentada | ✅ | RAG é aceito pelo guia. [Pipeline de IA](architecture/ai-pipeline.md) |
 | Parte de uma aplicação | ✅ | A orquestração é o fluxo principal |
-| Dados justificados | ✅ | Sintéticos, com a justificativa no [pipeline](architecture/ai-pipeline.md#1-dados-e-indexação) |
+| Dados justificados | ✅ | Base global sintética, com a justificativa no [pipeline](architecture/ai-pipeline.md#1-dados-e-indexação), e código real de repositórios públicos do GitHub ligados a cada comitê ([decisões, 10](architecture/decisions.md#10-repositório-do-github-como-base-de-conhecimento-do-comitê)) |
 | Pipeline completo | ✅ | Dados, pré-processamento, modelo e pós-processamento |
 | Ética e LGPD | ✅ | Mascaramento, [política de privacidade](../frontend/src/pages/PrivacyPage.tsx) e exclusão de conta |
 | Resultados replicáveis | 🟡 | Busca e métricas podem ser repetidas. O texto do modelo varia mesmo com `temperature` e `seed` fixos ([medição](validation/evidence/2026-11-05-reproducibility.md)), mas o conteúdo se repete: similaridade média de 0,79 a 0,84 entre repetições, contra no máximo 0,50 com outra pergunta ([medição](validation/evidence/2026-11-07-content-repeatability.md)). Falta a posição do professor |

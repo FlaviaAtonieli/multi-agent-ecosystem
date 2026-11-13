@@ -24,6 +24,7 @@ from app.core.security import secure_compare
 from app.db.init_db import bootstrap_admin, create_tables_if_enabled
 from app.services.follow_up_service import fail_interrupted_follow_ups
 from app.services.orchestration_runner import fail_interrupted_orchestrations
+from app.services.repository_service import fail_interrupted_indexing
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,7 +38,11 @@ async def lifespan(_: FastAPI):
     create_tables_if_enabled()
     with SessionLocal() as db:
         bootstrap_admin(db)
-        interrupted = fail_interrupted_orchestrations(db) + fail_interrupted_follow_ups(db)
+        interrupted = (
+            fail_interrupted_orchestrations(db)
+            + fail_interrupted_follow_ups(db)
+            + fail_interrupted_indexing(db)
+        )
     if interrupted:
         logger.warning("%d execução(ões) interrompida(s) pelo reinício marcadas como falha.", interrupted)
     logger.info("Flav.IA backend started in %s mode", settings.environment)

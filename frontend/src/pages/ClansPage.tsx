@@ -3,6 +3,7 @@ import { AgentSkill, agentSkillsApi } from '../api/agentSkillsApi'
 import { Clan, ClanDetail, ClanPolicy, ClanSettings, clansApi } from '../api/clansApi'
 import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
+import { ClanRepositories } from '../components/clans/ClanRepositories'
 
 const DEFAULT_SETTINGS: ClanSettings = { is_open: false, skills_policy: 'ALL_MEMBERS', members_policy: 'ALL_MEMBERS' }
 
@@ -450,6 +451,14 @@ export function ClansPage() {
                   </button>
                 </form>
               )}
+
+              <span className="workspace-card-kicker workspace-clan-skills-kicker">REPOSITÓRIOS DO COMITÊ</span>
+              <ClanRepositories
+                key={selected.id}
+                clanId={selected.id}
+                canSee={selected.is_open || isMember}
+                canChange={canChangeSkills}
+              />
             </>
           )}
         </article>

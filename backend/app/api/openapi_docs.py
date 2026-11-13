@@ -93,8 +93,14 @@ TAGS_METADATA: list[dict[str, str]] = [
             "e execução da orquestração sobre uma solicitação."
         ),
     },
-    {"name": "Integração com LLM", "description": "Status do provedor de modelo, planejamento e rastros de invocação."},
-    {"name": "Comitês", "description": "Grupos de usuários com regras próprias e Agent Skills visíveis só aos membros."},
+    {
+        "name": "Integração com LLM",
+        "description": "Status do provedor de modelo, planejamento e rastros de invocação.",
+    },
+    {
+        "name": "Comitês",
+        "description": "Grupos de usuários com regras próprias e Agent Skills visíveis só aos membros.",
+    },
     {"name": "Auditoria", "description": "Trilha de eventos das solicitações do próprio usuário."},
 ]
 
@@ -146,7 +152,10 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
         "Troca a senha usando o token do link enviado por e-mail (uso único, válido por "
         "`PASSWORD_RESET_TTL_MINUTES`). Encerra todas as sessões e revoga os navegadores confiáveis.",
     ),
-    "POST /auth/renew": ("Renovar sessão", "Troca o token da sessão atual por um novo, estendendo a validade."),
+    "POST /auth/renew": (
+        "Renovar sessão",
+        "Troca o token da sessão atual por um novo, estendendo a validade.",
+    ),
     "POST /auth/logout": ("Sair", "Encerra a sessão atual e remove os cookies."),
     "POST /auth/logout-all": (
         "Sair de todas as sessões",
@@ -155,14 +164,20 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
     "GET /auth/me": ("Minha conta", "Dados do usuário autenticado."),
     "PATCH /auth/me": ("Alterar meu nome", "Atualiza o nome exibido do usuário autenticado."),
     "DELETE /auth/me": ("Excluir minha conta", "Exclui a conta do usuário autenticado e encerra a sessão."),
-    "POST /auth/onboarding/complete": ("Concluir tour inicial", "Marca o tour de boas-vindas como concluído."),
+    "POST /auth/onboarding/complete": (
+        "Concluir tour inicial",
+        "Marca o tour de boas-vindas como concluído.",
+    ),
     "POST /auth/me/password": (
         "Trocar minha senha",
         "Troca a senha informando a atual. Revoga os navegadores confiáveis. `409` em contas só com "
         "GitHub/Google.",
     ),
     "GET /auth/sessions": ("Minhas sessões", "Lista as sessões ativas da conta, indicando a atual."),
-    "DELETE /auth/sessions/{session_id}": ("Encerrar uma sessão", "Revoga uma sessão específica da própria conta."),
+    "DELETE /auth/sessions/{session_id}": (
+        "Encerrar uma sessão",
+        "Revoga uma sessão específica da própria conta.",
+    ),
     "GET /auth/github/login": (
         "Entrar com GitHub",
         "Redireciona o navegador para a autorização do GitHub. Abra pela barra de endereço, não por fetch.",
@@ -208,7 +223,10 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
         "Envia um arquivo de apoio (multipart). Tipos e tamanho máximo são validados no servidor.",
     ),
     "GET /requests/{request_id}/attachments": ("Listar anexos", "Lista os anexos da solicitação."),
-    "DELETE /requests/{request_id}/attachments/{attachment_id}": ("Remover anexo", "Remove um anexo da solicitação."),
+    "DELETE /requests/{request_id}/attachments/{attachment_id}": (
+        "Remover anexo",
+        "Remove um anexo da solicitação.",
+    ),
     # Orquestrações
     "GET /orchestrations/{trace_id}": (
         "Detalhe da orquestração",
@@ -268,7 +286,10 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
         "Skills como tools",
         "Descritores das skills ativas no formato de tool (nome, descrição, schema de entrada).",
     ),
-    "GET /agent-skills/ranking": ("Skills mais usadas", "Ranking das skills oficiais por número de execuções."),
+    "GET /agent-skills/ranking": (
+        "Skills mais usadas",
+        "Ranking das skills oficiais por número de execuções.",
+    ),
     "POST /agent-skills/import": (
         "Importar `modelo.md`",
         "Registra uma skill a partir do conteúdo de um arquivo `modelo.md`.",
@@ -351,6 +372,24 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
         "Adiciona uma Agent Skill publicada ou do próprio usuário, seguindo o `skills_policy` do comitê. "
         "`404` se a skill não existir ou não estiver visível, `409` se já estiver no comitê.",
     ),
+    "GET /clans/{clan_id}/repositories": (
+        "Repositórios do comitê",
+        "Repositórios do GitHub que alimentam a base de conhecimento do comitê, com o status da indexação.",
+    ),
+    "POST /clans/{clan_id}/repositories": (
+        "Adicionar repositório",
+        "Adiciona um repositório público do GitHub e começa a indexação em segundo plano. Só "
+        "`https://github.com/dono/repositorio`. O código é lido como texto, nunca executado, e só as "
+        "orquestrações deste comitê encontram os trechos. Segue a mesma regra de quem registra skills.",
+    ),
+    "POST /clans/{clan_id}/repositories/{repository_id}/reindex": (
+        "Indexar de novo",
+        "Baixa o repositório outra vez e troca os trechos. `409` se já estiver indexando.",
+    ),
+    "DELETE /clans/{clan_id}/repositories/{repository_id}": (
+        "Remover repositório",
+        "Remove o repositório e todos os trechos dele. `409` durante a indexação.",
+    ),
     "DELETE /clans/{clan_id}/skills/{skill_id}": (
         "Remover skill do comitê",
         "Tira a Agent Skill do comitê, sem apagá-la do catálogo. Segue o `skills_policy` do comitê.",
@@ -359,7 +398,10 @@ OPERATION_DOCS: dict[str, tuple[str, str]] = {
         "Alterar comitê",
         "Renomeia o comitê e altera as regras. Só o dono. `409` se o nome já existir.",
     ),
-    "POST /clans/{clan_id}/join": ("Entrar no comitê", "Entra num comitê aberto. `403` se o comitê for fechado."),
+    "POST /clans/{clan_id}/join": (
+        "Entrar no comitê",
+        "Entra num comitê aberto. `403` se o comitê for fechado.",
+    ),
     "POST /clans/{clan_id}/members": (
         "Adicionar membro",
         "Adiciona um usuário pelo e-mail, conforme a regra `members_policy` do comitê.",
@@ -377,8 +419,16 @@ ERROR_RESPONSE_SCHEMA: dict[str, Any] = {
     "required": ["error", "message"],
     "properties": {
         "error": {"type": "string", "example": "HTTP_ERROR", "description": "Código do erro."},
-        "message": {"type": "string", "example": "Solicitação não encontrada.", "description": "Texto para o usuário."},
-        "request_id": {"type": "string", "nullable": True, "description": "Identificador para cruzar com os logs."},
+        "message": {
+            "type": "string",
+            "example": "Solicitação não encontrada.",
+            "description": "Texto para o usuário.",
+        },
+        "request_id": {
+            "type": "string",
+            "nullable": True,
+            "description": "Identificador para cruzar com os logs.",
+        },
         "details": {
             "type": "array",
             "description": "Só em erros de validação (422).",
@@ -402,7 +452,18 @@ _ERROR_DESCRIPTIONS = {
     "503": "Serviço externo indisponível",
 }
 
-_ENDPOINT_MODULES = (health, auth, auth_oauth, dashboard, requests, orchestrations, llm, agent_skills, audit, clans)
+_ENDPOINT_MODULES = (
+    health,
+    auth,
+    auth_oauth,
+    dashboard,
+    requests,
+    orchestrations,
+    llm,
+    agent_skills,
+    audit,
+    clans,
+)
 
 
 def _dependency_calls(dependant: Dependant) -> Iterator[Callable[..., Any]]:

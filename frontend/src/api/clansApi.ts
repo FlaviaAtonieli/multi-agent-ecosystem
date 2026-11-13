@@ -32,6 +32,23 @@ export type ClanDetail = ClanSettings & {
   members: ClanMember[]
 }
 
+export type ClanRepositoryStatus = 'PENDING' | 'INDEXING' | 'READY' | 'FAILED'
+
+export type ClanRepository = {
+  id: string
+  url: string
+  owner: string
+  name: string
+  status: ClanRepositoryStatus
+  error_message: string | null
+  file_count: number
+  chunk_count: number
+  created_at: string
+  indexed_at: string | null
+}
+
+const repositoriesPath = (clanId: string, suffix = '') => `/clans/${encodeURIComponent(clanId)}/repositories${suffix}`
+
 export const clansApi = {
   list: () => apiRequest<Clan[]>('/clans'),
   listMine: () => apiRequest<Clan[]>('/clans?mine=true'),
@@ -60,6 +77,15 @@ export const clansApi = {
     apiRequest<void>(`/clans/${encodeURIComponent(clanId)}/skills/${encodeURIComponent(skillId)}`, {
       method: 'DELETE',
     }),
+  listRepositories: (clanId: string) => apiRequest<ClanRepository[]>(repositoriesPath(clanId)),
+  addRepository: (clanId: string, url: string) =>
+    apiRequest<ClanRepository>(repositoriesPath(clanId), { method: 'POST', body: JSON.stringify({ url }) }),
+  reindexRepository: (clanId: string, repositoryId: string) =>
+    apiRequest<ClanRepository>(repositoriesPath(clanId, `/${encodeURIComponent(repositoryId)}/reindex`), {
+      method: 'POST',
+    }),
+  removeRepository: (clanId: string, repositoryId: string) =>
+    apiRequest<void>(repositoriesPath(clanId, `/${encodeURIComponent(repositoryId)}`), { method: 'DELETE' }),
   removeMember: (clanId: string, userId: string) =>
     apiRequest<ClanDetail>(
       `/clans/${encodeURIComponent(clanId)}/members/${encodeURIComponent(userId)}`,

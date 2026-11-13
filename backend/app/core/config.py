@@ -168,6 +168,14 @@ class Settings(BaseSettings):
         ".kt,.swift,.rs,.json,.yaml,.yml,.xml,.sql,.sh"
     )
 
+    # Repositório do comitê. Só github.com, e o código é lido como texto, nunca
+    # executado. Os limites seguram o download, a memória e o custo de embeddings.
+    github_api_base_url: str = "https://api.github.com"
+    repository_max_download_mb: int = 20
+    repository_max_files: int = 400
+    repository_max_file_kb: int = 200
+    repository_max_total_chars: int = 1_500_000
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [item.strip() for item in self.cors_origins.split(",") if item.strip()]

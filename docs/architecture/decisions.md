@@ -75,3 +75,11 @@ Registro curto das decisões que mais moldam o sistema. Cada uma diz o contexto,
 **Decisão.** Uma interface de provedor ([`llm/base.py`](../../backend/app/llm/base.py)) com a OpenRouter como implementação principal. Produção usa `openai/gpt-5-mini`; o desenvolvimento e os testes com modelo real usam modelos gratuitos.
 
 **Custo.** Os modelos gratuitos mudam e saem do catálogo sem aviso, e geram código pior. Os resultados medidos com eles estão registrados como tal nas [evidências](../validation/evidence/).
+
+## 10. Repositório do GitHub como base de conhecimento do comitê
+
+**Contexto.** A base de conhecimento era única para todos, com documentos de exemplo. Um comitê real precisa que os agentes conheçam o código do próprio sistema.
+
+**Decisão.** Um membro adiciona um repositório público do GitHub ao comitê, e a indexação roda em segundo plano: baixa o código, lê os arquivos de texto e grava os trechos com embeddings ligados ao comitê ([`repository_service.py`](../../backend/app/services/repository_service.py)). A busca da orquestração passa a ver a base global mais os repositórios do comitê da solicitação, nunca os de outro. É a fase 1. A fase 2 monta um grafo do código (arquivos, imports e definições) e um Agente do Repositório que segue esse grafo para achar as fontes.
+
+**Custo.** Só repositórios públicos: um privado exigiria pedir mais permissão no login com GitHub. Os trechos são janelas de texto, sem entender a estrutura do código, até a fase 2. Indexar gasta embeddings (cerca de 1 centavo de dólar por MB de código com o modelo de produção), por isso há limites. Como a orquestração, a indexação vive no processo do backend, e um reinício no meio marca o repositório como falho.

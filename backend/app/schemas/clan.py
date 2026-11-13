@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 ClanPolicyLiteral = Literal["ALL_MEMBERS", "OWNER_ONLY"]
 
@@ -61,3 +61,30 @@ class ClanDetailRead(BaseModel):
     is_open: bool
     skills_policy: ClanPolicyLiteral
     members_policy: ClanPolicyLiteral
+
+
+class ClanRepositoryAdd(BaseModel):
+    url: str = Field(max_length=300, description="Endereço de um repositório público do GitHub.")
+
+    @field_validator("url")
+    @classmethod
+    def github_only(cls, value: str) -> str:
+        from app.services.repository_service import parse_github_url
+
+        owner, name = parse_github_url(value)
+        return f"https://github.com/{owner}/{name}"
+
+
+class ClanRepositoryRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    url: str
+    owner: str
+    name: str
+    status: Literal["PENDING", "INDEXING", "READY", "FAILED"]
+    error_message: str | None
+    file_count: int
+    chunk_count: int
+    created_at: datetime
+    indexed_at: datetime | None
