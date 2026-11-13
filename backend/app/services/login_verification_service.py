@@ -93,7 +93,7 @@ def _send_code(user: User, code: str) -> None:
         subject=f"{code} é o seu código de acesso",
         body=(
             f"Olá, {user.name}.\n\n"
-            f"Seu código para entrar no Multi-Agent Ecosystem é: {code}\n\n"
+            f"Seu código para entrar na Flav.IA é: {code}\n\n"
             f"Ele vale por {settings.login_code_ttl_minutes} minutos. Se não foi você quem tentou "
             "entrar, ignore este e-mail e troque sua senha."
         ),

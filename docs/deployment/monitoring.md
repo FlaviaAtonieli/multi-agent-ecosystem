@@ -14,7 +14,7 @@ docker compose up -d --build
 | Prometheus | http://localhost:9090 | sem login; alertas em http://localhost:9090/alerts |
 | Métricas cruas | http://localhost:8000/metrics | direto no backend |
 
-O painel **"Multi-Agent Ecosystem — Visão geral"** abre como página inicial do Grafana.
+O painel **"Flav.IA — Visão geral"** abre como página inicial do Grafana.
 
 `/metrics` fica fora do prefixo `/api`, então o nginx do frontend (porta 3000) não o expõe.
 

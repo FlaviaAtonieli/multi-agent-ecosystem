@@ -42,7 +42,7 @@ def request_password_reset(db: Session, user: User) -> None:
         subject="Redefinição de senha",
         body=(
             f"Olá, {user.name}.\n\n"
-            "Recebemos um pedido para redefinir a senha da sua conta no Multi-Agent Ecosystem. "
+            "Recebemos um pedido para redefinir a senha da sua conta na Flav.IA. "
             f"Para escolher uma nova senha, acesse:\n\n{link}\n\n"
             f"O link vale por {settings.password_reset_ttl_minutes} minutos e só pode ser usado uma vez. "
             "Se não foi você, ignore este e-mail: sua senha atual continua valendo."

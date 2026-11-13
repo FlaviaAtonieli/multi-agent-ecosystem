@@ -4,7 +4,7 @@ export function Brand() {
       <span className="brand-mark" aria-hidden="true">F</span>
       <div>
         <strong>Flav.IA</strong>
-        <small>Ecossistema de Agent Skills</small>
+        <small>Plataforma de Orquestração de Agentes</small>
       </div>
     </div>
   )
