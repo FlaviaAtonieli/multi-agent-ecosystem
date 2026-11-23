@@ -99,3 +99,12 @@ Registro curto das decisões que mais moldam o sistema. Cada uma diz o contexto,
 **Decisão.** Cada comitê escolhe se a busca inclui a base global (`use_global_knowledge`, migration 0025). Os comitês existentes continuam usando a base global, e os comitês de exemplo de fora do software nascem sem ela. Os documentos anexados à solicitação passam a contar como evidência na confiança do agente ([`tool_interface.py`](../../backend/app/agent_catalog/tool_interface.py)). O relator recebe o resumo e os riscos de cada agente, e não mais os nomes dos trechos usados como fonte, que são os mesmos para todos; a cobertura do parecer final mede sobre a mesma base.
 
 **Custo.** Num comitê sem a base global e sem repositórios, a qualidade depende só dos anexos: sem anexo, a confiança continua BAIXA e o Quality Gate pede revisão humana. Os anexos contam como evidência inteiros, sem medir se o agente os usou de fato.
+
+## 13. O relator é um componente da plataforma
+
+**Contexto.** Na primeira versão (decisão 11), só havia relator se o comitê cadastrasse uma skill com parecer final. Um comitê sem ela terminava com as respostas lado a lado, sem conclusão, e sem a medida de cobertura do Quality Gate.
+
+**Decisão.** O relator passa a ser parte da arquitetura, como o orquestrador e o Quality Gate. Toda orquestração com dois ou mais agentes fecha com o relator da plataforma ([`relator.py`](../../backend/app/services/relator.py)), uma skill oficial sem dono, criada na primeira vez que é necessária, com uma persona que se adapta à área da solicitação. Um comitê pode ter o próprio relator, que substitui o da plataforma. `ORCHESTRATION_PLATFORM_RELATOR=false` desliga o componente.
+
+**Custo.** Uma chamada a mais ao modelo em cada orquestração com dois ou mais agentes, e o tempo dela, porque o relator só começa quando os outros terminam. Com um agente só, não há relator: não há pareceres a consolidar.
+

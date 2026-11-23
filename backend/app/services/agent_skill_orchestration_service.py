@@ -27,6 +27,7 @@ from app.quality_gate.service import QualityGateVerdict, evaluate
 from app.services.artifact_service import check_package, prepare_files
 from app.services.clan_service import is_member
 from app.services.orchestration_service import RequestStatus, append_event
+from app.services.relator import platform_relator
 from app.services.team_context import (
     TeamEntry,
     build_relator_context,
@@ -438,13 +439,17 @@ async def _invoke_in_stages(
     user: User,
     requested_model: str | None,
     files_requested: bool,
-) -> tuple[list[AgentSkillInvocation], list[SkillToolResult]]:
-    """O relator do comitê (app/services/team_context.is_relator) roda por último e recebe
-    o resumo e os achados de cada agente. Sem relator, ou só com relatores, nada muda."""
+) -> tuple[list[AgentSkillInvocation], list[SkillToolResult], set[str]]:
+    """O relator roda por último e recebe o resumo e os riscos de cada agente. É o do
+    comitê (app/services/team_context.is_relator) ou, sem ele, o da plataforma
+    (app/services/relator.py), quando há dois ou mais agentes. Devolve também os nomes
+    dos relatores, para o Quality Gate medir a cobertura do parecer final."""
     relators = [skill for skill in skills if is_relator(skill.manifest_json or {})]
     others = [skill for skill in skills if skill not in relators]
+    if not relators and len(others) >= 2 and settings.orchestration_platform_relator:
+        relators = [platform_relator(db, user=user)]
     if not relators or not others:
-        return await _invoke_advisors_and_implementers(
+        invocations, results = await _invoke_advisors_and_implementers(
             db,
             skills=skills,
             technical_request=technical_request,
@@ -452,6 +457,7 @@ async def _invoke_in_stages(
             requested_model=requested_model,
             files_requested=files_requested,
         )
+        return invocations, results, set()
 
     invocations, results = await _invoke_advisors_and_implementers(
         db,
@@ -490,7 +496,11 @@ async def _invoke_in_stages(
         team_context=relator_context or None,
         relator=bool(relator_context),
     )
-    return invocations + relator_invocations, results + relator_results
+    return (
+        invocations + relator_invocations,
+        results + relator_results,
+        {skill.name for skill in relators},
+    )
 
 
 def _package_issues(db: Session, invocations: list[AgentSkillInvocation]) -> list[str]:
@@ -554,7 +564,7 @@ async def execute_orchestration_step(
     db.commit()
 
     files_requested = asks_for_files(technical_request.title, technical_request.objective)
-    invocations, results = await _invoke_in_stages(
+    invocations, results, relator_names = await _invoke_in_stages(
         db,
         skills=skills,
         technical_request=technical_request,
@@ -568,7 +578,7 @@ async def execute_orchestration_step(
         files_requested=files_requested,
         files_delivered=stored_any_file(db, invocations),
         package_issues=_package_issues(db, invocations),
-        relator_names={skill.name for skill in skills if is_relator(skill.manifest_json or {})},
+        relator_names=relator_names,
     )
     for value in (verdict.relator_coverage or {}).values():
         RELATOR_COVERAGE.observe(value)

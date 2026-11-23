@@ -18,10 +18,12 @@ from app.agent_catalog.contracts import (
     Governanca,
     SkillToolResult,
 )
+from app.core.config import settings
 from app.llm.prompts import build_technical_planner_prompt
 from app.llm.schemas import LLMPlanRequest
 from app.quality_gate.service import evaluate, relator_coverage
 from app.services import agent_skill_orchestration_service as service
+from app.services.relator import PLATFORM_RELATOR_NAME
 from app.services.team_context import build_relator_context, is_relator
 from tests.conftest import register
 from tests.test_team_context import _create_skill, _run
@@ -178,7 +180,52 @@ def test_com_codigo_o_relator_fecha_depois_do_implementador(client: TestClient, 
     assert "Resumo de UX." in calls[2][1]
 
 
-def test_sem_relator_nada_muda(client: TestClient, monkeypatch) -> None:
+def test_sem_relator_no_comite_entra_o_relator_da_plataforma(client: TestClient, monkeypatch) -> None:
+    register(client, USER)
+    _create_skill(client, "Advogado", "Direito", ["Parecer jurídico"])
+    _create_skill(client, "Contratos", "Direito", ["Análise do contrato"])
+    calls = _spy(monkeypatch)
+
+    request = _run(client, "Avaliar os pontos fortes e fracos do processo.")
+
+    assert sorted(name for name, _, _ in calls[:2]) == ["Advogado", "Contratos"]
+    name, context, relator = calls[2]
+    assert name == PLATFORM_RELATOR_NAME
+    assert relator is True
+    assert "Resumo de Advogado." in context
+    events = client.get(f"/api/v1/orchestrations/{request['trace_id']}").json()["events"]
+    gate = [e for e in events if e["event_type"] == "QUALITY_GATE_EVALUATED"][-1]
+    assert set(gate["payload"]["relator_coverage"]) == {"Advogado", "Contratos"}
+
+
+def test_relator_da_plataforma_e_criado_uma_vez_e_ninguem_edita(client: TestClient, monkeypatch) -> None:
+    register(client, USER)
+    _create_skill(client, "Advogado", "Direito", ["Parecer jurídico"])
+    _create_skill(client, "Contratos", "Direito", ["Análise do contrato"])
+    _spy(monkeypatch)
+
+    _run(client, "Avaliar os pontos fortes e fracos do processo.")
+    _run(client, "Avaliar de novo os pontos fortes e fracos do processo.")
+
+    skills = client.get("/api/v1/agent-skills?only_active=false").json()
+    relatores = [s for s in skills if s["name"] == PLATFORM_RELATOR_NAME]
+    assert len(relatores) == 1
+    assert relatores[0]["owner_id"] is None
+    assert relatores[0]["visibility"] == "OFFICIAL"
+
+
+def test_com_um_agente_so_nao_ha_relator(client: TestClient, monkeypatch) -> None:
+    register(client, USER)
+    _create_skill(client, "Advogado", "Direito", ["Parecer jurídico"])
+    calls = _spy(monkeypatch)
+
+    _run(client, "Avaliar os pontos fortes e fracos do processo.")
+
+    assert calls == [("Advogado", None, False)]
+
+
+def test_relator_da_plataforma_pode_ser_desligado(client: TestClient, monkeypatch) -> None:
+    monkeypatch.setattr(settings, "orchestration_platform_relator", False)
     register(client, USER)
     _create_skill(client, "Advogado", "Direito", ["Parecer jurídico"])
     _create_skill(client, "Contratos", "Direito", ["Análise do contrato"])
@@ -187,6 +234,7 @@ def test_sem_relator_nada_muda(client: TestClient, monkeypatch) -> None:
     _run(client, "Avaliar os pontos fortes e fracos do processo.")
 
     assert all(context is None and not relator for _, context, relator in calls)
+    assert len(calls) == 2
 
 
 # --- cobertura do parecer final (Quality Gate) ---------------------------------

@@ -8,6 +8,7 @@ recebem as entregas delas.
 
 import asyncio
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.agent_catalog.contracts import (
@@ -17,6 +18,7 @@ from app.agent_catalog.contracts import (
     Governanca,
     SkillToolResult,
 )
+from app.core.config import settings
 from app.llm.prompts import build_technical_planner_prompt
 from app.llm.schemas import LLMPlanRequest
 from app.quality_gate.service import evaluate
@@ -27,6 +29,13 @@ from tests.conftest import authenticated_csrf_headers, create_qualified_request,
 from tests.test_background_orchestration import _start_url, _wait_for_status
 
 USER = {"name": "Time de Jogos", "email": "time.jogos@example.com", "password": "StrongPassword!123"}
+
+
+@pytest.fixture(autouse=True)
+def _sem_relator_da_plataforma(monkeypatch) -> None:
+    # Estes testes contam as chamadas de quem orienta e de quem escreve código; o relator
+    # da plataforma, que fecha depois, é testado em test_relator.py.
+    monkeypatch.setattr(settings, "orchestration_platform_relator", False)
 
 
 # --- quem escreve código ------------------------------------------------------
