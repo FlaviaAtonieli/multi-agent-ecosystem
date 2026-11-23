@@ -33,6 +33,29 @@
         "security": []
       }
     },
+    "/api/v1/auth/providers": {
+      "get": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Logins sociais ligados",
+        "description": "Diz se o login com GitHub e o login com Google estão ligados, para a tela mostrar só esses botões. Não exige sessão.",
+        "operationId": "social_login_providers_api_v1_auth_providers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialLoginProviders"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
     "/api/v1/auth/csrf": {
       "get": {
         "tags": [
@@ -8189,6 +8212,24 @@
         ],
         "title": "SkillToolResult",
         "description": "Contrato de saída obrigatório de toda Agent Skill (resposta_especialista_schema.json,\nApêndice C da RFC)."
+      },
+      "SocialLoginProviders": {
+        "properties": {
+          "github": {
+            "type": "boolean",
+            "title": "Github"
+          },
+          "google": {
+            "type": "boolean",
+            "title": "Google"
+          }
+        },
+        "type": "object",
+        "required": [
+          "github",
+          "google"
+        ],
+        "title": "SocialLoginProviders"
       },
       "TechnicalRequestContextUpdate": {
         "properties": {

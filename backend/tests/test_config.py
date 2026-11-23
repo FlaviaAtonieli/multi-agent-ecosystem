@@ -128,3 +128,14 @@ def test_login_social_completo_continua_ligado() -> None:
 
     assert configured.github_oauth_enabled is True
     assert configured.google_oauth_enabled is True
+
+
+def test_api_diz_quais_logins_sociais_estao_ligados(client: TestClient, monkeypatch) -> None:
+    # A tela de login só mostra o botão de quem está ligado, em vez de levar a um erro.
+    monkeypatch.setattr(settings, "github_oauth_enabled", True)
+    monkeypatch.setattr(settings, "google_oauth_enabled", False)
+
+    response = client.get("/api/v1/auth/providers")
+
+    assert response.status_code == 200
+    assert response.json() == {"github": True, "google": False}

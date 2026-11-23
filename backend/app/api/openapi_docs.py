@@ -108,6 +108,11 @@ TAGS_METADATA: list[dict[str, str]] = [
 OPERATION_DOCS: dict[str, tuple[str, str]] = {
     "GET /health": ("Status da API", "Retorna se a API está no ar. Não exige autenticação."),
     # Autenticação
+    "GET /auth/providers": (
+        "Logins sociais ligados",
+        "Diz se o login com GitHub e o login com Google estão ligados, para a tela mostrar só esses botões. "
+        "Não exige sessão.",
+    ),
     "GET /auth/csrf": (
         "Preparar token CSRF",
         "Cria o cookie `agenthub_csrf`, cujo valor deve ir no cabeçalho `X-CSRF-Token` das requisições "

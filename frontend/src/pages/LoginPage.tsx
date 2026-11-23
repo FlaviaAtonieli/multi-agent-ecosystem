@@ -4,8 +4,7 @@ import { authApi } from '../api/authApi'
 import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
 import { AgentNetworkHero } from '../components/AgentNetworkHero'
-import { GitHubLoginButton } from '../components/GitHubLoginButton'
-import { GoogleLoginButton } from '../components/GoogleLoginButton'
+import { SocialLoginButtons } from '../components/SocialLoginButtons'
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   github_oauth_failed: 'Não foi possível concluir o login com GitHub. Tente novamente.',
@@ -205,9 +204,7 @@ export function LoginPage() {
                 </button>
               </form>
 
-              <div className="auth-divider">ou</div>
-              <GitHubLoginButton />
-              <GoogleLoginButton />
+              <SocialLoginButtons />
 
               <p className="form-footer">
                 Ainda não possui conta? <Link to="/register">Criar conta</Link>
