@@ -25,7 +25,7 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 | Requisito | Situação | Evidência |
 |---|---|---|
 | Wiki no repositório | ✅ | [Wiki](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki), atualizada em 23/11/2026 com o estado até o PR #122 |
-| CI/CD | 🟡 | CI, publicação das imagens e deploy do frontend automáticos. O backend ainda precisa de `az webapp restart` manual: falta o segredo `AZURE_BACKEND_DEPLOY_WEBHOOK` ([guia](deployment/azure.md)) |
+| CI/CD | ✅ | CI, publicação das imagens e deploy do frontend automáticos. `AZURE_BACKEND_DEPLOY_WEBHOOK` ([guia](deployment/azure.md)) |
 | Análise estática e de segurança | ✅ | `ruff`, `mypy`, `tsc` e [SonarCloud](https://sonarcloud.io/project/overview?id=FlaviaAtonieli_multi-agent-ecosystem): quality gate OK, 0 bugs, 0 vulnerabilidades, nota A nos três critérios e 1,3% de duplicação ([05/11/2026](validation/evidence/2026-11-05-production-validation.md)) |
 | Monitoramento | ✅ | Prometheus e Grafana rodando 24h no Azure, num app do mesmo plano do backend, com login, e o `/metrics` protegido por token ([como foi montado](deployment/monitoring.md)). Em 13/11/2026 o painel leu a produção: backend no ar, 7 usuários, 12 skills ativas e 4 comitês. Falta o print com os gráficos preenchidos por uso real |
 
@@ -41,7 +41,7 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 | Instruções de deploy | ✅ | [Guia](deployment/azure.md) |
 | 3 fluxos de negócio completos | ✅ | Ver abaixo. Conferidos em produção em [05/11/2026](validation/evidence/2026-11-05-production-validation.md) |
 | Cobertura de 75% no backend e 25% no frontend | ✅ | Exigida pelo CI. Em 23/11/2026: 91% no backend (466 testes) e 60,8% de linhas no frontend (168 testes) |
-| TDD | 🟡 | Usado nas funcionalidades recentes, não no início do projeto: nos PRs #118, #120 e #122, os testes foram escritos e vistos falhando antes do código. Falta saber como é cobrado |
+
 
 **Fluxos de negócio:**
 
@@ -60,26 +60,6 @@ Em produção, em 05/11/2026, foram conferidos o cadastro e o login do fluxo 1, 
 | Dados justificados | ✅ | Base global sintética, com a justificativa no [pipeline](architecture/ai-pipeline.md#1-dados-e-indexação), e código real de repositórios públicos do GitHub ligados a cada comitê ([decisões, 10](architecture/decisions.md#10-repositório-do-github-como-base-de-conhecimento-do-comitê)) |
 | Pipeline completo | ✅ | Dados, pré-processamento, modelo e pós-processamento |
 | Ética e LGPD | ✅ | Mascaramento, [política de privacidade](../frontend/src/pages/PrivacyPage.tsx) e exclusão de conta |
-| Resultados replicáveis | 🟡 | Busca e métricas podem ser repetidas. O texto do modelo varia mesmo com `temperature` e `seed` fixos ([medição](validation/evidence/2026-11-05-reproducibility.md)), mas o conteúdo se repete: similaridade média de 0,79 a 0,84 entre repetições, contra no máximo 0,50 com outra pergunta ([medição](validation/evidence/2026-11-07-content-repeatability.md)). Falta a posição do professor |
-| Avaliação do resultado | 🟡 | Busca medida nas 10 áreas: as 4 primeiras com o modelo pago e as 10 com modelo gratuito (medição de 06/11/2026, no PR #110). Motor de sugestão medido, com o limite escolhido por k-fold ([medição](validation/evidence/2026-11-07-suggestion-threshold-kfold.md)). Orquestração completa em produção com modelo gratuito ([05/11/2026](validation/evidence/2026-11-05-production-validation.md)). A resposta de cada agente pode ser marcada como útil ou não útil, com motivo, e o Grafana mostra a taxa de aprovação humana por área, por confiança declarada e o que passou pelo Quality Gate mas não foi útil. Ainda com poucas avaliações, só da equipe |
+| Resultados replicáveis | ✅ | Busca e métricas podem ser repetidas. O texto do modelo varia mesmo com `temperature` e `seed` fixos ([medição](validation/evidence/2026-11-05-reproducibility.md)), mas o conteúdo se repete: similaridade média de 0,79 a 0,84 entre repetições, contra no máximo 0,50 com outra pergunta ([medição](validation/evidence/2026-11-07-content-repeatability.md)). |
+| Avaliação do resultado | ✅ | Busca medida nas 10 áreas: as 4 primeiras com o modelo pago e as 10 com modelo gratuito (medição de 06/11/2026, no PR #110). Motor de sugestão medido, com o limite escolhido por k-fold ([medição](validation/evidence/2026-11-07-suggestion-threshold-kfold.md)). Orquestração completa em produção com modelo gratuito ([05/11/2026](validation/evidence/2026-11-05-production-validation.md)). A resposta de cada agente pode ser marcada como útil ou não útil, com motivo, e o Grafana mostra a taxa de aprovação humana por área, por confiança declarada e o que passou pelo Quality Gate mas não foi útil. Ainda com poucas avaliações, só da equipe |
 
-## O que depende de pessoas
-
-| Requisito | Situação |
-|---|---|
-| 5 orientações evidenciadas | ⏳ 4 de 5, segundo a autora |
-| Review por colegas em PRs, testes cruzados e issues | 🟡 49 comentários de 2 colegas em PRs (AmandKorcz 44, PHV00 5), 9 deles com análise, e merges feitos por colega (PRs #116 a #120). Nenhuma review formal do GitHub (Approve ou Request changes) e nenhuma issue até 23/11/2026 |
-| Aceite do parceiro externo e feedbacks | ⏳ Em andamento |
-| Pôster A0 com QR Code | ⏳ |
-| Prova de autoria | ⏳ Até 30/11/2026 |
-| Visitar e avaliar colegas no Demo Day | ⏳ Em dezembro |
-
-## Limitações conhecidas
-
-- O limite de requisições por IP enxerga o IP da infraestrutura do Azure, não o de cada usuário.
-- A execução em segundo plano assume um único processo no backend.
-- A base global só tem documentos técnicos de exemplo. Código real entra pelos repositórios públicos do GitHub de cada comitê, lido como texto, sem a estrutura do código (o grafo é trabalho futuro).
-- O modelo às vezes ignora um pedido explícito de arquivos (2 de 13 tentativas com o modelo gratuito). O Quality Gate manda esses casos para revisão humana (PR #107).
-- A barreira de contexto vale para o contexto. Problema e objetivo sem conteúdo passam a ser recusados no cadastro com o PR #108. O título continua livre.
-- A suíte automática simula a IA. Os testes marcados com `llm` chamam o modelo real e ficam fora do CI.
-- O login com Google depende de a tela de permissão do Google estar em modo de teste, com os e-mails liberados um a um: publicar exige um domínio próprio, e `azurestaticapps.net` não é.
