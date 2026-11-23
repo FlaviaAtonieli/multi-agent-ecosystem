@@ -2579,6 +2579,9 @@ Este apêndice registra o que mudou em relação ao texto original desta RFC dur
 | **Perguntas de acompanhamento** | RF21 | Permitem aprofundar uma resposta sem abrir uma nova solicitação, mantendo o mesmo Trace ID. |
 | **Barreira de contexto sem conteúdo** | RF07 e RN05 | A regra inicial só exigia um tamanho mínimo de contexto, e textos como "TESTE TESTE TESTE" passavam. Agora regras explícitas, sem custo de IA, exigem palavras com conteúdo e barram texto repetido. A tela mostra o que falta. |
 | **Quality Gate cobra arquivos pedidos** | RF11 e RN06 | Medido com um modelo gratuito: o modelo ignorou um pedido explícito de arquivos em 2 de 13 tentativas. O Quality Gate passa a mandar esses casos para revisão humana (PR #107). |
+| **Avaliação humana de cada resposta de agente** (útil ou não útil, com motivo) | RF11 e RN02 | A revisão humana aprovava ou rejeitava a resposta inteira. Avaliar cada agente mostra qual especialista acerta e mede o que passa pelo Quality Gate sem ser útil (PR #118). |
+| **Repositório público do GitHub como base de conhecimento do comitê** | RF17 | A base global só tinha documentos de exemplo. O código do repositório é lido como texto, nunca executado, e só as orquestrações daquele comitê o encontram (PR #120). |
+| **Monitoramento com Prometheus e Grafana em produção** | RNF10 | Acompanhar uso, tempo das chamadas ao modelo e veredito do Quality Gate com o sistema no ar (PRs #115 e #121). |
 
 ### J.2 Desvios em relação ao texto original
 
@@ -2588,7 +2591,17 @@ Este apêndice registra o que mudou em relação ao texto original desta RFC dur
 | RNF07 | Tempo médio de resposta de até 10 segundos. | Em produção, em 05/11/2026, uma orquestração com uma skill e um modelo gratuito levou 71 s. Só a chamada ao modelo levou 39 s. | O tempo é dominado pelo modelo de linguagem. A meta de 10 s não foi atingida. A execução roda em segundo plano, e a tela acompanha o andamento. |
 | RNF08 e RF16 | Funções administrativas restritas a usuários autorizados. | Desde 14/10/2026 não há papéis de usuário. O acesso é por propriedade: cada skill e cada solicitação têm dono, e cada comitê define quem altera skills e membros. A conta inicial habilita e desabilita as 4 skills oficiais sem dono. | Os papéis exigiam um painel de administração e criavam caminhos de permissão difíceis de testar. A propriedade cobre os mesmos riscos com regras mais simples. |
 
-### J.3 Onde conferir
+### J.3 Trabalhos futuros
+
+Desenhados e registrados, mas fora do prazo desta PoC:
+
+- **Grafo do código e Agente do Repositório:** montar o grafo de arquivos, imports e definições de cada repositório do comitê e um agente que siga esse grafo para achar as fontes, medindo a busca com e sem o grafo.
+- **Ferramentas com dados externos:** OSV.dev para vulnerabilidades das dependências, deps.dev para licenças e versões, e Safe Browsing para os links de anexos e respostas, como ferramentas MCP das skills.
+- **Aprender com as avaliações humanas:** usar o 👍/👎 de cada resposta como rótulo para um classificador da sugestão de skills e para reordenar os trechos do RAG.
+- **Repositórios privados**, com permissão a mais no login com GitHub.
+- **Fila de execução**, para o backend rodar em mais de um processo.
+
+### J.4 Onde conferir
 
 - Requisitos e evidências: `docs/requisitos-portfolio.md`.
 - Validação em produção (05/11/2026) e medições: `docs/validation/evidence/`.

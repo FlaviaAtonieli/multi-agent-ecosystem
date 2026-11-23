@@ -13,6 +13,7 @@
 | Monitorar | [Prometheus e Grafana](deployment/monitoring.md) |
 | Configurar o modelo de IA | [Provedores de modelo](integrations/model-provider.md) |
 | Configurar o login social | [GitHub](integrations/github-oauth.md) e [Google](integrations/google-oauth.md) |
+| Preparar a banca | [Apresentação](apresentacao/README.md) |
 | Saber o que foi testado | [Relatório de validação](validation/README.md) e [evidências por data](validation/evidence/) |
 | Ver os controles de segurança | [SECURITY.md](../SECURITY.md) |
 | Ver o histórico de decisões | [CHANGELOG.md](../CHANGELOG.md) |
