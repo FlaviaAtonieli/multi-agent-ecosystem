@@ -392,7 +392,7 @@
 .workspace-page-heading-actions { display: flex; align-items: center; gap: 10px; }
 
 .workspace-core-agents { margin-bottom: 26px; }
-.workspace-core-agents-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 12px; }
+.workspace-core-agents-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 12px; }
 .workspace-core-agent-card {
   display: flex;
   align-items: flex-start;

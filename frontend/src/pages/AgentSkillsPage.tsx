@@ -68,6 +68,12 @@ const CORE_AGENTS = [
     name: 'Orientador de Interação',
     description: 'Garante que o contexto está completo antes de qualquer análise começar.',
   },
+  {
+    key: 'relator',
+    icon: '❖',
+    name: 'Relator',
+    description: 'Fecha a orquestração com o parecer final: reúne o que cada agente concluiu e aponta divergências e riscos. Um comitê pode ter o seu próprio.',
+  },
 ] as const
 
 type StatusFilter = 'ALL' | 'ENABLED' | 'PENDING' | 'DISABLED'
