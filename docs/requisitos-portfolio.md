@@ -24,7 +24,7 @@ Legenda: ✅ atendido e conferido | 🟡 feito, falta confirmar em produção | 
 | Wiki no repositório | 🟡 | [Wiki](https://github.com/FlaviaAtonieli/multi-agent-ecosystem/wiki), atualizada em 03/11/2026. Faltam os PRs #101 a #105 |
 | CI/CD | 🟡 | CI, publicação das imagens e deploy do frontend automáticos. O backend ainda precisa de `az webapp restart` manual: falta o segredo `AZURE_BACKEND_DEPLOY_WEBHOOK` ([guia](deployment/azure.md)) |
 | Análise estática e de segurança | ✅ | `ruff`, `mypy`, `tsc` e [SonarCloud](https://sonarcloud.io/project/overview?id=FlaviaAtonieli_multi-agent-ecosystem): quality gate OK, 0 bugs, 0 vulnerabilidades, nota A nos três critérios e 1,3% de duplicação ([05/11/2026](validation/evidence/2026-11-05-production-validation.md)) |
-| Monitoramento | 🟡 | Prometheus e Grafana [prontos](deployment/monitoring.md). Em produção, o linked backend do Azure bloqueia o acesso a `/metrics`: falta liberar esse caminho |
+| Monitoramento | ✅ | Prometheus e Grafana rodando 24h no Azure, num app do mesmo plano do backend, com login, e o `/metrics` protegido por token ([como foi montado](deployment/monitoring.md)). Em 13/11/2026 o painel leu a produção: backend no ar, 7 usuários, 12 skills ativas e 4 comitês. Falta o print com os gráficos preenchidos por uso real |
 
 ## Linha de Web Apps
 

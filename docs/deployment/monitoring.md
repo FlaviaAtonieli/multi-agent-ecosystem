@@ -30,13 +30,19 @@ Grafana (público, com login) ──> Prometheus (só dentro do contêiner) ─�
 - O token de `/metrics` e a senha do Grafana são gerados no Cloud Shell e ficam só nas configurações do App Service.
 - A imagem é publicada no `ghcr.io` pelo `publish-images.yml`, junto com a do backend. Na primeira vez, torne o pacote `multi-agent-ecosystem-monitoring` público, como o do backend ([azure.md](azure.md)).
 
-No Cloud Shell (bash):
+No Cloud Shell (bash), tudo na mesma sessão, porque o token e a senha ficam em variáveis:
 
 ```bash
+# --excluded-paths de `az webapp auth update` só existe na extensão authV2.
+az extension add --name authV2 --upgrade -y
+
 RG='Flav.ia'
 BACKEND=multi-agent-ecosystem-back
 MONITOR=multi-agent-ecosystem-monitor   # se o nome já existir no Azure, troque
-PLAN=$(az webapp show -g "$RG" -n "$BACKEND" --query appServicePlanId -o tsv)
+# Na CLI 2.9x o campo é serverFarmId. Vazio, o `az webapp create` supõe um plano
+# Windows novo e falha com "Invalid language type node for OS windows".
+PLAN=$(az webapp show -g "$RG" -n "$BACKEND" --query serverFarmId -o tsv)
+echo "PLAN=$PLAN"   # não pode sair vazio
 BACKEND_HOST=$(az webapp show -g "$RG" -n "$BACKEND" --query defaultHostName -o tsv)
 TOKEN=$(openssl rand -hex 32)
 GRAFANA_PASSWORD=$(openssl rand -base64 18)
@@ -47,7 +53,7 @@ az webapp config appsettings set -g "$RG" -n "$BACKEND" -o none   --settings MET
 az webapp auth update -g "$RG" -n "$BACKEND" --excluded-paths '["/metrics"]' -o none
 
 # 2. Cria o app do monitoramento no mesmo plano.
-az webapp create -g "$RG" -n "$MONITOR" --plan "$PLAN" -o none   --deployment-container-image-name ghcr.io/flaviaatonieli/multi-agent-ecosystem-monitoring:latest
+az webapp create -g "$RG" -n "$MONITOR" --plan "$PLAN" -o none   --container-image-name ghcr.io/flaviaatonieli/multi-agent-ecosystem-monitoring:latest
 MONITOR_HOST=$(az webapp show -g "$RG" -n "$MONITOR" --query defaultHostName -o tsv)
 az webapp config appsettings set -g "$RG" -n "$MONITOR" -o none --settings   WEBSITES_PORT=3000 BACKEND_HOST="$BACKEND_HOST" METRICS_TOKEN="$TOKEN"   GF_SECURITY_ADMIN_PASSWORD="$GRAFANA_PASSWORD" GF_SERVER_ROOT_URL="https://$MONITOR_HOST"
 # Always On: sem ele, o app dorme sem visitas e o Prometheus para de coletar.
@@ -55,7 +61,7 @@ az webapp config set -g "$RG" -n "$MONITOR" --always-on true -o none
 az webapp update -g "$RG" -n "$MONITOR" --https-only true -o none
 
 echo "Grafana: https://$MONITOR_HOST (usuário admin)"
-echo "Senha do Grafana, guarde num gerenciador de senhas: $GRAFANA_PASSWORD"
+echo "Senha do Grafana, guarde num gerenciador de senhas e não cole em chats: $GRAFANA_PASSWORD"
 ```
 
 **Conferir:** no Grafana, o painel "Backend no ar" deve mostrar 1. Em **Explore**, a consulta `up{job="agenthub-backend"}` deve dar 1. Se der 0:
