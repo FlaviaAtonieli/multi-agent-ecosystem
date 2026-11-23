@@ -6,6 +6,8 @@ Método de autenticação **adicional**, ao lado do fluxo de e-mail/senha já ex
 
 Desabilitado por padrão (`GITHUB_OAUTH_ENABLED=false`): o projeto sobe normalmente sem nenhuma credencial de OAuth configurada -- só o botão "Continuar com GitHub" some do frontend e `/api/v1/auth/github/*` responde `404`.
 
+Com `GITHUB_OAUTH_ENABLED=true` mas sem `GITHUB_CLIENT_ID` ou sem `GITHUB_CLIENT_SECRET`, o backend sobe normalmente, desliga só o login com GitHub e escreve no log `Login com github desligado: ... falta ...`. Antes, essa configuração incompleta impedia o backend de subir e derrubava o site inteiro.
+
 ## Criando o GitHub OAuth App
 
 Cada ambiente (dev local, produção) deve ter seu próprio OAuth App -- não reaproveite credenciais entre eles.

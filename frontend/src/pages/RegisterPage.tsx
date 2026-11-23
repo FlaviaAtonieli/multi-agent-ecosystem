@@ -3,8 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
 import { Brand } from '../components/Brand'
-import { GitHubLoginButton } from '../components/GitHubLoginButton'
-import { GoogleLoginButton } from '../components/GoogleLoginButton'
+import { SocialLoginButtons } from '../components/SocialLoginButtons'
 
 export function RegisterPage() {
   const navigate = useNavigate()
@@ -84,9 +83,7 @@ export function RegisterPage() {
             </button>
           </form>
 
-          <div className="auth-divider">ou</div>
-          <GitHubLoginButton />
-          <GoogleLoginButton />
+          <SocialLoginButtons />
 
           <p className="form-footer">
             Já possui conta? <Link to="/login">Voltar ao login</Link>

@@ -6,6 +6,8 @@ Método de autenticação **adicional**, ao lado do fluxo de e-mail/senha e do l
 
 Desabilitado por padrão (`GOOGLE_OAUTH_ENABLED=false`): o projeto sobe normalmente sem nenhuma credencial do Google configurada e `/api/v1/auth/google/*` responde `404`. O botão "Continuar com Google" no frontend não checa esse estado (mesmo comportamento pré-existente do botão do GitHub) -- ele aparece sempre; clicar nele sem a integração habilitada leva a um `404` cru em vez de um redirect amigável. Gap conhecido, não corrigido aqui.
 
+Com `GOOGLE_OAUTH_ENABLED=true` mas sem `GOOGLE_CLIENT_ID` ou sem `GOOGLE_CLIENT_SECRET`, o backend sobe normalmente, desliga só o login com Google e escreve no log `Login com google desligado: ... falta ...`. Antes, essa configuração incompleta impedia o backend de subir e derrubava o site inteiro.
+
 ## Criando o OAuth Client no Google Cloud Console
 
 Cada ambiente (dev local, produção) deve ter seu próprio OAuth Client -- não reaproveite credenciais entre eles.

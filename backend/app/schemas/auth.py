@@ -19,6 +19,11 @@ class CsrfResponse(BaseModel):
     message: str = "Token CSRF preparado."
 
 
+class SocialLoginProviders(BaseModel):
+    github: bool
+    google: bool
+
+
 class SessionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

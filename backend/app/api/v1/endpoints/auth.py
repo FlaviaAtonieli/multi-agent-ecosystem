@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -34,6 +33,7 @@ from app.schemas.auth import (
     LoginCodeVerify,
     LoginRequest,
     SessionRead,
+    SocialLoginProviders,
 )
 from app.schemas.user import (
     PasswordChange,
@@ -82,7 +82,6 @@ from app.services.welcome_email_service import send_welcome_email
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 
-
 def _to_user_read(user: User) -> UserRead:
     """Toda resposta com um User passa por aqui: has_password não é coluna, e o
     UserRead.model_validate(user) sozinho diria False para todo mundo.
@@ -92,6 +91,12 @@ def _to_user_read(user: User) -> UserRead:
     data["oauth_provider"] = "github" if user.github_id else "google" if user.google_id else None
     data["is_initial_account"] = is_initial_account(user.email)
     return UserRead(**data)
+
+
+@router.get("/providers", response_model=SocialLoginProviders)
+def social_login_providers() -> SocialLoginProviders:
+    """Quais logins sociais estão ligados, para a tela só mostrar esses botões."""
+    return SocialLoginProviders(github=settings.github_oauth_enabled, google=settings.google_oauth_enabled)
 
 
 @router.get("/csrf", response_model=CsrfResponse)

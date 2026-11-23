@@ -42,8 +42,11 @@ export type LoginInput = {
 export const githubLoginUrl = `${API_URL}/auth/github/login`
 export const googleLoginUrl = `${API_URL}/auth/google/login`
 
+export type SocialLoginProviders = { github: boolean; google: boolean }
+
 export const authApi = {
   me: () => apiRequest<User>('/auth/me'),
+  providers: () => apiRequest<SocialLoginProviders>('/auth/providers'),
   login: (input: LoginInput) =>
     apiRequest<AuthResponse | LoginChallenge>('/auth/login', {
       method: 'POST',

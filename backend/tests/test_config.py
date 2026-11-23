@@ -10,18 +10,14 @@ def _make_request(client_host: str, headers: dict[str, str] | None = None) -> Re
     scope = {
         "type": "http",
         "client": (client_host, 12345),
-        "headers": [
-            (key.lower().encode(), value.encode()) for key, value in (headers or {}).items()
-        ],
+        "headers": [(key.lower().encode(), value.encode()) for key, value in (headers or {}).items()],
     }
     return Request(scope)
 
 
 def test_production_without_cookie_secure_is_rejected() -> None:
     with pytest.raises(ValueError, match="COOKIE_SECURE=true"):
-        Settings(
-            _env_file=None, environment="production", cookie_secure=False, metrics_token="t"
-        )
+        Settings(_env_file=None, environment="production", cookie_secure=False, metrics_token="t")
 
 
 def test_production_with_cookie_secure_is_accepted() -> None:
@@ -86,9 +82,7 @@ def test_resolve_client_ip_ignores_forwarded_header_from_untrusted_peer(monkeypa
     assert resolve_client_ip(request) == "203.0.113.9"
 
 
-def test_oversized_body_is_rejected_before_reaching_the_route(
-    client: TestClient, monkeypatch
-) -> None:
+def test_oversized_body_is_rejected_before_reaching_the_route(client: TestClient, monkeypatch) -> None:
     monkeypatch.setattr(settings, "max_request_body_bytes", 1024)
     response = client.post("/api/v1/auth/login", content=b"x" * 2048)
     assert response.status_code == 413
@@ -99,3 +93,49 @@ def test_body_within_limit_reaches_normal_validation(client: TestClient) -> None
     response = client.post("/api/v1/auth/login", json={"email": "not-real", "password": "x"})
     # Rejected by request validation (bad payload shape), not by the size guard.
     assert response.status_code in (400, 401, 403, 422)
+
+
+@pytest.mark.parametrize(
+    ("provider", "fields"),
+    [
+        ("github", {"github_client_id": None, "github_client_secret": "s"}),
+        ("github", {"github_client_id": "id", "github_client_secret": None}),
+        ("github", {"github_client_id": "id", "github_client_secret": "   "}),
+        ("google", {"google_client_id": None, "google_client_secret": "s"}),
+        ("google", {"google_client_id": "id", "google_client_secret": ""}),
+    ],
+)
+def test_login_social_incompleto_so_desliga_aquele_login(provider: str, fields: dict, caplog) -> None:
+    # Um secret esquecido no Azure não pode derrubar o site inteiro, só o botão daquele login.
+    with caplog.at_level("WARNING", logger="app.core.config"):
+        configured = Settings(_env_file=None, **{f"{provider}_oauth_enabled": True}, **fields)
+
+    assert getattr(configured, f"{provider}_oauth_enabled") is False
+    assert f"{provider.upper()}_OAUTH_ENABLED" in caplog.text
+    assert "desligado" in caplog.text
+
+
+def test_login_social_completo_continua_ligado() -> None:
+    configured = Settings(
+        _env_file=None,
+        github_oauth_enabled=True,
+        github_client_id="id",
+        github_client_secret="segredo",
+        google_oauth_enabled=True,
+        google_client_id="id.apps.googleusercontent.com",
+        google_client_secret="GOCSPX-segredo",
+    )
+
+    assert configured.github_oauth_enabled is True
+    assert configured.google_oauth_enabled is True
+
+
+def test_api_diz_quais_logins_sociais_estao_ligados(client: TestClient, monkeypatch) -> None:
+    # A tela de login só mostra o botão de quem está ligado, em vez de levar a um erro.
+    monkeypatch.setattr(settings, "github_oauth_enabled", True)
+    monkeypatch.setattr(settings, "google_oauth_enabled", False)
+
+    response = client.get("/api/v1/auth/providers")
+
+    assert response.status_code == 200
+    assert response.json() == {"github": True, "google": False}
