@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, settings
 from app.llm.schemas import LLMPlanRequest
-from app.models import TechnicalRequest
+from app.models import Clan, TechnicalRequest
 from app.rag.factory import create_retriever
 from app.rag.schemas import RagContext
 
@@ -28,7 +28,13 @@ def retrieve_context_for_request(
 
     retriever = create_retriever(db, config)
     started = time.perf_counter()
-    chunks = retriever.retrieve(query, top_k=config.rag_top_k, clan_id=technical_request.clan_id)
+    clan = db.get(Clan, technical_request.clan_id) if technical_request.clan_id else None
+    chunks = retriever.retrieve(
+        query,
+        top_k=config.rag_top_k,
+        clan_id=technical_request.clan_id,
+        include_global=clan.use_global_knowledge if clan else True,
+    )
     latency_ms = round((time.perf_counter() - started) * 1000)
 
     return RagContext(chunks=chunks, query=query, retrieval_latency_ms=latency_ms)

@@ -30,6 +30,8 @@ class SkillToolCall(BaseModel):
     # Entregas das skills que rodaram antes, para as que escrevem código (ver
     # app/services/team_context.py).
     team_context: str | None = None
+    # Se esta chamada é a do relator do comitê, que recebe os pareceres das outras skills.
+    relator: bool = False
 
 
 class AgenteEmissor(BaseModel):

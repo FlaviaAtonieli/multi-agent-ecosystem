@@ -41,6 +41,8 @@ class LLMPlanRequest(BaseModel):
     # Entregas das skills que rodaram antes, para a skill que escreve código
     # (app/services/team_context.py). Sanitizadas e truncadas como o resto.
     team_context: str | None = None
+    # O team_context são pareceres a consolidar (relator), e não requisitos a seguir.
+    relator: bool = False
 
 
 class LLMGeneratedFile(BaseModel):

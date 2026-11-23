@@ -80,6 +80,8 @@ export type QualityGateVerdict = {
   approved: boolean
   requires_human_review: boolean
   reasons: string[]
+  // Com relator: quanto do parecer de cada agente o parecer final considerou (0 a 1).
+  relator_coverage?: Record<string, number> | null
 }
 
 export type ConsolidatedResponse = {

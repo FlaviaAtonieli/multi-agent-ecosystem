@@ -83,3 +83,28 @@ Registro curto das decisões que mais moldam o sistema. Cada uma diz o contexto,
 **Decisão.** Um membro adiciona um repositório público do GitHub ao comitê, e a indexação roda em segundo plano: baixa o código, lê os arquivos de texto e grava os trechos com embeddings ligados ao comitê ([`repository_service.py`](../../backend/app/services/repository_service.py)). A busca da orquestração passa a ver a base global mais os repositórios do comitê da solicitação, nunca os de outro. É a fase 1. A fase 2 monta um grafo do código (arquivos, imports e definições) e um Agente do Repositório que segue esse grafo para achar as fontes.
 
 **Custo.** Só repositórios públicos: um privado exigiria pedir mais permissão no login com GitHub. Os trechos são janelas de texto, sem entender a estrutura do código, até a fase 2. Indexar gasta embeddings (cerca de 1 centavo de dólar por MB de código com o modelo de produção), por isso há limites. Como a orquestração, a indexação vive no processo do backend, e um reinício no meio marca o repositório como falho.
+
+## 11. Relator do comitê e cobertura do parecer final
+
+**Contexto.** As skills de um comitê rodavam juntas, e nenhuma via o que as outras disseram. Num comitê jurídico ou de saúde, o resultado esperado é uma conclusão única, como um julgamento ou a avaliação final de um paciente, e não respostas lado a lado.
+
+**Decisão.** A skill que declara um parecer ou avaliação final em `produced_outputs` é o relator: roda por último e recebe o resumo e os achados de cada agente, reaproveitando o mecanismo que já dava as entregas do time a quem escreve código ([`team_context.py`](../../backend/app/services/team_context.py)). O Quality Gate ganhou uma regra: mede quanto do parecer de cada agente aparece no parecer final e pede revisão humana se algum ficou de fora ([`quality_gate/service.py`](../../backend/app/quality_gate/service.py)).
+
+**Custo.** A orquestração com relator leva uma rodada a mais do modelo. A cobertura é uma medida de termos em comum, sem um segundo modelo julgando: barata e reproduzível, mas não percebe um relator que reescreve um ponto com outras palavras, nem um que cita termos sem considerar o argumento. O limite de 0,2 é inicial e não foi calibrado com dados.
+
+## 12. Comitê escolhe se usa a base global, e anexos contam como evidência
+
+**Contexto.** No teste do Comitê Jurídico (23/11/2026), a busca trouxe trechos da base global de exemplo, que descreve um sistema fictício de limite de crédito, e o relator citou um risco de LGPD sem relação com o processo. Além disso, a confiança de cada agente só contava os trechos da base: com o processo inteiro anexado e nenhum trecho, a confiança era BAIXA.
+
+**Decisão.** Cada comitê escolhe se a busca inclui a base global (`use_global_knowledge`, migration 0025). Os comitês existentes continuam usando a base global, e os comitês de exemplo de fora do software nascem sem ela. Os documentos anexados à solicitação passam a contar como evidência na confiança do agente ([`tool_interface.py`](../../backend/app/agent_catalog/tool_interface.py)). O relator recebe o resumo e os riscos de cada agente, e não mais os nomes dos trechos usados como fonte, que são os mesmos para todos; a cobertura do parecer final mede sobre a mesma base.
+
+**Custo.** Num comitê sem a base global e sem repositórios, a qualidade depende só dos anexos: sem anexo, a confiança continua BAIXA e o Quality Gate pede revisão humana. Os anexos contam como evidência inteiros, sem medir se o agente os usou de fato.
+
+## 13. O relator é um componente da plataforma
+
+**Contexto.** Na primeira versão (decisão 11), só havia relator se o comitê cadastrasse uma skill com parecer final. Um comitê sem ela terminava com as respostas lado a lado, sem conclusão, e sem a medida de cobertura do Quality Gate.
+
+**Decisão.** O relator passa a ser parte da arquitetura, como o orquestrador e o Quality Gate. Toda orquestração com dois ou mais agentes fecha com o relator da plataforma ([`relator.py`](../../backend/app/services/relator.py)), uma skill oficial sem dono, criada na primeira vez que é necessária, com uma persona que se adapta à área da solicitação. Um comitê pode ter o próprio relator, que substitui o da plataforma. `ORCHESTRATION_PLATFORM_RELATOR=false` desliga o componente.
+
+**Custo.** Uma chamada a mais ao modelo em cada orquestração com dois ou mais agentes, e o tempo dela, porque o relator só começa quando os outros terminam. Com um agente só, não há relator: não há pareceres a consolidar.
+

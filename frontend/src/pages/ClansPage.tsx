@@ -5,7 +5,17 @@ import { ApiError } from '../api/http'
 import { useAuth } from '../auth/AuthContext'
 import { ClanRepositories } from '../components/clans/ClanRepositories'
 
-const DEFAULT_SETTINGS: ClanSettings = { is_open: false, skills_policy: 'ALL_MEMBERS', members_policy: 'ALL_MEMBERS' }
+const DEFAULT_SETTINGS: ClanSettings = {
+  is_open: false,
+  skills_policy: 'ALL_MEMBERS',
+  members_policy: 'ALL_MEMBERS',
+  use_global_knowledge: true,
+}
+
+const knowledgeLabels = {
+  global: 'Base de exemplo, anexos e repositórios do comitê',
+  own: 'Só os anexos e os repositórios do comitê',
+}
 
 const policyLabels: Record<ClanPolicy, string> = {
   ALL_MEMBERS: 'Todos os membros',
@@ -52,6 +62,18 @@ function ClanSettingsFields({ value, disabled, onChange }: SettingsFieldsProps) 
         >
           <option value="ALL_MEMBERS">{policyLabels.ALL_MEMBERS}</option>
           <option value="OWNER_ONLY">{policyLabels.OWNER_ONLY}</option>
+        </select>
+      </label>
+      <label>
+        <span>Base de conhecimento</span>
+        <select
+          aria-label="Base de conhecimento"
+          value={value.use_global_knowledge === false ? 'own' : 'global'}
+          disabled={disabled}
+          onChange={(event) => onChange({ use_global_knowledge: event.target.value === 'global' })}
+        >
+          <option value="global">{knowledgeLabels.global}</option>
+          <option value="own">{knowledgeLabels.own}</option>
         </select>
       </label>
     </div>
@@ -243,6 +265,7 @@ export function ClansPage() {
               <input
                 type="text"
                 placeholder="Nome do novo comitê..."
+                aria-label="Nome do comitê"
                 value={newClanName}
                 onChange={(event) => setNewClanName(event.target.value)}
                 maxLength={120}
@@ -347,6 +370,10 @@ export function ClansPage() {
                   <li>{selected.is_open ? 'Aberto — qualquer um pode entrar' : 'Fechado — só entra quem for adicionado'}</li>
                   <li>Agent Skills: {policyLabels[selected.skills_policy].toLowerCase()}</li>
                   <li>Membros: {policyLabels[selected.members_policy].toLowerCase()}</li>
+                  <li>
+                    Base de conhecimento:{' '}
+                    {selected.use_global_knowledge === false ? knowledgeLabels.own : knowledgeLabels.global}
+                  </li>
                 </ul>
               )}
 

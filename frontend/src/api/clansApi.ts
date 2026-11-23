@@ -14,6 +14,8 @@ export type ClanSettings = {
   is_open: boolean
   skills_policy: ClanPolicy
   members_policy: ClanPolicy
+  // Se a busca inclui a base global de exemplo, além dos anexos e repositórios do comitê.
+  use_global_knowledge: boolean
 }
 
 export type Clan = ClanSettings & {

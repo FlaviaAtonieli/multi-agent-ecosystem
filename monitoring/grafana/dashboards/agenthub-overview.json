@@ -970,13 +970,149 @@
       }
     },
     {
+      "id": 29,
+      "type": "row",
+      "title": "Relator do comitê",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 58,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 30,
+      "type": "stat",
+      "title": "Pareceres medidos",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 59,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(agenthub_relator_coverage_ratio_count) or vector(0)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "description": "Quantas vezes o Quality Gate mediu se o parecer final do relator considerou um agente (uma medida por agente)."
+    },
+    {
+      "id": 31,
+      "type": "stat",
+      "title": "Cobertura média do parecer final",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 59,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(agenthub_relator_coverage_ratio_sum) / clamp_min(sum(agenthub_relator_coverage_ratio_count), 1)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "description": "Fração média dos termos do resumo e dos achados de cada agente que aparece no parecer final. Mede se o relator considerou o agente, não se concorda com ele."
+    },
+    {
+      "id": 32,
+      "type": "stat",
+      "title": "Agentes ignorados pelo relator",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 59,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(agenthub_relator_coverage_ratio_bucket{le=\"0.2\"}) or vector(0)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "description": "Pareceres com cobertura até 0,2: o Quality Gate manda esses casos para revisão humana."
+    },
+    {
       "id": 21,
       "type": "row",
       "title": "Segurança",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 58,
+        "y": 64,
         "w": 24,
         "h": 1
       }
@@ -991,7 +1127,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 59,
+        "y": 65,
         "w": 24,
         "h": 8
       },

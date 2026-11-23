@@ -41,6 +41,36 @@ def writes_code(manifest: dict) -> bool:
     return any(_CODE_FILE.search(str(output)) for output in outputs)
 
 
+_RELATOR_OUTPUT = re.compile(r"\b(?:parecer|avalia[cç][aã]o)\s+final\b", re.IGNORECASE)
+
+RELATOR_MAX_CHARS = 4000
+
+
+def is_relator(manifest: dict) -> bool:
+    """Se a skill declara um parecer ou avaliação final em produced_outputs: ela fecha a
+    orquestração, depois das outras, a partir dos pareceres delas."""
+    outputs = manifest.get("produced_outputs") or []
+    return any(_RELATOR_OUTPUT.search(str(output)) for output in outputs)
+
+
+def build_relator_context(results: list, *, max_chars: int = RELATOR_MAX_CHARS) -> str:
+    """Resumo e riscos de cada agente, com o espaço dividido igualmente entre eles. Os
+    achados não entram: são os trechos e anexos usados como fonte, os mesmos para todos."""
+    if not results:
+        return ""
+    per_entry = max(200, max_chars // len(results))
+    parts: list[str] = []
+    for result in results:
+        block = f"[{result.agente_emissor.nome}] {result.analise_estruturada.resumo_executivo.strip()}"
+        for risk in result.analise_estruturada.impactos_mapeados:
+            candidate = f"{block}\n- {risk}"
+            if len(candidate) > per_entry:
+                break
+            block = candidate
+        parts.append(block[:per_entry])
+    return "\n\n".join(parts)[:max_chars]
+
+
 def _requirements(content: str) -> list[str]:
     lines: list[str] = []
     for raw in content.splitlines():

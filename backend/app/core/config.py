@@ -159,6 +159,9 @@ class Settings(BaseSettings):
     # Skills consultadas ao mesmo tempo. Cada uma é um subprocesso com memória própria,
     # então o número não pode crescer à vontade num App Service pequeno.
     orchestration_max_parallel_skills: int = 3
+    # Relator da plataforma (app/services/relator.py): fecha toda orquestração com dois ou
+    # mais agentes com um parecer final, quando o comitê não tem relator próprio.
+    orchestration_platform_relator: bool = True
 
     # Anexos só de texto: o arquivo é lido como UTF-8. PDF e DOCX ficaram de fora porque
     # os parsers trazem riscos ainda não avaliados (PDF malformado, DOCX como zip-bomb).

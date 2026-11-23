@@ -17,6 +17,8 @@ class Retriever(ABC):
     """Busca os trechos da base mais relevantes para uma pergunta."""
 
     @abstractmethod
-    def retrieve(self, query: str, *, top_k: int, clan_id: str | None = None) -> list[RetrievedChunk]:
+    def retrieve(
+        self, query: str, *, top_k: int, clan_id: str | None = None, include_global: bool = True
+    ) -> list[RetrievedChunk]:
         """Devolve até top_k trechos, do mais relevante ao menos relevante: da base global
         e, com `clan_id`, também dos repositórios desse comitê."""

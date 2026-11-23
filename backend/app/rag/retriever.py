@@ -30,11 +30,19 @@ class InMemoryVectorRetriever(Retriever):
         self.db = db
         self.embedding_provider = embedding_provider
 
-    def retrieve(self, query: str, *, top_k: int, clan_id: str | None = None) -> list[RetrievedChunk]:
-        # O repositório de um comitê nunca aparece na orquestração de outro.
-        scope: ColumnElement[bool] = KnowledgeChunk.clan_id.is_(None)
-        if clan_id is not None:
-            scope = or_(scope, KnowledgeChunk.clan_id == clan_id)
+    def retrieve(
+        self, query: str, *, top_k: int, clan_id: str | None = None, include_global: bool = True
+    ) -> list[RetrievedChunk]:
+        # O repositório de um comitê nunca aparece na orquestração de outro. Sem a base
+        # global, só entram os trechos do próprio comitê.
+        if not include_global:
+            if clan_id is None:
+                return []
+            scope: ColumnElement[bool] = KnowledgeChunk.clan_id == clan_id
+        else:
+            scope = KnowledgeChunk.clan_id.is_(None)
+            if clan_id is not None:
+                scope = or_(scope, KnowledgeChunk.clan_id == clan_id)
         chunks = list(self.db.scalars(select(KnowledgeChunk).where(scope)))
         if not chunks:
             return []

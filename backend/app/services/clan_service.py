@@ -102,6 +102,7 @@ def create_clan(
     is_open: bool = False,
     skills_policy: str = "ALL_MEMBERS",
     members_policy: str = "ALL_MEMBERS",
+    use_global_knowledge: bool = True,
 ) -> Clan:
     clean_name = name.strip()
     existing = db.scalar(select(Clan).where(Clan.name == clean_name))
@@ -114,6 +115,7 @@ def create_clan(
         is_open=is_open,
         skills_policy=skills_policy,
         members_policy=members_policy,
+        use_global_knowledge=use_global_knowledge,
     )
     db.add(clan)
     db.flush()
@@ -134,6 +136,7 @@ def update_clan_settings(
     is_open: bool | None = None,
     skills_policy: str | None = None,
     members_policy: str | None = None,
+    use_global_knowledge: bool | None = None,
 ) -> Clan:
     clan = get_clan(db, clan_id)
     if clan.created_by_id != updated_by.id:
@@ -149,6 +152,8 @@ def update_clan_settings(
         clan.skills_policy = skills_policy
     if members_policy is not None:
         clan.members_policy = members_policy
+    if use_global_knowledge is not None:
+        clan.use_global_knowledge = use_global_knowledge
     db.flush()
     return clan
 

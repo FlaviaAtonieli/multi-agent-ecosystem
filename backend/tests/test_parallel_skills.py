@@ -10,6 +10,7 @@ from app.core.database import SessionLocal
 from app.models import OrchestrationEvent, TechnicalRequest
 from app.services import agent_skill_orchestration_service as service
 from app.services.orchestration_service import append_event
+from app.services.relator import PLATFORM_RELATOR_NAME
 from tests.conftest import authenticated_csrf_headers, create_qualified_request, register
 from tests.test_human_review import FIXTURE_MANIFEST
 
@@ -92,9 +93,11 @@ def test_one_failing_skill_does_not_stop_the_others(client: TestClient, monkeypa
 
     assert response.status_code == 200
     body = response.json()
-    assert body["invocations_count"] == len(DOMAINS)
+    # Mais uma invocação: o relator da plataforma fecha mesmo com uma skill falhando.
+    assert body["invocations_count"] == len(DOMAINS) + 1
     assert "regras_negocio" not in [item["agente_emissor"]["dominio"] for item in body["results"]]
-    assert len(body["results"]) == len(DOMAINS) - 1
+    assert len(body["results"]) == len(DOMAINS)
+    assert body["results"][-1]["agente_emissor"]["nome"] == PLATFORM_RELATOR_NAME
 
 
 def test_append_event_retries_after_sequence_collision(client: TestClient, monkeypatch) -> None:

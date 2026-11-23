@@ -67,6 +67,11 @@ QUALITY_GATE_VERDICTS = Counter(
     "Vereditos do Conselheiro (Quality Gate): approved ou human_review.",
     ["outcome"],
 )
+RELATOR_COVERAGE = Histogram(
+    "agenthub_relator_coverage_ratio",
+    "Quanto do parecer de cada agente o parecer final do relator considerou (0 a 1).",
+    buckets=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0),
+)
 HUMAN_REVIEWS = Counter("agenthub_human_reviews_total", "Decisões de revisão humana.", ["decision"])
 AUDIT_EVENTS = Counter(
     "agenthub_audit_events_total",
