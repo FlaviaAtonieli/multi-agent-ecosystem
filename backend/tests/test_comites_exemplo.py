@@ -65,3 +65,17 @@ def test_rodar_de_novo_nao_duplica(client: TestClient) -> None:
     for comite in comites:
         skills = client.get(f"/api/v1/clans/{comite['id']}/skills").json()
         assert len(skills) == 5
+
+
+def test_script_so_aceita_os_ambientes_conhecidos() -> None:
+    module = _script()
+
+    assert module.endereco([]) == module.PRODUCAO
+    assert module.endereco(["--ambiente", "local"]) == "http://localhost:8000"
+    assert module.endereco(["--ambiente", "docker"]) == "http://localhost:3000"
+    try:
+        module.endereco(["--ambiente", "http://outro-servidor.exemplo"])
+    except SystemExit:
+        pass
+    else:
+        raise AssertionError("um endereço livre não pode ser aceito")

@@ -5,7 +5,8 @@ Quem roda vira dono dos comitês e das skills. A senha e o código do e-mail sã
 digitados no terminal e não ficam gravados em lugar nenhum.
 
     python scripts/criar_comites_exemplo.py
-    python scripts/criar_comites_exemplo.py --base-url http://localhost:8000
+    python scripts/criar_comites_exemplo.py --ambiente local    (backend em localhost:8000)
+    python scripts/criar_comites_exemplo.py --ambiente docker   (docker compose, localhost:3000)
 
 Pode rodar de novo: comitês e skills que já existem com o mesmo nome são mantidos.
 """
@@ -20,6 +21,13 @@ import httpx
 
 DADOS = Path(__file__).with_name("comites_exemplo.json")
 PRODUCAO = "https://jolly-grass-0a3af3f10.2.azurestaticapps.net"
+# Só estes endereços: o script nunca recebe um endereço livre para não ser apontado
+# para outro servidor (SSRF).
+AMBIENTES = {
+    "producao": PRODUCAO,
+    "local": "http://localhost:8000",
+    "docker": "http://localhost:3000",
+}
 API = "/api/v1"
 PERSONA_MAX = 4000
 
@@ -138,13 +146,17 @@ def criar(plataforma: Plataforma, dados: dict, email: str) -> None:
             print(f"  + {agente['name']} ({agente['domain']})")
 
 
-def main() -> None:
+def endereco(argv: list[str] | None = None) -> str:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--base-url", default=PRODUCAO)
-    args = parser.parse_args()
+    parser.add_argument("--ambiente", choices=sorted(AMBIENTES), default="producao")
+    return AMBIENTES[parser.parse_args(argv).ambiente]
+
+
+def main() -> None:
+    base_url = endereco()
     dados = json.loads(DADOS.read_text(encoding="utf-8"))
-    plataforma = Plataforma(args.base_url)
-    print(f"Plataforma: {args.base_url}")
+    plataforma = Plataforma(base_url)
+    print(f"Plataforma: {base_url}")
     usuario = plataforma.entrar()
     print(f"Entrou como {usuario['name']}")
     criar(plataforma, dados, usuario["email"])
