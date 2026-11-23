@@ -15,6 +15,10 @@ _NEW_SECRET_RULE = "Nova senha: pelo menos 12 caracteres, com maiúscula, minús
 _SKILLS_POLICY = "Quem adiciona e remove Agent Skills do comitê: `ALL_MEMBERS` ou `OWNER_ONLY`."
 _MEMBERS_POLICY = "Quem adiciona e remove membros: `ALL_MEMBERS` ou `OWNER_ONLY`."
 _IS_OPEN = "Se verdadeiro, qualquer pessoa pode entrar no comitê sozinha."
+_GLOBAL_KNOWLEDGE = (
+    "Se a busca inclui a base global de exemplo. Com `false`, os agentes usam só os anexos "
+    "e os repositórios do comitê: indicado para comitês de fora do software."
+)
 
 # Campos que a API recebe. Um campo novo sem descrição faz o teste falhar.
 FIELD_DOCS: dict[str, dict[str, str]] = {
@@ -52,6 +56,7 @@ FIELD_DOCS: dict[str, dict[str, str]] = {
         "is_open": _IS_OPEN,
         "skills_policy": _SKILLS_POLICY,
         "members_policy": _MEMBERS_POLICY,
+        "use_global_knowledge": _GLOBAL_KNOWLEDGE,
     },
     "AgentResponseFeedbackWrite": {
         "useful": "Se a resposta do agente foi útil.",
@@ -65,6 +70,7 @@ FIELD_DOCS: dict[str, dict[str, str]] = {
         "is_open": _IS_OPEN,
         "skills_policy": _SKILLS_POLICY,
         "members_policy": _MEMBERS_POLICY,
+        "use_global_knowledge": _GLOBAL_KNOWLEDGE,
     },
     "ClanSkillAdd": {"agent_skill_id": "Skill publicada, ou sua, para adicionar ao comitê."},
     "FollowUpQuestionCreate": {
@@ -122,6 +128,7 @@ REQUEST_EXAMPLES: dict[str, dict[str, Any]] = {
         "is_open": False,
         "skills_policy": "ALL_MEMBERS",
         "members_policy": "OWNER_ONLY",
+        "use_global_knowledge": True,
     },
     "POST /clans/{clan_id}/skills": {"agent_skill_id": "a4c2e8f1-7b3d-4e6a-9c10-5d2f8b1a3e77"},
     "POST /agent-skills": {

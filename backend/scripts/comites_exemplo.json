@@ -2,6 +2,7 @@
   "comites": [
     {
       "nome": "Comitê Jurídico",
+      "usar_base_global": false,
       "procura_existente": ["jurídico", "juridico"],
       "regras_comuns": "Trabalhe só com a solicitação e os documentos anexados do processo. Ao citar lei, decreto, súmula, artigo ou jurisprudência, dê o número e escreva '(a conferir na fonte oficial: planalto.gov.br ou JusBrasil)'. Nunca invente número de processo, de artigo, de súmula ou decisão: se não tiver certeza, diga que é preciso pesquisar e use confiança MEDIO ou BAIXO. Cite o documento e o trecho que sustentam cada ponto. Esta análise apoia o trabalho de um advogado e não substitui orientação jurídica nem decisão judicial.",
       "agentes": [
@@ -54,6 +55,7 @@
     },
     {
       "nome": "Comitê de Aptidão Física e Mental",
+      "usar_base_global": false,
       "procura_existente": ["aptidão", "aptidao"],
       "regras_comuns": "Analise só os laudos e relatórios anexados, emitidos por profissionais habilitados. Não faça diagnóstico novo, não prescreva tratamento nem medicamento: diga o que o laudo afirma e cite o trecho. Aponte dados que faltam, laudos desatualizados e divergências entre profissionais. Laudos de saúde são dados pessoais sensíveis (LGPD, art. 11): refira-se ao paciente só pelas iniciais. Esta análise apoia o profissional responsável, que decide.",
       "agentes": [
@@ -106,6 +108,7 @@
     },
     {
       "nome": "Comitê Financeiro e Contábil",
+      "usar_base_global": false,
       "procura_existente": ["financ", "contáb", "contab"],
       "regras_comuns": "Identifique primeiro o tipo de contribuinte: pessoa física, MEI, Simples Nacional, Lucro Presumido ou Lucro Real. Alíquotas, faixas, limites e prazos mudam a cada ano: diga o ano-base usado e escreva '(a conferir na Receita Federal)'. Calcule só com números dos documentos e mostre a conta. Nunca invente valores; se faltar um dado, diga qual. A reforma tributária (CBS e IBS) tem transição gradual: separe o que vale hoje do que muda. Esta análise apoia o trabalho de um contador e não substitui a orientação dele.",
       "agentes": [

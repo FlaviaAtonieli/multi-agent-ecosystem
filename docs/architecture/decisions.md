@@ -91,3 +91,11 @@ Registro curto das decisões que mais moldam o sistema. Cada uma diz o contexto,
 **Decisão.** A skill que declara um parecer ou avaliação final em `produced_outputs` é o relator: roda por último e recebe o resumo e os achados de cada agente, reaproveitando o mecanismo que já dava as entregas do time a quem escreve código ([`team_context.py`](../../backend/app/services/team_context.py)). O Quality Gate ganhou uma regra: mede quanto do parecer de cada agente aparece no parecer final e pede revisão humana se algum ficou de fora ([`quality_gate/service.py`](../../backend/app/quality_gate/service.py)).
 
 **Custo.** A orquestração com relator leva uma rodada a mais do modelo. A cobertura é uma medida de termos em comum, sem um segundo modelo julgando: barata e reproduzível, mas não percebe um relator que reescreve um ponto com outras palavras, nem um que cita termos sem considerar o argumento. O limite de 0,2 é inicial e não foi calibrado com dados.
+
+## 12. Comitê escolhe se usa a base global, e anexos contam como evidência
+
+**Contexto.** No teste do Comitê Jurídico (23/11/2026), a busca trouxe trechos da base global de exemplo, que descreve um sistema fictício de limite de crédito, e o relator citou um risco de LGPD sem relação com o processo. Além disso, a confiança de cada agente só contava os trechos da base: com o processo inteiro anexado e nenhum trecho, a confiança era BAIXA.
+
+**Decisão.** Cada comitê escolhe se a busca inclui a base global (`use_global_knowledge`, migration 0025). Os comitês existentes continuam usando a base global, e os comitês de exemplo de fora do software nascem sem ela. Os documentos anexados à solicitação passam a contar como evidência na confiança do agente ([`tool_interface.py`](../../backend/app/agent_catalog/tool_interface.py)). O relator recebe o resumo e os riscos de cada agente, e não mais os nomes dos trechos usados como fonte, que são os mesmos para todos; a cobertura do parecer final mede sobre a mesma base.
+
+**Custo.** Num comitê sem a base global e sem repositórios, a qualidade depende só dos anexos: sem anexo, a confiança continua BAIXA e o Quality Gate pede revisão humana. Os anexos contam como evidência inteiros, sem medir se o agente os usou de fato.

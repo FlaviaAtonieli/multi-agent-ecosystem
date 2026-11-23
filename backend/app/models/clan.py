@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, false, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, false, func, true
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -31,6 +31,11 @@ class Clan(Base):
     )
     members_policy: Mapped[str] = mapped_column(
         String(20), default="ALL_MEMBERS", server_default="ALL_MEMBERS", nullable=False
+    )
+    # Se a busca da orquestração inclui a base global de exemplo (migration 0025).
+    # Comitês de fora do software desligam e contam com anexos e repositórios próprios.
+    use_global_knowledge: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=true(), nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

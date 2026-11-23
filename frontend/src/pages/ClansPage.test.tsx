@@ -159,3 +159,50 @@ describe('Agent Skills do comitê', () => {
     expect(await screen.findByText('Só membros do comitê enxergam as Agent Skills dele.')).toBeInTheDocument()
   })
 })
+
+describe('Base de conhecimento do comitê', () => {
+  it('a dona desliga a base global de exemplo', async () => {
+    const user = userEvent.setup()
+    const api = mockApi(
+      routes(clan({ use_global_knowledge: true }), {
+        'PATCH /clans/clan-1/settings': clan({ use_global_knowledge: false }),
+      }),
+    )
+    await openClan(user)
+
+    // O primeiro campo é o do formulário de criação; o último, o do comitê aberto.
+    await screen.findByText('Skill dentro')
+    const fields = screen.getAllByRole('combobox', { name: 'Base de conhecimento' })
+    await user.selectOptions(fields[fields.length - 1], 'own')
+
+    expect(api.jsonBody('PATCH', '/clans/clan-1/settings')).toEqual({ use_global_knowledge: false })
+  })
+
+  it('quem não é dono só vê qual base o comitê usa', async () => {
+    const user = userEvent.setup()
+    mockApi(routes(clan({ created_by_id: 'outra', use_global_knowledge: false, members: [member, someoneElse] })))
+
+    await openClan(user)
+
+    expect(await screen.findByText(/Base de conhecimento: Só os anexos e os repositórios do comitê/)).toBeInTheDocument()
+    // Só sobra o campo do formulário de criação de um comitê novo.
+    expect(screen.getAllByRole('combobox', { name: 'Base de conhecimento' })).toHaveLength(1)
+  })
+
+  it('um novo comitê começa usando a base global', async () => {
+    const user = userEvent.setup()
+    const api = mockApi(routes(clan(), { 'POST /clans': new ApiResponse(201, clan({ id: 'novo', name: 'Novo' })) }))
+    render(
+      <AuthProvider>
+        <MemoryRouter>
+          <ClansPage />
+        </MemoryRouter>
+      </AuthProvider>,
+    )
+
+    await user.type(await screen.findByLabelText('Nome do comitê'), 'Novo')
+    await user.click(screen.getByRole('button', { name: /Criar comitê/ }))
+
+    expect(api.jsonBody('POST', '/clans')).toMatchObject({ name: 'Novo', use_global_knowledge: true })
+  })
+})

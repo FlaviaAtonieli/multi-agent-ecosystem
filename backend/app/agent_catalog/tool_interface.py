@@ -49,15 +49,23 @@ class EvidenceWording:
     evidence: str  # "de evidência", "de regra de negócio"...
     analysis: str  # "a análise", "a análise de segurança"...
 
-    def found(self, chunks: int) -> str:
+    def _sources(self, chunks: int, attached: int) -> str:
+        parts = []
+        if chunks:
+            parts.append(f"{chunks} trecho(s) {self.evidence} recuperados")
+        if attached:
+            parts.append(f"{attached} documento(s) anexado(s) à solicitação")
+        return " e ".join(parts)
+
+    def found(self, chunks: int, attached: int = 0) -> str:
         return (
-            f"{chunks} trecho(s) {self.evidence} recuperados e nenhuma lacuna de informação "
+            f"{self._sources(chunks, attached)} e nenhuma lacuna de informação "
             "identificada pelo planejador técnico."
         )
 
-    def partial(self, chunks: int, gaps: int) -> str:
+    def partial(self, chunks: int, gaps: int, attached: int = 0) -> str:
         return (
-            f"{chunks} trecho(s) {self.evidence} recuperados, mas o planejador técnico identificou "
+            f"{self._sources(chunks, attached)}, mas o planejador técnico identificou "
             f"{gaps} lacuna(s) de informação."
         )
 
@@ -94,6 +102,9 @@ _BY_DOMAIN = {
         analysis="a análise de segurança",
     ),
 }
+
+
+ATTACHMENT_FINDING = "Documento anexado à solicitação, usado como evidência."
 
 
 def evidence_wording(domain: str) -> EvidenceWording:
@@ -146,15 +157,27 @@ class SkillExecutor:
             for chunk in _retrieved_chunks(db, plan_response.llm_call_id)
         ]
 
-        # A confiança mede evidência documental: sem trechos da base, é BAIXA.
+        # Os documentos anexados também são evidência: num comitê sem a base global, são
+        # eles que sustentam a análise.
+        attached = [
+            AchadoTecnico(
+                item_identificado=attachment.filename,
+                descricao_detalhada=ATTACHMENT_FINDING,
+                trecho_referenciado=attachment.content[:500],
+            )
+            for attachment in technical_request.attachments
+        ]
+
+        # A confiança mede evidência documental: sem trechos da base nem anexos, é BAIXA.
         missing = plan_response.plan.missing_information
         confidence: ConfidenceLevel
-        if findings and not missing:
-            confidence, justification = "ALTO", wording.found(len(findings))
-        elif findings:
-            confidence, justification = "MEDIO", wording.partial(len(findings), len(missing))
+        if (findings or attached) and not missing:
+            confidence, justification = "ALTO", wording.found(len(findings), len(attached))
+        elif findings or attached:
+            confidence, justification = "MEDIO", wording.partial(len(findings), len(missing), len(attached))
         else:
             confidence, justification = "BAIXO", wording.nothing
+        findings += attached
 
         return SkillToolResult(
             trace_id=technical_request.trace_id,

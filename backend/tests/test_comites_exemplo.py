@@ -47,6 +47,7 @@ def test_script_cria_os_comites_e_as_skills_pela_api(client: TestClient) -> None
     comites = {c["name"]: c for c in client.get("/api/v1/clans").json()}
     for comite in _dados()["comites"]:
         assert comites[comite["nome"]]["is_open"] is True
+        assert comites[comite["nome"]]["use_global_knowledge"] is False
         skills = client.get(f"/api/v1/clans/{comites[comite['nome']]['id']}/skills").json()
         assert sorted(s["name"] for s in skills) == sorted(a["name"] for a in comite["agentes"])
         assert sum(is_relator(s["manifest_json"]) for s in skills) == 1

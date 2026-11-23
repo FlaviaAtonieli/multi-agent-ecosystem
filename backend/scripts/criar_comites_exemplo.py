@@ -123,11 +123,19 @@ def criar(plataforma: Plataforma, dados: dict, email: str) -> None:
                     "is_open": True,
                     "skills_policy": "OWNER_ONLY",
                     "members_policy": "ALL_MEMBERS",
+                    "use_global_knowledge": comite.get("usar_base_global", True),
                 },
             )
             resposta.raise_for_status()
             clan_id = resposta.json()["id"]
             print("  comitê criado, aberto ao público")
+        else:
+            # Só o dono muda a configuração; se não for, o comitê fica como está.
+            ajuste = {"use_global_knowledge": comite.get("usar_base_global", True)}
+            if plataforma.client.patch(
+                f"{API}/clans/{clan_id}/settings", json=ajuste, headers=plataforma._csrf()
+            ).status_code != 200:
+                print("  (não foi possível ajustar a base global: só o dono do comitê pode)")
 
         existentes = {s["name"].lower() for s in plataforma.get(f"/clans/{clan_id}/skills").json()}
         for agente in comite["agentes"]:

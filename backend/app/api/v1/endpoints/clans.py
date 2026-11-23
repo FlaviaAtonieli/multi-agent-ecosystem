@@ -64,6 +64,7 @@ def _to_detail(clan: Clan) -> ClanDetailRead:
         is_open=clan.is_open,
         skills_policy=clan.skills_policy,
         members_policy=clan.members_policy,
+        use_global_knowledge=clan.use_global_knowledge,
     )
 
 
@@ -84,6 +85,7 @@ def list_all_clans(
             is_open=clan.is_open,
             skills_policy=clan.skills_policy,
             members_policy=clan.members_policy,
+            use_global_knowledge=clan.use_global_knowledge,
         )
         for clan in clans
     ]
@@ -105,6 +107,7 @@ def create_new_clan(
             is_open=payload.is_open,
             skills_policy=payload.skills_policy,
             members_policy=payload.members_policy,
+            use_global_knowledge=payload.use_global_knowledge,
         )
     except ClanNameConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
@@ -120,6 +123,7 @@ def create_new_clan(
             "is_open": clan.is_open,
             "skills_policy": clan.skills_policy,
             "members_policy": clan.members_policy,
+            "use_global_knowledge": clan.use_global_knowledge,
         },
     )
     db.commit()
@@ -157,6 +161,7 @@ def update_settings(
             is_open=payload.is_open,
             skills_policy=payload.skills_policy,
             members_policy=payload.members_policy,
+            use_global_knowledge=payload.use_global_knowledge,
         )
     except ClanNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

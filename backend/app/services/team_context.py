@@ -54,15 +54,16 @@ def is_relator(manifest: dict) -> bool:
 
 
 def build_relator_context(results: list, *, max_chars: int = RELATOR_MAX_CHARS) -> str:
-    """Resumo e achados de cada agente, com o espaço dividido igualmente entre eles."""
+    """Resumo e riscos de cada agente, com o espaço dividido igualmente entre eles. Os
+    achados não entram: são os trechos e anexos usados como fonte, os mesmos para todos."""
     if not results:
         return ""
     per_entry = max(200, max_chars // len(results))
     parts: list[str] = []
     for result in results:
         block = f"[{result.agente_emissor.nome}] {result.analise_estruturada.resumo_executivo.strip()}"
-        for finding in result.analise_estruturada.descobertas_tecnicas:
-            candidate = f"{block}\n- {finding.item_identificado}: {finding.descricao_detalhada}"
+        for risk in result.analise_estruturada.impactos_mapeados:
+            candidate = f"{block}\n- {risk}"
             if len(candidate) > per_entry:
                 break
             block = candidate

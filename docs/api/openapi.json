@@ -4476,7 +4476,8 @@
                 "name": "Time de Crédito",
                 "is_open": false,
                 "skills_policy": "ALL_MEMBERS",
-                "members_policy": "OWNER_ONLY"
+                "members_policy": "OWNER_ONLY",
+                "use_global_knowledge": true
               }
             }
           }
@@ -6396,6 +6397,12 @@
             "title": "Members Policy",
             "description": "Quem adiciona e remove membros: `ALL_MEMBERS` ou `OWNER_ONLY`.",
             "default": "ALL_MEMBERS"
+          },
+          "use_global_knowledge": {
+            "type": "boolean",
+            "title": "Use Global Knowledge",
+            "description": "Se a busca inclui a base global de exemplo. Com `false`, os agentes usam só os anexos e os repositórios do comitê: indicado para comitês de fora do software.",
+            "default": true
           }
         },
         "type": "object",
@@ -6449,6 +6456,10 @@
               "OWNER_ONLY"
             ],
             "title": "Members Policy"
+          },
+          "use_global_knowledge": {
+            "type": "boolean",
+            "title": "Use Global Knowledge"
           }
         },
         "type": "object",
@@ -6460,7 +6471,8 @@
           "members",
           "is_open",
           "skills_policy",
-          "members_policy"
+          "members_policy",
+          "use_global_knowledge"
         ],
         "title": "ClanDetailRead"
       },
@@ -6550,6 +6562,10 @@
               "OWNER_ONLY"
             ],
             "title": "Members Policy"
+          },
+          "use_global_knowledge": {
+            "type": "boolean",
+            "title": "Use Global Knowledge"
           }
         },
         "type": "object",
@@ -6561,7 +6577,8 @@
           "member_count",
           "is_open",
           "skills_policy",
-          "members_policy"
+          "members_policy",
+          "use_global_knowledge"
         ],
         "title": "ClanRead"
       },
@@ -6719,6 +6736,18 @@
             ],
             "title": "Members Policy",
             "description": "Quem adiciona e remove membros: `ALL_MEMBERS` ou `OWNER_ONLY`."
+          },
+          "use_global_knowledge": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use Global Knowledge",
+            "description": "Se a busca inclui a base global de exemplo. Com `false`, os agentes usam só os anexos e os repositórios do comitê: indicado para comitês de fora do software."
           }
         },
         "type": "object",

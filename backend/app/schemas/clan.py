@@ -15,6 +15,10 @@ class ClanCreate(BaseModel):
     members_policy: ClanPolicyLiteral = Field(
         default="ALL_MEMBERS", description="Quem pode adicionar e remover membros."
     )
+    use_global_knowledge: bool = Field(
+        default=True,
+        description="Se a busca inclui a base global de exemplo, além dos anexos e repositórios do comitê.",
+    )
 
 
 class ClanSettingsUpdate(BaseModel):
@@ -24,6 +28,7 @@ class ClanSettingsUpdate(BaseModel):
     is_open: bool | None = None
     skills_policy: ClanPolicyLiteral | None = None
     members_policy: ClanPolicyLiteral | None = None
+    use_global_knowledge: bool | None = None
 
 
 class ClanMemberAdd(BaseModel):
@@ -50,6 +55,7 @@ class ClanRead(BaseModel):
     is_open: bool
     skills_policy: ClanPolicyLiteral
     members_policy: ClanPolicyLiteral
+    use_global_knowledge: bool
 
 
 class ClanDetailRead(BaseModel):
@@ -61,6 +67,7 @@ class ClanDetailRead(BaseModel):
     is_open: bool
     skills_policy: ClanPolicyLiteral
     members_policy: ClanPolicyLiteral
+    use_global_knowledge: bool
 
 
 class ClanRepositoryAdd(BaseModel):

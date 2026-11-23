@@ -26,23 +26,16 @@ def _terms(text: str) -> set[str]:
 
 
 def _key_terms(result: SkillToolResult) -> set[str]:
+    """O que o agente disse: resumo e riscos. Os achados ficam de fora porque são as
+    fontes (trechos e anexos), as mesmas para todos, e inflariam a cobertura."""
     analysis = result.analise_estruturada
-    items = [finding.item_identificado for finding in analysis.descobertas_tecnicas]
-    return _terms(" ".join([analysis.resumo_executivo, *items]))
-
-
-def _all_terms(result: SkillToolResult) -> set[str]:
-    analysis = result.analise_estruturada
-    parts = [analysis.resumo_executivo, *analysis.impactos_mapeados]
-    for finding in analysis.descobertas_tecnicas:
-        parts += [finding.item_identificado, finding.descricao_detalhada]
-    return _terms(" ".join(parts))
+    return _terms(" ".join([analysis.resumo_executivo, *analysis.impactos_mapeados]))
 
 
 def relator_coverage(relator: SkillToolResult, others: list[SkillToolResult]) -> dict[str, float]:
-    """Para cada agente, a fração dos termos do resumo e dos achados dele que aparece no
+    """Para cada agente, a fração dos termos do resumo e dos riscos dele que aparece no
     parecer do relator. Mede se o relator considerou o agente, não se concorda com ele."""
-    relator_terms = _all_terms(relator)
+    relator_terms = _key_terms(relator)
     coverage: dict[str, float] = {}
     for other in others:
         terms = _key_terms(other)

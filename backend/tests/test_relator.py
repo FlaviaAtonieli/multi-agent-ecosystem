@@ -29,15 +29,18 @@ from tests.test_team_context import _create_skill, _run
 USER = {"name": "Comitê Jurídico", "email": "comite.juridico@example.com", "password": "StrongPassword!123"}
 
 
-def _result(name: str, summary: str, findings: list[tuple[str, str]] | None = None) -> SkillToolResult:
+def _result(
+    name: str, summary: str, risks: list[str] | None = None, sources: list[str] | None = None
+) -> SkillToolResult:
     return SkillToolResult(
         trace_id="T",
         agente_emissor=AgenteEmissor(nome=name, dominio=f"direito_{name.lower()}"),
         analise_estruturada=AnaliseEstruturada(
             resumo_executivo=summary,
+            impactos_mapeados=risks or [],
             descobertas_tecnicas=[
-                AchadoTecnico(item_identificado=item, descricao_detalhada=text)
-                for item, text in findings or []
+                AchadoTecnico(item_identificado=source, descricao_detalhada="Trecho recuperado.")
+                for source in sources or []
             ],
         ),
         governanca=Governanca(nivel_confianca="ALTO", justificativa_confianca="ok"),
@@ -62,21 +65,23 @@ def test_parecer_de_uma_area_so_nao_e_relator() -> None:
 # --- o que o relator recebe ----------------------------------------------------
 
 
-def test_contexto_do_relator_leva_resumo_e_achados_de_cada_agente() -> None:
+def test_contexto_do_relator_leva_resumo_e_riscos_de_cada_agente() -> None:
     context = build_relator_context(
         [
-            _result("Advogado", "A ação tem base.", [("Prova", "O contrato foi assinado.")]),
+            _result("Advogado", "A ação tem base.", ["O contrato foi assinado."], sources=["credito.md"]),
             _result("Mestre de Leis", "Aplica-se o CDC."),
         ]
     )
 
     assert "[Advogado] A ação tem base." in context
-    assert "Prova: O contrato foi assinado." in context
+    assert "- O contrato foi assinado." in context
     assert "[Mestre de Leis] Aplica-se o CDC." in context
+    # O nome de um trecho recuperado não é um ponto do agente.
+    assert "credito.md" not in context
 
 
 def test_contexto_do_relator_tem_limite_e_divide_o_espaco() -> None:
-    longo = [(f"Ponto {numero}", "x" * 200) for numero in range(100)]
+    longo = [f"Ponto {numero} " + "x" * 200 for numero in range(100)]
     context = build_relator_context(
         [_result("Advogado", "Resumo.", longo), _result("Contratos", "Resumo curto.")], max_chars=2000
     )
@@ -188,9 +193,7 @@ def test_sem_relator_nada_muda(client: TestClient, monkeypatch) -> None:
 
 
 def test_cobertura_mede_quanto_de_cada_parecer_o_relator_considerou() -> None:
-    advogado = _result(
-        "Advogado", "Contrato assinado prova a dívida.", [("Prescrição", "Ainda não ocorreu.")]
-    )
+    advogado = _result("Advogado", "Contrato assinado prova a dívida.", ["Prescrição"])
     contratos = _result("Contratos", "Cláusula penal abusiva reduz multa.")
     relator = _result(
         "Relator", "O contrato assinado prova a dívida e a prescrição não ocorreu. Conclusão favorável."
@@ -227,6 +230,14 @@ def test_quality_gate_aprova_quando_o_relator_considera_todos() -> None:
     assert verdict.approved
     assert not verdict.requires_human_review
     assert any("considera todos os agentes" in reason for reason in verdict.reasons)
+
+
+def test_fontes_iguais_nao_inflam_a_cobertura() -> None:
+    # Todos os agentes citam os mesmos anexos; isso não mostra que o relator leu o agente.
+    contratos = _result("Contratos", "Cláusula penal abusiva reduz multa.", sources=["contrato_academia.txt"])
+    relator = _result("Relator", "Conclusão favorável.", sources=["contrato_academia.txt"])
+
+    assert relator_coverage(relator, [contratos])["Contratos"] == 0.0
 
 
 def test_sem_relator_o_quality_gate_nao_mede_cobertura() -> None:
