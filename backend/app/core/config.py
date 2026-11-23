@@ -1,9 +1,12 @@
+import logging
 from functools import lru_cache
 from typing import Literal
 
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -102,10 +105,7 @@ class Settings(BaseSettings):
     llm_model: str = "openai/gpt-5-mini"
     # openai/gpt-5-mini é pago e foi validado de ponta a ponta, inclusive em produção.
     # Modelos gratuitos entram e saem do catálogo da OpenRouter sem aviso.
-    llm_allowed_models: str = (
-        "openai/gpt-5-mini,"
-        "dots-studio/dots-3-note-preview:free"
-    )
+    llm_allowed_models: str = "openai/gpt-5-mini,dots-studio/dots-3-note-preview:free"
     # Modelos que raciocinam (gpt-5-mini) levam de 45 a 90 s em respostas com código.
     # Com 45 s, o cliente desistia e repetia, e a OpenRouter cobrava as duas chamadas.
     llm_timeout_seconds: int = 180
@@ -195,9 +195,7 @@ class Settings(BaseSettings):
     @property
     def attachment_allowed_extension_list(self) -> list[str]:
         return [
-            item.strip().lower()
-            for item in self.attachment_allowed_extensions.split(",")
-            if item.strip()
+            item.strip().lower() for item in self.attachment_allowed_extensions.split(",") if item.strip()
         ]
 
     @property
@@ -233,23 +231,36 @@ class Settings(BaseSettings):
         return self.environment.lower() == "production"
 
     @model_validator(mode="after")
-    def validate_github_oauth_configuration(self) -> "Settings":
-        if not self.github_oauth_enabled:
-            return self
-        if not self.github_client_id:
-            raise ValueError("GITHUB_CLIENT_ID é obrigatório quando GITHUB_OAUTH_ENABLED=true.")
-        if not self.github_client_secret_value:
-            raise ValueError("GITHUB_CLIENT_SECRET é obrigatório quando GITHUB_OAUTH_ENABLED=true.")
-        return self
+    def disable_incomplete_social_login(self) -> "Settings":
+        """Login social sem ID ou sem secret fica desligado, com aviso no log.
 
-    @model_validator(mode="after")
-    def validate_google_oauth_configuration(self) -> "Settings":
-        if not self.google_oauth_enabled:
-            return self
-        if not self.google_client_id:
-            raise ValueError("GOOGLE_CLIENT_ID é obrigatório quando GOOGLE_OAUTH_ENABLED=true.")
-        if not self.google_client_secret_value:
-            raise ValueError("GOOGLE_CLIENT_SECRET é obrigatório quando GOOGLE_OAUTH_ENABLED=true.")
+        Antes, isso impedia o backend de subir: um secret esquecido no Azure derrubava o
+        site inteiro, quando só aquele botão de login deveria deixar de funcionar.
+        """
+        checks = (
+            ("github", self.github_client_id, self.github_client_secret_value),
+            ("google", self.google_client_id, self.google_client_secret_value),
+        )
+        for provider, client_id, client_secret in checks:
+            if not getattr(self, f"{provider}_oauth_enabled"):
+                continue
+            missing = [
+                name
+                for name, value in (
+                    ("CLIENT_ID", (client_id or "").strip()),
+                    ("CLIENT_SECRET", client_secret),
+                )
+                if not value
+            ]
+            if missing:
+                prefix = provider.upper()
+                logger.warning(
+                    "Login com %s desligado: %s_OAUTH_ENABLED=true, mas falta %s.",
+                    provider,
+                    prefix,
+                    " e ".join(f"{prefix}_{name}" for name in missing),
+                )
+                object.__setattr__(self, f"{provider}_oauth_enabled", False)
         return self
 
     @model_validator(mode="after")
@@ -282,14 +293,10 @@ class Settings(BaseSettings):
             return self
 
         if self.llm_model not in self.llm_allowed_model_list:
-            raise ValueError(
-                f"O modelo '{self.llm_model}' não está em LLM_ALLOWED_MODELS."
-            )
+            raise ValueError(f"O modelo '{self.llm_model}' não está em LLM_ALLOWED_MODELS.")
 
         if self.llm_provider == "openai" and not self.openai_api_key_value:
-            raise ValueError(
-                "OPENAI_API_KEY é obrigatória quando LLM_ENABLED=true e LLM_PROVIDER=openai."
-            )
+            raise ValueError("OPENAI_API_KEY é obrigatória quando LLM_ENABLED=true e LLM_PROVIDER=openai.")
 
         if self.llm_provider == "openrouter" and not self.openrouter_api_key_value:
             raise ValueError(
@@ -343,9 +350,7 @@ class Settings(BaseSettings):
                 "atrás de HTTPS). Veja 'Requisitos de produção' em SECURITY.md."
             )
         if self.is_production and make_url(self.database_url).get_backend_name() != "postgresql":
-            raise ValueError(
-                "ENVIRONMENT=production exige DATABASE_URL configurada para PostgreSQL."
-            )
+            raise ValueError("ENVIRONMENT=production exige DATABASE_URL configurada para PostgreSQL.")
         return self
 
 
