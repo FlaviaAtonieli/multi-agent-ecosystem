@@ -83,3 +83,11 @@ Registro curto das decisões que mais moldam o sistema. Cada uma diz o contexto,
 **Decisão.** Um membro adiciona um repositório público do GitHub ao comitê, e a indexação roda em segundo plano: baixa o código, lê os arquivos de texto e grava os trechos com embeddings ligados ao comitê ([`repository_service.py`](../../backend/app/services/repository_service.py)). A busca da orquestração passa a ver a base global mais os repositórios do comitê da solicitação, nunca os de outro. É a fase 1. A fase 2 monta um grafo do código (arquivos, imports e definições) e um Agente do Repositório que segue esse grafo para achar as fontes.
 
 **Custo.** Só repositórios públicos: um privado exigiria pedir mais permissão no login com GitHub. Os trechos são janelas de texto, sem entender a estrutura do código, até a fase 2. Indexar gasta embeddings (cerca de 1 centavo de dólar por MB de código com o modelo de produção), por isso há limites. Como a orquestração, a indexação vive no processo do backend, e um reinício no meio marca o repositório como falho.
+
+## 11. Relator do comitê e cobertura do parecer final
+
+**Contexto.** As skills de um comitê rodavam juntas, e nenhuma via o que as outras disseram. Num comitê jurídico ou de saúde, o resultado esperado é uma conclusão única, como um julgamento ou a avaliação final de um paciente, e não respostas lado a lado.
+
+**Decisão.** A skill que declara um parecer ou avaliação final em `produced_outputs` é o relator: roda por último e recebe o resumo e os achados de cada agente, reaproveitando o mecanismo que já dava as entregas do time a quem escreve código ([`team_context.py`](../../backend/app/services/team_context.py)). O Quality Gate ganhou uma regra: mede quanto do parecer de cada agente aparece no parecer final e pede revisão humana se algum ficou de fora ([`quality_gate/service.py`](../../backend/app/quality_gate/service.py)).
+
+**Custo.** A orquestração com relator leva uma rodada a mais do modelo. A cobertura é uma medida de termos em comum, sem um segundo modelo julgando: barata e reproduzível, mas não percebe um relator que reescreve um ponto com outras palavras, nem um que cita termos sem considerar o argumento. O limite de 0,2 é inicial e não foi calibrado com dados.

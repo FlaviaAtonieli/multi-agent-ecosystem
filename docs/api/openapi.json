@@ -7826,6 +7826,20 @@
             },
             "type": "array",
             "title": "Reasons"
+          },
+          "relator_coverage": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relator Coverage"
           }
         },
         "type": "object",

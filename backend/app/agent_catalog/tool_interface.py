@@ -133,6 +133,7 @@ class SkillExecutor:
             analysis_domain_label=DOMAIN_LABELS.get(skill.domain, skill.domain),
             additional_question=tool_call.additional_question,
             team_context=tool_call.team_context,
+            relator=tool_call.relator,
             persona_instructions=skill.persona_instructions,
         )
         wording = evidence_wording(skill.domain)

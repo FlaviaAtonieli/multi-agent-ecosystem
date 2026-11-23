@@ -11,7 +11,7 @@ from app.agent_catalog.mcp_client import call_skill_tool
 from app.agent_catalog.registry import canonical_domain, list_clan_skills
 from app.agent_catalog.tool_interface import SkillToolCall, SkillToolResult
 from app.core.config import settings
-from app.core.metrics import QUALITY_GATE_VERDICTS, SKILL_INVOCATIONS, SKILL_LATENCY
+from app.core.metrics import QUALITY_GATE_VERDICTS, RELATOR_COVERAGE, SKILL_INVOCATIONS, SKILL_LATENCY
 from app.core.security import utc_now
 from app.llm.file_request import asks_for_files
 from app.llm.security import content_sha256
@@ -27,7 +27,14 @@ from app.quality_gate.service import QualityGateVerdict, evaluate
 from app.services.artifact_service import check_package, prepare_files
 from app.services.clan_service import is_member
 from app.services.orchestration_service import RequestStatus, append_event
-from app.services.team_context import TeamEntry, build_team_context, is_code_file, writes_code
+from app.services.team_context import (
+    TeamEntry,
+    build_relator_context,
+    build_team_context,
+    is_code_file,
+    is_relator,
+    writes_code,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -163,6 +170,7 @@ async def _invoke_skill(
     requested_model: str | None = None,
     additional_question: str | None = None,
     team_context: str | None = None,
+    relator: bool = False,
 ) -> tuple[AgentSkillInvocation, SkillToolResult | None]:
     tool_call = SkillToolCall(
         trace_id=technical_request.trace_id,
@@ -173,6 +181,7 @@ async def _invoke_skill(
         requested_model=requested_model,
         additional_question=additional_question,
         team_context=team_context,
+        relator=relator,
     )
     input_hash = content_sha256(tool_call.model_dump_json())
     invocation_id = str(uuid4())
@@ -273,6 +282,7 @@ async def invoke_skills(
     requested_model: str | None = None,
     additional_question: str | None = None,
     team_context: str | None = None,
+    relator: bool = False,
 ) -> tuple[list[AgentSkillInvocation], list[SkillToolResult]]:
     """Roda as skills ao mesmo tempo, até orchestration_max_parallel_skills.
 
@@ -292,6 +302,7 @@ async def invoke_skills(
                 requested_model=requested_model,
                 additional_question=additional_question,
                 team_context=team_context,
+                relator=relator,
             )
 
     outcomes = await asyncio.gather(*(invoke_limited(skill) for skill in skills))
@@ -330,7 +341,7 @@ def _team_entries(
     return entries
 
 
-async def _invoke_in_stages(
+async def _invoke_advisors_and_implementers(
     db: Session,
     *,
     skills: list[AgentSkill],
@@ -419,6 +430,69 @@ async def _invoke_in_stages(
     return first_invocations + second_invocations, first_results + second_results
 
 
+async def _invoke_in_stages(
+    db: Session,
+    *,
+    skills: list[AgentSkill],
+    technical_request: TechnicalRequest,
+    user: User,
+    requested_model: str | None,
+    files_requested: bool,
+) -> tuple[list[AgentSkillInvocation], list[SkillToolResult]]:
+    """O relator do comitê (app/services/team_context.is_relator) roda por último e recebe
+    o resumo e os achados de cada agente. Sem relator, ou só com relatores, nada muda."""
+    relators = [skill for skill in skills if is_relator(skill.manifest_json or {})]
+    others = [skill for skill in skills if skill not in relators]
+    if not relators or not others:
+        return await _invoke_advisors_and_implementers(
+            db,
+            skills=skills,
+            technical_request=technical_request,
+            user=user,
+            requested_model=requested_model,
+            files_requested=files_requested,
+        )
+
+    invocations, results = await _invoke_advisors_and_implementers(
+        db,
+        skills=others,
+        technical_request=technical_request,
+        user=user,
+        requested_model=requested_model,
+        files_requested=files_requested,
+    )
+    relator_context = build_relator_context(results)
+    if relator_context:
+        append_event(
+            db,
+            technical_request,
+            event_type="RELATOR_CONTEXT_SHARED",
+            actor="ORCHESTRATOR",
+            title="Pareceres enviados ao relator",
+            message=(
+                f"{len(results)} parecer(es) de {', '.join(r.agente_emissor.nome for r in results)} "
+                f"seguem para {', '.join(skill.name for skill in relators)}."
+            ),
+            payload={
+                "agents": [result.agente_emissor.nome for result in results],
+                "relators": [skill.name for skill in relators],
+                "context_chars": len(relator_context),
+            },
+        )
+        db.commit()
+
+    relator_invocations, relator_results = await invoke_skills(
+        db,
+        skills=relators,
+        technical_request=technical_request,
+        user=user,
+        requested_model=requested_model,
+        team_context=relator_context or None,
+        relator=bool(relator_context),
+    )
+    return invocations + relator_invocations, results + relator_results
+
+
 def _package_issues(db: Session, invocations: list[AgentSkillInvocation]) -> list[str]:
     issues: list[str] = []
     for invocation in invocations:
@@ -494,7 +568,10 @@ async def execute_orchestration_step(
         files_requested=files_requested,
         files_delivered=stored_any_file(db, invocations),
         package_issues=_package_issues(db, invocations),
+        relator_names={skill.name for skill in skills if is_relator(skill.manifest_json or {})},
     )
+    for value in (verdict.relator_coverage or {}).values():
+        RELATOR_COVERAGE.observe(value)
     QUALITY_GATE_VERDICTS.labels(
         "approved" if verdict.approved and not verdict.requires_human_review else "human_review"
     ).inc()

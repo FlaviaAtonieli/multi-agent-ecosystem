@@ -56,6 +56,7 @@ def _build_safe_request(
     additional_question: str | None = None,
     persona_instructions: str | None = None,
     team_context: str | None = None,
+    relator: bool = False,
 ) -> tuple[LLMPlanRequest, int, bool, str]:
     remaining = settings.llm_max_input_chars
     redacted_count = 0
@@ -77,6 +78,10 @@ def _build_safe_request(
         any_truncated = any_truncated or sanitized.truncated
         remaining -= len(sanitized.value)
         return sanitized.value
+
+    # O que outros agentes disseram vem antes dos anexos no limite de caracteres: num
+    # processo com muitos documentos, o relator ainda recebe os pareceres.
+    safe_team_context = clean(team_context)
 
     restrictions: list[str] = []
     for restriction in technical_request.restrictions:
@@ -101,7 +106,8 @@ def _build_safe_request(
         additional_question=clean(additional_question),
         persona_instructions=clean(persona_instructions),
         attachments_context=clean(raw_attachments_text) if raw_attachments_text else None,
-        team_context=clean(team_context),
+        team_context=safe_team_context,
+        relator=relator,
     )
     safe_serialized = json.dumps(
         safe_request.model_dump(mode="json"),
@@ -126,6 +132,7 @@ def generate_technical_plan(
     additional_question: str | None = None,
     persona_instructions: str | None = None,
     team_context: str | None = None,
+    relator: bool = False,
 ) -> LLMPlanResponse:
     if not settings.llm_enabled:
         raise LLMDisabledError("A integração com LLM está desabilitada pelo administrador.")
@@ -150,6 +157,7 @@ def generate_technical_plan(
         additional_question=additional_question,
         persona_instructions=persona_instructions,
         team_context=team_context,
+        relator=relator,
     )
 
     rag_context = retrieve_context_for_request(db, technical_request, safe_request)

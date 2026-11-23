@@ -39,7 +39,15 @@ def build_technical_planner_prompt(request: LLMPlanRequest) -> str:
             "Incorpore esse direcionamento na análise, sem deixar de responder no schema pedido."
         )
 
-    if request.team_context:
+    if request.team_context and request.relator:
+        lines.append(
+            "Você é o relator do comitê. Abaixo estão os pareceres dos outros agentes desta solicitação. "
+            "Escreva o parecer final do comitê a partir deles: os pontos em que concordam, as divergências "
+            "e como você as resolve, os pontos fortes e fracos e a conclusão. Considere cada agente e diga "
+            "de qual deles vem cada ponto. Não acrescente fatos que não estejam nos pareceres, na "
+            f"solicitação ou nos anexos:\n{request.team_context}"
+        )
+    elif request.team_context:
         lines.append(
             "Entregas dos outros agentes desta solicitação. Elas trazem requisitos, critérios de teste e "
             "recomendações para o que você entrega. Siga o que se aplica e não contradiga essas entregas "
