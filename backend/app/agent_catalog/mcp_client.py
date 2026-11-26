@@ -77,10 +77,18 @@ async def call_skill_tool(
         transport = stdio_client(params)
 
     async with Client(transport) as client:
-        # Descoberta real: confere que o servidor expõe a ferramenta que o catálogo promete
-        # antes de chamá-la.
-        await client.list_tools()
-        result = await client.call_tool(_TOOL_NAME, {"entrada": tool_call.model_dump(mode="json")})
+        # Descoberta real: só chama a ferramenta se o servidor a anunciar.
+        listed = await client.list_tools()
+        offered = any(tool.name == _TOOL_NAME for tool in listed.tools)
+        result = (
+            await client.call_tool(_TOOL_NAME, {"entrada": tool_call.model_dump(mode="json")})
+            if offered
+            else None
+        )
+
+    # Fora do bloco: uma exceção lá dentro sairia embrulhada em um ExceptionGroup.
+    if result is None:
+        raise SkillMCPError(f"O servidor da Agent Skill não expõe a ferramenta '{_TOOL_NAME}'.")
 
     if result.is_error:
         first_block = result.content[0] if result.content else None

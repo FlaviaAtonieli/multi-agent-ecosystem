@@ -2581,6 +2581,7 @@ Este apêndice registra o que mudou em relação ao texto original desta RFC dur
 | **Quality Gate cobra arquivos pedidos** | RF11 e RN06 | Medido com um modelo gratuito: o modelo ignorou um pedido explícito de arquivos em 2 de 13 tentativas. O Quality Gate passa a mandar esses casos para revisão humana (PR #107). |
 | **Avaliação humana de cada resposta de agente** (útil ou não útil, com motivo) | RF11 e RN02 | A revisão humana aprovava ou rejeitava a resposta inteira. Avaliar cada agente mostra qual especialista acerta e mede o que passa pelo Quality Gate sem ser útil (PR #118). |
 | **Repositório público do GitHub como base de conhecimento do comitê** | RF17 | A base global só tinha documentos de exemplo. O código do repositório é lido como texto, nunca executado, e só as orquestrações daquele comitê o encontram (PR #120). |
+| **Relator** que consolida o parecer final | RF08 e RF11 | As respostas ficavam lado a lado, sem conclusão. Com dois ou mais agentes, um relator roda por último, com o resumo e os riscos de cada um, e o Quality Gate mede se o parecer final considerou todos (PR #124). |
 | **Monitoramento com Prometheus e Grafana em produção** | RNF10 | Acompanhar uso, tempo das chamadas ao modelo e veredito do Quality Gate com o sistema no ar (PRs #115 e #121). |
 
 ### J.2 Desvios em relação ao texto original
