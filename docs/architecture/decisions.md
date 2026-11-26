@@ -6,9 +6,9 @@ Registro curto das decisões que mais moldam o sistema. Cada uma diz o contexto,
 
 **Contexto.** O RFC pede agentes isolados, que se descobrem por contrato.
 
-**Decisão.** O orquestrador é um cliente MCP. Cada chamada sobe um processo do servidor da skill e conversa por JSON-RPC sobre stdio ([`mcp_client.py`](../../backend/app/agent_catalog/mcp_client.py)). Antes de chamar, o cliente lista as ferramentas do servidor e confere que `executar` existe. O servidor abre a própria sessão de banco e busca de novo os dados pelos ids recebidos.
+**Decisão.** O orquestrador é um cliente MCP. Cada chamada sobe um processo do servidor da skill e conversa por JSON-RPC sobre stdio ([`mcp_client.py`](../../backend/app/agent_catalog/mcp_client.py)). Antes de chamar, o cliente lista as ferramentas do servidor e só chama `executar` se ela estiver na lista. O servidor abre a própria sessão de banco e busca de novo os dados pelos ids recebidos.
 
-**Custo.** Um processo por chamada gasta memória e tempo de partida. Por isso `ORCHESTRATION_MAX_PARALLEL_SKILLS` limita quantas rodam juntas. Nos testes, o transporte em memória usa o mesmo servidor sem subir processo.
+**Custo.** O processo separa falhas, não permissões: recebe a configuração do backend e acessa o banco. Um processo por chamada gasta memória e tempo de partida. Por isso `ORCHESTRATION_MAX_PARALLEL_SKILLS` limita quantas rodam juntas. Nos testes, o transporte em memória usa o mesmo servidor sem subir processo.
 
 ## 2. Um executor e um servidor para todas as skills
 
